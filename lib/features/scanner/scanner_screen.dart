@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -8,11 +10,15 @@ enum ScannerMode {
 
 class ScannerScreen extends StatefulWidget {
   final ScannerMode mode;
+  final bool showManualAfterDelay;
 
   const ScannerScreen({
     super.key,
     required this.mode,
+    this.showManualAfterDelay = false,
   });
+
+  static const manualEntryResult = '__manual_entry__';
 
   @override
   State<ScannerScreen> createState() => _ScannerScreenState();
@@ -20,8 +26,28 @@ class ScannerScreen extends StatefulWidget {
 
 class _ScannerScreenState extends State<ScannerScreen> {
   bool scanned = false;
+  bool showManualButton = false;
+  Timer? manualTimer;
 
   bool get isQr => widget.mode == ScannerMode.qr;
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.showManualAfterDelay) {
+      manualTimer = Timer(const Duration(seconds: 15), () {
+        if (!mounted || scanned) return;
+        setState(() => showManualButton = true);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    manualTimer?.cancel();
+    super.dispose();
+  }
 
   void handleDetect(BarcodeCapture capture) {
     if (scanned) return;
@@ -33,6 +59,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
     scanned = true;
     Navigator.pop(context, value);
+  }
+
+  void openManualEntry() {
+    if (scanned) return;
+    scanned = true;
+    Navigator.pop(context, ScannerScreen.manualEntryResult);
   }
 
   @override
@@ -50,16 +82,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
       ),
       body: Stack(
         children: [
-          MobileScanner(
-            onDetect: handleDetect,
-          ),
+          MobileScanner(onDetect: handleDetect),
+          Container(color: Colors.black.withOpacity(0.18)),
 
-          // Donkere overlay
-          Container(
-            color: Colors.black.withOpacity(0.18),
-          ),
-
-          // Scan-frame
           Center(
             child: Container(
               width: frameWidth,
@@ -71,28 +96,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   width: 3,
                 ),
               ),
-              child: Stack(
+              child: const Stack(
                 children: [
-                  _Corner(
-                    alignment: Alignment.topLeft,
-                    top: true,
-                    left: true,
-                  ),
-                  _Corner(
-                    alignment: Alignment.topRight,
-                    top: true,
-                    left: false,
-                  ),
-                  _Corner(
-                    alignment: Alignment.bottomLeft,
-                    top: false,
-                    left: true,
-                  ),
-                  _Corner(
-                    alignment: Alignment.bottomRight,
-                    top: false,
-                    left: false,
-                  ),
+                  _Corner(alignment: Alignment.topLeft, top: true, left: true),
+                  _Corner(alignment: Alignment.topRight, top: true, left: false),
+                  _Corner(alignment: Alignment.bottomLeft, top: false, left: true),
+                  _Corner(alignment: Alignment.bottomRight, top: false, left: false),
                 ],
               ),
             ),
@@ -116,7 +125,17 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 18),
+
+                if (showManualButton) ...[
+                  const SizedBox(height: 18),
+                  FilledButton.icon(
+                    onPressed: openManualEntry,
+                    icon: const Icon(Icons.keyboard),
+                    label: const Text('Handmatig invoeren'),
+                  ),
+                ],
+
+                const SizedBox(height: 14),
                 TextButton.icon(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close),
@@ -153,10 +172,7 @@ class _Corner extends StatelessWidget {
         width: 34,
         height: 34,
         child: CustomPaint(
-          painter: _CornerPainter(
-            top: top,
-            left: left,
-          ),
+          painter: _CornerPainter(top: top, left: left),
         ),
       ),
     );

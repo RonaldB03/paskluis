@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 import '../scanner/scanner_screen.dart';
 
@@ -29,12 +31,18 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
   final nameController = TextEditingController();
   final codeController = TextEditingController();
-  final noteController = TextEditingController();
 
-  final cardNumberController = TextEditingController();
-  final pinCodeController = TextEditingController();
-  final initialBalanceController = TextEditingController();
-  final currentBalanceController = TextEditingController();
+  File? customImage;
+
+  bool get isBrandMode =>
+      (widget.initialLogoAsset ?? '').isNotEmpty &&
+          (widget.initialBrandColor ?? '').isNotEmpty;
+
+  Color get brandColor {
+    final parsed = int.tryParse(widget.initialBrandColor ?? '');
+    if (parsed != null) return Color(parsed);
+    return Colors.white;
+  }
 
   @override
   void initState() {
@@ -44,16 +52,16 @@ class _AddCardScreenState extends State<AddCardScreen> {
     codeController.text = widget.initialCode ?? '';
   }
 
-  @override
-  void dispose() {
-    nameController.dispose();
-    codeController.dispose();
-    noteController.dispose();
-    cardNumberController.dispose();
-    pinCodeController.dispose();
-    initialBalanceController.dispose();
-    currentBalanceController.dispose();
-    super.dispose();
+  Future<void> pickImage() async {
+    final picker = ImagePicker();
+
+    final image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      setState(() {
+        customImage = File(image.path);
+      });
+    }
   }
 
   Future<void> scanCode() async {
@@ -61,10 +69,10 @@ class _AddCardScreenState extends State<AddCardScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => ScannerScreen(
-  mode: selectedType == 'QR-code'
-      ? ScannerMode.qr
-      : ScannerMode.barcode,
-),
+          mode: selectedType == 'QR-code'
+              ? ScannerMode.qr
+              : ScannerMode.barcode,
+        ),
       ),
     );
 
@@ -76,10 +84,10 @@ class _AddCardScreenState extends State<AddCardScreen> {
   }
 
   void saveCard() {
-    if (nameController.text.trim().isEmpty ||
-        codeController.text.trim().isEmpty) {
+    if (codeController.text.trim().isEmpty ||
+        (!isBrandMode && nameController.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vul minimaal een naam en code in.')),
+        const SnackBar(content: Text('Vul de verplichte velden in')),
       );
       return;
     }
@@ -88,53 +96,85 @@ class _AddCardScreenState extends State<AddCardScreen> {
       'type': selectedType,
       'name': nameController.text.trim(),
       'code': codeController.text.trim(),
-      'note': noteController.text.trim(),
-      'cardNumber': cardNumberController.text.trim(),
-      'pinCode': pinCodeController.text.trim(),
-      'initialBalance': initialBalanceController.text.trim(),
-      'currentBalance': currentBalanceController.text.trim(),
-      'brandId': widget.initialBrandId ?? '',
       'logoAsset': widget.initialLogoAsset ?? '',
       'brandColor': widget.initialBrandColor ?? '',
+      'customImage': customImage?.path ?? '',
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final isGiftCard = selectedType == 'Cadeaukaart';
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F5),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: const Color(0xFF3A3A3C),
-        title: Text(
-          selectedType == 'Pasje'
-              ? 'Klantenkaart toevoegen'
-              : selectedType == 'QR-code'
-              ? 'QR-code toevoegen'
-              : 'Cadeaukaart toevoegen',
-          style: const TextStyle(fontWeight: FontWeight.w700),
+        title: const Text(
+          'Kaart toevoegen',
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          TextField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: 'Naam',
-              hintText: 'Bijv. Albert Heijn',
-              border: OutlineInputBorder(),
+          /// 🔷 BRAND OF HANDMATIG
+          if (isBrandMode) ...[
+            Container(
+              height: 120,
+              decoration: BoxDecoration(
+                color: brandColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Center(
+                child: Image.asset(
+                  widget.initialLogoAsset!,
+                  height: 80,
+                  fit: BoxFit.contain,
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+          ] else ...[
+            /// NAAM
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Naam',
+                border: OutlineInputBorder(),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            /// LOGO UPLOAD
+            InkWell(
+              onTap: pickImage,
+              child: Container(
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: customImage != null
+                    ? Image.file(customImage!, fit: BoxFit.cover)
+                    : const Center(
+                  child: Text(
+                    'Logo toevoegen (optioneel)',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 24),
+
+          /// CODE
           TextField(
             controller: codeController,
             decoration: InputDecoration(
               labelText: 'Barcode / QR-code',
-              hintText: 'Scan of vul handmatig in',
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.qr_code_scanner),
@@ -142,66 +182,17 @@ class _AddCardScreenState extends State<AddCardScreen> {
               ),
             ),
           ),
+
           const SizedBox(height: 16),
+
           OutlinedButton.icon(
             onPressed: scanCode,
             icon: const Icon(Icons.qr_code_scanner),
-            label: const Text('Code scannen'),
+            label: const Text('Scannen'),
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: noteController,
-            maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Notitie',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          if (isGiftCard) ...[
-            const SizedBox(height: 24),
-            Text(
-              'Cadeaukaartgegevens',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: cardNumberController,
-              decoration: const InputDecoration(
-                labelText: 'Kaartnummer',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: pinCodeController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Pincode / krascode',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: initialBalanceController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Oorspronkelijk bedrag',
-                prefixText: '€ ',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: currentBalanceController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Resterend saldo',
-                prefixText: '€ ',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
+
           const SizedBox(height: 28),
+
           FilledButton.icon(
             onPressed: saveCard,
             icon: const Icon(Icons.save),

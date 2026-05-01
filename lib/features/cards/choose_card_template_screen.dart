@@ -31,12 +31,22 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     }
   }
 
-  Future<void> openManualForm() async {
+  ScannerMode get scannerMode {
+    return widget.type == 'QR-code' ? ScannerMode.qr : ScannerMode.barcode;
+  }
+
+  Future<void> openManualForm({
+    CardBrandTemplate? brand,
+  }) async {
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
         builder: (_) => AddCardScreen(
           initialType: widget.type,
+          initialName: brand?.name,
+          initialBrandId: brand?.id,
+          initialLogoAsset: brand?.logoAsset,
+          initialBrandColor: brand?.color.value.toString(),
         ),
       ),
     );
@@ -50,31 +60,32 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => ScannerScreen(
-  mode: widget.type == 'QR-code'
-      ? ScannerMode.qr
-      : ScannerMode.barcode,
-),
+          mode: scannerMode,
+          showManualAfterDelay: true,
+        ),
       ),
     );
 
     if (!mounted || code == null || code.isEmpty) return;
 
-    final result = await Navigator.push<Map<String, String>>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddCardScreen(
-          initialType: widget.type,
-          initialName: brand.name,
-          initialCode: code,
-          initialBrandId: brand.id,
-          initialLogoAsset: brand.logoAsset,
-          initialBrandColor: brand.color.value.toString(),
-        ),
-      ),
-    );
+    if (code == ScannerScreen.manualEntryResult) {
+      await openManualForm(brand: brand);
+      return;
+    }
 
-    if (!mounted || result == null) return;
-    Navigator.pop(context, result);
+    Navigator.pop(context, {
+      'type': widget.type,
+      'name': brand.name,
+      'code': code,
+      'note': '',
+      'cardNumber': '',
+      'pinCode': '',
+      'initialBalance': '',
+      'currentBalance': '',
+      'brandId': brand.id,
+      'logoAsset': brand.logoAsset,
+      'brandColor': brand.color.value.toString(),
+    });
   }
 
   @override
@@ -151,7 +162,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
           InkWell(
             borderRadius: BorderRadius.circular(18),
-            onTap: openManualForm,
+            onTap: () => openManualForm(),
             child: Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
@@ -162,10 +173,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
                 children: [
                   CircleAvatar(
                     backgroundColor: Color(0xFFF8E3EA),
-                    child: Icon(
-                      Icons.edit,
-                      color: Color(0xFFD51B46),
-                    ),
+                    child: Icon(Icons.edit, color: Color(0xFFD51B46)),
                   ),
                   SizedBox(width: 14),
                   Expanded(

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
@@ -63,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'brandId': result['brandId'] ?? '',
       'logoAsset': result['logoAsset'] ?? '',
       'brandColor': result['brandColor'] ?? '',
+      'customImage': result['customImage'] ?? '',
       'isFavorite': false,
       'createdAt': now,
       'updatedAt': now,
@@ -101,10 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const Text(
                   'Wat wil je toevoegen?',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 18),
                 _AddChoiceTile(
@@ -145,17 +145,11 @@ class _HomeScreenState extends State<HomeScreen> {
     Widget screen;
 
     if (index == 1) {
-      screen = CardsScreen(
-        onAdd: () => openAddFlow('Pasje'),
-      );
+      screen = CardsScreen(onAdd: () => openAddFlow('Pasje'));
     } else if (index == 2) {
-      screen = QrCodesScreen(
-        onAdd: () => openAddFlow('QR-code'),
-      );
+      screen = QrCodesScreen(onAdd: () => openAddFlow('QR-code'));
     } else {
-      screen = GiftCardsScreen(
-        onAdd: () => openAddFlow('Cadeaukaart'),
-      );
+      screen = GiftCardsScreen(onAdd: () => openAddFlow('Cadeaukaart'));
     }
 
     Navigator.push(
@@ -193,11 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
             actions: [
               IconButton(
                 onPressed: showAddChoices,
-                icon: const Icon(
-                  Icons.add,
-                  color: Color(0xFFD51B46),
-                  size: 32,
-                ),
+                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
               ),
             ],
           ),
@@ -210,9 +200,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 items: getPreviewItems(cards),
                 hasItems: cards.isNotEmpty,
                 actionTitle: cards.isEmpty ? 'Voeg kaart toe' : 'Al je kaarten',
-                onActionTap: cards.isEmpty
-                    ? () => openAddFlow('Pasje')
-                    : () => openTab(1),
+                onActionTap:
+                cards.isEmpty ? () => openAddFlow('Pasje') : () => openTab(1),
                 onItemTap: openCardDetail,
               ),
               const SizedBox(height: 30),
@@ -275,8 +264,6 @@ class _CategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayItems = [...items];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -298,7 +285,7 @@ class _CategorySection extends StatelessWidget {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: displayItems.length + 1,
+          itemCount: items.length + 1,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             mainAxisSpacing: 12,
@@ -306,7 +293,7 @@ class _CategorySection extends StatelessWidget {
             childAspectRatio: 1.45,
           ),
           itemBuilder: (context, index) {
-            if (index == displayItems.length) {
+            if (index == items.length) {
               return _ActionCard(
                 title: actionTitle,
                 icon: hasItems ? Icons.apps : Icons.add,
@@ -314,11 +301,12 @@ class _CategorySection extends StatelessWidget {
               );
             }
 
-            final item = displayItems[index];
+            final item = items[index];
 
             return _PreviewCard(
               title: item['name']?.toString() ?? 'Kaart',
               logoAsset: item['logoAsset']?.toString() ?? '',
+              customImage: item['customImage']?.toString() ?? '',
               brandColor: item['brandColor']?.toString() ?? '',
               onTap: () => onItemTap(item),
             );
@@ -332,12 +320,14 @@ class _CategorySection extends StatelessWidget {
 class _PreviewCard extends StatelessWidget {
   final String title;
   final String logoAsset;
+  final String customImage;
   final String brandColor;
   final VoidCallback onTap;
 
   const _PreviewCard({
     required this.title,
     required this.logoAsset,
+    required this.customImage,
     required this.brandColor,
     required this.onTap,
   });
@@ -348,17 +338,20 @@ class _PreviewCard extends StatelessWidget {
     return Colors.white;
   }
 
-  bool get hasLogo => logoAsset.isNotEmpty;
+  bool get hasAssetLogo => logoAsset.isNotEmpty;
+  bool get hasCustomLogo => customImage.isNotEmpty && File(customImage).existsSync();
 
   @override
   Widget build(BuildContext context) {
+    final useImage = hasAssetLogo || hasCustomLogo;
+
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: hasLogo ? cardColor : Colors.white,
+          color: hasAssetLogo ? cardColor : Colors.white,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -368,9 +361,16 @@ class _PreviewCard extends StatelessWidget {
             ),
           ],
         ),
-        child: hasLogo
+        child: useImage
             ? Center(
-          child: Image.asset(
+          child: hasCustomLogo
+              ? Image.file(
+            File(customImage),
+            fit: BoxFit.contain,
+            height: 72,
+            width: double.infinity,
+          )
+              : Image.asset(
             logoAsset,
             fit: BoxFit.contain,
             height: 72,
