@@ -3,14 +3,21 @@ import 'package:flutter/material.dart';
 import '../scanner/scanner_screen.dart';
 
 class AddCardScreen extends StatefulWidget {
-  const AddCardScreen({super.key});
+  final String initialType;
+  final String? initialName;
+
+  const AddCardScreen({
+    super.key,
+    this.initialType = 'Pasje',
+    this.initialName,
+  });
 
   @override
   State<AddCardScreen> createState() => _AddCardScreenState();
 }
 
 class _AddCardScreenState extends State<AddCardScreen> {
-  String selectedType = 'Pasje';
+  late String selectedType;
 
   final nameController = TextEditingController();
   final codeController = TextEditingController();
@@ -20,6 +27,13 @@ class _AddCardScreenState extends State<AddCardScreen> {
   final pinCodeController = TextEditingController();
   final initialBalanceController = TextEditingController();
   final currentBalanceController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    selectedType = widget.initialType;
+    nameController.text = widget.initialName ?? '';
+  }
 
   @override
   void dispose() {
@@ -74,8 +88,22 @@ class _AddCardScreenState extends State<AddCardScreen> {
     final isGiftCard = selectedType == 'Cadeaukaart';
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F4F5),
       appBar: AppBar(
-        title: const Text('Toevoegen'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          selectedType == 'Pasje'
+              ? 'Klantenkaart toevoegen'
+              : selectedType == 'QR-code'
+              ? 'QR-code toevoegen'
+              : 'Cadeaukaart toevoegen',
+          style: const TextStyle(
+            color: Color(0xFF3A3A3C),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Color(0xFF3A3A3C)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -85,7 +113,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
               ButtonSegment(
                 value: 'Pasje',
                 label: Text('Pasje'),
-                icon: Icon(Icons.credit_card),
+                icon: Icon(Icons.card_membership),
               ),
               ButtonSegment(
                 value: 'QR-code',
@@ -130,6 +158,14 @@ class _AddCardScreenState extends State<AddCardScreen> {
                 onPressed: scanCode,
               ),
             ),
+          ),
+
+          const SizedBox(height: 16),
+
+          OutlinedButton.icon(
+            onPressed: scanCode,
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('Code scannen'),
           ),
 
           const SizedBox(height: 16),
@@ -188,7 +224,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
             ),
           ],
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
 
           FilledButton.icon(
             onPressed: saveCard,
