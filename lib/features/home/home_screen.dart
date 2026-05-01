@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
+import '../../shared/widgets/main_bottom_nav.dart';
 import '../cards/card_detail_screen.dart';
 import '../cards/cards_screen.dart';
 import '../cards/choose_card_template_screen.dart';
@@ -43,27 +44,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return sorted.take(3).toList();
   }
 
-  dynamic _findKeyById(String id) {
-    for (final key in StorageService.cardsBox.keys) {
-      final item = StorageService.cardsBox.get(key);
-
-      if (item is Map && item['id'] == id) {
-        return key;
-      }
-    }
-
-    return null;
-  }
-
   Future<void> saveNewCard(
       Map<String, String> result, {
-        String? forcedType,
+        required String forcedType,
       }) async {
     final now = DateTime.now().toIso8601String();
 
     final Map<String, dynamic> card = {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'type': result['type'] ?? forcedType ?? '',
+      'type': result['type'] ?? forcedType,
       'name': result['name'] ?? '',
       'code': result['code'] ?? '',
       'note': result['note'] ?? '',
@@ -82,9 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await StorageService.cardsBox.add(card);
   }
 
-  Future<void> openAddScreen({
-    String type = 'Pasje',
-  }) async {
+  Future<void> openAddFlow(String type) async {
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
@@ -97,51 +84,77 @@ class _HomeScreenState extends State<HomeScreen> {
     await saveNewCard(result, forcedType: type);
   }
 
-  Future<void> deleteCard(String id) async {
-    final key = _findKeyById(id);
-
-    if (key != null) {
-      await StorageService.cardsBox.delete(key);
-    }
+  void showAddChoices() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Wat wil je toevoegen?',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _AddChoiceTile(
+                  icon: Icons.card_membership,
+                  title: 'Klantenkaart toevoegen',
+                  onTap: () {
+                    Navigator.pop(context);
+                    openAddFlow('Pasje');
+                  },
+                ),
+                _AddChoiceTile(
+                  icon: Icons.qr_code,
+                  title: 'QR-code toevoegen',
+                  onTap: () {
+                    Navigator.pop(context);
+                    openAddFlow('QR-code');
+                  },
+                ),
+                _AddChoiceTile(
+                  icon: Icons.card_giftcard,
+                  title: 'Cadeaukaart toevoegen',
+                  onTap: () {
+                    Navigator.pop(context);
+                    openAddFlow('Cadeaukaart');
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
-  Future<void> toggleFavorite(String id) async {
-    final key = _findKeyById(id);
+  void openTab(int index) {
+    if (index == 0) return;
 
-    if (key == null) return;
-
-    final oldItem = StorageService.cardsBox.get(key);
-
-    if (oldItem is! Map) return;
-
-    final item = Map<String, dynamic>.from(oldItem);
-    item['isFavorite'] = !(item['isFavorite'] == true);
-    item['updatedAt'] = DateTime.now().toIso8601String();
-
-    await StorageService.cardsBox.put(key, item);
-  }
-
-  void openAllCardsScreen(String type, List<Map<String, dynamic>> items) {
     Widget screen;
 
-    if (type == 'Pasje') {
+    if (index == 1) {
       screen = CardsScreen(
-        items: items,
-        onDelete: deleteCard,
-        onToggleFavorite: toggleFavorite,
-        onAdd: () => openAddScreen(type: 'Pasje'),
+        onAdd: () => openAddFlow('Pasje'),
       );
-    } else if (type == 'QR-code') {
+    } else if (index == 2) {
       screen = QrCodesScreen(
-        items: items,
-        onDelete: deleteCard,
-        onToggleFavorite: toggleFavorite,
+        onAdd: () => openAddFlow('QR-code'),
       );
     } else {
       screen = GiftCardsScreen(
-        items: items,
-        onDelete: deleteCard,
-        onToggleFavorite: toggleFavorite,
+        onAdd: () => openAddFlow('Cadeaukaart'),
       );
     }
 
@@ -177,6 +190,16 @@ class _HomeScreenState extends State<HomeScreen> {
             backgroundColor: Colors.white,
             elevation: 0,
             foregroundColor: const Color(0xFF333333),
+            actions: [
+              IconButton(
+                onPressed: showAddChoices,
+                icon: const Icon(
+                  Icons.add,
+                  color: Color(0xFFD51B46),
+                  size: 32,
+                ),
+              ),
+            ],
           ),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(18, 20, 18, 30),
@@ -188,24 +211,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 hasItems: cards.isNotEmpty,
                 actionTitle: cards.isEmpty ? 'Voeg kaart toe' : 'Al je kaarten',
                 onActionTap: cards.isEmpty
-                    ? () => openAddScreen(type: 'Pasje')
-                    : () => openAllCardsScreen('Pasje', cards),
+                    ? () => openAddFlow('Pasje')
+                    : () => openTab(1),
                 onItemTap: openCardDetail,
               ),
-              const SizedBox(height: 26),
+              const SizedBox(height: 30),
               _CategorySection(
-                title: 'QR Codes',
+                title: 'QR-codes',
                 icon: Icons.qr_code,
                 items: getPreviewItems(qrCodes),
                 hasItems: qrCodes.isNotEmpty,
                 actionTitle:
                 qrCodes.isEmpty ? 'Voeg QR-code toe' : 'Al je QR-codes',
                 onActionTap: qrCodes.isEmpty
-                    ? () => openAddScreen(type: 'QR-code')
-                    : () => openAllCardsScreen('QR-code', qrCodes),
+                    ? () => openAddFlow('QR-code')
+                    : () => openTab(2),
                 onItemTap: openCardDetail,
               ),
-              const SizedBox(height: 26),
+              const SizedBox(height: 30),
               _CategorySection(
                 title: 'Cadeaukaarten',
                 icon: Icons.card_giftcard,
@@ -215,11 +238,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? 'Voeg cadeaukaart toe'
                     : 'Al je cadeaukaarten',
                 onActionTap: giftCards.isEmpty
-                    ? () => openAddScreen(type: 'Cadeaukaart')
-                    : () => openAllCardsScreen('Cadeaukaart', giftCards),
+                    ? () => openAddFlow('Cadeaukaart')
+                    : () => openTab(3),
                 onItemTap: openCardDetail,
               ),
             ],
+          ),
+          bottomNavigationBar: MainBottomNav(
+            currentIndex: 0,
+            onTap: openTab,
           ),
         );
       },
@@ -248,7 +275,7 @@ class _CategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalCards = items.length + 1;
+    final displayItems = [...items];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,50 +295,50 @@ class _CategorySection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 14),
-        SizedBox(
-          height: 132,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: totalCards,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              if (index == items.length) {
-                return _ActionMiniCard(
-                  title: actionTitle,
-                  icon: hasItems ? Icons.apps : Icons.add,
-                  onTap: onActionTap,
-                );
-              }
-
-              final item = items[index];
-
-              return _PreviewMiniCard(
-                title: item['name']?.toString() ?? 'Kaart',
-                logoAsset: item['logoAsset']?.toString() ?? '',
-                brandColor: item['brandColor']?.toString() ?? '',
-                subtitle: item['isFavorite'] == true ? 'Favoriet' : 'Recent',
-                onTap: () => onItemTap(item),
-              );
-            },
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: displayItems.length + 1,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.45,
           ),
+          itemBuilder: (context, index) {
+            if (index == displayItems.length) {
+              return _ActionCard(
+                title: actionTitle,
+                icon: hasItems ? Icons.apps : Icons.add,
+                onTap: onActionTap,
+              );
+            }
+
+            final item = displayItems[index];
+
+            return _PreviewCard(
+              title: item['name']?.toString() ?? 'Kaart',
+              logoAsset: item['logoAsset']?.toString() ?? '',
+              brandColor: item['brandColor']?.toString() ?? '',
+              onTap: () => onItemTap(item),
+            );
+          },
         ),
       ],
     );
   }
 }
 
-class _PreviewMiniCard extends StatelessWidget {
+class _PreviewCard extends StatelessWidget {
   final String title;
   final String logoAsset;
   final String brandColor;
-  final String subtitle;
   final VoidCallback onTap;
 
-  const _PreviewMiniCard({
+  const _PreviewCard({
     required this.title,
     required this.logoAsset,
     required this.brandColor,
-    required this.subtitle,
     required this.onTap,
   });
 
@@ -321,66 +348,46 @@ class _PreviewMiniCard extends StatelessWidget {
     return Colors.white;
   }
 
-  bool get hasBrandStyle => logoAsset.isNotEmpty && brandColor.isNotEmpty;
+  bool get hasLogo => logoAsset.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 155,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: hasBrandStyle ? cardColor : Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          child: hasBrandStyle
-              ? Center(
-            child: Image.asset(
-              logoAsset,
-              fit: BoxFit.contain,
-              height: 70,
-              width: double.infinity,
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: hasLogo ? cardColor : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
             ),
-          )
-              : Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.credit_card,
-                color: Color(0xFFD51B46),
-                size: 28,
-              ),
-              const Spacer(),
-              Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 16,
-                  height: 1.15,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF333333),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.black45,
-                ),
-              ),
-            ],
+          ],
+        ),
+        child: hasLogo
+            ? Center(
+          child: Image.asset(
+            logoAsset,
+            fit: BoxFit.contain,
+            height: 72,
+            width: double.infinity,
+          ),
+        )
+            : Center(
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF333333),
+            ),
           ),
         ),
       ),
@@ -388,12 +395,12 @@ class _PreviewMiniCard extends StatelessWidget {
   }
 }
 
-class _ActionMiniCard extends StatelessWidget {
+class _ActionCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final VoidCallback onTap;
 
-  const _ActionMiniCard({
+  const _ActionCard({
     required this.title,
     required this.icon,
     required this.onTap,
@@ -401,37 +408,62 @@ class _ActionMiniCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 155,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFD51B46),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: Colors.white, size: 30),
-              const Spacer(),
-              Text(
-                title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  height: 1.15,
-                  fontWeight: FontWeight.w800,
-                ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFD51B46),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: Colors.white, size: 30),
+            const Spacer(),
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                height: 1.15,
+                fontWeight: FontWeight.w800,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _AddChoiceTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const _AddChoiceTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      onTap: onTap,
+      leading: CircleAvatar(
+        backgroundColor: const Color(0xFFF8E3EA),
+        child: Icon(icon, color: const Color(0xFFD51B46)),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+      trailing: const Icon(Icons.chevron_right),
     );
   }
 }

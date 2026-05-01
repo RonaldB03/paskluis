@@ -1,167 +1,171 @@
 import 'package:flutter/material.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 
+import '../../data/services/storage_service.dart';
+import '../../data/templates/card_templates.dart';
+import '../../shared/widgets/main_bottom_nav.dart';
+import '../gift_cards/gift_cards_screen.dart';
+import '../home/home_screen.dart';
+import '../qr_codes/qr_codes_screen.dart';
 import 'add_card_screen.dart';
 import 'card_detail_screen.dart';
 
 class CardsScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> items;
-  final Function(String id) onDelete;
-  final Function(String id) onToggleFavorite;
   final VoidCallback onAdd;
 
   const CardsScreen({
     super.key,
-    required this.items,
-    required this.onDelete,
-    required this.onToggleFavorite,
     required this.onAdd,
   });
 
-  static const defaultCards = [
-    _DefaultCard(
-      name: 'Albert Heijn',
-      logoAsset: 'assets/logos/albert_heijn.png',
-      color: Color(0xFF00A6D6),
-    ),
-    _DefaultCard(
-      name: 'Kruidvat',
-      logoAsset: 'assets/logos/kruidvat.png',
-      color: Color(0xFFE30613),
-    ),
-    _DefaultCard(
-      name: 'Jumbo',
-      logoAsset: 'assets/logos/jumbo.png',
-      color: Color(0xFFFFC400),
-    ),
-    _DefaultCard(
-      name: 'HEMA',
-      logoAsset: 'assets/logos/hema.png',
-      color: Color(0xFFE30613),
-    ),
-  ];
+  List<Map<String, dynamic>> getItems() {
+    return StorageService.cardsBox.values
+        .where((item) => item is Map && item['type'] == 'Pasje')
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
+
+  void openTab(BuildContext context, int index) {
+    if (index == 0) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+            (route) => false,
+      );
+    } else if (index == 1) {
+      return;
+    } else if (index == 2) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => QrCodesScreen(onAdd: () {}),
+        ),
+      );
+    } else if (index == 3) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GiftCardsScreen(onAdd: () {}),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F4F6),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          'Klantenkaarten',
-          style: TextStyle(
-            color: Color(0xFF333333),
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
-            onPressed: onAdd,
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(24, 36, 24, 28),
-        children: [
-          if (items.isEmpty) ...[
-            const Text(
-              'Nog geen klantenkaarten toegevoegd',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 34,
-                height: 1.12,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF444446),
-              ),
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              'Selecteer een winkel of tik op + om direct te scannen',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                height: 1.3,
-                color: Color(0xFF555557),
-              ),
-            ),
-            const SizedBox(height: 48),
-            _DefaultCardsGrid(),
-          ] else ...[
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: items.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 1.55,
-              ),
-              itemBuilder: (context, index) {
-                final item = items[index];
+    return ValueListenableBuilder<Box>(
+      valueListenable: StorageService.cardsBox.listenable(),
+      builder: (context, box, _) {
+        final items = getItems();
 
-                return InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => CardDetailScreen(item: item),
-                      ),
+        return Scaffold(
+          backgroundColor: const Color(0xFFF4F4F6),
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.home_rounded, color: Color(0xFFD51B46)),
+              onPressed: () => openTab(context, 0),
+            ),
+            backgroundColor: Colors.white,
+            elevation: 0,
+            centerTitle: true,
+            title: const Text(
+              'Klantenkaarten',
+              style: TextStyle(
+                color: Color(0xFF333333),
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(
+                  Icons.add,
+                  color: Color(0xFFD51B46),
+                  size: 32,
+                ),
+                onPressed: onAdd,
+              ),
+            ],
+          ),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
+            children: [
+              if (items.isEmpty) ...[
+                const Text(
+                  'Nog geen klantenkaarten toegevoegd',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 32,
+                    height: 1.12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF444446),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Selecteer een winkel of tik op + om een klantenkaart toe te voegen.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 17,
+                    height: 1.3,
+                    color: Color(0xFF555557),
+                  ),
+                ),
+                const SizedBox(height: 36),
+                _TemplateGrid(),
+              ] else ...[
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: items.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 1.45,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+
+                    return _StoredCardTile(
+                      item: item,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CardDetailScreen(item: item),
+                          ),
+                        );
+                      },
                     );
                   },
-                  child: Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 12,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        item['name']?.toString() ?? 'Kaart',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF333333),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ],
-      ),
+                ),
+              ],
+            ],
+          ),
+          bottomNavigationBar: MainBottomNav(
+            currentIndex: 1,
+            onTap: (index) => openTab(context, index),
+          ),
+        );
+      },
     );
   }
 }
 
-class _DefaultCardsGrid extends StatelessWidget {
+class _TemplateGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: CardsScreen.defaultCards.length,
+      itemCount: cardBrandTemplates.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
-        childAspectRatio: 1.65,
+        childAspectRatio: 1.45,
       ),
       itemBuilder: (context, index) {
-        final card = CardsScreen.defaultCards[index];
+        final brand = cardBrandTemplates[index];
 
         return InkWell(
           borderRadius: BorderRadius.circular(18),
@@ -171,7 +175,10 @@ class _DefaultCardsGrid extends StatelessWidget {
               MaterialPageRoute(
                 builder: (_) => AddCardScreen(
                   initialType: 'Pasje',
-                  initialName: card.name,
+                  initialName: brand.name,
+                  initialBrandId: brand.id,
+                  initialLogoAsset: brand.logoAsset,
+                  initialBrandColor: brand.color.value.toString(),
                 ),
               ),
             );
@@ -179,15 +186,15 @@ class _DefaultCardsGrid extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: card.color,
+              color: brand.color,
               borderRadius: BorderRadius.circular(18),
             ),
             child: Center(
               child: Image.asset(
-                card.logoAsset,
+                brand.logoAsset,
                 fit: BoxFit.contain,
+                height: 74,
                 width: double.infinity,
-                height: 76,
               ),
             ),
           ),
@@ -197,14 +204,65 @@ class _DefaultCardsGrid extends StatelessWidget {
   }
 }
 
-class _DefaultCard {
-  final String name;
-  final String logoAsset;
-  final Color color;
+class _StoredCardTile extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final VoidCallback onTap;
 
-  const _DefaultCard({
-    required this.name,
-    required this.logoAsset,
-    required this.color,
+  const _StoredCardTile({
+    required this.item,
+    required this.onTap,
   });
+
+  Color get cardColor {
+    final parsed = int.tryParse(item['brandColor']?.toString() ?? '');
+    if (parsed != null) return Color(parsed);
+    return Colors.white;
+  }
+
+  bool get hasLogo => (item['logoAsset']?.toString() ?? '').isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    final logoAsset = item['logoAsset']?.toString() ?? '';
+    final title = item['name']?.toString() ?? 'Kaart';
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: hasLogo ? cardColor : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: hasLogo
+            ? Center(
+          child: Image.asset(
+            logoAsset,
+            fit: BoxFit.contain,
+            height: 76,
+            width: double.infinity,
+          ),
+        )
+            : Center(
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF333333),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
