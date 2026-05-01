@@ -33,15 +33,12 @@
     <key>LSRequiresIPhoneOS</key>
     <true/>
 
-    <!-- 🔥 CAMERA (scanner) -->
     <key>NSCameraUsageDescription</key>
     <string>PasKluis gebruikt de camera om barcodes en QR-codes te scannen.</string>
 
-    <!-- 🔒 BIOMETRIE -->
     <key>NSFaceIDUsageDescription</key>
-    <string>Gebruik Face ID om beveiligde gegevens zoals pincodes te bekijken.</string>
+    <string>PasKluis gebruikt Face ID om beveiligde gegevens zoals pincodes te bekijken.</string>
 
-    <!-- UI instellingen -->
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
 
@@ -51,11 +48,15 @@
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
 
     <key>UISupportedInterfaceOrientations~ipad</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
         <string>UIInterfaceOrientationLandscapeLeft</string>
         <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
