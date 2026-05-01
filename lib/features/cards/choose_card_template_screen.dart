@@ -49,7 +49,11 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     final code = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (_) => const ScannerScreen(),
+        builder: (_) => ScannerScreen(
+  mode: widget.type == 'QR-code'
+      ? ScannerMode.qr
+      : ScannerMode.barcode,
+),
       ),
     );
 
