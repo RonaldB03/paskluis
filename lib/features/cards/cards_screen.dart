@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
@@ -8,7 +10,7 @@ import '../gift_cards/gift_cards_screen.dart';
 import '../home/home_screen.dart';
 import '../qr_codes/qr_codes_screen.dart';
 import 'add_card_screen.dart';
-import 'card_detail_screen.dart';
+import 'card_view_screen.dart';
 
 class CardsScreen extends StatelessWidget {
   final VoidCallback onAdd;
@@ -36,16 +38,12 @@ class CardsScreen extends StatelessWidget {
     } else if (index == 2) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => QrCodesScreen(onAdd: () {}),
-        ),
+        MaterialPageRoute(builder: (_) => QrCodesScreen(onAdd: () {})),
       );
     } else if (index == 3) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => GiftCardsScreen(onAdd: () {}),
-        ),
+        MaterialPageRoute(builder: (_) => GiftCardsScreen(onAdd: () {})),
       );
     }
   }
@@ -76,11 +74,7 @@ class CardsScreen extends StatelessWidget {
             ),
             actions: [
               IconButton(
-                icon: const Icon(
-                  Icons.add,
-                  color: Color(0xFFD51B46),
-                  size: 32,
-                ),
+                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
                 onPressed: onAdd,
               ),
             ],
@@ -131,7 +125,10 @@ class CardsScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => CardDetailScreen(item: item),
+                            builder: (_) => CardViewScreen(
+                              items: items,
+                              initialIndex: index,
+                            ),
                           ),
                         );
                       },
@@ -219,20 +216,28 @@ class _StoredCardTile extends StatelessWidget {
     return Colors.white;
   }
 
-  bool get hasLogo => (item['logoAsset']?.toString() ?? '').isNotEmpty;
+  bool get hasAssetLogo => (item['logoAsset']?.toString() ?? '').isNotEmpty;
+
+  bool get hasCustomLogo {
+    final path = item['customImage']?.toString() ?? '';
+    return path.isNotEmpty && File(path).existsSync();
+  }
 
   @override
   Widget build(BuildContext context) {
     final logoAsset = item['logoAsset']?.toString() ?? '';
+    final customImage = item['customImage']?.toString() ?? '';
     final title = item['name']?.toString() ?? 'Kaart';
+    final useImage = hasAssetLogo || hasCustomLogo;
 
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: hasLogo ? cardColor : Colors.white,
+          color: hasAssetLogo ? cardColor : Colors.white,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
@@ -242,9 +247,16 @@ class _StoredCardTile extends StatelessWidget {
             ),
           ],
         ),
-        child: hasLogo
+        child: useImage
             ? Center(
-          child: Image.asset(
+          child: hasCustomLogo
+              ? Image.file(
+            File(customImage),
+            fit: BoxFit.contain,
+            height: 76,
+            width: double.infinity,
+          )
+              : Image.asset(
             logoAsset,
             fit: BoxFit.contain,
             height: 76,
