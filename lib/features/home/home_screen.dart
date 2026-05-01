@@ -6,6 +6,7 @@ import '../cards/add_card_screen.dart';
 import '../cards/cards_screen.dart';
 import '../gift_cards/gift_cards_screen.dart';
 import '../qr_codes/qr_codes_screen.dart';
+import '../scanner/scanner_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,23 +18,31 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
 
-  Future<void> openAddScreen({String? type}) async {
-    final result = await Navigator.push<Map<String, String>>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AddCardScreen(
-          initialType: type ?? 'Pasje',
-        ),
-      ),
-    );
+  List<Map<String, dynamic>> getItemsByType(String type) {
+    return StorageService.cardsBox.values
+        .where((item) => item is Map && item['type'] == type)
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+  }
 
-    if (result == null) return;
+  dynamic _findKeyById(String id) {
+    for (final key in StorageService.cardsBox.keys) {
+      final item = StorageService.cardsBox.get(key);
 
+      if (item is Map && item['id'] == id) {
+        return key;
+      }
+    }
+
+    return null;
+  }
+
+  Future<void> saveNewCard(Map<String, String> result, {String? forcedType}) async {
     final now = DateTime.now().toIso8601String();
 
     final Map<String, dynamic> card = {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'type': result['type'] ?? type ?? '',
+      'type': result['type'] ?? forcedType ?? '',
       'name': result['name'] ?? '',
       'code': result['code'] ?? '',
       'note': result['note'] ?? '',
@@ -63,23 +72,41 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  List<Map<String, dynamic>> getItemsByType(String type) {
-    return StorageService.cardsBox.values
-        .where((item) => item is Map && item['type'] == type)
-        .map((item) => Map<String, dynamic>.from(item as Map))
-        .toList();
+  Future<void> openAddScreen({
+    String type = 'Pasje',
+    String? initialName,
+    String? initialCode,
+  }) async {
+    final result = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddCardScreen(
+          initialType: type,
+          initialName: initialName,
+          initialCode: initialCode,
+        ),
+      ),
+    );
+
+    if (result == null) return;
+
+    await saveNewCard(result, forcedType: type);
   }
 
-  dynamic _findKeyById(String id) {
-    for (final key in StorageService.cardsBox.keys) {
-      final item = StorageService.cardsBox.get(key);
+  Future<void> openScannerForLoyaltyCard() async {
+    final code = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ScannerScreen(),
+      ),
+    );
 
-      if (item is Map && item['id'] == id) {
-        return key;
-      }
-    }
+    if (!mounted || code == null || code.isEmpty) return;
 
-    return null;
+    await openAddScreen(
+      type: 'Pasje',
+      initialCode: code,
+    );
   }
 
   Future<void> deleteCard(String id) async {
@@ -117,7 +144,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final screens = [
           CardsScreen(
-            onAdd: () => openAddScreen(type: 'Pasje'),
+            items: cards,
+            onDelete: deleteCard,
+            onToggleFavorite: toggleFavorite,
+            onAdd: openScannerForLoyaltyCard,
           ),
           QrCodesScreen(
             items: qrCodes,

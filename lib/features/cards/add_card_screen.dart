@@ -5,11 +5,13 @@ import '../scanner/scanner_screen.dart';
 class AddCardScreen extends StatefulWidget {
   final String initialType;
   final String? initialName;
+  final String? initialCode;
 
   const AddCardScreen({
     super.key,
     this.initialType = 'Pasje',
     this.initialName,
+    this.initialCode,
   });
 
   @override
@@ -33,6 +35,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
     super.initState();
     selectedType = widget.initialType;
     nameController.text = widget.initialName ?? '';
+    codeController.text = widget.initialCode ?? '';
   }
 
   @override
