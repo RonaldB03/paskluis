@@ -17,11 +17,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
 
-  Future<void> openAddScreen() async {
+  Future<void> openAddScreen({String? type}) async {
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
-        builder: (_) => const AddCardScreen(),
+        builder: (_) => AddCardScreen(
+          initialType: type,
+        ),
       ),
     );
 
@@ -31,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final Map<String, dynamic> card = {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'type': result['type'] ?? '',
+      'type': result['type'] ?? type ?? '',
       'name': result['name'] ?? '',
       'code': result['code'] ?? '',
       'note': result['note'] ?? '',
@@ -115,9 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final screens = [
           CardsScreen(
-            items: cards,
-            onDelete: deleteCard,
-            onToggleFavorite: toggleFavorite,
+            onAdd: () => openAddScreen(type: 'Pasje'),
           ),
           QrCodesScreen(
             items: qrCodes,
@@ -132,15 +132,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ];
 
         return Scaffold(
-          appBar: AppBar(
-            title: const Text('PasKluis'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: openAddScreen,
-              ),
-            ],
-          ),
           body: screens[_index],
           bottomNavigationBar: NavigationBar(
             selectedIndex: _index,
@@ -149,8 +140,8 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             destinations: const [
               NavigationDestination(
-                icon: Icon(Icons.credit_card),
-                label: 'Pasjes',
+                icon: Icon(Icons.card_membership),
+                label: 'Klantenkaarten',
               ),
               NavigationDestination(
                 icon: Icon(Icons.qr_code),
