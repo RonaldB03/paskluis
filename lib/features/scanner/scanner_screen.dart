@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+enum ScannerMode {
+  barcode,
+  qr,
+}
+
 class ScannerScreen extends StatefulWidget {
-  const ScannerScreen({super.key});
+  final ScannerMode mode;
+
+  const ScannerScreen({
+    super.key,
+    required this.mode,
+  });
 
   @override
   State<ScannerScreen> createState() => _ScannerScreenState();
@@ -25,10 +35,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isQR = widget.mode == ScannerMode.qr;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Scannen'),
+        title: Text(isQR ? 'QR-code scannen' : 'Barcode scannen'),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -38,6 +50,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
           MobileScanner(
             onDetect: handleDetect,
           ),
+
+          /// SCAN FRAME + ICON
           Center(
             child: Container(
               width: 260,
@@ -49,25 +63,31 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   width: 4,
                 ),
               ),
-              child: const Center(
+              child: Center(
                 child: Icon(
-                  Icons.qr_code_scanner_rounded,
+                  isQR
+                      ? Icons.qr_code_scanner_rounded
+                      : Icons.view_week_rounded, // 👈 barcode look
                   color: Colors.white,
-                  size: 78,
+                  size: 80,
                 ),
               ),
             ),
           ),
+
+          /// ONDERTEKST
           Positioned(
             left: 24,
             right: 24,
             bottom: 50,
             child: Column(
               children: [
-                const Text(
-                  'Richt de camera op de barcode of QR-code',
+                Text(
+                  isQR
+                      ? 'Richt de camera op de QR-code'
+                      : 'Richt de camera op de barcode',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.w600,

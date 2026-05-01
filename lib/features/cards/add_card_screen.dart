@@ -60,7 +60,11 @@ class _AddCardScreenState extends State<AddCardScreen> {
     final result = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (_) => const ScannerScreen(),
+        builder: (_) => ScannerScreen(
+  mode: selectedType == 'QR-code'
+      ? ScannerMode.qr
+      : ScannerMode.barcode,
+),
       ),
     );
 
