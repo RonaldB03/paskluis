@@ -2,11 +2,24 @@ workflows:
   ios-release:
     name: iOS Release Build
     max_build_duration: 60
+
+    integrations:
+      app_store_connect: Codemagic
+
     environment:
       flutter: stable
       xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: nl.paskluis.app
+
     scripts:
       - flutter pub get
-      - flutter build ipa --release
+      - flutter build ipa --release --export-options-plist=$CM_EXPORT_OPTIONS_PLIST
+
     artifacts:
       - build/ios/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        auth: integration
