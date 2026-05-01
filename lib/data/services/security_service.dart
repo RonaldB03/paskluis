@@ -15,7 +15,6 @@ class SecurityService {
       return await _auth.authenticate(
         localizedReason: 'Bevestig je identiteit om de pincode te bekijken',
         biometricOnly: false,
-        stickyAuth: true,
       );
     } catch (_) {
       return false;
