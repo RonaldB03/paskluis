@@ -6,12 +6,18 @@ class AddCardScreen extends StatefulWidget {
   final String initialType;
   final String? initialName;
   final String? initialCode;
+  final String? initialBrandId;
+  final String? initialLogoAsset;
+  final String? initialBrandColor;
 
   const AddCardScreen({
     super.key,
     this.initialType = 'Pasje',
     this.initialName,
     this.initialCode,
+    this.initialBrandId,
+    this.initialLogoAsset,
+    this.initialBrandColor,
   });
 
   @override
@@ -83,6 +89,9 @@ class _AddCardScreenState extends State<AddCardScreen> {
       'pinCode': pinCodeController.text.trim(),
       'initialBalance': initialBalanceController.text.trim(),
       'currentBalance': currentBalanceController.text.trim(),
+      'brandId': widget.initialBrandId ?? '',
+      'logoAsset': widget.initialLogoAsset ?? '',
+      'brandColor': widget.initialBrandColor ?? '',
     });
   }
 
@@ -95,61 +104,28 @@ class _AddCardScreenState extends State<AddCardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        foregroundColor: const Color(0xFF3A3A3C),
         title: Text(
           selectedType == 'Pasje'
               ? 'Klantenkaart toevoegen'
               : selectedType == 'QR-code'
               ? 'QR-code toevoegen'
               : 'Cadeaukaart toevoegen',
-          style: const TextStyle(
-            color: Color(0xFF3A3A3C),
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
-        iconTheme: const IconThemeData(color: Color(0xFF3A3A3C)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(
-                value: 'Pasje',
-                label: Text('Pasje'),
-                icon: Icon(Icons.card_membership),
-              ),
-              ButtonSegment(
-                value: 'QR-code',
-                label: Text('QR'),
-                icon: Icon(Icons.qr_code),
-              ),
-              ButtonSegment(
-                value: 'Cadeaukaart',
-                label: Text('Cadeau'),
-                icon: Icon(Icons.card_giftcard),
-              ),
-            ],
-            selected: {selectedType},
-            onSelectionChanged: (value) {
-              setState(() {
-                selectedType = value.first;
-              });
-            },
-          ),
-
-          const SizedBox(height: 24),
-
           TextField(
             controller: nameController,
             decoration: const InputDecoration(
               labelText: 'Naam',
-              hintText: 'Bijv. Albert Heijn Bonuskaart',
+              hintText: 'Bijv. Albert Heijn',
               border: OutlineInputBorder(),
             ),
           ),
-
           const SizedBox(height: 16),
-
           TextField(
             controller: codeController,
             decoration: InputDecoration(
@@ -162,17 +138,13 @@ class _AddCardScreenState extends State<AddCardScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 16),
-
           OutlinedButton.icon(
             onPressed: scanCode,
             icon: const Icon(Icons.qr_code_scanner),
             label: const Text('Code scannen'),
           ),
-
           const SizedBox(height: 16),
-
           TextField(
             controller: noteController,
             maxLines: 3,
@@ -181,7 +153,6 @@ class _AddCardScreenState extends State<AddCardScreen> {
               border: OutlineInputBorder(),
             ),
           ),
-
           if (isGiftCard) ...[
             const SizedBox(height: 24),
             Text(
@@ -226,9 +197,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
               ),
             ),
           ],
-
           const SizedBox(height: 28),
-
           FilledButton.icon(
             onPressed: saveCard,
             icon: const Icon(Icons.save),
