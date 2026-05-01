@@ -22,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => AddCardScreen(
-          initialType: type,
+          initialType: type ?? 'Pasje',
         ),
       ),
     );
