@@ -5,7 +5,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
-import '../cards/card_detail_screen.dart';
+import '../cards/card_view_screen.dart';
 import '../cards/cards_screen.dart';
 import '../cards/choose_card_template_screen.dart';
 import '../gift_cards/gift_cards_screen.dart';
@@ -30,15 +30,31 @@ class _HomeScreenState extends State<HomeScreen> {
     final favorites = items.where((item) => item['isFavorite'] == true).toList();
 
     if (favorites.isNotEmpty) {
+      favorites.sort((a, b) {
+        final aDate = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+
+        return bDate.compareTo(aDate);
+      });
+
       return favorites.take(3).toList();
     }
 
     final sorted = [...items];
+
     sorted.sort((a, b) {
-      final aDate = DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
+      final aLastUsed = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '');
+      final bLastUsed = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '');
+
+      final aCreated = DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
+      final bCreated = DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
+
+      final aDate = aLastUsed ?? aCreated;
+      final bDate = bLastUsed ?? bCreated;
 
       return bDate.compareTo(aDate);
     });
@@ -69,6 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'isFavorite': false,
       'createdAt': now,
       'updatedAt': now,
+      'lastUsedAt': '',
     };
 
     await StorageService.cardsBox.add(card);
@@ -158,11 +175,23 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void openCardDetail(Map<String, dynamic> item) {
+  void openCardView(
+      List<Map<String, dynamic>> categoryItems,
+      Map<String, dynamic> selectedItem,
+      ) {
+    final selectedId = selectedItem['id']?.toString() ?? '';
+
+    final initialIndex = categoryItems.indexWhere(
+          (item) => item['id']?.toString() == selectedId,
+    );
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CardDetailScreen(item: item),
+        builder: (_) => CardViewScreen(
+          items: categoryItems,
+          initialIndex: initialIndex < 0 ? 0 : initialIndex,
+        ),
       ),
     );
   }
@@ -202,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 actionTitle: cards.isEmpty ? 'Voeg kaart toe' : 'Al je kaarten',
                 onActionTap:
                 cards.isEmpty ? () => openAddFlow('Pasje') : () => openTab(1),
-                onItemTap: openCardDetail,
+                onItemTap: (item) => openCardView(cards, item),
               ),
               const SizedBox(height: 30),
               _CategorySection(
@@ -215,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onActionTap: qrCodes.isEmpty
                     ? () => openAddFlow('QR-code')
                     : () => openTab(2),
-                onItemTap: openCardDetail,
+                onItemTap: (item) => openCardView(qrCodes, item),
               ),
               const SizedBox(height: 30),
               _CategorySection(
@@ -229,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 onActionTap: giftCards.isEmpty
                     ? () => openAddFlow('Cadeaukaart')
                     : () => openTab(3),
-                onItemTap: openCardDetail,
+                onItemTap: (item) => openCardView(giftCards, item),
               ),
             ],
           ),
@@ -339,7 +368,9 @@ class _PreviewCard extends StatelessWidget {
   }
 
   bool get hasAssetLogo => logoAsset.isNotEmpty;
-  bool get hasCustomLogo => customImage.isNotEmpty && File(customImage).existsSync();
+
+  bool get hasCustomLogo =>
+      customImage.isNotEmpty && File(customImage).existsSync();
 
   @override
   Widget build(BuildContext context) {

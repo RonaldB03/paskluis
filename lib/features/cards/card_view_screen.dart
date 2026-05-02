@@ -6,6 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../data/services/storage_service.dart';
+import 'edit_card_screen.dart';
+
 class CardViewScreen extends StatefulWidget {
   final List<Map<String, dynamic>> items;
   final int initialIndex;
@@ -22,6 +25,7 @@ class CardViewScreen extends StatefulWidget {
 
 class _CardViewScreenState extends State<CardViewScreen> {
   late final PageController pageController;
+  late List<Map<String, dynamic>> items;
   late int currentIndex;
   double? previousBrightness;
 
@@ -29,15 +33,17 @@ class _CardViewScreenState extends State<CardViewScreen> {
   void initState() {
     super.initState();
 
-    currentIndex = widget.initialIndex;
+    items = widget.items.map((item) => Map<String, dynamic>.from(item)).toList();
+    currentIndex = widget.initialIndex.clamp(0, items.length - 1);
 
     pageController = PageController(
-      initialPage: widget.initialIndex,
+      initialPage: currentIndex,
       viewportFraction: 0.84,
     );
 
     HapticFeedback.lightImpact();
     _setupScreen();
+    markCurrentCardAsUsed();
   }
 
   Future<void> _setupScreen() async {
@@ -63,6 +69,148 @@ class _CardViewScreenState extends State<CardViewScreen> {
 
     WakelockPlus.disable();
     super.dispose();
+  }
+
+  dynamic _findKeyById(String id) {
+    for (final key in StorageService.cardsBox.keys) {
+      final item = StorageService.cardsBox.get(key);
+
+      if (item is Map && item['id'] == id) {
+        return key;
+      }
+    }
+
+    return null;
+  }
+
+  Future<void> markCurrentCardAsUsed() async {
+    if (items.isEmpty) return;
+
+    final item = Map<String, dynamic>.from(items[currentIndex]);
+    final id = item['id']?.toString() ?? '';
+
+    if (id.isEmpty) return;
+
+    final key = _findKeyById(id);
+    if (key == null) return;
+
+    item['lastUsedAt'] = DateTime.now().toIso8601String();
+    item['updatedAt'] = DateTime.now().toIso8601String();
+
+    await StorageService.cardsBox.put(key, item);
+
+    if (!mounted) return;
+
+    setState(() {
+      items[currentIndex] = item;
+    });
+  }
+
+  Future<void> updateCurrentItem(Map<String, dynamic> updatedItem) async {
+    final id = updatedItem['id']?.toString() ?? '';
+    final key = _findKeyById(id);
+
+    if (key == null) return;
+
+    updatedItem['updatedAt'] = DateTime.now().toIso8601String();
+
+    await StorageService.cardsBox.put(key, updatedItem);
+
+    if (!mounted) return;
+
+    setState(() {
+      items[currentIndex] = Map<String, dynamic>.from(updatedItem);
+    });
+  }
+
+  Future<void> deleteCurrentItem() async {
+    final item = items[currentIndex];
+    final id = item['id']?.toString() ?? '';
+    final key = _findKeyById(id);
+
+    if (key == null) return;
+
+    await StorageService.cardsBox.delete(key);
+
+    if (!mounted) return;
+
+    HapticFeedback.mediumImpact();
+
+    if (items.length == 1) {
+      Navigator.pop(context);
+      return;
+    }
+
+    setState(() {
+      items.removeAt(currentIndex);
+
+      if (currentIndex >= items.length) {
+        currentIndex = items.length - 1;
+      }
+    });
+
+    pageController.jumpToPage(currentIndex);
+    await markCurrentCardAsUsed();
+  }
+
+  Future<void> toggleFavoriteCurrentItem() async {
+    final item = Map<String, dynamic>.from(items[currentIndex]);
+
+    item['isFavorite'] = !(item['isFavorite'] == true);
+    item['updatedAt'] = DateTime.now().toIso8601String();
+
+    await updateCurrentItem(item);
+
+    HapticFeedback.selectionClick();
+  }
+
+  Future<void> openEdit(Map<String, dynamic> item) async {
+    HapticFeedback.selectionClick();
+
+    final updatedItem = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditCardScreen(item: item),
+      ),
+    );
+
+    if (updatedItem == null) return;
+
+    await updateCurrentItem(updatedItem);
+  }
+
+  Future<void> confirmDelete() async {
+    final item = items[currentIndex];
+    final name = item['name']?.toString() ?? 'deze kaart';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Kaart verwijderen?'),
+          content: Text(
+            'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuleren'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Verwijderen'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await deleteCurrentItem();
+    }
   }
 
   Barcode getBarcodeType(Map<String, dynamic> item) {
@@ -97,6 +245,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
     final name = item['name']?.toString() ?? 'Kaart';
     final note = item['note']?.toString() ?? '';
     final type = item['type']?.toString() ?? '';
+    final isFavorite = item['isFavorite'] == true;
 
     showModalBottomSheet(
       context: context,
@@ -133,20 +282,50 @@ class _CardViewScreenState extends State<CardViewScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 _DetailRow(label: 'Type', value: type),
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
                 _DetailRow(label: 'Naam', value: name),
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
                 _DetailRow(
                   label: 'Code',
                   value: code,
                   showCopy: true,
                 ),
                 if (note.isNotEmpty) ...[
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 16),
                   _DetailRow(label: 'Notitie', value: note),
                 ],
+                const SizedBox(height: 24),
+                _ActionButton(
+                  icon: isFavorite ? Icons.star : Icons.star_border,
+                  label: isFavorite
+                      ? 'Verwijder uit favorieten'
+                      : 'Maak favoriet',
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await toggleFavoriteCurrentItem();
+                  },
+                ),
+                const SizedBox(height: 10),
+                _ActionButton(
+                  icon: Icons.edit_outlined,
+                  label: 'Bewerken',
+                  onTap: () {
+                    Navigator.pop(context);
+                    openEdit(items[currentIndex]);
+                  },
+                ),
+                const SizedBox(height: 10),
+                _ActionButton(
+                  icon: Icons.delete_outline,
+                  label: 'Verwijderen',
+                  destructive: true,
+                  onTap: () {
+                    Navigator.pop(context);
+                    confirmDelete();
+                  },
+                ),
               ],
             ),
           ),
@@ -157,6 +336,13 @@ class _CardViewScreenState extends State<CardViewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF8F8FA),
+        body: Center(child: Text('Geen kaarten')),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8FA),
       appBar: AppBar(
@@ -169,13 +355,14 @@ class _CardViewScreenState extends State<CardViewScreen> {
           Expanded(
             child: PageView.builder(
               controller: pageController,
-              itemCount: widget.items.length,
+              itemCount: items.length,
               onPageChanged: (index) {
                 HapticFeedback.selectionClick();
                 setState(() => currentIndex = index);
+                markCurrentCardAsUsed();
               },
               itemBuilder: (context, index) {
-                final item = widget.items[index];
+                final item = items[index];
 
                 return AnimatedBuilder(
                   animation: pageController,
@@ -207,16 +394,16 @@ class _CardViewScreenState extends State<CardViewScreen> {
                     item: item,
                     barcode: getBarcodeType(item),
                     isQr: isQrCode(item),
-                    onDetails: () => openDetails(item),
+                    onDetails: () => openDetails(items[currentIndex]),
                   ),
                 );
               },
             ),
           ),
           const SizedBox(height: 8),
-          if (widget.items.length > 1)
+          if (items.length > 1)
             _Dots(
-              count: widget.items.length,
+              count: items.length,
               activeIndex: currentIndex,
             ),
           const SizedBox(height: 22),
@@ -396,7 +583,9 @@ class _BarcodeCardState extends State<_BarcodeCard>
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.black.withOpacity(0.05)),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.05),
+                        ),
                       ),
                       child: BarcodeWidget(
                         barcode: widget.barcode,
@@ -504,6 +693,56 @@ class _DetailRow extends StatelessWidget {
             child: const Text('Kopiëren'),
           ),
       ],
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool destructive;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = destructive ? Colors.red : const Color(0xFFD51B46);
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        decoration: BoxDecoration(
+          color: destructive
+              ? Colors.red.withOpacity(0.08)
+              : const Color(0xFFF8E3EA),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right, color: color),
+          ],
+        ),
+      ),
     );
   }
 }
