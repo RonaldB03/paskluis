@@ -8,6 +8,8 @@ import '../../shared/widgets/main_bottom_nav.dart';
 import '../cards/card_view_screen.dart';
 import '../cards/cards_screen.dart';
 import '../cards/choose_card_template_screen.dart';
+import '../gift_cards/add_gift_card_screen.dart';
+import '../gift_cards/gift_card_view_screen.dart';
 import '../gift_cards/gift_cards_screen.dart';
 import '../qr_codes/qr_codes_screen.dart';
 
@@ -91,17 +93,43 @@ class _HomeScreenState extends State<HomeScreen> {
     await StorageService.cardsBox.add(card);
   }
 
-  Future<void> openAddFlow(String type) async {
+  Future<void> openLoyaltyAddFlow() async {
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
-        builder: (_) => ChooseCardTemplateScreen(type: type),
+        builder: (_) => const ChooseCardTemplateScreen(type: 'Pasje'),
       ),
     );
 
     if (result == null) return;
 
-    await saveNewCard(result, forcedType: type);
+    await saveNewCard(result, forcedType: 'Pasje');
+  }
+
+  Future<void> openQrAddFlow() async {
+    final result = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ChooseCardTemplateScreen(type: 'QR-code'),
+      ),
+    );
+
+    if (result == null) return;
+
+    await saveNewCard(result, forcedType: 'QR-code');
+  }
+
+  Future<void> openGiftCardAddFlow() async {
+    final result = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const AddGiftCardScreen(),
+      ),
+    );
+
+    if (result == null) return;
+
+    await saveNewCard(result, forcedType: 'Cadeaukaart');
   }
 
   void showAddChoices() {
@@ -121,7 +149,10 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const Text(
                   'Wat wil je toevoegen?',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 18),
                 _AddChoiceTile(
@@ -129,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: 'Klantenkaart toevoegen',
                   onTap: () {
                     Navigator.pop(context);
-                    openAddFlow('Pasje');
+                    openLoyaltyAddFlow();
                   },
                 ),
                 _AddChoiceTile(
@@ -137,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: 'QR-code toevoegen',
                   onTap: () {
                     Navigator.pop(context);
-                    openAddFlow('QR-code');
+                    openQrAddFlow();
                   },
                 ),
                 _AddChoiceTile(
@@ -145,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   title: 'Cadeaukaart toevoegen',
                   onTap: () {
                     Navigator.pop(context);
-                    openAddFlow('Cadeaukaart');
+                    openGiftCardAddFlow();
                   },
                 ),
               ],
@@ -162,11 +193,11 @@ class _HomeScreenState extends State<HomeScreen> {
     Widget screen;
 
     if (index == 1) {
-      screen = CardsScreen(onAdd: () => openAddFlow('Pasje'));
+      screen = CardsScreen(onAdd: openLoyaltyAddFlow);
     } else if (index == 2) {
-      screen = QrCodesScreen(onAdd: () => openAddFlow('QR-code'));
+      screen = QrCodesScreen(onAdd: openQrAddFlow);
     } else {
-      screen = GiftCardsScreen(onAdd: () => openAddFlow('Cadeaukaart'));
+      screen = GiftCardsScreen(onAdd: openGiftCardAddFlow);
     }
 
     Navigator.push(
@@ -184,6 +215,21 @@ class _HomeScreenState extends State<HomeScreen> {
     final initialIndex = categoryItems.indexWhere(
           (item) => item['id']?.toString() == selectedId,
     );
+
+    final type = selectedItem['type']?.toString() ?? '';
+
+    if (type == 'Cadeaukaart') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GiftCardViewScreen(
+            items: categoryItems,
+            initialIndex: initialIndex < 0 ? 0 : initialIndex,
+          ),
+        ),
+      );
+      return;
+    }
 
     Navigator.push(
       context,
@@ -216,7 +262,11 @@ class _HomeScreenState extends State<HomeScreen> {
             actions: [
               IconButton(
                 onPressed: showAddChoices,
-                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
+                icon: const Icon(
+                  Icons.add,
+                  color: Color(0xFFD51B46),
+                  size: 32,
+                ),
               ),
             ],
           ),
@@ -230,7 +280,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 hasItems: cards.isNotEmpty,
                 actionTitle: cards.isEmpty ? 'Voeg kaart toe' : 'Al je kaarten',
                 onActionTap:
-                cards.isEmpty ? () => openAddFlow('Pasje') : () => openTab(1),
+                cards.isEmpty ? openLoyaltyAddFlow : () => openTab(1),
                 onItemTap: (item) => openCardView(cards, item),
               ),
               const SizedBox(height: 30),
@@ -241,9 +291,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 hasItems: qrCodes.isNotEmpty,
                 actionTitle:
                 qrCodes.isEmpty ? 'Voeg QR-code toe' : 'Al je QR-codes',
-                onActionTap: qrCodes.isEmpty
-                    ? () => openAddFlow('QR-code')
-                    : () => openTab(2),
+                onActionTap:
+                qrCodes.isEmpty ? openQrAddFlow : () => openTab(2),
                 onItemTap: (item) => openCardView(qrCodes, item),
               ),
               const SizedBox(height: 30),
@@ -256,7 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? 'Voeg cadeaukaart toe'
                     : 'Al je cadeaukaarten',
                 onActionTap: giftCards.isEmpty
-                    ? () => openAddFlow('Cadeaukaart')
+                    ? openGiftCardAddFlow
                     : () => openTab(3),
                 onItemTap: (item) => openCardView(giftCards, item),
               ),
@@ -337,6 +386,8 @@ class _CategorySection extends StatelessWidget {
               logoAsset: item['logoAsset']?.toString() ?? '',
               customImage: item['customImage']?.toString() ?? '',
               brandColor: item['brandColor']?.toString() ?? '',
+              balance: item['currentBalance']?.toString() ?? '',
+              type: item['type']?.toString() ?? '',
               onTap: () => onItemTap(item),
             );
           },
@@ -351,6 +402,8 @@ class _PreviewCard extends StatelessWidget {
   final String logoAsset;
   final String customImage;
   final String brandColor;
+  final String balance;
+  final String type;
   final VoidCallback onTap;
 
   const _PreviewCard({
@@ -358,6 +411,8 @@ class _PreviewCard extends StatelessWidget {
     required this.logoAsset,
     required this.customImage,
     required this.brandColor,
+    required this.balance,
+    required this.type,
     required this.onTap,
   });
 
@@ -371,6 +426,8 @@ class _PreviewCard extends StatelessWidget {
 
   bool get hasCustomLogo =>
       customImage.isNotEmpty && File(customImage).existsSync();
+
+  bool get isGiftCard => type == 'Cadeaukaart';
 
   @override
   Widget build(BuildContext context) {
@@ -392,34 +449,65 @@ class _PreviewCard extends StatelessWidget {
             ),
           ],
         ),
-        child: useImage
-            ? Center(
-          child: hasCustomLogo
-              ? Image.file(
-            File(customImage),
-            fit: BoxFit.contain,
-            height: 72,
-            width: double.infinity,
-          )
-              : Image.asset(
-            logoAsset,
-            fit: BoxFit.contain,
-            height: 72,
-            width: double.infinity,
-          ),
-        )
-            : Center(
-          child: Text(
-            title,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF333333),
+        child: Column(
+          children: [
+            Expanded(
+              child: useImage
+                  ? Center(
+                child: hasCustomLogo
+                    ? Image.file(
+                  File(customImage),
+                  fit: BoxFit.contain,
+                  height: 72,
+                  width: double.infinity,
+                )
+                    : Image.asset(
+                  logoAsset,
+                  fit: BoxFit.contain,
+                  height: 72,
+                  width: double.infinity,
+                ),
+              )
+                  : Center(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: hasAssetLogo
+                        ? Colors.white
+                        : const Color(0xFF333333),
+                  ),
+                ),
+              ),
             ),
-          ),
+            if (isGiftCard) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 7),
+                decoration: BoxDecoration(
+                  color: hasAssetLogo
+                      ? Colors.white.withOpacity(0.18)
+                      : const Color(0xFFF8E3EA),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  balance.isEmpty ? 'Saldo onbekend' : '€ $balance',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                    color:
+                    hasAssetLogo ? Colors.white : const Color(0xFFD51B46),
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

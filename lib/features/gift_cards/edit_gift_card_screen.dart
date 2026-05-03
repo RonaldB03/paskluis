@@ -5,21 +5,19 @@ import 'package:image_picker/image_picker.dart';
 
 import '../scanner/scanner_screen.dart';
 
-class EditCardScreen extends StatefulWidget {
+class EditGiftCardScreen extends StatefulWidget {
   final Map<String, dynamic> item;
 
-  const EditCardScreen({
+  const EditGiftCardScreen({
     super.key,
     required this.item,
   });
 
   @override
-  State<EditCardScreen> createState() => _EditCardScreenState();
+  State<EditGiftCardScreen> createState() => _EditGiftCardScreenState();
 }
 
-class _EditCardScreenState extends State<EditCardScreen> {
-  late String selectedType;
-
+class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
   final nameController = TextEditingController();
   final codeController = TextEditingController();
   final noteController = TextEditingController();
@@ -47,8 +45,6 @@ class _EditCardScreenState extends State<EditCardScreen> {
   @override
   void initState() {
     super.initState();
-
-    selectedType = widget.item['type']?.toString() ?? 'Pasje';
 
     nameController.text = widget.item['name']?.toString() ?? '';
     codeController.text = widget.item['code']?.toString() ?? '';
@@ -95,17 +91,14 @@ class _EditCardScreenState extends State<EditCardScreen> {
     final result = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (_) => ScannerScreen(
-          mode: selectedType == 'QR-code'
-              ? ScannerMode.qr
-              : ScannerMode.barcode,
+        builder: (_) => const ScannerScreen(
+          mode: ScannerMode.barcode,
           showManualAfterDelay: true,
         ),
       ),
     );
 
     if (result == null || result.isEmpty) return;
-    if (result == ScannerScreen.manualEntryResult) return;
 
     setState(() {
       codeController.text = result;
@@ -113,42 +106,25 @@ class _EditCardScreenState extends State<EditCardScreen> {
   }
 
   void save() {
-    final code = codeController.text.trim();
-    final name = nameController.text.trim();
-
-    if (code.isEmpty) {
+    if (nameController.text.trim().isEmpty ||
+        codeController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Barcode / QR-code is verplicht.')),
-      );
-      return;
-    }
-
-    if (selectedType != 'QR-code' && name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Naam is verplicht.')),
+        const SnackBar(content: Text('Vul minimaal een naam en barcode in.')),
       );
       return;
     }
 
     final updated = Map<String, dynamic>.from(widget.item);
 
-    updated['type'] = selectedType;
-    updated['name'] = name;
-    updated['code'] = code;
+    updated['type'] = 'Cadeaukaart';
+    updated['name'] = nameController.text.trim();
+    updated['code'] = codeController.text.trim();
     updated['note'] = noteController.text.trim();
 
-    updated['cardNumber'] = selectedType == 'Cadeaukaart'
-        ? cardNumberController.text.trim()
-        : '';
-    updated['pinCode'] = selectedType == 'Cadeaukaart'
-        ? pinCodeController.text.trim()
-        : '';
-    updated['initialBalance'] = selectedType == 'Cadeaukaart'
-        ? initialBalanceController.text.trim()
-        : '';
-    updated['currentBalance'] = selectedType == 'Cadeaukaart'
-        ? currentBalanceController.text.trim()
-        : '';
+    updated['cardNumber'] = cardNumberController.text.trim();
+    updated['pinCode'] = pinCodeController.text.trim();
+    updated['initialBalance'] = initialBalanceController.text.trim();
+    updated['currentBalance'] = currentBalanceController.text.trim();
 
     updated['logoAsset'] = logoAsset;
     updated['brandColor'] = brandColor;
@@ -160,12 +136,10 @@ class _EditCardScreenState extends State<EditCardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isGiftCard = selectedType == 'Cadeaukaart';
-
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
-        title: const Text('Kaart bewerken'),
+        title: const Text('Cadeaukaart bewerken'),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF333333),
         elevation: 0,
@@ -185,43 +159,6 @@ class _EditCardScreenState extends State<EditCardScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          SegmentedButton<String>(
-            selected: {selectedType},
-            segments: const [
-              ButtonSegment(
-                value: 'Pasje',
-                label: Text('Pasje'),
-                icon: Icon(Icons.card_membership),
-              ),
-              ButtonSegment(
-                value: 'QR-code',
-                label: Text('QR'),
-                icon: Icon(Icons.qr_code),
-              ),
-              ButtonSegment(
-                value: 'Cadeaukaart',
-                label: Text('Cadeau'),
-                icon: Icon(Icons.card_giftcard),
-              ),
-            ],
-            onSelectionChanged: (value) {
-              final newType = value.first;
-
-              setState(() {
-                selectedType = newType;
-
-                if (newType != 'Cadeaukaart') {
-                  cardNumberController.clear();
-                  pinCodeController.clear();
-                  initialBalanceController.clear();
-                  currentBalanceController.clear();
-                }
-              });
-            },
-          ),
-
-          const SizedBox(height: 22),
-
           _LogoPreview(
             logoAsset: logoAsset,
             customImage: customImage,
@@ -235,27 +172,19 @@ class _EditCardScreenState extends State<EditCardScreen> {
               });
             },
           ),
-
           const SizedBox(height: 18),
-
           TextField(
             controller: nameController,
-            decoration: InputDecoration(
-              labelText: selectedType == 'QR-code'
-                  ? 'Naam / omschrijving'
-                  : 'Naam',
-              border: const OutlineInputBorder(),
+            decoration: const InputDecoration(
+              labelText: 'Naam',
+              border: OutlineInputBorder(),
             ),
           ),
-
           const SizedBox(height: 16),
-
           TextField(
             controller: codeController,
             decoration: InputDecoration(
-              labelText: selectedType == 'QR-code'
-                  ? 'QR-code'
-                  : 'Barcode',
+              labelText: 'Barcode',
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 onPressed: scanCode,
@@ -263,21 +192,58 @@ class _EditCardScreenState extends State<EditCardScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 16),
-
           OutlinedButton.icon(
             onPressed: scanCode,
             icon: const Icon(Icons.qr_code_scanner),
-            label: Text(
-              selectedType == 'QR-code'
-                  ? 'QR-code opnieuw scannen'
-                  : 'Barcode opnieuw scannen',
+            label: const Text('Barcode opnieuw scannen'),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Cadeaukaartgegevens',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
             ),
           ),
-
+          const SizedBox(height: 12),
+          TextField(
+            controller: cardNumberController,
+            decoration: const InputDecoration(
+              labelText: 'Kaartnummer',
+              border: OutlineInputBorder(),
+            ),
+          ),
           const SizedBox(height: 16),
-
+          TextField(
+            controller: pinCodeController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Pincode / krascode',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: initialBalanceController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Oorspronkelijk saldo',
+              prefixText: '€ ',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: currentBalanceController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Huidig saldo',
+              prefixText: '€ ',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
           TextField(
             controller: noteController,
             maxLines: 3,
@@ -286,61 +252,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
               border: OutlineInputBorder(),
             ),
           ),
-
-          if (isGiftCard) ...[
-            const SizedBox(height: 24),
-            const Text(
-              'Cadeaukaartgegevens',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: cardNumberController,
-              decoration: const InputDecoration(
-                labelText: 'Kaartnummer',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: pinCodeController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Pincode / krascode',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: initialBalanceController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Oorspronkelijk saldo',
-                prefixText: '€ ',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: currentBalanceController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Huidig saldo',
-                prefixText: '€ ',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-
           const SizedBox(height: 28),
-
           FilledButton.icon(
             onPressed: save,
             icon: const Icon(Icons.save),
