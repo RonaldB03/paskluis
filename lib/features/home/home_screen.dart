@@ -19,6 +19,7 @@ import '../gift_cards/gift_card_view_screen.dart';
 import '../gift_cards/gift_cards_screen.dart';
 
 import '../qr_codes/qr_codes_screen.dart';
+import '../qr_codes/choose_qr_code_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -139,11 +140,48 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
-        builder: (_) => const ChooseCardTemplateScreen(type: 'QR-code'),
+        builder: (_) => const ChooseQrCodeScreen(),
       ),
     );
 
     if (!mounted || result == null) return;
+
+    final now = DateTime.now().toIso8601String();
+    final type = result['type'] ?? 'QR-code';
+
+    if (type == 'QR-set') {
+      final codes = result['codes'] ?? '';
+      final codeList = codes
+          .split('|||')
+          .where((code) => code.trim().isNotEmpty)
+          .toList();
+
+      await StorageService.cardsBox.add({
+        'id': result['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        'type': 'QR-set',
+        'name': result['name'] ?? 'QR-codes (${codeList.length})',
+        'code': '',
+        'codes': codes,
+        'used': result['used'] ??
+            List.filled(codeList.length, 'false').join('|||'),
+        'note': result['note'] ?? '',
+        'cardNumber': '',
+        'pinCode': '',
+        'initialBalance': '',
+        'currentBalance': '',
+        'brandId': '',
+        'logoAsset': '',
+        'brandColor': '',
+        'customImage': '',
+        'isFavorite': result['isFavorite'] == 'true',
+        'createdAt': result['createdAt'] ?? now,
+        'updatedAt': result['updatedAt'] ?? now,
+        'lastUsedAt': result['lastUsedAt'] ?? '',
+        'balanceHistory': '[]',
+      });
+
+      return;
+    }
 
     await saveNewCard(result, forcedType: 'QR-code');
   }
@@ -466,7 +504,12 @@ class _HomeScreenState extends State<HomeScreen> {
       valueListenable: StorageService.cardsBox.listenable(),
       builder: (context, box, _) {
         final cards = getItemsByType('Pasje');
-        final qrCodes = getItemsByType('QR-code');
+        final qrCodes = StorageService.cardsBox.values
+            .where((item) =>
+        item is Map &&
+            (item['type'] == 'QR-code' || item['type'] == 'QR-set'))
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
         final giftCards = getItemsByType('Cadeaukaart');
 
         return Scaffold(
