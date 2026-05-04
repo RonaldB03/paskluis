@@ -7,19 +7,18 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
+
 import '../gift_cards/gift_cards_screen.dart';
 import '../home/home_screen.dart';
 import '../qr_codes/qr_codes_screen.dart';
+
+import 'card_preview_screen.dart';
 import 'card_view_screen.dart';
+import 'choose_card_template_screen.dart';
 import 'edit_card_screen.dart';
 
 class CardsScreen extends StatelessWidget {
-  final VoidCallback onAdd;
-
-  const CardsScreen({
-    super.key,
-    required this.onAdd,
-  });
+  const CardsScreen({super.key});
 
   List<Map<String, dynamic>> getItems() {
     final items = StorageService.cardsBox.values
@@ -47,6 +46,65 @@ class CardsScreen extends StatelessWidget {
     return items;
   }
 
+  Future<Map<String, dynamic>> saveNewCard(
+      Map<String, String> result, {
+        required String forcedType,
+      }) async {
+    final now = DateTime.now().toIso8601String();
+
+    final Map<String, dynamic> card = {
+      'id': result['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      'type': result['type'] ?? forcedType,
+      'name': result['name'] ?? '',
+      'code': result['code'] ?? '',
+      'note': result['note'] ?? '',
+      'cardNumber': result['cardNumber'] ?? '',
+      'pinCode': result['pinCode'] ?? '',
+      'initialBalance': result['initialBalance'] ?? '',
+      'currentBalance': result['currentBalance'] ?? '',
+      'brandId': result['brandId'] ?? '',
+      'logoAsset': result['logoAsset'] ?? '',
+      'brandColor': result['brandColor'] ?? '',
+      'customImage': result['customImage'] ?? '',
+      'isFavorite': result['isFavorite'] == 'true',
+      'createdAt': result['createdAt'] ?? now,
+      'updatedAt': result['updatedAt'] ?? now,
+      'lastUsedAt': result['lastUsedAt'] ?? '',
+      'balanceHistory': result['balanceHistory'] ?? '[]',
+    };
+
+    await StorageService.cardsBox.add(card);
+    return card;
+  }
+
+  Future<void> openAddCard(BuildContext context) async {
+    final result = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ChooseCardTemplateScreen(type: 'Pasje'),
+      ),
+    );
+
+    if (!context.mounted || result == null) return;
+
+    final savedCard = await saveNewCard(result, forcedType: 'Pasje');
+
+    if (!context.mounted) return;
+
+    if (result['openPreviewAfterSave'] == 'true') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CardPreviewScreen(
+            item: savedCard.map(
+                  (key, value) => MapEntry(key, value?.toString() ?? ''),
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
   dynamic findHiveKey(Map<String, dynamic> item) {
     final id = item['id']?.toString() ?? '';
 
@@ -62,24 +120,27 @@ class CardsScreen extends StatelessWidget {
   }
 
   void openTab(BuildContext context, int index) {
-    if (index == 0) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (route) => false,
-      );
-    } else if (index == 1) {
-      return;
-    } else if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => QrCodesScreen(onAdd: () {})),
-      );
-    } else if (index == 3) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => GiftCardsScreen(onAdd: () {})),
-      );
+    Widget screen;
+
+    switch (index) {
+      case 0:
+        screen = const HomeScreen();
+        break;
+      case 1:
+        return;
+      case 2:
+        screen = const QrCodesScreen();
+        break;
+      case 3:
+        screen = const GiftCardsScreen();
+        break;
+      default:
+        return;
     }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => screen),
+    );
   }
 
   void openCard(
@@ -165,9 +226,7 @@ class CardsScreen extends StatelessWidget {
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$name is verwijderd.'),
-      ),
+      SnackBar(content: Text('$name is verwijderd.')),
     );
   }
 
@@ -259,19 +318,22 @@ class CardsScreen extends StatelessWidget {
                   color: Color(0xFFD51B46),
                   size: 32,
                 ),
-                onPressed: onAdd,
+                onPressed: () => openAddCard(context),
               ),
             ],
           ),
           body: items.isEmpty
-              ? _EmptyCardsState(onAdd: onAdd)
+              ? _EmptyCardsState(
+            onAdd: () => openAddCard(context),
+          )
               : GridView.builder(
             padding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
             ),
             itemCount: items.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               mainAxisSpacing: 8,
               crossAxisSpacing: 8,
@@ -410,8 +472,9 @@ class _StoredCardTileState extends State<_StoredCardTile> {
     return Colors.white;
   }
 
-  bool get hasAssetLogo =>
-      (widget.item['logoAsset']?.toString() ?? '').isNotEmpty;
+  bool get hasAssetLogo {
+    return (widget.item['logoAsset']?.toString() ?? '').isNotEmpty;
+  }
 
   bool get hasCustomLogo {
     final path = widget.item['customImage']?.toString() ?? '';

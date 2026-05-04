@@ -6,19 +6,19 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
+
+import '../cards/card_preview_screen.dart';
 import '../cards/cards_screen.dart';
+import '../cards/choose_card_template_screen.dart';
+
 import '../home/home_screen.dart';
 import '../qr_codes/qr_codes_screen.dart';
+
 import 'choose_gift_card_template_screen.dart';
 import 'gift_card_view_screen.dart';
 
 class GiftCardsScreen extends StatelessWidget {
-  final VoidCallback onAdd;
-
-  const GiftCardsScreen({
-    super.key,
-    required this.onAdd,
-  });
+  const GiftCardsScreen({super.key});
 
   List<Map<String, dynamic>> getItems() {
     final items = StorageService.cardsBox.values
@@ -46,13 +46,89 @@ class GiftCardsScreen extends StatelessWidget {
     return items;
   }
 
+  Future<Map<String, dynamic>> saveNewCard(
+      Map<String, String> result, {
+        required String forcedType,
+      }) async {
+    final now = DateTime.now().toIso8601String();
+
+    final Map<String, dynamic> card = {
+      'id': result['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      'type': result['type'] ?? forcedType,
+      'name': result['name'] ?? '',
+      'code': result['code'] ?? '',
+      'note': result['note'] ?? '',
+      'cardNumber': result['cardNumber'] ?? '',
+      'pinCode': result['pinCode'] ?? '',
+      'initialBalance': result['initialBalance'] ?? '',
+      'currentBalance': result['currentBalance'] ?? '',
+      'brandId': result['brandId'] ?? '',
+      'logoAsset': result['logoAsset'] ?? '',
+      'brandColor': result['brandColor'] ?? '',
+      'customImage': result['customImage'] ?? '',
+      'isFavorite': result['isFavorite'] == 'true',
+      'createdAt': result['createdAt'] ?? now,
+      'updatedAt': result['updatedAt'] ?? now,
+      'lastUsedAt': result['lastUsedAt'] ?? '',
+      'balanceHistory': result['balanceHistory'] ?? '[]',
+    };
+
+    await StorageService.cardsBox.add(card);
+    return card;
+  }
+
   Future<void> openAddGiftCard(BuildContext context) async {
-    await Navigator.push(
+    final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
         builder: (_) => const ChooseGiftCardTemplateScreen(),
       ),
     );
+
+    if (!context.mounted || result == null) return;
+
+    await saveNewCard(result, forcedType: 'Cadeaukaart');
+  }
+
+  Future<void> openLoyaltyAddFlow(BuildContext context) async {
+    final result = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ChooseCardTemplateScreen(type: 'Pasje'),
+      ),
+    );
+
+    if (!context.mounted || result == null) return;
+
+    final savedCard = await saveNewCard(result, forcedType: 'Pasje');
+
+    if (!context.mounted) return;
+
+    if (result['openPreviewAfterSave'] == 'true') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CardPreviewScreen(
+            item: savedCard.map(
+                  (key, value) => MapEntry(key, value?.toString() ?? ''),
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> openQrAddFlow(BuildContext context) async {
+    final result = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ChooseCardTemplateScreen(type: 'QR-code'),
+      ),
+    );
+
+    if (!context.mounted || result == null) return;
+
+    await saveNewCard(result, forcedType: 'QR-code');
   }
 
   dynamic findHiveKey(Map<String, dynamic> item) {
@@ -108,9 +184,7 @@ class GiftCardsScreen extends StatelessWidget {
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$name is verwijderd.'),
-      ),
+      SnackBar(content: Text('$name is verwijderd.')),
     );
   }
 
@@ -161,24 +235,31 @@ class GiftCardsScreen extends StatelessWidget {
   }
 
   void openTab(BuildContext context, int index) {
-    if (index == 0) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (route) => false,
-      );
-    } else if (index == 1) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => CardsScreen(onAdd: () {})),
-      );
-    } else if (index == 2) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => QrCodesScreen(onAdd: () {})),
-      );
-    } else if (index == 3) {
-      return;
+    Widget screen;
+
+    switch (index) {
+      case 0:
+        screen = const HomeScreen();
+        break;
+
+      case 1:
+        screen = const CardsScreen();
+        break;
+
+      case 2:
+        screen = const QrCodesScreen();
+        break;
+
+      case 3:
+        return;
+
+      default:
+        return;
     }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => screen),
+    );
   }
 
   void openGiftCard(
@@ -243,7 +324,8 @@ class GiftCardsScreen extends StatelessWidget {
               vertical: 12,
             ),
             itemCount: items.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate:
+            const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
               mainAxisSpacing: 8,
               crossAxisSpacing: 8,
@@ -362,8 +444,9 @@ class _GiftCardTileState extends State<_GiftCardTile> {
     return path.isNotEmpty && File(path).existsSync();
   }
 
-  bool get hasAssetLogo =>
-      (widget.item['logoAsset']?.toString() ?? '').isNotEmpty;
+  bool get hasAssetLogo {
+    return (widget.item['logoAsset']?.toString() ?? '').isNotEmpty;
+  }
 
   Color get cardColor {
     final parsed = int.tryParse(widget.item['brandColor']?.toString() ?? '');
@@ -466,8 +549,9 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
-                    color:
-                    hasAssetLogo ? Colors.white : const Color(0xFFD51B46),
+                    color: hasAssetLogo
+                        ? Colors.white
+                        : const Color(0xFFD51B46),
                   ),
                 ),
               ),

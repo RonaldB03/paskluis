@@ -2,7 +2,7 @@ name: paskluis_v1
 description: "PasKluis - pasjes, QR-codes en cadeaukaarten lokaal bewaren."
 publish_to: 'none'
 
-version: 1.0.0+16
+version: 1.0.0+17
 
 environment:
   sdk: ^3.11.5
@@ -21,6 +21,7 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   mobile_scanner: ^7.2.0
   image_picker: ^1.1.2
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

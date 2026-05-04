@@ -110,11 +110,7 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => CardsScreen(
-          onAdd: () {
-            Navigator.pop(context);
-          },
-        ),
+        builder: (_) => const CardsScreen(),
       ),
           (route) => false,
     );

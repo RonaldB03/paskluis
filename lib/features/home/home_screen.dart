@@ -36,29 +36,20 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Map<String, dynamic>> getPreviewItems(List<Map<String, dynamic>> items) {
-    final favorites = items.where((item) => item['isFavorite'] == true).toList();
-
-    if (favorites.isNotEmpty) {
-      favorites.sort((a, b) {
-        final aDate = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
-            DateTime.fromMillisecondsSinceEpoch(0);
-        final bDate = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
-            DateTime.fromMillisecondsSinceEpoch(0);
-
-        return bDate.compareTo(aDate);
-      });
-
-      return favorites.take(3).toList();
-    }
-
     final sorted = [...items];
 
     sorted.sort((a, b) {
+      final aFavorite = a['isFavorite'] == true;
+      final bFavorite = b['isFavorite'] == true;
+
+      if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
+
       final aLastUsed = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '');
       final bLastUsed = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '');
 
       final aCreated = DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
+
       final bCreated = DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
@@ -286,9 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$name is verwijderd.'),
-      ),
+      SnackBar(content: Text('$name is verwijderd.')),
     );
   }
 
@@ -422,11 +411,11 @@ class _HomeScreenState extends State<HomeScreen> {
     Widget screen;
 
     if (index == 1) {
-      screen = CardsScreen(onAdd: openLoyaltyAddFlow);
+      screen = const CardsScreen();
     } else if (index == 2) {
-      screen = QrCodesScreen(onAdd: openQrAddFlow);
+      screen = const QrCodesScreen();
     } else {
-      screen = GiftCardsScreen(onAdd: openGiftCardAddFlow);
+      screen = const GiftCardsScreen();
     }
 
     Navigator.push(
@@ -508,7 +497,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 items: getPreviewItems(cards),
                 hasItems: cards.isNotEmpty,
                 actionTitle: cards.isEmpty ? 'Voeg kaart toe' : 'Al je kaarten',
-                onActionTap: cards.isEmpty ? openLoyaltyAddFlow : () => openTab(1),
+                onActionTap:
+                cards.isEmpty ? openLoyaltyAddFlow : () => openTab(1),
                 onItemTap: (item) => openCardView(cards, item),
                 onItemLongPress: (item) => showItemOptions(context, item),
               ),
@@ -520,8 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 hasItems: qrCodes.isNotEmpty,
                 actionTitle:
                 qrCodes.isEmpty ? 'Voeg QR-code toe' : 'Al je QR-codes',
-                onActionTap:
-                qrCodes.isEmpty ? openQrAddFlow : () => openTab(2),
+                onActionTap: qrCodes.isEmpty ? openQrAddFlow : () => openTab(2),
                 onItemTap: (item) => openCardView(qrCodes, item),
                 onItemLongPress: (item) => showItemOptions(context, item),
               ),
