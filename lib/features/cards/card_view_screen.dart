@@ -7,6 +7,7 @@ import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/storage_service.dart';
+import '../gift_cards/gift_card_view_screen.dart';
 import 'edit_card_screen.dart';
 
 class CardViewScreen extends StatefulWidget {
@@ -27,6 +28,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
   late final PageController pageController;
   late List<Map<String, dynamic>> items;
   late int currentIndex;
+
   double? previousBrightness;
 
   @override
@@ -34,53 +36,113 @@ class _CardViewScreenState extends State<CardViewScreen> {
     super.initState();
 
     items = widget.items.map((item) => Map<String, dynamic>.from(item)).toList();
-    currentIndex = widget.initialIndex.clamp(0, items.length - 1);
+    currentIndex = items.isEmpty
+        ? 0
+        : widget.initialIndex.clamp(0, items.length - 1).toInt();
 
     pageController = PageController(
       initialPage: currentIndex,
-      viewportFraction: 0.84,
+      viewportFraction: 0.88,
     );
 
     HapticFeedback.lightImpact();
-    _setupScreen();
+    setupScreen();
     markCurrentCardAsUsed();
-  }
-
-  Future<void> _setupScreen() async {
-    try {
-      previousBrightness = await ScreenBrightness().current;
-
-      for (final value in [0.65, 0.8, 1.0]) {
-        await Future.delayed(const Duration(milliseconds: 90));
-        await ScreenBrightness().setScreenBrightness(value);
-      }
-    } catch (_) {}
-
-    await WakelockPlus.enable();
   }
 
   @override
   void dispose() {
     pageController.dispose();
-
-    if (previousBrightness != null) {
-      ScreenBrightness().setScreenBrightness(previousBrightness!);
-    }
-
-    WakelockPlus.disable();
+    restoreScreen();
     super.dispose();
   }
 
-  dynamic _findKeyById(String id) {
+  Future<void> setupScreen() async {
+    try {
+      previousBrightness = await ScreenBrightness().current;
+      await ScreenBrightness().setScreenBrightness(1.0);
+    } catch (_) {}
+
+    await WakelockPlus.enable();
+  }
+
+  Future<void> restoreScreen() async {
+    try {
+      if (previousBrightness != null) {
+        await ScreenBrightness().setScreenBrightness(previousBrightness!);
+      }
+    } catch (_) {}
+
+    await WakelockPlus.disable();
+  }
+
+  dynamic findKeyById(String id) {
     for (final key in StorageService.cardsBox.keys) {
       final item = StorageService.cardsBox.get(key);
 
-      if (item is Map && item['id'] == id) {
+      if (item is Map && item['id']?.toString() == id) {
         return key;
       }
     }
 
     return null;
+  }
+
+  List<Map<String, dynamic>> getLinkedGiftCards(
+      Map<String, dynamic> loyaltyCard,
+      ) {
+    final brandId = loyaltyCard['brandId']?.toString() ?? '';
+
+    if (brandId.isEmpty) return [];
+
+    final giftCards = StorageService.cardsBox.values
+        .where(
+          (item) =>
+      item is Map &&
+          item['type'] == 'Cadeaukaart' &&
+          item['brandId']?.toString() == brandId,
+    )
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+
+    giftCards.sort((a, b) {
+      final aFavorite = a['isFavorite'] == true;
+      final bFavorite = b['isFavorite'] == true;
+
+      if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
+
+      final aDate = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
+          DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+
+      final bDate = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
+          DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+
+      return bDate.compareTo(aDate);
+    });
+
+    return giftCards;
+  }
+
+  Future<void> openLinkedGiftCards(List<Map<String, dynamic>> giftCards) async {
+    if (giftCards.isEmpty) return;
+
+    HapticFeedback.selectionClick();
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => GiftCardViewScreen(
+          items: giftCards,
+          initialIndex: 0,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    setState(() {});
   }
 
   Future<void> markCurrentCardAsUsed() async {
@@ -91,7 +153,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
 
     if (id.isEmpty) return;
 
-    final key = _findKeyById(id);
+    final key = findKeyById(id);
     if (key == null) return;
 
     item['lastUsedAt'] = DateTime.now().toIso8601String();
@@ -108,25 +170,101 @@ class _CardViewScreenState extends State<CardViewScreen> {
 
   Future<void> updateCurrentItem(Map<String, dynamic> updatedItem) async {
     final id = updatedItem['id']?.toString() ?? '';
-    final key = _findKeyById(id);
+    final key = findKeyById(id);
 
     if (key == null) return;
 
-    updatedItem['updatedAt'] = DateTime.now().toIso8601String();
+    final oldItem = Map<String, dynamic>.from(
+      StorageService.cardsBox.get(key) as Map,
+    );
 
-    await StorageService.cardsBox.put(key, updatedItem);
+    final newItem = {
+      ...oldItem,
+      ...updatedItem,
+      'isFavorite': updatedItem['isFavorite'] ?? oldItem['isFavorite'] ?? false,
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+
+    await StorageService.cardsBox.put(key, newItem);
 
     if (!mounted) return;
 
     setState(() {
-      items[currentIndex] = Map<String, dynamic>.from(updatedItem);
+      items[currentIndex] = Map<String, dynamic>.from(newItem);
     });
   }
 
+  Future<void> toggleFavoriteCurrentItem() async {
+    if (items.isEmpty) return;
+
+    final item = Map<String, dynamic>.from(items[currentIndex]);
+    item['isFavorite'] = !(item['isFavorite'] == true);
+
+    await updateCurrentItem(item);
+    HapticFeedback.selectionClick();
+  }
+
+  Future<void> openEdit() async {
+    if (items.isEmpty) return;
+
+    HapticFeedback.selectionClick();
+
+    final updatedItem = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditCardScreen(
+          item: items[currentIndex],
+        ),
+      ),
+    );
+
+    if (updatedItem == null) return;
+
+    await updateCurrentItem(updatedItem);
+  }
+
+  Future<void> confirmDelete() async {
+    if (items.isEmpty) return;
+
+    final item = items[currentIndex];
+    final name = item['name']?.toString() ?? 'deze kaart';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Kaart verwijderen?'),
+          content: Text(
+            'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuleren'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Verwijderen'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    await deleteCurrentItem();
+  }
+
   Future<void> deleteCurrentItem() async {
+    if (items.isEmpty) return;
+
     final item = items[currentIndex];
     final id = item['id']?.toString() ?? '';
-    final key = _findKeyById(id);
+    final key = findKeyById(id);
 
     if (key == null) return;
 
@@ -153,99 +291,43 @@ class _CardViewScreenState extends State<CardViewScreen> {
     await markCurrentCardAsUsed();
   }
 
-  Future<void> toggleFavoriteCurrentItem() async {
-    final item = Map<String, dynamic>.from(items[currentIndex]);
-
-    item['isFavorite'] = !(item['isFavorite'] == true);
-    item['updatedAt'] = DateTime.now().toIso8601String();
-
-    await updateCurrentItem(item);
-
-    HapticFeedback.selectionClick();
-  }
-
-  Future<void> openEdit(Map<String, dynamic> item) async {
-    HapticFeedback.selectionClick();
-
-    final updatedItem = await Navigator.push<Map<String, dynamic>>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => EditCardScreen(item: item),
-      ),
-    );
-
-    if (updatedItem == null) return;
-
-    await updateCurrentItem(updatedItem);
-  }
-
-  Future<void> confirmDelete() async {
-    final item = items[currentIndex];
-    final name = item['name']?.toString() ?? 'deze kaart';
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Kaart verwijderen?'),
-          content: Text(
-            'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuleren'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Verwijderen'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed == true) {
-      await deleteCurrentItem();
-    }
-  }
-
   Barcode getBarcodeType(Map<String, dynamic> item) {
-    final type = item['type']?.toString() ?? '';
     final code = item['code']?.toString() ?? '';
-
-    if (type == 'QR-code') {
-      return Barcode.qrCode();
-    }
-
     final onlyDigits = RegExp(r'^\d+$').hasMatch(code);
 
-    if (onlyDigits && code.length == 13) {
-      return Barcode.ean13();
-    }
-
-    if (onlyDigits && code.length == 8) {
-      return Barcode.ean8();
-    }
+    if (onlyDigits && code.length == 13) return Barcode.ean13();
+    if (onlyDigits && code.length == 8) return Barcode.ean8();
 
     return Barcode.code128();
   }
 
-  bool isQrCode(Map<String, dynamic> item) {
-    return item['type']?.toString() == 'QR-code';
+  void copyCurrentCode() {
+    if (items.isEmpty) return;
+
+    final code = items[currentIndex]['code']?.toString() ?? '';
+
+    Clipboard.setData(ClipboardData(text: code));
+    HapticFeedback.lightImpact();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Code gekopieerd'),
+      ),
+    );
   }
 
-  void openDetails(Map<String, dynamic> item) {
-    HapticFeedback.selectionClick();
+  void openDetails() {
+    if (items.isEmpty) return;
 
+    final item = items[currentIndex];
     final code = item['code']?.toString() ?? '';
     final name = item['name']?.toString() ?? 'Kaart';
     final note = item['note']?.toString() ?? '';
-    final type = item['type']?.toString() ?? '';
+    final brandId = item['brandId']?.toString() ?? '';
     final isFavorite = item['isFavorite'] == true;
+    final linkedGiftCards = getLinkedGiftCards(item);
+
+    HapticFeedback.selectionClick();
 
     showModalBottomSheet(
       context: context,
@@ -262,29 +344,15 @@ class _CardViewScreenState extends State<CardViewScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Center(
-                        child: Text(
-                          'Kaartdetails',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF111122),
-                          ),
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, size: 32),
-                    ),
-                  ],
+                const Text(
+                  'Kaartdetails',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF111122),
+                  ),
                 ),
-                const SizedBox(height: 20),
-                _DetailRow(label: 'Type', value: type),
-                const SizedBox(height: 16),
+                const SizedBox(height: 22),
                 _DetailRow(label: 'Naam', value: name),
                 const SizedBox(height: 16),
                 _DetailRow(
@@ -292,9 +360,23 @@ class _CardViewScreenState extends State<CardViewScreen> {
                   value: code,
                   showCopy: true,
                 ),
+                if (brandId.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _DetailRow(label: 'Merk', value: brandId),
+                ],
                 if (note.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   _DetailRow(label: 'Notitie', value: note),
+                ],
+                if (linkedGiftCards.isNotEmpty) ...[
+                  const SizedBox(height: 22),
+                  _LinkedGiftCardAction(
+                    giftCards: linkedGiftCards,
+                    onTap: () {
+                      Navigator.pop(context);
+                      openLinkedGiftCards(linkedGiftCards);
+                    },
+                  ),
                 ],
                 const SizedBox(height: 24),
                 _ActionButton(
@@ -313,7 +395,16 @@ class _CardViewScreenState extends State<CardViewScreen> {
                   label: 'Bewerken',
                   onTap: () {
                     Navigator.pop(context);
-                    openEdit(items[currentIndex]);
+                    openEdit();
+                  },
+                ),
+                const SizedBox(height: 10),
+                _ActionButton(
+                  icon: Icons.copy_rounded,
+                  label: 'Code kopiëren',
+                  onTap: () {
+                    Navigator.pop(context);
+                    copyCurrentCode();
                   },
                 ),
                 const SizedBox(height: 10),
@@ -338,17 +429,50 @@ class _CardViewScreenState extends State<CardViewScreen> {
   Widget build(BuildContext context) {
     if (items.isEmpty) {
       return const Scaffold(
-        backgroundColor: Color(0xFFF8F8FA),
-        body: Center(child: Text('Geen kaarten')),
+        backgroundColor: Color(0xFFF4F4F6),
+        body: Center(
+          child: Text('Geen kaarten'),
+        ),
       );
     }
 
+    final currentItem = items[currentIndex];
+    final isFavorite = currentItem['isFavorite'] == true;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F8FA),
+      backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8F8FA),
+        backgroundColor: const Color(0xFFF4F4F6),
         elevation: 0,
-        leading: const BackButton(color: Color(0xFF111122)),
+        foregroundColor: const Color(0xFF222229),
+        leading: const BackButton(),
+        centerTitle: true,
+        title: Text(
+          currentItem['name']?.toString() ?? 'Klantenkaart',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: toggleFavoriteCurrentItem,
+            icon: Icon(
+              isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
+              color: const Color(0xFFD51B46),
+              size: 30,
+            ),
+          ),
+          IconButton(
+            onPressed: openDetails,
+            icon: const Icon(
+              Icons.more_horiz_rounded,
+              color: Color(0xFF222229),
+              size: 30,
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -363,6 +487,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
               },
               itemBuilder: (context, index) {
                 final item = items[index];
+                final linkedGiftCards = getLinkedGiftCards(item);
 
                 return AnimatedBuilder(
                   animation: pageController,
@@ -375,130 +500,114 @@ class _CardViewScreenState extends State<CardViewScreen> {
                     }
 
                     final distance = (page - index).abs();
-                    final scale = (1 - distance * 0.08).clamp(0.90, 1.0);
-                    final opacity = (1 - distance * 0.32).clamp(0.55, 1.0);
-                    final yOffset = distance * 28;
+                    final scale = (1 - distance * 0.05).clamp(0.94, 1.0);
+                    final opacity = (1 - distance * 0.25).clamp(0.65, 1.0);
 
                     return Opacity(
                       opacity: opacity,
-                      child: Transform.translate(
-                        offset: Offset(0, yOffset),
-                        child: Transform.scale(
-                          scale: scale,
-                          child: child,
-                        ),
+                      child: Transform.scale(
+                        scale: scale,
+                        child: child,
                       ),
                     );
                   },
                   child: _BarcodeCard(
                     item: item,
                     barcode: getBarcodeType(item),
-                    isQr: isQrCode(item),
-                    onDetails: () => openDetails(items[currentIndex]),
+                    linkedGiftCards: linkedGiftCards,
+                    onDetails: openDetails,
+                    onOpenGiftCards: () => openLinkedGiftCards(linkedGiftCards),
                   ),
                 );
               },
             ),
           ),
-          const SizedBox(height: 8),
-          if (items.length > 1)
+          if (items.length > 1) ...[
+            const SizedBox(height: 8),
             _Dots(
               count: items.length,
               activeIndex: currentIndex,
             ),
-          const SizedBox(height: 22),
+          ],
+          const SizedBox(height: 16),
           const Text(
-            'Houd je scherm bij de scanner',
+            'Houd de barcode goed voor de scanner',
             style: TextStyle(
               color: Colors.black45,
               fontSize: 15,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
 }
 
-class _BarcodeCard extends StatefulWidget {
+class _BarcodeCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final Barcode barcode;
-  final bool isQr;
+  final List<Map<String, dynamic>> linkedGiftCards;
   final VoidCallback onDetails;
+  final VoidCallback onOpenGiftCards;
 
   const _BarcodeCard({
     required this.item,
     required this.barcode,
-    required this.isQr,
+    required this.linkedGiftCards,
     required this.onDetails,
+    required this.onOpenGiftCards,
   });
 
-  @override
-  State<_BarcodeCard> createState() => _BarcodeCardState();
-}
-
-class _BarcodeCardState extends State<_BarcodeCard>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController pulseController;
-  late final Animation<double> pulseAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1600),
-    )..repeat(reverse: true);
-
-    pulseAnimation = Tween<double>(begin: 0.96, end: 1.0).animate(
-      CurvedAnimation(
-        parent: pulseController,
-        curve: Curves.easeInOut,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    pulseController.dispose();
-    super.dispose();
-  }
-
-  Color get headerColor {
-    final parsed = int.tryParse(widget.item['brandColor']?.toString() ?? '');
+  Color get brandColor {
+    final parsed = int.tryParse(item['brandColor']?.toString() ?? '');
     if (parsed != null) return Color(parsed);
-    return const Color(0xFF2D2B2B);
+    return const Color(0xFFD51B46);
   }
 
-  bool get hasAssetLogo =>
-      (widget.item['logoAsset']?.toString() ?? '').isNotEmpty;
+  bool get hasAssetLogo => (item['logoAsset']?.toString() ?? '').isNotEmpty;
 
   bool get hasCustomLogo {
-    final path = widget.item['customImage']?.toString() ?? '';
+    final path = item['customImage']?.toString() ?? '';
     return path.isNotEmpty && File(path).existsSync();
+  }
+
+  String get formattedCode {
+    final code = item['code']?.toString() ?? '';
+
+    return code
+        .replaceAllMapped(
+      RegExp(r'.{1,4}'),
+          (match) => '${match.group(0)} ',
+    )
+        .trim();
   }
 
   @override
   Widget build(BuildContext context) {
-    final name = widget.item['name']?.toString() ?? 'Kaart';
-    final code = widget.item['code']?.toString() ?? '';
-    final logoAsset = widget.item['logoAsset']?.toString() ?? '';
-    final customImage = widget.item['customImage']?.toString() ?? '';
+    final name = item['name']?.toString() ?? 'Kaart';
+    final code = item['code']?.toString() ?? '';
+    final logoAsset = item['logoAsset']?.toString() ?? '';
+    final customImage = item['customImage']?.toString() ?? '';
+    final hasLinkedGiftCard = linkedGiftCards.isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(2, 30, 2, 18),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 260),
-        curve: Curves.easeOutCubic,
+      padding: const EdgeInsets.fromLTRB(4, 18, 4, 16),
+      child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
           borderRadius: BorderRadius.circular(34),
+          gradient: LinearGradient(
+            colors: [
+              brandColor,
+              brandColor.withOpacity(0.82),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.13),
+              color: brandColor.withOpacity(0.28),
               blurRadius: 30,
               offset: const Offset(0, 14),
             ),
@@ -509,102 +618,299 @@ class _BarcodeCardState extends State<_BarcodeCard>
           child: Column(
             children: [
               Container(
-                height: 98,
-                padding: const EdgeInsets.symmetric(horizontal: 22),
-                color: headerColor,
-                child: Row(
+                height: 142,
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
+                child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 27,
-                      backgroundColor: Colors.white.withOpacity(0.20),
+                    Expanded(
                       child: hasCustomLogo
-                          ? ClipOval(
-                        child: Image.file(
-                          File(customImage),
-                          width: 48,
-                          height: 48,
-                          fit: BoxFit.contain,
-                        ),
+                          ? Image.file(
+                        File(customImage),
+                        fit: BoxFit.contain,
                       )
                           : hasAssetLogo
-                          ? Padding(
-                        padding: const EdgeInsets.all(6),
-                        child: Image.asset(
-                          logoAsset,
-                          fit: BoxFit.contain,
-                        ),
+                          ? Image.asset(
+                        logoAsset,
+                        fit: BoxFit.contain,
                       )
                           : const Icon(
-                        Icons.card_membership,
+                        Icons.card_membership_rounded,
                         color: Colors.white,
+                        size: 70,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: widget.onDetails,
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.16),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(22),
-                        ),
-                      ),
-                      child: const Text(
-                        'Details',
-                        style: TextStyle(fontWeight: FontWeight.w800),
+                    const SizedBox(height: 10),
+                    Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
                   ],
                 ),
               ),
               Expanded(
-                child: Center(
-                  child: ScaleTransition(
-                    scale: pulseAnimation,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 24),
-                      padding: const EdgeInsets.fromLTRB(20, 26, 20, 20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Colors.black.withOpacity(0.05),
-                        ),
-                      ),
-                      child: BarcodeWidget(
-                        barcode: widget.barcode,
-                        data: code,
-                        width: double.infinity,
-                        height: widget.isQr ? 260 : 170,
-                        drawText: !widget.isQr,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(22, 26, 22, 20),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(34),
                     ),
+                  ),
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 20,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF7F7F8),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.black.withOpacity(0.04),
+                              ),
+                            ),
+                            child: BarcodeWidget(
+                              barcode: barcode,
+                              data: code,
+                              width: double.infinity,
+                              height: hasLinkedGiftCard ? 150 : 180,
+                              drawText: false,
+                              errorBuilder: (_, __) {
+                                return const Center(
+                                  child: Text(
+                                    'Barcode kan niet worden weergegeven',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Text(
+                        formattedCode,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFF111122),
+                          fontSize: 20,
+                          letterSpacing: 2,
+                          height: 1.25,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      if (hasLinkedGiftCard) ...[
+                        const SizedBox(height: 14),
+                        _LinkedGiftCardInline(
+                          giftCards: linkedGiftCards,
+                          onTap: onOpenGiftCards,
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: onDetails,
+                        icon: const Icon(Icons.info_outline_rounded),
+                        label: const Text('Details en opties'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFFD51B46),
+                          textStyle: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LinkedGiftCardInline extends StatelessWidget {
+  final List<Map<String, dynamic>> giftCards;
+  final VoidCallback onTap;
+
+  const _LinkedGiftCardInline({
+    required this.giftCards,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final count = giftCards.length;
+
+    double totalBalance = 0;
+
+    for (final giftCard in giftCards) {
+      final raw = giftCard['currentBalance']?.toString() ?? '';
+      final value = double.tryParse(raw.replaceAll(',', '.')) ?? 0;
+      totalBalance += value;
+    }
+
+    final balance = totalBalance > 0
+        ? totalBalance.toStringAsFixed(2).replaceAll('.', ',')
+        : '';
+
+    return Material(
+      color: const Color(0xFFF8E3EA),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.white,
+                child: Icon(
+                  Icons.card_giftcard_rounded,
+                  color: Color(0xFFD51B46),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      count > 1
+                          ? 'U heeft $count cadeaukaarten beschikbaar'
+                          : 'U heeft een cadeaukaart beschikbaar',
+                      style: const TextStyle(
+                        color: Color(0xFFD51B46),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (balance.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Saldo: € $balance',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF333333),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFFD51B46),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LinkedGiftCardAction extends StatelessWidget {
+  final List<Map<String, dynamic>> giftCards;
+  final VoidCallback onTap;
+
+  const _LinkedGiftCardAction({
+    required this.giftCards,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final count = giftCards.length;
+
+    double totalBalance = 0;
+
+    for (final giftCard in giftCards) {
+      final raw = giftCard['currentBalance']?.toString() ?? '';
+      final value = double.tryParse(raw.replaceAll(',', '.')) ?? 0;
+      totalBalance += value;
+    }
+
+    final balance = totalBalance > 0
+        ? totalBalance.toStringAsFixed(2).replaceAll('.', ',')
+        : '';
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8E3EA),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Icon(
+                Icons.card_giftcard_rounded,
+                color: Color(0xFFD51B46),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    count > 1
+                        ? 'U heeft $count cadeaukaarten beschikbaar'
+                        : 'U heeft een cadeaukaart beschikbaar',
+                    style: const TextStyle(
+                      color: Color(0xFFD51B46),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  if (balance.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      'Saldo: € $balance',
+                      style: const TextStyle(
+                        color: Color(0xFF333333),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFFD51B46),
+            ),
+          ],
         ),
       ),
     );
@@ -672,9 +978,9 @@ class _DetailRow extends StatelessWidget {
                 TextSpan(
                   text: value,
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 21,
                     color: Color(0xFF111122),
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
@@ -687,7 +993,9 @@ class _DetailRow extends StatelessWidget {
               Clipboard.setData(ClipboardData(text: value));
               HapticFeedback.lightImpact();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Gekopieerd')),
+                const SnackBar(
+                  content: Text('Gekopieerd'),
+                ),
               );
             },
             child: const Text('Kopiëren'),

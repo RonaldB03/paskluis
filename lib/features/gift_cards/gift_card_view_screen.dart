@@ -28,6 +28,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
   late final PageController pageController;
   late List<Map<String, dynamic>> items;
   late int currentIndex;
+
   double? previousBrightness;
   bool showPin = false;
 
@@ -77,7 +78,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
     for (final key in StorageService.cardsBox.keys) {
       final item = StorageService.cardsBox.get(key);
 
-      if (item is Map && item['id'] == id) {
+      if (item is Map && item['id']?.toString() == id) {
         return key;
       }
     }
@@ -110,33 +111,45 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
   Future<void> updateCurrentItem(Map<String, dynamic> updatedItem) async {
     final id = updatedItem['id']?.toString() ?? '';
-    final key = _findKeyById(id);
+    if (id.isEmpty) return;
 
+    final key = _findKeyById(id);
     if (key == null) return;
 
-    updatedItem['updatedAt'] = DateTime.now().toIso8601String();
+    final oldItem = StorageService.cardsBox.get(key);
 
-    await StorageService.cardsBox.put(key, updatedItem);
+    final newItem = {
+      if (oldItem is Map) ...Map<String, dynamic>.from(oldItem),
+      ...updatedItem,
+      'id': id,
+      'type': 'Cadeaukaart',
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+
+    await StorageService.cardsBox.put(key, newItem);
 
     if (!mounted) return;
 
     setState(() {
-      items[currentIndex] = Map<String, dynamic>.from(updatedItem);
+      items[currentIndex] = Map<String, dynamic>.from(newItem);
     });
   }
 
   Future<void> toggleFavoriteCurrentItem() async {
+    if (items.isEmpty) return;
+
     final item = Map<String, dynamic>.from(items[currentIndex]);
 
     item['isFavorite'] = !(item['isFavorite'] == true);
     item['updatedAt'] = DateTime.now().toIso8601String();
 
     await updateCurrentItem(item);
-
     HapticFeedback.selectionClick();
   }
 
   Future<void> deleteCurrentItem() async {
+    if (items.isEmpty) return;
+
     final item = items[currentIndex];
     final id = item['id']?.toString() ?? '';
     final key = _findKeyById(id);
@@ -167,6 +180,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
   }
 
   Future<void> confirmDelete() async {
+    if (items.isEmpty) return;
+
     final item = items[currentIndex];
     final name = item['name']?.toString() ?? 'deze cadeaukaart';
 
@@ -184,7 +199,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
               child: const Text('Annuleren'),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
               onPressed: () => Navigator.pop(context, true),
               child: const Text('Verwijderen'),
             ),
@@ -221,14 +238,172 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
     if (success) {
       setState(() => showPin = true);
       HapticFeedback.selectionClick();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Authenticatie mislukt of geannuleerd')),
-      );
+      return;
+    }
+
+    final confirm = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircleAvatar(
+                  radius: 34,
+                  backgroundColor: Color(0xFFF8E3EA),
+                  child: Icon(
+                    Icons.lock_rounded,
+                    color: Color(0xFFD51B46),
+                    size: 34,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'Beveiliging niet gelukt',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF111122),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'We konden je identiteit niet bevestigen. Wil je de pincode toch tonen?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.35,
+                    color: Colors.black.withOpacity(0.55),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: FilledButton.icon(
+                    onPressed: () => Navigator.pop(context, true),
+                    icon: const Icon(Icons.visibility_rounded),
+                    label: const Text('Pincode tonen'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFD51B46),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text(
+                    'Annuleren',
+                    style: TextStyle(
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted) return;
+
+    if (confirm == true) {
+      setState(() => showPin = true);
+      HapticFeedback.selectionClick();
     }
   }
 
+  void openUsedOptions() {
+    if (items.isEmpty) return;
+
+    HapticFeedback.selectionClick();
+
+    final item = items[currentIndex];
+    final name = item['name']?.toString() ?? 'deze cadeaukaart';
+    final balance = item['currentBalance']?.toString() ?? '';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Kaart gebruikt?',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF111122),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  balance.isEmpty ? name : '$name • huidig saldo € $balance',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 15,
+                    height: 1.35,
+                    color: Colors.black.withOpacity(0.55),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                _ActionButton(
+                  icon: Icons.account_balance_wallet_rounded,
+                  label: 'Saldo bijwerken',
+                  onTap: () {
+                    Navigator.pop(context);
+                    openBalanceEditor();
+                  },
+                ),
+                const SizedBox(height: 10),
+                _ActionButton(
+                  icon: Icons.delete_outline,
+                  label: 'Cadeaukaart verwijderen',
+                  destructive: true,
+                  onTap: () {
+                    Navigator.pop(context);
+                    confirmDelete();
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void openBalanceEditor() {
+    if (items.isEmpty) return;
+
     HapticFeedback.selectionClick();
 
     final item = items[currentIndex];
@@ -267,39 +442,70 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                 const SizedBox(height: 22),
                 TextField(
                   controller: controller,
+                  autofocus: true,
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Nieuw saldo',
                     prefixText: '€ ',
-                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: const Color(0xFFF4F4F6),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFD51B46),
+                        width: 1.4,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: () async {
-                    final newBalance = controller.text.trim();
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: FilledButton.icon(
+                    onPressed: () async {
+                      final newBalance =
+                      controller.text.trim().replaceAll(',', '.');
 
-                    final updated = Map<String, dynamic>.from(items[currentIndex]);
-                    updated['currentBalance'] = newBalance;
+                      final updated =
+                      Map<String, dynamic>.from(items[currentIndex]);
 
-                    await updateCurrentItem(updated);
+                      updated['currentBalance'] = newBalance;
 
-                    if (!mounted) return;
+                      await updateCurrentItem(updated);
 
-                    Navigator.pop(context);
+                      if (!mounted) return;
 
-                    if (newBalance == '0' ||
-                        newBalance == '0.00' ||
-                        newBalance == '0,00') {
-                      Future.delayed(const Duration(milliseconds: 250), () {
-                        if (mounted) confirmDelete();
-                      });
-                    }
-                  },
-                  icon: const Icon(Icons.save),
-                  label: const Text('Opslaan'),
+                      Navigator.pop(context);
+
+                      if (newBalance == '0' ||
+                          newBalance == '0.00' ||
+                          newBalance == '0,00') {
+                        Future.delayed(const Duration(milliseconds: 250), () {
+                          if (mounted) confirmDelete();
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.save_rounded),
+                    label: const Text('Saldo opslaan'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFD51B46),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -313,18 +519,15 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
     final code = item['code']?.toString() ?? '';
     final onlyDigits = RegExp(r'^\d+$').hasMatch(code);
 
-    if (onlyDigits && code.length == 13) {
-      return Barcode.ean13();
-    }
-
-    if (onlyDigits && code.length == 8) {
-      return Barcode.ean8();
-    }
+    if (onlyDigits && code.length == 13) return Barcode.ean13();
+    if (onlyDigits && code.length == 8) return Barcode.ean8();
 
     return Barcode.code128();
   }
 
   void openDetails() {
+    if (items.isEmpty) return;
+
     HapticFeedback.selectionClick();
 
     final item = items[currentIndex];
@@ -338,6 +541,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
     final currentBalance = item['currentBalance']?.toString() ?? '';
     final isFavorite = item['isFavorite'] == true;
 
+    bool sheetShowPin = false;
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -346,141 +551,185 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (_) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Center(
-                        child: Text(
-                          'Cadeaukaartdetails',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF111122),
-                          ),
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, size: 32),
-                    ),
-                  ],
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            Future<void> showPinCode() async {
+              final success = await SecurityService.authenticate();
+
+              if (!context.mounted) return;
+
+              if (success) {
+                setSheetState(() {
+                  sheetShowPin = true;
+                });
+                HapticFeedback.selectionClick();
+                return;
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Authenticatie mislukt of geannuleerd'),
                 ),
-                const SizedBox(height: 20),
+              );
+            }
 
-                _DetailRow(label: 'Naam', value: name),
-                const SizedBox(height: 16),
-                _DetailRow(label: 'Barcode', value: code, showCopy: true),
-
-                if (cardNumber.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  _DetailRow(
-                    label: 'Kaartnummer',
-                    value: cardNumber,
-                    showCopy: true,
+            return SafeArea(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    24,
+                    8,
+                    24,
+                    MediaQuery.of(context).viewInsets.bottom + 28,
                   ),
-                ],
-
-                if (initialBalance.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  _DetailRow(label: 'Startsaldo', value: '€ $initialBalance'),
-                ],
-
-                if (currentBalance.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  _DetailRow(label: 'Huidig saldo', value: '€ $currentBalance'),
-                ],
-
-                if (pinCode.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: SelectableText.rich(
-                          TextSpan(
-                            children: [
-                              const TextSpan(
-                                text: 'Pincode / krascode\n',
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Center(
+                              child: Text(
+                                'Cadeaukaartdetails',
                                 style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.black54,
-                                ),
-                              ),
-                              TextSpan(
-                                text: showPin ? pinCode : '••••••',
-                                style: const TextStyle(
-                                  fontSize: 22,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
                                   color: Color(0xFF111122),
-                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                            ],
+                            ),
                           ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(Icons.close, size: 32),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      _DetailRow(label: 'Naam', value: name),
+                      const SizedBox(height: 16),
+
+                      _DetailRow(label: 'Barcode', value: code, showCopy: true),
+
+                      if (cardNumber.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _DetailRow(
+                          label: 'Kaartnummer',
+                          value: cardNumber,
+                          showCopy: true,
                         ),
+                      ],
+
+                      if (initialBalance.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _DetailRow(label: 'Startsaldo', value: '€ $initialBalance'),
+                      ],
+
+                      if (currentBalance.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _DetailRow(label: 'Huidig saldo', value: '€ $currentBalance'),
+                      ],
+
+                      if (pinCode.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SelectableText.rich(
+                                TextSpan(
+                                  children: [
+                                    const TextSpan(
+                                      text: 'Pincode / krascode\n',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: sheetShowPin ? pinCode : '••••••',
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        color: Color(0xFF111122),
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            FilledButton(
+                              onPressed: sheetShowPin ? null : showPinCode,
+                              child: Text(sheetShowPin ? 'Getoond' : 'Toon'),
+                            ),
+                          ],
+                        ),
+                      ],
+
+                      if (note.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _DetailRow(label: 'Notitie', value: note),
+                      ],
+
+                      const SizedBox(height: 24),
+
+                      _ActionButton(
+                        icon: Icons.euro,
+                        label: 'Saldo aanpassen',
+                        onTap: () {
+                          Navigator.pop(context);
+                          openBalanceEditor();
+                        },
                       ),
-                      FilledButton(
-                        onPressed: showPin ? null : revealPin,
-                        child: Text(showPin ? 'Getoond' : 'Toon'),
+
+                      const SizedBox(height: 10),
+
+                      _ActionButton(
+                        icon: isFavorite ? Icons.star : Icons.star_border,
+                        label: isFavorite
+                            ? 'Verwijder uit favorieten'
+                            : 'Maak favoriet',
+                        onTap: () async {
+                          Navigator.pop(context);
+                          await toggleFavoriteCurrentItem();
+                        },
                       ),
+
+                      const SizedBox(height: 10),
+
+                      _ActionButton(
+                        icon: Icons.edit_outlined,
+                        label: 'Bewerken',
+                        onTap: () {
+                          Navigator.pop(context);
+                          openEdit(items[currentIndex]);
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      _ActionButton(
+                        icon: Icons.delete_outline,
+                        label: 'Verwijderen',
+                        destructive: true,
+                        onTap: () {
+                          Navigator.pop(context);
+                          confirmDelete();
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
                     ],
                   ),
-                ],
-
-                if (note.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  _DetailRow(label: 'Notitie', value: note),
-                ],
-
-                const SizedBox(height: 24),
-
-                _ActionButton(
-                  icon: Icons.euro,
-                  label: 'Saldo aanpassen',
-                  onTap: () {
-                    Navigator.pop(context);
-                    openBalanceEditor();
-                  },
                 ),
-                const SizedBox(height: 10),
-                _ActionButton(
-                  icon: isFavorite ? Icons.star : Icons.star_border,
-                  label: isFavorite
-                      ? 'Verwijder uit favorieten'
-                      : 'Maak favoriet',
-                  onTap: () async {
-                    Navigator.pop(context);
-                    await toggleFavoriteCurrentItem();
-                  },
-                ),
-                const SizedBox(height: 10),
-                _ActionButton(
-                  icon: Icons.edit_outlined,
-                  label: 'Bewerken',
-                  onTap: () {
-                    Navigator.pop(context);
-                    openEdit(items[currentIndex]);
-                  },
-                ),
-                const SizedBox(height: 10),
-                _ActionButton(
-                  icon: Icons.delete_outline,
-                  label: 'Verwijderen',
-                  destructive: true,
-                  onTap: () {
-                    Navigator.pop(context);
-                    confirmDelete();
-                  },
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
@@ -549,6 +798,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                     item: item,
                     barcode: getBarcodeType(item),
                     onDetails: openDetails,
+                    onUsed: openUsedOptions,
                   ),
                 );
               },
@@ -577,11 +827,13 @@ class _GiftBarcodeCard extends StatefulWidget {
   final Map<String, dynamic> item;
   final Barcode barcode;
   final VoidCallback onDetails;
+  final VoidCallback onUsed;
 
   const _GiftBarcodeCard({
     required this.item,
     required this.barcode,
     required this.onDetails,
+    required this.onUsed,
   });
 
   @override
@@ -656,7 +908,7 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
           child: Column(
             children: [
               Container(
-                height: 118,
+                height: 105,
                 padding: const EdgeInsets.symmetric(horizontal: 22),
                 color: headerColor,
                 child: Row(
@@ -723,7 +975,7 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
               if (balance.isNotEmpty)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   color: const Color(0xFFF8E3EA),
                   child: Text(
                     'Saldo: € $balance',
@@ -735,13 +987,37 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
                     ),
                   ),
                 ),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(22, 14, 22, 0),
+                color: Colors.white,
+                child: SizedBox(
+                  height: 46,
+                  child: FilledButton.icon(
+                    onPressed: widget.onUsed,
+                    icon: const Icon(Icons.shopping_bag_rounded),
+                    label: const Text('Kaart gebruikt?'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFD51B46),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(26),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               Expanded(
                 child: Center(
                   child: ScaleTransition(
                     scale: pulseAnimation,
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 24),
-                      padding: const EdgeInsets.fromLTRB(20, 26, 20, 20),
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
@@ -753,10 +1029,10 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
                         barcode: widget.barcode,
                         data: code,
                         width: double.infinity,
-                        height: 160,
+                        height: 125,
                         drawText: true,
                         style: const TextStyle(
-                          fontSize: 22,
+                          fontSize: 20,
                           letterSpacing: 2,
                           fontWeight: FontWeight.w500,
                         ),

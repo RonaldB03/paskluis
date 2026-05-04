@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
@@ -10,6 +11,7 @@ import '../gift_cards/gift_cards_screen.dart';
 import '../home/home_screen.dart';
 import '../qr_codes/qr_codes_screen.dart';
 import 'card_view_screen.dart';
+import 'edit_card_screen.dart';
 
 class CardsScreen extends StatelessWidget {
   final VoidCallback onAdd;
@@ -29,9 +31,7 @@ class CardsScreen extends StatelessWidget {
       final aFavorite = a['isFavorite'] == true;
       final bFavorite = b['isFavorite'] == true;
 
-      if (aFavorite != bFavorite) {
-        return aFavorite ? -1 : 1;
-      }
+      if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
 
       final aDate = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
           DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
@@ -45,6 +45,20 @@ class CardsScreen extends StatelessWidget {
     });
 
     return items;
+  }
+
+  dynamic findHiveKey(Map<String, dynamic> item) {
+    final id = item['id']?.toString() ?? '';
+
+    for (final key in StorageService.cardsBox.keys) {
+      final value = StorageService.cardsBox.get(key);
+
+      if (value is Map && value['id']?.toString() == id) {
+        return key;
+      }
+    }
+
+    return null;
   }
 
   void openTab(BuildContext context, int index) {
@@ -81,6 +95,133 @@ class CardsScreen extends StatelessWidget {
           initialIndex: index,
         ),
       ),
+    );
+  }
+
+  Future<void> editCard(BuildContext context, Map<String, dynamic> item) async {
+    final key = findHiveKey(item);
+    if (key == null) return;
+
+    final updated = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditCardScreen(
+          item: item.map(
+                (key, value) => MapEntry(key, value?.toString() ?? ''),
+          ),
+        ),
+      ),
+    );
+
+    if (updated == null) return;
+
+    final oldCard = Map<String, dynamic>.from(
+      StorageService.cardsBox.get(key) as Map,
+    );
+
+    final newCard = {
+      ...oldCard,
+      ...updated,
+      'isFavorite': oldCard['isFavorite'] == true,
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+
+    await StorageService.cardsBox.put(key, newCard);
+  }
+
+  Future<void> deleteCard(BuildContext context, Map<String, dynamic> item) async {
+    final key = findHiveKey(item);
+    if (key == null) return;
+
+    final name = item['name']?.toString() ?? 'deze kaart';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Kaart verwijderen?'),
+        content: Text(
+          'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD51B46),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Verwijderen'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await StorageService.cardsBox.delete(key);
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$name is verwijderd.'),
+      ),
+    );
+  }
+
+  void showCardOptions(BuildContext context, Map<String, dynamic> item) {
+    final name = item['name']?.toString() ?? 'Kaart';
+
+    HapticFeedback.mediumImpact();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 6, 20, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _OptionTile(
+                  icon: Icons.edit_rounded,
+                  title: 'Bewerken',
+                  onTap: () {
+                    Navigator.pop(context);
+                    editCard(context, item);
+                  },
+                ),
+                _OptionTile(
+                  icon: Icons.delete_rounded,
+                  title: 'Verwijderen',
+                  isDestructive: true,
+                  onTap: () {
+                    Navigator.pop(context);
+                    deleteCard(context, item);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -125,12 +266,15 @@ class CardsScreen extends StatelessWidget {
           body: items.isEmpty
               ? _EmptyCardsState(onAdd: onAdd)
               : GridView.builder(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
             itemCount: items.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
               childAspectRatio: 1.45,
             ),
             itemBuilder: (context, index) {
@@ -139,6 +283,7 @@ class CardsScreen extends StatelessWidget {
               return _StoredCardTile(
                 item: item,
                 onTap: () => openCard(context, items, index),
+                onLongPress: () => showCardOptions(context, item),
               );
             },
           ),
@@ -208,8 +353,8 @@ class _EmptyCardsState extends StatelessWidget {
           itemCount: previewBrands.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
             childAspectRatio: 1.45,
           ),
           itemBuilder: (context, index) {
@@ -241,97 +386,155 @@ class _EmptyCardsState extends StatelessWidget {
   }
 }
 
-class _StoredCardTile extends StatelessWidget {
+class _StoredCardTile extends StatefulWidget {
   final Map<String, dynamic> item;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   const _StoredCardTile({
     required this.item,
     required this.onTap,
+    required this.onLongPress,
   });
 
+  @override
+  State<_StoredCardTile> createState() => _StoredCardTileState();
+}
+
+class _StoredCardTileState extends State<_StoredCardTile> {
+  bool isPressed = false;
+
   Color get cardColor {
-    final parsed = int.tryParse(item['brandColor']?.toString() ?? '');
+    final parsed = int.tryParse(widget.item['brandColor']?.toString() ?? '');
     if (parsed != null) return Color(parsed);
     return Colors.white;
   }
 
-  bool get hasAssetLogo => (item['logoAsset']?.toString() ?? '').isNotEmpty;
+  bool get hasAssetLogo =>
+      (widget.item['logoAsset']?.toString() ?? '').isNotEmpty;
 
   bool get hasCustomLogo {
-    final path = item['customImage']?.toString() ?? '';
+    final path = widget.item['customImage']?.toString() ?? '';
     return path.isNotEmpty && File(path).existsSync();
+  }
+
+  void setPressed(bool value) {
+    if (!mounted) return;
+    setState(() => isPressed = value);
   }
 
   @override
   Widget build(BuildContext context) {
-    final logoAsset = item['logoAsset']?.toString() ?? '';
-    final customImage = item['customImage']?.toString() ?? '';
-    final title = item['name']?.toString() ?? 'Kaart';
-    final isFavorite = item['isFavorite'] == true;
+    final logoAsset = widget.item['logoAsset']?.toString() ?? '';
+    final customImage = widget.item['customImage']?.toString() ?? '';
+    final title = widget.item['name']?.toString() ?? 'Kaart';
+    final isFavorite = widget.item['isFavorite'] == true;
     final useImage = hasAssetLogo || hasCustomLogo;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: hasAssetLogo ? cardColor : Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: Icon(
-                isFavorite ? Icons.star : Icons.card_membership,
-                color: hasAssetLogo ? Colors.white : const Color(0xFFD51B46),
-                size: 22,
+    return GestureDetector(
+      onTapDown: (_) => setPressed(true),
+      onTapCancel: () => setPressed(false),
+      onTapUp: (_) => setPressed(false),
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
+      child: AnimatedScale(
+        scale: isPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: hasAssetLogo ? cardColor : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isPressed ? 0.035 : 0.06),
+                blurRadius: isPressed ? 8 : 12,
+                offset: Offset(0, isPressed ? 3 : 5),
               ),
-            ),
-            Expanded(
-              child: Center(
-                child: useImage
-                    ? hasCustomLogo
-                    ? Image.file(
-                  File(customImage),
-                  fit: BoxFit.contain,
-                  height: 74,
-                  width: double.infinity,
-                )
-                    : Image.asset(
-                  logoAsset,
-                  fit: BoxFit.contain,
-                  height: 74,
-                  width: double.infinity,
-                )
-                    : Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: hasAssetLogo
-                        ? Colors.white
-                        : const Color(0xFF333333),
+            ],
+          ),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: Icon(
+                  isFavorite ? Icons.star : Icons.card_membership,
+                  color: hasAssetLogo ? Colors.white : const Color(0xFFD51B46),
+                  size: 22,
+                ),
+              ),
+              Expanded(
+                child: Center(
+                  child: useImage
+                      ? hasCustomLogo
+                      ? Image.file(
+                    File(customImage),
+                    fit: BoxFit.contain,
+                    height: 74,
+                    width: double.infinity,
+                  )
+                      : Image.asset(
+                    logoAsset,
+                    fit: BoxFit.contain,
+                    height: 74,
+                    width: double.infinity,
+                  )
+                      : Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: hasAssetLogo
+                          ? Colors.white
+                          : const Color(0xFF333333),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _OptionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final bool isDestructive;
+  final VoidCallback onTap;
+
+  const _OptionTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDestructive ? Colors.red : const Color(0xFFD51B46);
+
+    return ListTile(
+      onTap: onTap,
+      leading: CircleAvatar(
+        backgroundColor: color.withOpacity(0.12),
+        child: Icon(icon, color: color),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isDestructive ? Colors.red : const Color(0xFF333333),
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right),
     );
   }
 }

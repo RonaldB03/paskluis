@@ -4,28 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-enum ScannerMode {
-  barcode,
-  qr,
-}
-
-class ScannerScreen extends StatefulWidget {
-  final ScannerMode mode;
-  final bool showManualAfterDelay;
-
-  const ScannerScreen({
+class GiftCardScannerScreen extends StatefulWidget {
+  const GiftCardScannerScreen({
     super.key,
-    required this.mode,
-    this.showManualAfterDelay = false,
+    this.showManualAfterDelay = true,
   });
 
-  static const manualEntryResult = '__manual_entry__';
+  final bool showManualAfterDelay;
 
   @override
-  State<ScannerScreen> createState() => _ScannerScreenState();
+  State<GiftCardScannerScreen> createState() => _GiftCardScannerScreenState();
 }
 
-class _ScannerScreenState extends State<ScannerScreen>
+class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
     with SingleTickerProviderStateMixin {
   final MobileScannerController controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
@@ -125,7 +116,7 @@ class _ScannerScreenState extends State<ScannerScreen>
     final code = await showDialog<String>(
       context: context,
       barrierDismissible: true,
-      builder: (_) => const _ManualBarcodeDialog(),
+      builder: (_) => const _ManualGiftCardBarcodeDialog(),
     );
 
     if (code == null || code.trim().isEmpty) return;
@@ -158,7 +149,7 @@ class _ScannerScreenState extends State<ScannerScreen>
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Geen barcode gevonden in deze afbeelding.'),
+            content: Text('Geen cadeaukaart-barcode gevonden.'),
           ),
         );
         return;
@@ -271,7 +262,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                   ),
                   const Spacer(),
                   const Text(
-                    'Barcode scannen',
+                    'Cadeaukaart scannen',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 17,
@@ -296,7 +287,7 @@ class _ScannerScreenState extends State<ScannerScreen>
             child: Column(
               children: [
                 const Text(
-                  'Richt je camera op de barcode van je klantenkaart',
+                  'Scan de barcode van je cadeaukaart',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
@@ -307,7 +298,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Houd de barcode binnen het kader',
+                  'Later breiden we dit uit met pincode-herkenning',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.72),
@@ -441,28 +432,16 @@ class _Corner extends StatelessWidget {
         decoration: BoxDecoration(
           border: Border(
             top: top
-                ? const BorderSide(
-              color: Color(0xFFD51B46),
-              width: 5,
-            )
+                ? const BorderSide(color: Color(0xFFD51B46), width: 5)
                 : BorderSide.none,
             bottom: !top
-                ? const BorderSide(
-              color: Color(0xFFD51B46),
-              width: 5,
-            )
+                ? const BorderSide(color: Color(0xFFD51B46), width: 5)
                 : BorderSide.none,
             left: left
-                ? const BorderSide(
-              color: Color(0xFFD51B46),
-              width: 5,
-            )
+                ? const BorderSide(color: Color(0xFFD51B46), width: 5)
                 : BorderSide.none,
             right: !left
-                ? const BorderSide(
-              color: Color(0xFFD51B46),
-              width: 5,
-            )
+                ? const BorderSide(color: Color(0xFFD51B46), width: 5)
                 : BorderSide.none,
           ),
         ),
@@ -576,14 +555,16 @@ class _SecondaryActionButton extends StatelessWidget {
   }
 }
 
-class _ManualBarcodeDialog extends StatefulWidget {
-  const _ManualBarcodeDialog();
+class _ManualGiftCardBarcodeDialog extends StatefulWidget {
+  const _ManualGiftCardBarcodeDialog();
 
   @override
-  State<_ManualBarcodeDialog> createState() => _ManualBarcodeDialogState();
+  State<_ManualGiftCardBarcodeDialog> createState() =>
+      _ManualGiftCardBarcodeDialogState();
 }
 
-class _ManualBarcodeDialogState extends State<_ManualBarcodeDialog> {
+class _ManualGiftCardBarcodeDialogState
+    extends State<_ManualGiftCardBarcodeDialog> {
   final controller = TextEditingController();
 
   @override
@@ -611,7 +592,7 @@ class _ManualBarcodeDialogState extends State<_ManualBarcodeDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
-              Icons.keyboard_alt_outlined,
+              Icons.card_giftcard_rounded,
               color: Color(0xFFD51B46),
               size: 42,
             ),

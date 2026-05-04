@@ -2,7 +2,7 @@ name: paskluis_v1
 description: "PasKluis - pasjes, QR-codes en cadeaukaarten lokaal bewaren."
 publish_to: 'none'
 
-version: 1.0.0+15
+version: 1.0.0+16
 
 environment:
   sdk: ^3.11.5
@@ -17,7 +17,7 @@ dependencies:
   screen_brightness: ^2.1.7
   hive_ce: ^2.15.0
   hive_ce_flutter: ^2.3.4
-  local_auth: ^3.0.0
+  local_auth: ^2.2.0
   flutter_secure_storage: ^10.0.0
   mobile_scanner: ^7.2.0
   image_picker: ^1.1.2

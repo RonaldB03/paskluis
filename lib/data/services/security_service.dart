@@ -5,16 +5,17 @@ class SecurityService {
 
   static Future<bool> authenticate() async {
     try {
-      final canAuthenticate =
-          await _auth.canCheckBiometrics || await _auth.isDeviceSupported();
+      final isSupported = await _auth.isDeviceSupported();
 
-      if (!canAuthenticate) {
-        return false;
-      }
+      if (!isSupported) return false;
 
       return await _auth.authenticate(
         localizedReason: 'Bevestig je identiteit om de pincode te bekijken',
-        biometricOnly: false,
+        options: const AuthenticationOptions(
+          biometricOnly: false,
+          stickyAuth: true,
+          useErrorDialogs: true,
+        ),
       );
     } catch (_) {
       return false;

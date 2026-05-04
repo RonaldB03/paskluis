@@ -1,16 +1,23 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
+
+import '../cards/card_preview_screen.dart';
 import '../cards/card_view_screen.dart';
 import '../cards/cards_screen.dart';
 import '../cards/choose_card_template_screen.dart';
+import '../cards/edit_card_screen.dart';
+
 import '../gift_cards/add_gift_card_screen.dart';
+import '../gift_cards/choose_gift_card_template_screen.dart';
 import '../gift_cards/gift_card_view_screen.dart';
 import '../gift_cards/gift_cards_screen.dart';
+
 import '../qr_codes/qr_codes_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -64,14 +71,28 @@ class _HomeScreenState extends State<HomeScreen> {
     return sorted.take(3).toList();
   }
 
-  Future<void> saveNewCard(
+  dynamic findHiveKey(Map<String, dynamic> item) {
+    final id = item['id']?.toString() ?? '';
+
+    for (final key in StorageService.cardsBox.keys) {
+      final value = StorageService.cardsBox.get(key);
+
+      if (value is Map && value['id']?.toString() == id) {
+        return key;
+      }
+    }
+
+    return null;
+  }
+
+  Future<Map<String, dynamic>> saveNewCard(
       Map<String, String> result, {
         required String forcedType,
       }) async {
     final now = DateTime.now().toIso8601String();
 
     final Map<String, dynamic> card = {
-      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'id': result['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
       'type': result['type'] ?? forcedType,
       'name': result['name'] ?? '',
       'code': result['code'] ?? '',
@@ -84,13 +105,15 @@ class _HomeScreenState extends State<HomeScreen> {
       'logoAsset': result['logoAsset'] ?? '',
       'brandColor': result['brandColor'] ?? '',
       'customImage': result['customImage'] ?? '',
-      'isFavorite': false,
-      'createdAt': now,
-      'updatedAt': now,
-      'lastUsedAt': '',
+      'isFavorite': result['isFavorite'] == 'true',
+      'createdAt': result['createdAt'] ?? now,
+      'updatedAt': result['updatedAt'] ?? now,
+      'lastUsedAt': result['lastUsedAt'] ?? '',
+      'balanceHistory': result['balanceHistory'] ?? '[]',
     };
 
     await StorageService.cardsBox.add(card);
+    return card;
   }
 
   Future<void> openLoyaltyAddFlow() async {
@@ -101,9 +124,24 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-    if (result == null) return;
+    if (!mounted || result == null) return;
 
-    await saveNewCard(result, forcedType: 'Pasje');
+    final savedCard = await saveNewCard(result, forcedType: 'Pasje');
+
+    if (!mounted) return;
+
+    if (result['openPreviewAfterSave'] == 'true') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CardPreviewScreen(
+            item: savedCard.map(
+                  (key, value) => MapEntry(key, value?.toString() ?? ''),
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> openQrAddFlow() async {
@@ -114,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-    if (result == null) return;
+    if (!mounted || result == null) return;
 
     await saveNewCard(result, forcedType: 'QR-code');
   }
@@ -123,13 +161,204 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
-        builder: (_) => const AddGiftCardScreen(),
+        builder: (_) => const ChooseGiftCardTemplateScreen(),
       ),
     );
 
-    if (result == null) return;
+    if (!mounted || result == null) return;
 
     await saveNewCard(result, forcedType: 'Cadeaukaart');
+  }
+
+  Future<void> editLoyaltyCard(
+      BuildContext context,
+      Map<String, dynamic> item,
+      ) async {
+    final key = findHiveKey(item);
+    if (key == null) return;
+
+    final updated = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditCardScreen(item: item),
+      ),
+    );
+
+    if (updated == null) return;
+
+    final oldItem = Map<String, dynamic>.from(
+      StorageService.cardsBox.get(key) as Map,
+    );
+
+    await StorageService.cardsBox.put(key, {
+      ...oldItem,
+      ...updated,
+      'id': oldItem['id'],
+      'type': 'Pasje',
+      'createdAt': oldItem['createdAt'],
+      'isFavorite': oldItem['isFavorite'] == true,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> editGiftCard(
+      BuildContext context,
+      Map<String, dynamic> item,
+      ) async {
+    final key = findHiveKey(item);
+    if (key == null) return;
+
+    final updated = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddGiftCardScreen(
+          isEditing: true,
+          initialName: item['name']?.toString() ?? '',
+          initialCode: item['code']?.toString() ?? '',
+          initialCardNumber: item['cardNumber']?.toString() ?? '',
+          initialPinCode: item['pinCode']?.toString() ?? '',
+          initialInitialBalance: item['initialBalance']?.toString() ?? '',
+          initialCurrentBalance: item['currentBalance']?.toString() ?? '',
+          initialNote: item['note']?.toString() ?? '',
+          initialBrandId: item['brandId']?.toString() ?? '',
+          initialLogoAsset: item['logoAsset']?.toString() ?? '',
+          initialBrandColor: item['brandColor']?.toString() ?? '',
+          initialCustomImage: item['customImage']?.toString() ?? '',
+        ),
+      ),
+    );
+
+    if (updated == null) return;
+
+    final oldItem = Map<String, dynamic>.from(
+      StorageService.cardsBox.get(key) as Map,
+    );
+
+    await StorageService.cardsBox.put(key, {
+      ...oldItem,
+      ...updated,
+      'id': oldItem['id'],
+      'type': 'Cadeaukaart',
+      'createdAt': oldItem['createdAt'],
+      'isFavorite': oldItem['isFavorite'] == true,
+      'lastUsedAt': oldItem['lastUsedAt'] ?? '',
+      'balanceHistory': oldItem['balanceHistory'] ?? '[]',
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> deleteItem(
+      BuildContext context,
+      Map<String, dynamic> item,
+      ) async {
+    final key = findHiveKey(item);
+    if (key == null) return;
+
+    final name = item['name']?.toString() ?? 'deze kaart';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Verwijderen?'),
+        content: Text(
+          'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD51B46),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Verwijderen'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await StorageService.cardsBox.delete(key);
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$name is verwijderd.'),
+      ),
+    );
+  }
+
+  void showItemOptions(
+      BuildContext context,
+      Map<String, dynamic> item,
+      ) {
+    final name = item['name']?.toString() ?? 'Kaart';
+    final type = item['type']?.toString() ?? '';
+
+    HapticFeedback.mediumImpact();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 6, 20, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _OptionTile(
+                  icon: Icons.edit_rounded,
+                  title: 'Bewerken',
+                  onTap: () {
+                    Navigator.pop(context);
+
+                    if (type == 'Pasje') {
+                      editLoyaltyCard(context, item);
+                    } else if (type == 'Cadeaukaart') {
+                      editGiftCard(context, item);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('QR-code bewerken maken we straks.'),
+                        ),
+                      );
+                    }
+                  },
+                ),
+                _OptionTile(
+                  icon: Icons.delete_rounded,
+                  title: 'Verwijderen',
+                  isDestructive: true,
+                  onTap: () {
+                    Navigator.pop(context);
+                    deleteItem(context, item);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void showAddChoices() {
@@ -271,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           body: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 20, 18, 30),
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
             children: [
               _CategorySection(
                 title: 'Klantenkaarten',
@@ -279,11 +508,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 items: getPreviewItems(cards),
                 hasItems: cards.isNotEmpty,
                 actionTitle: cards.isEmpty ? 'Voeg kaart toe' : 'Al je kaarten',
-                onActionTap:
-                cards.isEmpty ? openLoyaltyAddFlow : () => openTab(1),
+                onActionTap: cards.isEmpty ? openLoyaltyAddFlow : () => openTab(1),
                 onItemTap: (item) => openCardView(cards, item),
+                onItemLongPress: (item) => showItemOptions(context, item),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 28),
               _CategorySection(
                 title: 'QR-codes',
                 icon: Icons.qr_code,
@@ -294,8 +523,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onActionTap:
                 qrCodes.isEmpty ? openQrAddFlow : () => openTab(2),
                 onItemTap: (item) => openCardView(qrCodes, item),
+                onItemLongPress: (item) => showItemOptions(context, item),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 28),
               _CategorySection(
                 title: 'Cadeaukaarten',
                 icon: Icons.card_giftcard,
@@ -304,10 +534,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 actionTitle: giftCards.isEmpty
                     ? 'Voeg cadeaukaart toe'
                     : 'Al je cadeaukaarten',
-                onActionTap: giftCards.isEmpty
-                    ? openGiftCardAddFlow
-                    : () => openTab(3),
+                onActionTap:
+                giftCards.isEmpty ? openGiftCardAddFlow : () => openTab(3),
                 onItemTap: (item) => openCardView(giftCards, item),
+                onItemLongPress: (item) => showItemOptions(context, item),
               ),
             ],
           ),
@@ -329,6 +559,7 @@ class _CategorySection extends StatelessWidget {
   final String actionTitle;
   final VoidCallback onActionTap;
   final Function(Map<String, dynamic> item) onItemTap;
+  final Function(Map<String, dynamic> item) onItemLongPress;
 
   const _CategorySection({
     required this.title,
@@ -338,6 +569,7 @@ class _CategorySection extends StatelessWidget {
     required this.actionTitle,
     required this.onActionTap,
     required this.onItemTap,
+    required this.onItemLongPress,
   });
 
   @override
@@ -359,15 +591,15 @@ class _CategorySection extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: items.length + 1,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
             childAspectRatio: 1.45,
           ),
           itemBuilder: (context, index) {
@@ -389,6 +621,7 @@ class _CategorySection extends StatelessWidget {
               balance: item['currentBalance']?.toString() ?? '',
               type: item['type']?.toString() ?? '',
               onTap: () => onItemTap(item),
+              onLongPress: () => onItemLongPress(item),
             );
           },
         ),
@@ -397,7 +630,7 @@ class _CategorySection extends StatelessWidget {
   }
 }
 
-class _PreviewCard extends StatelessWidget {
+class _PreviewCard extends StatefulWidget {
   final String title;
   final String logoAsset;
   final String customImage;
@@ -405,6 +638,7 @@ class _PreviewCard extends StatelessWidget {
   final String balance;
   final String type;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   const _PreviewCard({
     required this.title,
@@ -414,100 +648,124 @@ class _PreviewCard extends StatelessWidget {
     required this.balance,
     required this.type,
     required this.onTap,
+    required this.onLongPress,
   });
 
+  @override
+  State<_PreviewCard> createState() => _PreviewCardState();
+}
+
+class _PreviewCardState extends State<_PreviewCard> {
+  bool isPressed = false;
+
   Color get cardColor {
-    final parsed = int.tryParse(brandColor);
+    final parsed = int.tryParse(widget.brandColor);
     if (parsed != null) return Color(parsed);
     return Colors.white;
   }
 
-  bool get hasAssetLogo => logoAsset.isNotEmpty;
+  bool get hasAssetLogo => widget.logoAsset.isNotEmpty;
 
   bool get hasCustomLogo =>
-      customImage.isNotEmpty && File(customImage).existsSync();
+      widget.customImage.isNotEmpty && File(widget.customImage).existsSync();
 
-  bool get isGiftCard => type == 'Cadeaukaart';
+  bool get isGiftCard => widget.type == 'Cadeaukaart';
+
+  void setPressed(bool value) {
+    if (!mounted) return;
+    setState(() => isPressed = value);
+  }
 
   @override
   Widget build(BuildContext context) {
     final useImage = hasAssetLogo || hasCustomLogo;
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: hasAssetLogo ? cardColor : Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: useImage
-                  ? Center(
-                child: hasCustomLogo
-                    ? Image.file(
-                  File(customImage),
-                  fit: BoxFit.contain,
-                  height: 72,
-                  width: double.infinity,
-                )
-                    : Image.asset(
-                  logoAsset,
-                  fit: BoxFit.contain,
-                  height: 72,
-                  width: double.infinity,
-                ),
-              )
-                  : Center(
-                child: Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    color: hasAssetLogo
-                        ? Colors.white
-                        : const Color(0xFF333333),
-                  ),
-                ),
-              ),
-            ),
-            if (isGiftCard) ...[
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 7),
-                decoration: BoxDecoration(
-                  color: hasAssetLogo
-                      ? Colors.white.withOpacity(0.18)
-                      : const Color(0xFFF8E3EA),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Text(
-                  balance.isEmpty ? 'Saldo onbekend' : '€ $balance',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    color:
-                    hasAssetLogo ? Colors.white : const Color(0xFFD51B46),
-                  ),
-                ),
+    return GestureDetector(
+      onTapDown: (_) => setPressed(true),
+      onTapCancel: () => setPressed(false),
+      onTapUp: (_) => setPressed(false),
+      onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
+      child: AnimatedScale(
+        scale: isPressed ? 0.96 : 1.0,
+        duration: const Duration(milliseconds: 110),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: hasAssetLogo ? cardColor : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isPressed ? 0.035 : 0.06),
+                blurRadius: isPressed ? 8 : 12,
+                offset: Offset(0, isPressed ? 3 : 5),
               ),
             ],
-          ],
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: useImage
+                    ? Center(
+                  child: hasCustomLogo
+                      ? Image.file(
+                    File(widget.customImage),
+                    fit: BoxFit.contain,
+                    height: 72,
+                    width: double.infinity,
+                  )
+                      : Image.asset(
+                    widget.logoAsset,
+                    fit: BoxFit.contain,
+                    height: 72,
+                    width: double.infinity,
+                  ),
+                )
+                    : Center(
+                  child: Text(
+                    widget.title,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: hasAssetLogo
+                          ? Colors.white
+                          : const Color(0xFF333333),
+                    ),
+                  ),
+                ),
+              ),
+              if (isGiftCard) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  decoration: BoxDecoration(
+                    color: hasAssetLogo
+                        ? Colors.white.withOpacity(0.18)
+                        : const Color(0xFFF8E3EA),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    widget.balance.isEmpty
+                        ? 'Saldo onbekend'
+                        : '€ ${widget.balance}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      color:
+                      hasAssetLogo ? Colors.white : const Color(0xFFD51B46),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -581,6 +839,41 @@ class _AddChoiceTile extends StatelessWidget {
       title: Text(
         title,
         style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
+      trailing: const Icon(Icons.chevron_right),
+    );
+  }
+}
+
+class _OptionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final bool isDestructive;
+  final VoidCallback onTap;
+
+  const _OptionTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDestructive ? Colors.red : const Color(0xFFD51B46);
+
+    return ListTile(
+      onTap: onTap,
+      leading: CircleAvatar(
+        backgroundColor: color.withOpacity(0.12),
+        child: Icon(icon, color: color),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: isDestructive ? Colors.red : const Color(0xFF333333),
+          fontWeight: FontWeight.w800,
+        ),
       ),
       trailing: const Icon(Icons.chevron_right),
     );

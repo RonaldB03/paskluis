@@ -1,66 +1,38 @@
 import 'package:flutter/material.dart';
 
 import '../../data/templates/card_templates.dart';
-import '../scanner/scanner_screen.dart';
-import 'add_card_screen.dart';
+import 'add_gift_card_screen.dart';
+import 'gift_card_scanner_screen.dart';
 
-class ChooseCardTemplateScreen extends StatefulWidget {
-  final String type;
-
-  const ChooseCardTemplateScreen({
-    super.key,
-    required this.type,
-  });
+class ChooseGiftCardTemplateScreen extends StatefulWidget {
+  const ChooseGiftCardTemplateScreen({super.key});
 
   @override
-  State<ChooseCardTemplateScreen> createState() =>
-      _ChooseCardTemplateScreenState();
+  State<ChooseGiftCardTemplateScreen> createState() =>
+      _ChooseGiftCardTemplateScreenState();
 }
 
-class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
+class _ChooseGiftCardTemplateScreenState
+    extends State<ChooseGiftCardTemplateScreen> {
   String searchQuery = '';
 
-  String get title {
-    switch (widget.type) {
-      case 'QR-code':
-        return 'QR-code toevoegen';
-      case 'Cadeaukaart':
-        return 'Cadeaukaart toevoegen';
-      default:
-        return 'Klantenkaart toevoegen';
-    }
-  }
-
-  Future<void> openManualForm({
-    CardBrandTemplate? brand,
-  }) async {
+  Future<void> openCustomGiftCard() async {
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
-        builder: (_) => AddCardScreen(
-          initialType: widget.type,
-          initialName: brand?.name,
-          initialBrandId: brand?.id,
-          initialLogoAsset: brand?.logoAsset,
-          initialBrandColor: brand?.color.value.toString(),
-        ),
+        builder: (_) => const AddGiftCardScreen(),
       ),
     );
 
     if (!mounted || result == null) return;
-
-    Navigator.pop(context, {
-      ...result,
-      'openPreviewAfterSave': 'true',
-    });
+    Navigator.pop(context, result);
   }
 
   Future<void> scanForBrand(CardBrandTemplate brand) async {
     final code = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (_) => const ScannerScreen(
-          mode: ScannerMode.barcode,
+        builder: (_) => const GiftCardScannerScreen(
           showManualAfterDelay: true,
         ),
       ),
@@ -68,38 +40,27 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
     if (!mounted || code == null || code.trim().isEmpty) return;
 
-    if (code == ScannerScreen.manualEntryResult) {
-      await openManualForm(brand: brand);
-      return;
-    }
+    final result = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AddGiftCardScreen(
+          initialName: '${brand.name} cadeaukaart',
+          initialCode: code.trim(),
+          initialBrandId: brand.id,
+          initialLogoAsset: brand.logoAsset,
+          initialBrandColor: brand.color.value.toString(),
+          initialCardNumber: code.trim(),
+        ),
+      ),
+    );
 
-    final now = DateTime.now().toIso8601String();
-
-    Navigator.pop(context, {
-      'id': DateTime.now().millisecondsSinceEpoch.toString(),
-      'type': 'Pasje',
-      'name': brand.name,
-      'code': code.trim(),
-      'note': '',
-      'cardNumber': '',
-      'pinCode': '',
-      'initialBalance': '',
-      'currentBalance': '',
-      'brandId': brand.id,
-      'logoAsset': brand.logoAsset,
-      'brandColor': brand.color.value.toString(),
-      'customImage': '',
-      'isFavorite': 'false',
-      'createdAt': now,
-      'updatedAt': now,
-      'lastUsedAt': '',
-      'openPreviewAfterSave': 'true',
-    });
+    if (!mounted || result == null) return;
+    Navigator.pop(context, result);
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredBrands = cardBrandTemplates.where((brand) {
+    final brands = getTemplatesByType('Cadeaukaart').where((brand) {
       return brand.name.toLowerCase().contains(searchQuery.toLowerCase());
     }).toList();
 
@@ -110,16 +71,16 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
         elevation: 0,
         foregroundColor: const Color(0xFF303036),
         centerTitle: true,
-        title: Text(
-          title,
-          style: const TextStyle(
+        title: const Text(
+          'Cadeaukaart toevoegen',
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w900,
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => openManualForm(),
+            onPressed: openCustomGiftCard,
             child: const Text(
               'Handmatig',
               style: TextStyle(
@@ -154,7 +115,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
           const SizedBox(height: 16),
 
           const Text(
-            'Populaire kaarten',
+            'Populaire cadeaukaarten',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,
@@ -164,7 +125,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
           const SizedBox(height: 9),
 
-          ...filteredBrands.map((brand) {
+          ...brands.map((brand) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: _BrandListTile(
@@ -176,8 +137,8 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
           const SizedBox(height: 6),
 
-          _CustomCardTile(
-            onTap: () => openManualForm(),
+          _CustomGiftCardTile(
+            onTap: openCustomGiftCard,
           ),
         ],
       ),
@@ -248,10 +209,10 @@ class _BrandListTile extends StatelessWidget {
   }
 }
 
-class _CustomCardTile extends StatelessWidget {
+class _CustomGiftCardTile extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _CustomCardTile({
+  const _CustomGiftCardTile({
     required this.onTap,
   });
 
@@ -286,7 +247,7 @@ class _CustomCardTile extends StatelessWidget {
               const SizedBox(width: 14),
               const Expanded(
                 child: Text(
-                  'Aangepaste kaart',
+                  'Aangepaste cadeaukaart',
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
