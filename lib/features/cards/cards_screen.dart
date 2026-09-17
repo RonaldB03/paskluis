@@ -32,11 +32,13 @@ class CardsScreen extends StatelessWidget {
 
       if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
 
-      final aDate = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
+      final aDate =
+          DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
           DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
-      final bDate = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
+      final bDate =
+          DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
           DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
@@ -47,9 +49,9 @@ class CardsScreen extends StatelessWidget {
   }
 
   Future<Map<String, dynamic>> saveNewCard(
-      Map<String, String> result, {
-        required String forcedType,
-      }) async {
+    Map<String, String> result, {
+    required String forcedType,
+  }) async {
     final now = DateTime.now().toIso8601String();
 
     final Map<String, dynamic> card = {
@@ -97,7 +99,7 @@ class CardsScreen extends StatelessWidget {
         MaterialPageRoute(
           builder: (_) => CardPreviewScreen(
             item: savedCard.map(
-                  (key, value) => MapEntry(key, value?.toString() ?? ''),
+              (key, value) => MapEntry(key, value?.toString() ?? ''),
             ),
           ),
         ),
@@ -138,23 +140,19 @@ class CardsScreen extends StatelessWidget {
         return;
     }
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => screen),
-    );
+    Navigator.of(context)
+        .pushReplacement(MaterialPageRoute(builder: (_) => screen));
   }
 
   void openCard(
-      BuildContext context,
-      List<Map<String, dynamic>> items,
-      int index,
-      ) {
+    BuildContext context,
+    List<Map<String, dynamic>> items,
+    int index,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CardViewScreen(
-          items: items,
-          initialIndex: index,
-        ),
+        builder: (_) => CardViewScreen(items: items, initialIndex: index),
       ),
     );
   }
@@ -168,7 +166,7 @@ class CardsScreen extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => EditCardScreen(
           item: item.map(
-                (key, value) => MapEntry(key, value?.toString() ?? ''),
+            (key, value) => MapEntry(key, value?.toString() ?? ''),
           ),
         ),
       ),
@@ -187,10 +185,13 @@ class CardsScreen extends StatelessWidget {
       'updatedAt': DateTime.now().toIso8601String(),
     };
 
-    await StorageService.cardsBox.put(key, newCard);
+    await StorageService.saveCard(key, newCard);
   }
 
-  Future<void> deleteCard(BuildContext context, Map<String, dynamic> item) async {
+  Future<void> deleteCard(
+    BuildContext context,
+    Map<String, dynamic> item,
+  ) async {
     final key = findHiveKey(item);
     if (key == null) return;
 
@@ -221,13 +222,12 @@ class CardsScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    await StorageService.cardsBox.delete(key);
+    await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$name is verwijderd.')),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('$name is verwijderd.')));
   }
 
   void showCardOptions(BuildContext context, Map<String, dynamic> item) {
@@ -295,10 +295,7 @@ class CardsScreen extends StatelessWidget {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             leading: IconButton(
-              icon: const Icon(
-                Icons.home_rounded,
-                color: Color(0xFFD51B46),
-              ),
+              icon: const Icon(Icons.home_rounded, color: Color(0xFFD51B46)),
               onPressed: () => openTab(context, 0),
             ),
             backgroundColor: Colors.white,
@@ -313,42 +310,35 @@ class CardsScreen extends StatelessWidget {
             ),
             actions: [
               IconButton(
-                icon: const Icon(
-                  Icons.add,
-                  color: Color(0xFFD51B46),
-                  size: 32,
-                ),
+                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
                 onPressed: () => openAddCard(context),
               ),
             ],
           ),
           body: items.isEmpty
-              ? _EmptyCardsState(
-            onAdd: () => openAddCard(context),
-          )
+              ? _EmptyCardsState(onAdd: () => openAddCard(context))
               : GridView.builder(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            itemCount: items.length,
-            gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1.45,
-            ),
-            itemBuilder: (context, index) {
-              final item = items[index];
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  itemCount: items.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 1.45,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
 
-              return _StoredCardTile(
-                item: item,
-                onTap: () => openCard(context, items, index),
-                onLongPress: () => showCardOptions(context, item),
-              );
-            },
-          ),
+                    return _StoredCardTile(
+                      item: item,
+                      onTap: () => openCard(context, items, index),
+                      onLongPress: () => showCardOptions(context, item),
+                    );
+                  },
+                ),
           bottomNavigationBar: MainBottomNav(
             currentIndex: 1,
             onTap: (index) => openTab(context, index),
@@ -362,9 +352,7 @@ class CardsScreen extends StatelessWidget {
 class _EmptyCardsState extends StatelessWidget {
   final VoidCallback onAdd;
 
-  const _EmptyCardsState({
-    required this.onAdd,
-  });
+  const _EmptyCardsState({required this.onAdd});
 
   @override
   Widget build(BuildContext context) {
@@ -387,11 +375,7 @@ class _EmptyCardsState extends StatelessWidget {
         const Text(
           'Tik op + of kies een populaire winkel om je klantenkaart toe te voegen.',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 17,
-            height: 1.3,
-            color: Color(0xFF555557),
-          ),
+          style: TextStyle(fontSize: 17, height: 1.3, color: Color(0xFF555557)),
         ),
         const SizedBox(height: 30),
         FilledButton.icon(
@@ -532,31 +516,31 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                 child: Center(
                   child: useImage
                       ? hasCustomLogo
-                      ? Image.file(
-                    File(customImage),
-                    fit: BoxFit.contain,
-                    height: 74,
-                    width: double.infinity,
-                  )
-                      : Image.asset(
-                    logoAsset,
-                    fit: BoxFit.contain,
-                    height: 74,
-                    width: double.infinity,
-                  )
+                            ? Image.file(
+                                File(customImage),
+                                fit: BoxFit.contain,
+                                height: 74,
+                                width: double.infinity,
+                              )
+                            : Image.asset(
+                                logoAsset,
+                                fit: BoxFit.contain,
+                                height: 74,
+                                width: double.infinity,
+                              )
                       : Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: hasAssetLogo
-                          ? Colors.white
-                          : const Color(0xFF333333),
-                    ),
-                  ),
+                          title,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: hasAssetLogo
+                                ? Colors.white
+                                : const Color(0xFF333333),
+                          ),
+                        ),
                 ),
               ),
             ],

@@ -73,11 +73,7 @@ class _CardListViewState extends State<CardListView> {
           ),
         ),
         if (filteredItems.isEmpty)
-          const Expanded(
-            child: Center(
-              child: Text('Geen resultaten gevonden'),
-            ),
-          )
+          const Expanded(child: Center(child: Text('Geen resultaten gevonden')))
         else
           Expanded(
             child: ListView.builder(
@@ -131,9 +127,7 @@ class _CardListViewState extends State<CardListView> {
                             );
 
                             if (confirmed == true) {
-                              widget.onDelete(
-                                item['id']?.toString() ?? '',
-                              );
+                              widget.onDelete(item['id']?.toString() ?? '');
                             }
                           },
                         ),
@@ -147,8 +141,7 @@ class _CardListViewState extends State<CardListView> {
                           builder: (_) => CardDetailScreen(
                             item: Map<String, String>.from(
                               item.map(
-                                    (key, value) =>
-                                    MapEntry(key, value.toString()),
+                                (key, value) => MapEntry(key, value.toString()),
                               ),
                             ),
                           ),

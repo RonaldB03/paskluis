@@ -32,11 +32,13 @@ class GiftCardsScreen extends StatelessWidget {
 
       if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
 
-      final aDate = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
+      final aDate =
+          DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
           DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
-      final bDate = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
+      final bDate =
+          DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
           DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
@@ -47,9 +49,9 @@ class GiftCardsScreen extends StatelessWidget {
   }
 
   Future<Map<String, dynamic>> saveNewCard(
-      Map<String, String> result, {
-        required String forcedType,
-      }) async {
+    Map<String, String> result, {
+    required String forcedType,
+  }) async {
     final now = DateTime.now().toIso8601String();
 
     final Map<String, dynamic> card = {
@@ -80,9 +82,7 @@ class GiftCardsScreen extends StatelessWidget {
   Future<void> openAddGiftCard(BuildContext context) async {
     final result = await Navigator.push<Map<String, String>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const ChooseGiftCardTemplateScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const ChooseGiftCardTemplateScreen()),
     );
 
     if (!context.mounted || result == null) return;
@@ -110,7 +110,7 @@ class GiftCardsScreen extends StatelessWidget {
         MaterialPageRoute(
           builder: (_) => CardPreviewScreen(
             item: savedCard.map(
-                  (key, value) => MapEntry(key, value?.toString() ?? ''),
+              (key, value) => MapEntry(key, value?.toString() ?? ''),
             ),
           ),
         ),
@@ -146,9 +146,9 @@ class GiftCardsScreen extends StatelessWidget {
   }
 
   Future<void> deleteGiftCard(
-      BuildContext context,
-      Map<String, dynamic> item,
-      ) async {
+    BuildContext context,
+    Map<String, dynamic> item,
+  ) async {
     final key = findHiveKey(item);
     if (key == null) return;
 
@@ -179,13 +179,12 @@ class GiftCardsScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    await StorageService.cardsBox.delete(key);
+    await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$name is verwijderd.')),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('$name is verwijderd.')));
   }
 
   void showGiftCardOptions(BuildContext context, Map<String, dynamic> item) {
@@ -257,23 +256,19 @@ class GiftCardsScreen extends StatelessWidget {
         return;
     }
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => screen),
-    );
+    Navigator.of(context)
+        .pushReplacement(MaterialPageRoute(builder: (_) => screen));
   }
 
   void openGiftCard(
-      BuildContext context,
-      List<Map<String, dynamic>> items,
-      int index,
-      ) {
+    BuildContext context,
+    List<Map<String, dynamic>> items,
+    int index,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => GiftCardViewScreen(
-          items: items,
-          initialIndex: index,
-        ),
+        builder: (_) => GiftCardViewScreen(items: items, initialIndex: index),
       ),
     );
   }
@@ -289,10 +284,7 @@ class GiftCardsScreen extends StatelessWidget {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             leading: IconButton(
-              icon: const Icon(
-                Icons.home_rounded,
-                color: Color(0xFFD51B46),
-              ),
+              icon: const Icon(Icons.home_rounded, color: Color(0xFFD51B46)),
               onPressed: () => openTab(context, 0),
             ),
             title: const Text(
@@ -305,42 +297,35 @@ class GiftCardsScreen extends StatelessWidget {
             elevation: 0,
             actions: [
               IconButton(
-                icon: const Icon(
-                  Icons.add,
-                  color: Color(0xFFD51B46),
-                  size: 32,
-                ),
+                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
                 onPressed: () => openAddGiftCard(context),
               ),
             ],
           ),
           body: items.isEmpty
-              ? _EmptyGiftCardState(
-            onAdd: () => openAddGiftCard(context),
-          )
+              ? _EmptyGiftCardState(onAdd: () => openAddGiftCard(context))
               : GridView.builder(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
-            itemCount: items.length,
-            gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio: 1.28,
-            ),
-            itemBuilder: (context, index) {
-              final item = items[index];
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  itemCount: items.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 1.28,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
 
-              return _GiftCardTile(
-                item: item,
-                onTap: () => openGiftCard(context, items, index),
-                onLongPress: () => showGiftCardOptions(context, item),
-              );
-            },
-          ),
+                    return _GiftCardTile(
+                      item: item,
+                      onTap: () => openGiftCard(context, items, index),
+                      onLongPress: () => showGiftCardOptions(context, item),
+                    );
+                  },
+                ),
           bottomNavigationBar: MainBottomNav(
             currentIndex: 3,
             onTap: (index) => openTab(context, index),
@@ -354,9 +339,7 @@ class GiftCardsScreen extends StatelessWidget {
 class _EmptyGiftCardState extends StatelessWidget {
   final VoidCallback onAdd;
 
-  const _EmptyGiftCardState({
-    required this.onAdd,
-  });
+  const _EmptyGiftCardState({required this.onAdd});
 
   @override
   Widget build(BuildContext context) {
@@ -408,9 +391,7 @@ class _EmptyGiftCardState extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(28),
                   ),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                  ),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w900),
                 ),
               ),
             ),
@@ -506,31 +487,31 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                 child: Center(
                   child: hasLogo
                       ? hasCustomLogo
-                      ? Image.file(
-                    File(customImage),
-                    fit: BoxFit.contain,
-                    height: 66,
-                    width: double.infinity,
-                  )
-                      : Image.asset(
-                    logoAsset,
-                    fit: BoxFit.contain,
-                    height: 66,
-                    width: double.infinity,
-                  )
+                            ? Image.file(
+                                File(customImage),
+                                fit: BoxFit.contain,
+                                height: 66,
+                                width: double.infinity,
+                              )
+                            : Image.asset(
+                                logoAsset,
+                                fit: BoxFit.contain,
+                                height: 66,
+                                width: double.infinity,
+                              )
                       : Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w900,
-                      color: hasAssetLogo
-                          ? Colors.white
-                          : const Color(0xFF333333),
-                    ),
-                  ),
+                          title,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            color: hasAssetLogo
+                                ? Colors.white
+                                : const Color(0xFF333333),
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 10),

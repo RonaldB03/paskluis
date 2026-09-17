@@ -36,7 +36,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
   void initState() {
     super.initState();
 
-    items = widget.items.map((item) => Map<String, dynamic>.from(item)).toList();
+    items = widget.items
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
     currentIndex = widget.initialIndex.clamp(0, items.length - 1);
 
     pageController = PageController(
@@ -100,7 +102,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
     item['lastUsedAt'] = DateTime.now().toIso8601String();
     item['updatedAt'] = DateTime.now().toIso8601String();
 
-    await StorageService.cardsBox.put(key, item);
+    await StorageService.saveCard(key, item);
 
     if (!mounted) return;
 
@@ -126,7 +128,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
       'updatedAt': DateTime.now().toIso8601String(),
     };
 
-    await StorageService.cardsBox.put(key, newItem);
+    await StorageService.saveCard(key, newItem);
 
     if (!mounted) return;
 
@@ -156,7 +158,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
     if (key == null) return;
 
-    await StorageService.cardsBox.delete(key);
+    await StorageService.deleteCard(key);
 
     if (!mounted) return;
 
@@ -199,9 +201,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
               child: const Text('Annuleren'),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(context, true),
               child: const Text('Verwijderen'),
             ),
@@ -220,9 +220,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
     final updatedItem = await Navigator.push<Map<String, dynamic>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => EditGiftCardScreen(item: item),
-      ),
+      MaterialPageRoute(builder: (_) => EditGiftCardScreen(item: item)),
     );
 
     if (updatedItem == null) return;
@@ -470,11 +468,14 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                   height: 56,
                   child: FilledButton.icon(
                     onPressed: () async {
-                      final newBalance =
-                      controller.text.trim().replaceAll(',', '.');
+                      final newBalance = controller.text.trim().replaceAll(
+                        ',',
+                        '.',
+                      );
 
-                      final updated =
-                      Map<String, dynamic>.from(items[currentIndex]);
+                      final updated = Map<String, dynamic>.from(
+                        items[currentIndex],
+                      );
 
                       updated['currentBalance'] = newBalance;
 
@@ -628,12 +629,18 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
                       if (initialBalance.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        _DetailRow(label: 'Startsaldo', value: '€ $initialBalance'),
+                        _DetailRow(
+                          label: 'Startsaldo',
+                          value: '€ $initialBalance',
+                        ),
                       ],
 
                       if (currentBalance.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        _DetailRow(label: 'Huidig saldo', value: '€ $currentBalance'),
+                        _DetailRow(
+                          label: 'Huidig saldo',
+                          value: '€ $currentBalance',
+                        ),
                       ],
 
                       if (pinCode.isNotEmpty) ...[
@@ -787,10 +794,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                       opacity: opacity,
                       child: Transform.translate(
                         offset: Offset(0, yOffset),
-                        child: Transform.scale(
-                          scale: scale,
-                          child: child,
-                        ),
+                        child: Transform.scale(scale: scale, child: child),
                       ),
                     );
                   },
@@ -918,25 +922,25 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
                       backgroundColor: Colors.white.withOpacity(0.20),
                       child: hasCustomLogo
                           ? ClipOval(
-                        child: Image.file(
-                          File(customImage),
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.contain,
-                        ),
-                      )
+                              child: Image.file(
+                                File(customImage),
+                                width: 50,
+                                height: 50,
+                                fit: BoxFit.contain,
+                              ),
+                            )
                           : hasAssetLogo
                           ? Padding(
-                        padding: const EdgeInsets.all(6),
-                        child: Image.asset(
-                          logoAsset,
-                          fit: BoxFit.contain,
-                        ),
-                      )
+                              padding: const EdgeInsets.all(6),
+                              child: Image.asset(
+                                logoAsset,
+                                fit: BoxFit.contain,
+                              ),
+                            )
                           : const Icon(
-                        Icons.card_giftcard,
-                        color: Colors.white,
-                      ),
+                              Icons.card_giftcard,
+                              color: Colors.white,
+                            ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -1089,9 +1093,8 @@ class _DetailRow extends StatelessWidget {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: value));
               HapticFeedback.lightImpact();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Gekopieerd')),
-              );
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(const SnackBar(content: Text('Gekopieerd')));
             },
             child: const Text('Kopiëren'),
           ),
@@ -1154,10 +1157,7 @@ class _Dots extends StatelessWidget {
   final int count;
   final int activeIndex;
 
-  const _Dots({
-    required this.count,
-    required this.activeIndex,
-  });
+  const _Dots({required this.count, required this.activeIndex});
 
   @override
   Widget build(BuildContext context) {

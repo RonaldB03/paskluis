@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../../data/services/media_storage_service.dart';
 import 'qr_scanner_screen.dart';
 
 class AddQrCodeScreen extends StatefulWidget {
@@ -89,9 +90,7 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
 
     final result = await Navigator.push<String>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const QrScannerScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
     );
 
     if (!mounted || result == null || result.trim().isEmpty) return;
@@ -107,19 +106,28 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
 
     if (image == null) return;
 
-    HapticFeedback.selectionClick();
-
-    setState(() {
-      customImage = image.path;
-      logoAsset = '';
-      brandColor = '';
-      brandId = '';
-    });
+    try {
+      final storedPath = await MediaStorageService.persistImage(image.path);
+      if (!mounted) return;
+      HapticFeedback.selectionClick();
+      setState(() {
+        customImage = storedPath;
+        logoAsset = '';
+        brandColor = '';
+        brandId = '';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('De afbeelding kon niet worden opgeslagen.'),
+        ),
+      );
+    }
   }
 
   void removeLogo() {
     HapticFeedback.selectionClick();
-
     setState(() {
       customImage = '';
       logoAsset = '';
@@ -133,19 +141,14 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
     final code = codeController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Naam is verplicht.'),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Naam is verplicht.')));
       return;
     }
 
     if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('QR-code inhoud is verplicht.'),
-        ),
+        const SnackBar(content: Text('QR-code inhoud is verplicht.')),
       );
       return;
     }
@@ -262,9 +265,7 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(22),
                     ),
-                    textStyle: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -358,10 +359,7 @@ class _QrLivePreview extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         gradient: LinearGradient(
-          colors: [
-            cardColor,
-            cardColor.withOpacity(0.82),
-          ],
+          colors: [cardColor, cardColor.withOpacity(0.82)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -385,20 +383,14 @@ class _QrLivePreview extends StatelessWidget {
                 children: [
                   Expanded(
                     child: hasCustomLogo
-                        ? Image.file(
-                      File(customImage),
-                      fit: BoxFit.contain,
-                    )
+                        ? Image.file(File(customImage), fit: BoxFit.contain)
                         : hasAssetLogo
-                        ? Image.asset(
-                      logoAsset,
-                      fit: BoxFit.contain,
-                    )
+                        ? Image.asset(logoAsset, fit: BoxFit.contain)
                         : const Icon(
-                      Icons.qr_code_2_rounded,
-                      color: Colors.white,
-                      size: 52,
-                    ),
+                            Icons.qr_code_2_rounded,
+                            color: Colors.white,
+                            size: 52,
+                          ),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -432,29 +424,29 @@ class _QrLivePreview extends StatelessWidget {
                 ),
                 child: code.isEmpty
                     ? const SizedBox(
-                  height: 180,
-                  child: Center(
-                    child: Text(
-                      'Nog geen QR-code',
-                      style: TextStyle(
-                        color: Colors.black38,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                )
+                        height: 180,
+                        child: Center(
+                          child: Text(
+                            'Nog geen QR-code',
+                            style: TextStyle(
+                              color: Colors.black38,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      )
                     : SizedBox(
-                  height: 180,
-                  child: Center(
-                    child: QrImageView(
-                      data: code,
-                      version: QrVersions.auto,
-                      size: 180,
-                      backgroundColor: Colors.white,
-                      errorCorrectionLevel: QrErrorCorrectLevel.M,
-                    ),
-                  ),
-                ),
+                        height: 180,
+                        child: Center(
+                          child: QrImageView(
+                            data: code,
+                            version: QrVersions.auto,
+                            size: 180,
+                            backgroundColor: Colors.white,
+                            errorCorrectionLevel: QrErrorCorrectLevel.M,
+                          ),
+                        ),
+                      ),
               ),
             ),
           ],
@@ -559,10 +551,7 @@ class _InputField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(
-            color: Color(0xFFD51B46),
-            width: 1.4,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFD51B46), width: 1.4),
         ),
       ),
     );
@@ -606,20 +595,14 @@ class _LogoEditor extends StatelessWidget {
           ),
           child: Center(
             child: hasCustomLogo
-                ? Image.file(
-              File(customImage),
-              fit: BoxFit.contain,
-            )
+                ? Image.file(File(customImage), fit: BoxFit.contain)
                 : hasPresetLogo
-                ? Image.asset(
-              logoAsset,
-              fit: BoxFit.contain,
-            )
+                ? Image.asset(logoAsset, fit: BoxFit.contain)
                 : const Icon(
-              Icons.image_outlined,
-              size: 52,
-              color: Colors.black38,
-            ),
+                    Icons.image_outlined,
+                    size: 52,
+                    color: Colors.black38,
+                  ),
           ),
         ),
         const SizedBox(height: 12),
@@ -632,17 +615,12 @@ class _LogoEditor extends StatelessWidget {
                 label: Text(hasLogo ? 'Logo wijzigen' : 'Logo toevoegen'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFD51B46),
-                  side: const BorderSide(
-                    color: Color(0xFFD51B46),
-                    width: 1.2,
-                  ),
+                  side: const BorderSide(color: Color(0xFFD51B46), width: 1.2),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(22),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                  ),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
             ),

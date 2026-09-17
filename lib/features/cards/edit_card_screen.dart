@@ -5,15 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../data/services/media_storage_service.dart';
 import '../scanner/scanner_screen.dart';
 
 class EditCardScreen extends StatefulWidget {
   final Map<String, dynamic> item;
 
-  const EditCardScreen({
-    super.key,
-    required this.item,
-  });
+  const EditCardScreen({super.key, required this.item});
 
   @override
   State<EditCardScreen> createState() => _EditCardScreenState();
@@ -53,10 +51,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
     final code = codeController.text.trim();
 
     return code
-        .replaceAllMapped(
-      RegExp(r'.{1,4}'),
-          (match) => '${match.group(0)} ',
-    )
+        .replaceAllMapped(RegExp(r'.{1,4}'), (match) => '${match.group(0)} ')
         .trim();
   }
 
@@ -95,18 +90,27 @@ class _EditCardScreenState extends State<EditCardScreen> {
 
     if (image == null) return;
 
-    HapticFeedback.selectionClick();
-
-    setState(() {
-      customImage = image.path;
-      logoAsset = '';
-      brandColor = '';
-    });
+    try {
+      final storedPath = await MediaStorageService.persistImage(image.path);
+      if (!mounted) return;
+      HapticFeedback.selectionClick();
+      setState(() {
+        customImage = storedPath;
+        logoAsset = '';
+        brandColor = '';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('De afbeelding kon niet worden opgeslagen.'),
+        ),
+      );
+    }
   }
 
   void removeLogo() {
     HapticFeedback.selectionClick();
-
     setState(() {
       customImage = '';
       logoAsset = '';
@@ -140,20 +144,14 @@ class _EditCardScreenState extends State<EditCardScreen> {
     final code = codeController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Naam is verplicht.'),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Naam is verplicht.')));
       return;
     }
 
     if (code.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Barcode is verplicht.'),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Barcode is verplicht.')));
       return;
     }
 
@@ -193,9 +191,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
         foregroundColor: const Color(0xFF2F2F34),
         title: const Text(
           'Kaart bewerken',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w900),
         ),
         actions: [
           TextButton(
@@ -265,9 +261,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(22),
                     ),
-                    textStyle: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -362,10 +356,7 @@ class _LiveCardPreview extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         gradient: LinearGradient(
-          colors: [
-            cardColor,
-            cardColor.withOpacity(0.82),
-          ],
+          colors: [cardColor, cardColor.withOpacity(0.82)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -389,20 +380,14 @@ class _LiveCardPreview extends StatelessWidget {
                 children: [
                   Expanded(
                     child: hasCustomLogo
-                        ? Image.file(
-                      File(customImage),
-                      fit: BoxFit.contain,
-                    )
+                        ? Image.file(File(customImage), fit: BoxFit.contain)
                         : hasAssetLogo
-                        ? Image.asset(
-                      logoAsset,
-                      fit: BoxFit.contain,
-                    )
+                        ? Image.asset(logoAsset, fit: BoxFit.contain)
                         : const Icon(
-                      Icons.card_membership_rounded,
-                      color: Colors.white,
-                      size: 54,
-                    ),
+                            Icons.card_membership_rounded,
+                            color: Colors.white,
+                            size: 54,
+                          ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -441,39 +426,39 @@ class _LiveCardPreview extends StatelessWidget {
                     ),
                     child: code.isEmpty
                         ? const SizedBox(
-                      height: 94,
-                      child: Center(
-                        child: Text(
-                          'Nog geen barcode',
-                          style: TextStyle(
-                            color: Colors.black38,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    )
-                        : BarcodeWidget(
-                      barcode: barcode,
-                      data: code,
-                      width: double.infinity,
-                      height: 94,
-                      drawText: false,
-                      errorBuilder: (_, __) {
-                        return const SizedBox(
-                          height: 94,
-                          child: Center(
-                            child: Text(
-                              'Barcode kan niet worden weergegeven',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.w700,
+                            height: 94,
+                            child: Center(
+                              child: Text(
+                                'Nog geen barcode',
+                                style: TextStyle(
+                                  color: Colors.black38,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
+                          )
+                        : BarcodeWidget(
+                            barcode: barcode,
+                            data: code,
+                            width: double.infinity,
+                            height: 94,
+                            drawText: false,
+                            errorBuilder: (_, __) {
+                              return const SizedBox(
+                                height: 94,
+                                child: Center(
+                                  child: Text(
+                                    'Barcode kan niet worden weergegeven',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
                   if (code.isNotEmpty) ...[
                     const SizedBox(height: 14),
@@ -503,10 +488,7 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _SectionCard({
-    required this.title,
-    required this.children,
-  });
+  const _SectionCard({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -584,10 +566,7 @@ class _InputField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(
-            color: Color(0xFFD51B46),
-            width: 1.4,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFD51B46), width: 1.4),
         ),
       ),
     );
@@ -627,26 +606,18 @@ class _LogoEditor extends StatelessWidget {
           decoration: BoxDecoration(
             color: hasPresetLogo ? backgroundColor : const Color(0xFFF4F4F6),
             borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: Colors.black.withOpacity(0.05),
-            ),
+            border: Border.all(color: Colors.black.withOpacity(0.05)),
           ),
           child: Center(
             child: hasCustomLogo
-                ? Image.file(
-              File(customImage),
-              fit: BoxFit.contain,
-            )
+                ? Image.file(File(customImage), fit: BoxFit.contain)
                 : hasPresetLogo
-                ? Image.asset(
-              logoAsset,
-              fit: BoxFit.contain,
-            )
+                ? Image.asset(logoAsset, fit: BoxFit.contain)
                 : const Icon(
-              Icons.image_outlined,
-              size: 52,
-              color: Colors.black38,
-            ),
+                    Icons.image_outlined,
+                    size: 52,
+                    color: Colors.black38,
+                  ),
           ),
         ),
         const SizedBox(height: 12),
@@ -659,17 +630,12 @@ class _LogoEditor extends StatelessWidget {
                 label: Text(hasLogo ? 'Logo wijzigen' : 'Logo toevoegen'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFD51B46),
-                  side: const BorderSide(
-                    color: Color(0xFFD51B46),
-                    width: 1.2,
-                  ),
+                  side: const BorderSide(color: Color(0xFFD51B46), width: 1.2),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(22),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                  ),
+                  textStyle: const TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),
             ),

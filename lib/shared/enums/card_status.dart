@@ -1,6 +1,1 @@
-enum CardStatus {
-  active,
-  used,
-  expired,
-  archived,
-}
+enum CardStatus { active, used, expired, archived }

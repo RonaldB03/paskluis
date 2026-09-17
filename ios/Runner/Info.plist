@@ -36,8 +36,14 @@
     <key>NSCameraUsageDescription</key>
     <string>PasKluis gebruikt de camera om barcodes en QR-codes te scannen.</string>
 
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>PasKluis gebruikt je fotobibliotheek om een eigen afbeelding aan een kaart toe te voegen of een code uit een afbeelding te lezen.</string>
+
     <key>NSFaceIDUsageDescription</key>
     <string>PasKluis gebruikt Face ID om beveiligde gegevens zoals pincodes te bekijken.</string>
+
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
 
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>

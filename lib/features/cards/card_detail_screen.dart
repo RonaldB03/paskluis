@@ -8,10 +8,7 @@ import '../../data/services/security_service.dart';
 class CardDetailScreen extends StatefulWidget {
   final Map<String, dynamic> item;
 
-  const CardDetailScreen({
-    super.key,
-    required this.item,
-  });
+  const CardDetailScreen({super.key, required this.item});
 
   @override
   State<CardDetailScreen> createState() => _CardDetailScreenState();
@@ -56,9 +53,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
       setState(() => showPin = true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Authenticatie mislukt of geannuleerd'),
-        ),
+        const SnackBar(content: Text('Authenticatie mislukt of geannuleerd')),
       );
     }
   }
@@ -94,10 +89,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
             Text(
               name.isEmpty ? 'Kaart' : name,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-              ),
+              style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
             ),
 
             if (type.isNotEmpty) ...[
@@ -105,10 +97,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
               Text(
                 type,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.black45,
-                  fontSize: 16,
-                ),
+                style: const TextStyle(color: Colors.black45, fontSize: 16),
               ),
             ],
 
@@ -183,9 +172,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                           trailing: TextButton.icon(
                             onPressed: showPin ? null : revealPin,
                             icon: Icon(
-                              showPin
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
+                              showPin ? Icons.visibility_off : Icons.visibility,
                             ),
                             label: Text(showPin ? 'Getoond' : 'Toon'),
                           ),
@@ -206,10 +193,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(18),
-                  child: Text(
-                    note,
-                    style: const TextStyle(fontSize: 16),
-                  ),
+                  child: Text(note, style: const TextStyle(fontSize: 16)),
                 ),
               ),
             ],
@@ -219,10 +203,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
             const Text(
               'Houd je scherm bij de scanner',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.black45,
-                fontSize: 15,
-              ),
+              style: TextStyle(color: Colors.black45, fontSize: 15),
             ),
           ],
         ),

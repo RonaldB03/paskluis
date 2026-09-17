@@ -7,10 +7,7 @@ import 'qr_scanner_screen.dart';
 class EditQrSetScreen extends StatefulWidget {
   final Map<String, dynamic> item;
 
-  const EditQrSetScreen({
-    super.key,
-    required this.item,
-  });
+  const EditQrSetScreen({super.key, required this.item});
 
   @override
   State<EditQrSetScreen> createState() => _EditQrSetScreenState();
@@ -60,9 +57,7 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
   Future<void> addQrCode() async {
     final result = await Navigator.push<String>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const QrScannerScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
     );
 
     if (!mounted || result == null || result.trim().isEmpty) return;
@@ -71,9 +66,7 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
 
     if (codes.contains(code)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Deze QR-code staat al in deze set.'),
-        ),
+        const SnackBar(content: Text('Deze QR-code staat al in deze set.')),
       );
       return;
     }
@@ -89,9 +82,7 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
   Future<void> replaceQrCode(int index) async {
     final result = await Navigator.push<String>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const QrScannerScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
     );
 
     if (!mounted || result == null || result.trim().isEmpty) return;
@@ -99,14 +90,12 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
     final code = result.trim();
 
     final alreadyExists = codes.asMap().entries.any(
-          (entry) => entry.key != index && entry.value == code,
+      (entry) => entry.key != index && entry.value == code,
     );
 
     if (alreadyExists) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Deze QR-code staat al in deze set.'),
-        ),
+        const SnackBar(content: Text('Deze QR-code staat al in deze set.')),
       );
       return;
     }
@@ -149,19 +138,14 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
     final name = nameController.text.trim();
 
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Naam is verplicht.'),
-        ),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Naam is verplicht.')));
       return;
     }
 
     if (codes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Voeg minimaal 1 QR-code toe.'),
-        ),
+        const SnackBar(content: Text('Voeg minimaal 1 QR-code toe.')),
       );
       return;
     }
@@ -265,9 +249,7 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(26),
                     ),
-                    textStyle: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w900),
                   ),
                 ),
               ),
@@ -409,16 +391,15 @@ class _QrSetItemTile extends StatelessWidget {
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'used',
-                child: Text(isUsed ? 'Markeer als niet gebruikt' : 'Markeer als gebruikt'),
+                child: Text(
+                  isUsed ? 'Markeer als niet gebruikt' : 'Markeer als gebruikt',
+                ),
               ),
               const PopupMenuItem(
                 value: 'replace',
                 child: Text('Opnieuw scannen'),
               ),
-              const PopupMenuItem(
-                value: 'remove',
-                child: Text('Verwijderen'),
-              ),
+              const PopupMenuItem(value: 'remove', child: Text('Verwijderen')),
             ],
             icon: const Icon(Icons.more_vert_rounded),
           ),
@@ -506,7 +487,9 @@ class _InputField extends StatelessWidget {
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
-      textInputAction: maxLines > 1 ? TextInputAction.newline : TextInputAction.next,
+      textInputAction: maxLines > 1
+          ? TextInputAction.newline
+          : TextInputAction.next,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
@@ -518,10 +501,7 @@ class _InputField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(
-            color: Color(0xFFD51B46),
-            width: 1.4,
-          ),
+          borderSide: const BorderSide(color: Color(0xFFD51B46), width: 1.4),
         ),
       ),
     );

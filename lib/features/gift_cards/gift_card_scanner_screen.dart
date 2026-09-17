@@ -5,10 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class GiftCardScannerScreen extends StatefulWidget {
-  const GiftCardScannerScreen({
-    super.key,
-    this.showManualAfterDelay = true,
-  });
+  const GiftCardScannerScreen({super.key, this.showManualAfterDelay = true});
 
   final bool showManualAfterDelay;
 
@@ -148,9 +145,7 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
         setState(() => importingImage = false);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Geen cadeaukaart-barcode gevonden.'),
-          ),
+          const SnackBar(content: Text('Geen cadeaukaart-barcode gevonden.')),
         );
         return;
       }
@@ -162,9 +157,7 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
       setState(() => importingImage = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Afbeelding kon niet worden gelezen.'),
-        ),
+        const SnackBar(content: Text('Afbeelding kon niet worden gelezen.')),
       );
     }
   }
@@ -178,10 +171,7 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          MobileScanner(
-            controller: controller,
-            onDetect: handleDetect,
-          ),
+          MobileScanner(controller: controller, onDetect: handleDetect),
           const _ScannerOverlay(
             frameWidth: frameWidth,
             frameHeight: frameHeight,
@@ -225,7 +215,8 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
                     animation: scanLineController,
                     builder: (_, __) {
                       return Positioned(
-                        top: 18 +
+                        top:
+                            18 +
                             (scanLineController.value * (frameHeight - 36)),
                         left: 18,
                         right: 18,
@@ -351,10 +342,7 @@ class _ScannerOverlay extends StatelessWidget {
   final double frameWidth;
   final double frameHeight;
 
-  const _ScannerOverlay({
-    required this.frameWidth,
-    required this.frameHeight,
-  });
+  const _ScannerOverlay({required this.frameWidth, required this.frameHeight});
 
   @override
   Widget build(BuildContext context) {
@@ -372,10 +360,7 @@ class _ScannerOverlayPainter extends CustomPainter {
   final double frameWidth;
   final double frameHeight;
 
-  _ScannerOverlayPainter({
-    required this.frameWidth,
-    required this.frameHeight,
-  });
+  _ScannerOverlayPainter({required this.frameWidth, required this.frameHeight});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -454,10 +439,7 @@ class _CircleIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _CircleIconButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _CircleIconButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -470,11 +452,7 @@ class _CircleIconButton extends StatelessWidget {
         child: SizedBox(
           width: 46,
           height: 46,
-          child: Icon(
-            icon,
-            color: Colors.white,
-            size: 24,
-          ),
+          child: Icon(icon, color: Colors.white, size: 24),
         ),
       ),
     );
@@ -546,10 +524,7 @@ class _SecondaryActionButton extends StatelessWidget {
       label: Text(label),
       style: TextButton.styleFrom(
         foregroundColor: Colors.white.withOpacity(0.86),
-        textStyle: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
-        ),
+        textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -583,9 +558,7 @@ class _ManualGiftCardBarcodeDialogState
   Widget build(BuildContext context) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
         child: Column(
@@ -664,9 +637,7 @@ class _ManualGiftCardBarcodeDialogState
                     ),
                     child: const Text(
                       'Verder',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                      ),
+                      style: TextStyle(fontWeight: FontWeight.w900),
                     ),
                   ),
                 ),

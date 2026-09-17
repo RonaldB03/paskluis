@@ -7,10 +7,7 @@ import 'add_card_screen.dart';
 class ChooseCardTemplateScreen extends StatefulWidget {
   final String type;
 
-  const ChooseCardTemplateScreen({
-    super.key,
-    required this.type,
-  });
+  const ChooseCardTemplateScreen({super.key, required this.type});
 
   @override
   State<ChooseCardTemplateScreen> createState() =>
@@ -31,9 +28,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     }
   }
 
-  Future<void> openManualForm({
-    CardBrandTemplate? brand,
-  }) async {
+  Future<void> openManualForm({CardBrandTemplate? brand}) async {
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
@@ -49,10 +44,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
     if (!mounted || result == null) return;
 
-    Navigator.pop(context, {
-      ...result,
-      'openPreviewAfterSave': 'true',
-    });
+    Navigator.pop(context, {...result, 'openPreviewAfterSave': 'true'});
   }
 
   Future<void> scanForBrand(CardBrandTemplate brand) async {
@@ -112,10 +104,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
         centerTitle: true,
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
         ),
         actions: [
           TextButton(
@@ -176,9 +165,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
           const SizedBox(height: 6),
 
-          _CustomCardTile(
-            onTap: () => openManualForm(),
-          ),
+          _CustomCardTile(onTap: () => openManualForm()),
         ],
       ),
     );
@@ -189,10 +176,7 @@ class _BrandListTile extends StatelessWidget {
   final CardBrandTemplate brand;
   final VoidCallback onTap;
 
-  const _BrandListTile({
-    required this.brand,
-    required this.onTap,
-  });
+  const _BrandListTile({required this.brand, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -217,10 +201,7 @@ class _BrandListTile extends StatelessWidget {
                   color: brand.color,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Image.asset(
-                  brand.logoAsset,
-                  fit: BoxFit.contain,
-                ),
+                child: Image.asset(brand.logoAsset, fit: BoxFit.contain),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -251,9 +232,7 @@ class _BrandListTile extends StatelessWidget {
 class _CustomCardTile extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _CustomCardTile({
-    required this.onTap,
-  });
+  const _CustomCardTile({required this.onTap});
 
   @override
   Widget build(BuildContext context) {

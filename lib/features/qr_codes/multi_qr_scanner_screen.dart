@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -90,10 +91,7 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          MobileScanner(
-            controller: controller,
-            onDetect: handleDetect,
-          ),
+          MobileScanner(controller: controller, onDetect: handleDetect),
 
           // Overlay
           Center(
@@ -148,9 +146,7 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
                   ),
                   const Spacer(),
                   _CircleButton(
-                    icon: torchEnabled
-                        ? Icons.flash_on
-                        : Icons.flash_off,
+                    icon: torchEnabled ? Icons.flash_on : Icons.flash_off,
                     onTap: toggleTorch,
                   ),
                 ],
@@ -203,9 +199,7 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
                         ? 'Gebruik achtercamera'
                         : 'Camera wisselen',
                   ),
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white70,
-                  ),
+                  style: TextButton.styleFrom(foregroundColor: Colors.white70),
                 ),
               ],
             ),
@@ -220,10 +214,7 @@ class _CircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _CircleButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _CircleButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
