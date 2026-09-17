@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/services/media_storage_service.dart';
+import '../../data/services/image_color_service.dart';
+import '../../shared/widgets/brand_logo.dart';
 import '../scanner/scanner_screen.dart';
 
 class EditGiftCardScreen extends StatefulWidget {
@@ -80,11 +82,12 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
 
     try {
       final storedPath = await MediaStorageService.persistImage(image.path);
+      final detectedColor = await ImageColorService.dominantEdgeColor(storedPath);
       if (!mounted) return;
       setState(() {
         customImage = storedPath;
         logoAsset = '';
-        brandColor = '';
+        brandColor = detectedColor?.value.toString() ?? '';
       });
     } catch (_) {
       if (!mounted) return;
@@ -314,11 +317,10 @@ class _LogoPreview extends StatelessWidget {
                       width: double.infinity,
                     )
                   : hasPresetLogo
-                  ? Image.asset(
-                      logoAsset,
-                      fit: BoxFit.contain,
+                  ? SizedBox(
                       height: 90,
                       width: double.infinity,
+                      child: BrandLogo(source: logoAsset),
                     )
                   : const Icon(
                       Icons.image_outlined,
