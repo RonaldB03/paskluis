@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/services/security_service.dart';
 import '../../data/services/settings_service.dart';
+import '../account/account_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -66,6 +67,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Card(
             elevation: 0,
+            child: ListTile(
+              leading: const Icon(
+                Icons.workspace_premium_outlined,
+                color: Color(0xFFD51B46),
+              ),
+              title: const Text(
+                'Account & PasKluis Plus',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: const Text(
+                'Inloggen, registreren en je Plus-status bekijken.',
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AccountScreen()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            elevation: 0,
             child: SwitchListTile.adaptive(
               value: _appLockEnabled,
               onChanged: _saving ? null : _changeAppLock,
@@ -93,7 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Je kaarten, codes en pincodes worden lokaal en versleuteld op dit apparaat bewaard. PasKluis verstuurt deze gegevens niet naar een account of externe server.',
+                    'Je kaarten, codes en pincodes worden lokaal en versleuteld op dit apparaat bewaard. Een account bewaart alleen je profiel, Plus-status en klantenserviceberichten.',
                   ),
                 ],
               ),
@@ -105,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: ListTile(
               leading: Icon(Icons.info_outline_rounded),
               title: Text('PasKluis'),
-              subtitle: Text('Versie 1.1.2'),
+              subtitle: Text('Versie 1.2.0'),
             ),
           ),
         ],
