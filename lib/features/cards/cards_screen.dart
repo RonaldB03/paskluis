@@ -8,6 +8,8 @@ import '../../data/services/storage_service.dart';
 import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
+import '../../shared/widgets/main_tab_swipe_region.dart';
+import '../../shared/widgets/premium_app_title.dart';
 
 import '../gift_cards/gift_cards_screen.dart';
 import '../home/home_screen.dart';
@@ -302,13 +304,7 @@ class CardsScreen extends StatelessWidget {
             backgroundColor: Colors.white,
             elevation: 0,
             centerTitle: true,
-            title: const Text(
-              'Klantenkaarten',
-              style: TextStyle(
-                color: Color(0xFF333333),
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            title: const PremiumAppTitle('Klantenkaarten'),
             actions: [
               IconButton(
                 icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
@@ -316,9 +312,12 @@ class CardsScreen extends StatelessWidget {
               ),
             ],
           ),
-          body: items.isEmpty
-              ? _EmptyCardsState(onAdd: () => openAddCard(context))
-              : GridView.builder(
+          body: MainTabSwipeRegion(
+            currentIndex: 1,
+            onSwitch: (index) => openTab(context, index),
+            child: items.isEmpty
+                ? _EmptyCardsState(onAdd: () => openAddCard(context))
+                : GridView.builder(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
@@ -339,7 +338,8 @@ class CardsScreen extends StatelessWidget {
                       onLongPress: () => showCardOptions(context, item),
                     );
                   },
-                ),
+                  ),
+          ),
           bottomNavigationBar: MainBottomNav(
             currentIndex: 1,
             onTap: (index) => openTab(context, index),
