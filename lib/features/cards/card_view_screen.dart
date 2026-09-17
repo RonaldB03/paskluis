@@ -598,10 +598,19 @@ class _BarcodeCard extends StatelessWidget {
                 child: Column(
                   children: [
                     Expanded(
-                      child: hasCustomLogo
-                          ? Image.file(File(customImage), fit: BoxFit.contain)
-                          : hasAssetLogo
-                          ? Image.asset(logoAsset, fit: BoxFit.contain)
+                      child: hasCustomLogo || hasAssetLogo
+                          ? Transform.scale(
+                              scale: 1.25,
+                              child: hasCustomLogo
+                                  ? Image.file(
+                                      File(customImage),
+                                      fit: BoxFit.contain,
+                                    )
+                                  : Image.asset(
+                                      logoAsset,
+                                      fit: BoxFit.contain,
+                                    ),
+                            )
                           : const Icon(
                               Icons.card_membership_rounded,
                               color: Colors.white,
