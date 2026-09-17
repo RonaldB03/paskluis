@@ -8,6 +8,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/security_service.dart';
 import '../../data/services/storage_service.dart';
+import '../../shared/widgets/brand_logo.dart';
 import 'edit_gift_card_screen.dart';
 
 class GiftCardViewScreen extends StatefulWidget {
@@ -932,10 +933,7 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
                           : hasAssetLogo
                           ? Padding(
                               padding: const EdgeInsets.all(6),
-                              child: Image.asset(
-                                logoAsset,
-                                fit: BoxFit.contain,
-                              ),
+                              child: BrandLogo(source: logoAsset),
                             )
                           : const Icon(
                               Icons.card_giftcard,
