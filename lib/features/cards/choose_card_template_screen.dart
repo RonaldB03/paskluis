@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../data/templates/card_templates.dart';
+import '../../data/services/brand_catalog_service.dart';
+import '../../shared/widgets/brand_logo.dart';
 import '../scanner/scanner_screen.dart';
 import 'add_card_screen.dart';
 
@@ -16,6 +18,15 @@ class ChooseCardTemplateScreen extends StatefulWidget {
 
 class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
   String searchQuery = '';
+  List<CardBrandTemplate> brands = cardBrandTemplates;
+
+  @override
+  void initState() {
+    super.initState();
+    BrandCatalogService.load().then((value) {
+      if (mounted) setState(() => brands = value);
+    });
+  }
 
   String get title {
     switch (widget.type) {
@@ -91,7 +102,8 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredBrands = cardBrandTemplates.where((brand) {
+    final filteredBrands = brands.where((brand) {
+      if (!brand.supportedTypes.contains(widget.type == 'Cadeaukaart' ? 'Cadeaukaart' : 'Pasje')) return false;
       return brand.name.toLowerCase().contains(searchQuery.toLowerCase());
     }).toList();
 
@@ -201,7 +213,7 @@ class _BrandListTile extends StatelessWidget {
                   color: brand.color,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Image.asset(brand.logoAsset, fit: BoxFit.contain),
+                child: BrandLogo(source: brand.logoAsset),
               ),
               const SizedBox(width: 14),
               Expanded(
