@@ -20,9 +20,6 @@ concurrency:
 
 jobs:
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Broncode ophalen
@@ -30,8 +27,6 @@ jobs:
 
       - name: GitHub Pages instellen
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Beheerportaal uploaden
         uses: actions/upload-pages-artifact@v3
@@ -39,5 +34,4 @@ jobs:
           path: admin
 
       - name: Publiceren
-        id: deployment
         uses: actions/deploy-pages@v4
