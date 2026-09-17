@@ -517,7 +517,8 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                 ),
               ),
               Expanded(
-                child: Center(
+                child: ClipRect(
+                  child: Center(
                   child: useImage
                       ? Transform.scale(
                           scale: hasCustomLogo ? 1.65 : 1.0,
@@ -547,6 +548,7 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                                 : const Color(0xFF333333),
                           ),
                         ),
+                  ),
                 ),
               ),
             ],
