@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/services/media_storage_service.dart';
+import '../../data/services/image_color_service.dart';
 import '../scanner/scanner_screen.dart';
 
 class AddCardScreen extends StatefulWidget {
@@ -35,6 +36,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
   final codeController = TextEditingController();
 
   File? customImage;
+  String customBrandColor = '';
 
   bool get isBrandMode =>
       (widget.initialLogoAsset ?? '').isNotEmpty &&
@@ -71,8 +73,12 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
     try {
       final storedPath = await MediaStorageService.persistImage(image.path);
+      final detectedColor = await ImageColorService.dominantEdgeColor(storedPath);
       if (!mounted) return;
-      setState(() => customImage = File(storedPath));
+      setState(() {
+        customImage = File(storedPath);
+        customBrandColor = detectedColor?.value.toString() ?? '';
+      });
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -129,7 +135,9 @@ class _AddCardScreenState extends State<AddCardScreen> {
       'currentBalance': '',
       'brandId': widget.initialBrandId ?? '',
       'logoAsset': widget.initialLogoAsset ?? '',
-      'brandColor': widget.initialBrandColor ?? '',
+      'brandColor': customImage != null
+          ? customBrandColor
+          : widget.initialBrandColor ?? '',
       'customImage': customImage?.path ?? '',
     });
   }
