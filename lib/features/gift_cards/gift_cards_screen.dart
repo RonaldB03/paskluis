@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
+import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 
 import '../cards/card_preview_screen.dart';
@@ -13,6 +14,7 @@ import '../cards/choose_card_template_screen.dart';
 
 import '../home/home_screen.dart';
 import '../qr_codes/qr_codes_screen.dart';
+import '../premium/premium_gate.dart';
 
 import 'choose_gift_card_template_screen.dart';
 import 'gift_card_view_screen.dart';
@@ -80,6 +82,9 @@ class GiftCardsScreen extends StatelessWidget {
   }
 
   Future<void> openAddGiftCard(BuildContext context) async {
+    if (!await PremiumGate.canAddGiftCard(context)) return;
+    if (!context.mounted) return;
+
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(builder: (_) => const ChooseGiftCardTemplateScreen()),
@@ -448,6 +453,8 @@ class _GiftCardTileState extends State<_GiftCardTile> {
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final isFavorite = widget.item['isFavorite'] == true;
     final hasLogo = hasAssetLogo || hasCustomLogo;
+    final usesBrandBackground =
+        hasLogo && (widget.item['brandColor']?.toString() ?? '').isNotEmpty;
 
     return GestureDetector(
       onTapDown: (_) => setPressed(true),
@@ -463,7 +470,7 @@ class _GiftCardTileState extends State<_GiftCardTile> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            color: hasAssetLogo ? cardColor : Colors.white,
+            color: usesBrandBackground ? cardColor : Colors.white,
             borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
@@ -479,7 +486,9 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                 alignment: Alignment.topRight,
                 child: Icon(
                   isFavorite ? Icons.star : Icons.card_giftcard,
-                  color: hasAssetLogo ? Colors.white : const Color(0xFFD51B46),
+                  color: usesBrandBackground
+                      ? Colors.white
+                      : const Color(0xFFD51B46),
                   size: 22,
                 ),
               ),
@@ -493,11 +502,10 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                                 height: 66,
                                 width: double.infinity,
                               )
-                            : Image.asset(
-                                logoAsset,
-                                fit: BoxFit.contain,
+                            : SizedBox(
                                 height: 66,
                                 width: double.infinity,
+                                child: BrandLogo(source: logoAsset),
                               )
                       : Text(
                           title,
@@ -507,7 +515,7 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w900,
-                            color: hasAssetLogo
+                            color: usesBrandBackground
                                 ? Colors.white
                                 : const Color(0xFF333333),
                           ),
@@ -519,7 +527,7 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
-                  color: hasAssetLogo
+                  color: usesBrandBackground
                       ? Colors.white.withOpacity(0.18)
                       : const Color(0xFFF8E3EA),
                   borderRadius: BorderRadius.circular(15),
@@ -530,7 +538,7 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w900,
-                    color: hasAssetLogo
+                    color: usesBrandBackground
                         ? Colors.white
                         : const Color(0xFFD51B46),
                   ),
