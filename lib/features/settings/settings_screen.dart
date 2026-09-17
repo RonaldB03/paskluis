@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/services/security_service.dart';
 import '../../data/services/settings_service.dart';
 import '../account/account_screen.dart';
+import '../support/support_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -83,6 +84,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AccountScreen()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            elevation: 0,
+            child: ListTile(
+              leading: const Icon(
+                Icons.support_agent_rounded,
+                color: Color(0xFFD51B46),
+              ),
+              title: const Text(
+                'Klantenservice',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: const Text(
+                'Stel een vraag of bekijk je eerdere gesprekken.',
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SupportScreen()),
               ),
             ),
           ),
