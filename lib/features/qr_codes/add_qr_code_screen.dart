@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/media_storage_service.dart';
+import '../../shared/widgets/brand_logo.dart';
 import 'qr_scanner_screen.dart';
 
 class AddQrCodeScreen extends StatefulWidget {
@@ -385,7 +386,7 @@ class _QrLivePreview extends StatelessWidget {
                     child: hasCustomLogo
                         ? Image.file(File(customImage), fit: BoxFit.contain)
                         : hasAssetLogo
-                        ? Image.asset(logoAsset, fit: BoxFit.contain)
+                        ? BrandLogo(source: logoAsset)
                         : const Icon(
                             Icons.qr_code_2_rounded,
                             color: Colors.white,
@@ -597,7 +598,7 @@ class _LogoEditor extends StatelessWidget {
             child: hasCustomLogo
                 ? Image.file(File(customImage), fit: BoxFit.contain)
                 : hasPresetLogo
-                ? Image.asset(logoAsset, fit: BoxFit.contain)
+                ? BrandLogo(source: logoAsset)
                 : const Icon(
                     Icons.image_outlined,
                     size: 52,
