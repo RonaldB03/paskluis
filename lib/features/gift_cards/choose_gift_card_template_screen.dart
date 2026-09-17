@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../data/templates/card_templates.dart';
+import '../../data/services/brand_catalog_service.dart';
+import '../../shared/widgets/brand_logo.dart';
 import 'add_gift_card_screen.dart';
 import 'gift_card_scanner_screen.dart';
 
@@ -15,6 +17,15 @@ class ChooseGiftCardTemplateScreen extends StatefulWidget {
 class _ChooseGiftCardTemplateScreenState
     extends State<ChooseGiftCardTemplateScreen> {
   String searchQuery = '';
+  List<CardBrandTemplate> catalog = cardBrandTemplates;
+
+  @override
+  void initState() {
+    super.initState();
+    BrandCatalogService.load().then((value) {
+      if (mounted) setState(() => catalog = value);
+    });
+  }
 
   Future<void> openCustomGiftCard() async {
     final result = await Navigator.push<Map<String, String>>(
@@ -56,7 +67,8 @@ class _ChooseGiftCardTemplateScreenState
 
   @override
   Widget build(BuildContext context) {
-    final brands = getTemplatesByType('Cadeaukaart').where((brand) {
+    final brands = catalog.where((brand) {
+      if (!brand.supportedTypes.contains('Cadeaukaart')) return false;
       return brand.name.toLowerCase().contains(searchQuery.toLowerCase());
     }).toList();
 
@@ -166,7 +178,7 @@ class _BrandListTile extends StatelessWidget {
                   color: brand.color,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Image.asset(brand.logoAsset, fit: BoxFit.contain),
+                child: BrandLogo(source: brand.logoAsset),
               ),
               const SizedBox(width: 14),
               Expanded(
