@@ -108,11 +108,6 @@ create policy "Users read own profile"
   on public.profiles for select
   using (id = auth.uid() or public.is_staff());
 
-create policy "Users update own profile"
-  on public.profiles for update
-  using (id = auth.uid())
-  with check (id = auth.uid());
-
 create policy "Users read own entitlements"
   on public.entitlements for select
   using (user_id = auth.uid() or public.is_staff());
@@ -166,6 +161,18 @@ create policy "Participants send support messages"
       )
     )
   );
+
+-- Data API permissions. RLS policies above still decide which rows are visible.
+grant usage on schema public to anon, authenticated;
+grant select on public.brands to anon, authenticated;
+grant select on public.profiles, public.entitlements,
+  public.support_threads, public.support_messages to authenticated;
+grant update (display_name, updated_at) on public.profiles to authenticated;
+grant insert on public.support_threads, public.support_messages to authenticated;
+grant update on public.support_threads to authenticated;
+grant insert, update, delete on public.brands, public.entitlements to authenticated;
+grant execute on function public.is_staff() to anon, authenticated;
+grant execute on function public.is_admin() to anon, authenticated;
 
 create or replace function public.handle_new_user()
 returns trigger
