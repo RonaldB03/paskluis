@@ -7,8 +7,12 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/image_color_service.dart';
 import '../../data/services/smart_card_import_service.dart';
+import '../../data/services/brand_sync_service.dart';
+import '../../data/services/media_storage_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
+import '../../shared/widgets/main_tab_swipe_region.dart';
+import '../../shared/widgets/premium_app_title.dart';
 
 import '../cards/card_preview_screen.dart';
 import '../cards/card_view_screen.dart';
@@ -42,7 +46,28 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _repairMissingCustomLogoColors();
+    _refreshVisualAssets();
+  }
+
+  Future<void> _refreshVisualAssets() async {
+    await _repairMovedCustomImages();
+    await BrandSyncService.refreshSavedCards();
+    await _repairMissingCustomLogoColors();
+  }
+
+  Future<void> _repairMovedCustomImages() async {
+    for (final key in StorageService.cardsBox.keys.toList()) {
+      final raw = StorageService.cardsBox.get(key);
+      if (raw is! Map) continue;
+      final item = Map<String, dynamic>.from(raw);
+      final storedPath = item['customImage']?.toString() ?? '';
+      if (storedPath.isEmpty) continue;
+      final resolved = await MediaStorageService.resolveManagedImage(storedPath);
+      if (resolved == null || resolved == storedPath) continue;
+      item['customImage'] = resolved;
+      item['updatedAt'] = DateTime.now().toIso8601String();
+      await StorageService.saveCard(key, item);
+    }
   }
 
   @override
@@ -679,7 +704,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Scaffold(
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
-            title: const Text('PasKluis'),
+            title: const PremiumAppTitle('PasKluis'),
             centerTitle: true,
             backgroundColor: Colors.white,
             elevation: 0,
@@ -700,7 +725,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          body: ListView(
+          body: MainTabSwipeRegion(
+            currentIndex: 0,
+            onSwitch: openTab,
+            child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
             children: [
               TextField(
@@ -785,6 +813,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               ],
             ],
+            ),
           ),
           bottomNavigationBar: MainBottomNav(currentIndex: 0, onTap: openTab),
         );
