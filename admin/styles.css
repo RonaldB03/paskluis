@@ -47,6 +47,9 @@ th { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacin
 tr:last-child td { border-bottom:0; }
 .user-cell { display:grid; gap:3px; }
 .user-cell span { color:var(--muted); font-size:13px; }
+.user-cell .you-label { display:inline-flex; margin-left:5px; padding:2px 7px; border-radius:20px; background:var(--red-soft); color:var(--red); font-size:11px; vertical-align:middle; }
+.users-info { margin-bottom:16px; padding:16px 18px; }
+.users-info p { margin:5px 0 0; color:var(--muted); }
 .pill { display:inline-flex; padding:4px 9px; border-radius:20px; font-size:12px; font-weight:800; background:#eeeef2; }
 .pill.active { background:#def7e7; color:#176b3a; }
 .pill.open { background:var(--red-soft); color:var(--red); }
