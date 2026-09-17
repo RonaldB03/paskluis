@@ -22,7 +22,11 @@ class ImageColorService {
       final frame = await codec.getNextFrame();
       final image = frame.image;
       final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-      if (byteData == null) return null;
+      if (byteData == null) {
+        image.dispose();
+        codec.dispose();
+        return null;
+      }
 
       final buckets = <int, _ColorBucket>{};
       final edgeDepth =
@@ -46,9 +50,6 @@ class ImageColorService {
         bucket.blue += b;
       }
 
-      image.dispose();
-      codec.dispose();
-
       for (var y = 0; y < image.height; y++) {
         for (var x = 0; x < image.width; x++) {
           final isEdge = x < edgeDepth ||
@@ -58,6 +59,9 @@ class ImageColorService {
           if (isEdge) addPixel(x, y);
         }
       }
+
+      image.dispose();
+      codec.dispose();
 
       if (buckets.isEmpty) return null;
       final winner = buckets.values.reduce(
