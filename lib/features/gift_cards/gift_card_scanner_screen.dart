@@ -29,6 +29,7 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
       BarcodeFormat.upcA,
       BarcodeFormat.upcE,
       BarcodeFormat.itf,
+      BarcodeFormat.qrCode,
     ],
   );
 
