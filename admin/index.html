@@ -106,7 +106,12 @@
         <input id="brand-id" type="hidden" />
         <label>Naam<input id="brand-name" required maxlength="100" /></label>
         <label>Slug<input id="brand-slug" required pattern="[a-z0-9-]+" placeholder="bijvoorbeeld-bol-com" /></label>
-        <label>Logo-pad of URL<input id="brand-logo" placeholder="https://… of brands/logo.png" /></label>
+        <label>Huidig logo-pad of URL<input id="brand-logo" placeholder="https://… of assets/logos/logo.png" /></label>
+        <label class="upload-field">Nieuw logo uploaden
+          <input id="brand-logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
+          <small>PNG, JPG, WebP of SVG · maximaal 2 MB</small>
+        </label>
+        <div id="brand-logo-preview" class="logo-preview"><span>Nog geen logo gekozen</span></div>
         <label>Merkkleur<input id="brand-color" type="color" value="#D51B46" /></label>
         <div class="check-row"><label><input id="brand-loyalty" type="checkbox" checked /> Klantenkaart</label><label><input id="brand-gift" type="checkbox" /> Cadeaukaart</label><label><input id="brand-active" type="checkbox" checked /> Actief</label></div>
         <p id="brand-error" class="error"></p>
