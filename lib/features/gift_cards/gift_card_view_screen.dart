@@ -25,7 +25,8 @@ class GiftCardViewScreen extends StatefulWidget {
   State<GiftCardViewScreen> createState() => _GiftCardViewScreenState();
 }
 
-class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
+class _GiftCardViewScreenState extends State<GiftCardViewScreen>
+    with WidgetsBindingObserver {
   late final PageController pageController;
   late List<Map<String, dynamic>> items;
   late int currentIndex;
@@ -36,6 +37,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     items = widget.items
         .map((item) => Map<String, dynamic>.from(item))
@@ -67,6 +69,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     pageController.dispose();
 
     if (previousBrightness != null) {
@@ -75,6 +78,15 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
     WakelockPlus.disable();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {});
+      if (pageController.hasClients) pageController.jumpToPage(currentIndex);
+    });
   }
 
   dynamic _findKeyById(String id) {
