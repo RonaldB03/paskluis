@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/services/media_storage_service.dart';
+import '../../shared/widgets/brand_logo.dart';
 import 'gift_card_scanner_screen.dart';
 
 class AddGiftCardScreen extends StatefulWidget {
@@ -455,7 +456,7 @@ class _GiftCardLivePreview extends StatelessWidget {
                     child: hasCustomLogo
                         ? Image.file(File(customImage), fit: BoxFit.contain)
                         : hasAssetLogo
-                        ? Image.asset(logoAsset, fit: BoxFit.contain)
+                        ? BrandLogo(source: logoAsset)
                         : const Icon(
                             Icons.card_giftcard_rounded,
                             color: Colors.white,
@@ -714,7 +715,7 @@ class _LogoEditor extends StatelessWidget {
             child: hasCustomLogo
                 ? Image.file(File(customImage), fit: BoxFit.contain)
                 : hasPresetLogo
-                ? Image.asset(logoAsset, fit: BoxFit.contain)
+                ? BrandLogo(source: logoAsset)
                 : const Icon(
                     Icons.image_outlined,
                     size: 52,
