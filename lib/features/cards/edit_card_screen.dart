@@ -383,7 +383,13 @@ class _LiveCardPreview extends StatelessWidget {
                 children: [
                   Expanded(
                     child: hasCustomLogo
-                        ? Image.file(File(customImage), fit: BoxFit.contain)
+                        ? Transform.scale(
+                            scale: 1.55,
+                            child: Image.file(
+                              File(customImage),
+                              fit: BoxFit.contain,
+                            ),
+                          )
                         : hasAssetLogo
                         ? BrandLogo(source: logoAsset)
                         : const Icon(
@@ -613,7 +619,13 @@ class _LogoEditor extends StatelessWidget {
           ),
           child: Center(
             child: hasCustomLogo
-                ? Image.file(File(customImage), fit: BoxFit.contain)
+                ? Transform.scale(
+                    scale: 1.45,
+                    child: Image.file(
+                      File(customImage),
+                      fit: BoxFit.contain,
+                    ),
+                  )
                 : hasPresetLogo
                 ? BrandLogo(source: logoAsset)
                 : const Icon(
