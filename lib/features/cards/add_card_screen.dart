@@ -62,6 +62,8 @@ class _AddCardScreenState extends State<AddCardScreen> {
   }
 
   Future<void> pickImage() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
     final picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
 
@@ -82,6 +84,8 @@ class _AddCardScreenState extends State<AddCardScreen> {
   }
 
   Future<void> scanCode() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
     final result = await Navigator.push<String>(
       context,
       MaterialPageRoute(
@@ -104,6 +108,8 @@ class _AddCardScreenState extends State<AddCardScreen> {
   }
 
   void saveCard() {
+    FocusManager.instance.primaryFocus?.unfocus();
+
     if (codeController.text.trim().isEmpty ||
         (!isBrandMode && nameController.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
