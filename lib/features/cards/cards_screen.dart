@@ -492,7 +492,10 @@ class _StoredCardTileState extends State<_StoredCardTile> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            color: hasAssetLogo ? cardColor : Colors.white,
+            color: useImage &&
+                    (widget.item['brandColor']?.toString() ?? '').isNotEmpty
+                ? cardColor
+                : Colors.white,
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
@@ -515,19 +518,22 @@ class _StoredCardTileState extends State<_StoredCardTile> {
               Expanded(
                 child: Center(
                   child: useImage
-                      ? hasCustomLogo
-                            ? Image.file(
-                                File(customImage),
-                                fit: BoxFit.contain,
-                                height: 74,
-                                width: double.infinity,
-                              )
-                            : Image.asset(
-                                logoAsset,
-                                fit: BoxFit.contain,
-                                height: 74,
-                                width: double.infinity,
-                              )
+                      ? Transform.scale(
+                          scale: 1.35,
+                          child: hasCustomLogo
+                              ? Image.file(
+                                  File(customImage),
+                                  fit: BoxFit.contain,
+                                  height: 74,
+                                  width: double.infinity,
+                                )
+                              : Image.asset(
+                                  logoAsset,
+                                  fit: BoxFit.contain,
+                                  height: 74,
+                                  width: double.infinity,
+                                ),
+                        )
                       : Text(
                           title,
                           textAlign: TextAlign.center,
