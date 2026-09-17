@@ -7,6 +7,8 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import '../../data/services/storage_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
+import '../../shared/widgets/main_tab_swipe_region.dart';
+import '../../shared/widgets/premium_app_title.dart';
 
 import '../cards/card_preview_screen.dart';
 import '../cards/cards_screen.dart';
@@ -292,10 +294,7 @@ class GiftCardsScreen extends StatelessWidget {
               icon: const Icon(Icons.home_rounded, color: Color(0xFFD51B46)),
               onPressed: () => openTab(context, 0),
             ),
-            title: const Text(
-              'Cadeaukaarten',
-              style: TextStyle(fontWeight: FontWeight.w900),
-            ),
+            title: const PremiumAppTitle('Cadeaukaarten'),
             centerTitle: true,
             backgroundColor: Colors.white,
             foregroundColor: const Color(0xFF333333),
@@ -307,9 +306,12 @@ class GiftCardsScreen extends StatelessWidget {
               ),
             ],
           ),
-          body: items.isEmpty
-              ? _EmptyGiftCardState(onAdd: () => openAddGiftCard(context))
-              : GridView.builder(
+          body: MainTabSwipeRegion(
+            currentIndex: 3,
+            onSwitch: (index) => openTab(context, index),
+            child: items.isEmpty
+                ? _EmptyGiftCardState(onAdd: () => openAddGiftCard(context))
+                : GridView.builder(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
@@ -330,7 +332,8 @@ class GiftCardsScreen extends StatelessWidget {
                       onLongPress: () => showGiftCardOptions(context, item),
                     );
                   },
-                ),
+                  ),
+          ),
           bottomNavigationBar: MainBottomNav(
             currentIndex: 3,
             onTap: (index) => openTab(context, index),
