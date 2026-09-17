@@ -40,11 +40,10 @@ class ImageColorService {
         // Quantise small compression/anti-aliasing differences together.
         final key = ((r ~/ 16) << 8) | ((g ~/ 16) << 4) | (b ~/ 16);
         final bucket = buckets.putIfAbsent(key, _ColorBucket.new);
-        bucket
-          ..count++
-          ..red += r
-          ..green += g
-          ..blue += b;
+        bucket.count += 1;
+        bucket.red += r;
+        bucket.green += g;
+        bucket.blue += b;
       }
 
       image.dispose();
