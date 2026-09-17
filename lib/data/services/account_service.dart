@@ -51,6 +51,7 @@ abstract final class AccountService {
       email: email.trim(),
       password: password,
       data: {'name': name.trim()},
+      emailRedirectTo: 'nl.paskluis.app://login-callback/',
     );
   }
 
