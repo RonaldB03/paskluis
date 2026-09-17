@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
+import '../../data/services/image_color_service.dart';
+import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 
 import '../cards/card_preview_screen.dart';
@@ -21,6 +23,7 @@ import '../gift_cards/gift_cards_screen.dart';
 import '../qr_codes/qr_codes_screen.dart';
 import '../qr_codes/choose_qr_code_screen.dart';
 import '../settings/settings_screen.dart';
+import '../premium/premium_gate.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,6 +33,39 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _repairMissingCustomLogoColors();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _repairMissingCustomLogoColors() async {
+    for (final key in StorageService.cardsBox.keys.toList()) {
+      final raw = StorageService.cardsBox.get(key);
+      if (raw is! Map) continue;
+
+      final item = Map<String, dynamic>.from(raw);
+      final path = item['customImage']?.toString() ?? '';
+      final color = item['brandColor']?.toString() ?? '';
+      if (path.isEmpty || color.isNotEmpty || !File(path).existsSync()) continue;
+
+      final detected = await ImageColorService.dominantEdgeColor(path);
+      if (detected == null) continue;
+
+      item['brandColor'] = detected.value.toString();
+      item['updatedAt'] = DateTime.now().toIso8601String();
+      await StorageService.saveCard(key, item);
+    }
+  }
   List<Map<String, dynamic>> getItemsByType(String type) {
     return StorageService.cardsBox.values
         .where((item) => item is Map && item['type'] == type)
@@ -188,6 +224,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> openGiftCardAddFlow() async {
+    if (!await PremiumGate.canAddGiftCard(context)) return;
+    if (!mounted) return;
+
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(builder: (_) => const ChooseGiftCardTemplateScreen()),
@@ -474,6 +513,19 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    if (type == 'QR-code' || type == 'QR-set') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => QrCodeViewScreen(
+            items: categoryItems,
+            initialIndex: initialIndex < 0 ? 0 : initialIndex,
+          ),
+        ),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -500,6 +552,26 @@ class _HomeScreenState extends State<HomeScreen> {
             .map((item) => Map<String, dynamic>.from(item as Map))
             .toList();
         final giftCards = getItemsByType('Cadeaukaart');
+        final allItems = [...cards, ...qrCodes, ...giftCards];
+        final normalizedQuery = _searchQuery.trim().toLowerCase();
+        final searchResults = normalizedQuery.isEmpty
+            ? <Map<String, dynamic>>[]
+            : allItems.where((item) {
+                final searchable = [
+                  item['name'],
+                  item['type'],
+                  item['note'],
+                  item['brandId'],
+                ].map((value) => value?.toString().toLowerCase() ?? '');
+                return searchable.any((value) => value.contains(normalizedQuery));
+              }).toList();
+
+        List<Map<String, dynamic>> categoryFor(Map<String, dynamic> item) {
+          final type = item['type']?.toString();
+          if (type == 'Cadeaukaart') return giftCards;
+          if (type == 'QR-code' || type == 'QR-set') return qrCodes;
+          return cards;
+        }
 
         return Scaffold(
           backgroundColor: const Color(0xFFF4F4F6),
@@ -528,6 +600,39 @@ class _HomeScreenState extends State<HomeScreen> {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
             children: [
+              TextField(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _searchQuery = value),
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Zoek in PasKluis',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: _searchQuery.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Zoekopdracht wissen',
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (normalizedQuery.isNotEmpty)
+                _SearchResults(
+                  query: _searchQuery.trim(),
+                  items: searchResults,
+                  onTap: (item) => openCardView(categoryFor(item), item),
+                )
+              else ...[
               _CategorySection(
                 title: 'Klantenkaarten',
                 icon: Icons.card_membership,
@@ -568,11 +673,110 @@ class _HomeScreenState extends State<HomeScreen> {
                 onItemTap: (item) => openCardView(giftCards, item),
                 onItemLongPress: (item) => showItemOptions(context, item),
               ),
+              ],
             ],
           ),
           bottomNavigationBar: MainBottomNav(currentIndex: 0, onTap: openTab),
         );
       },
+    );
+  }
+}
+
+class _SearchResults extends StatelessWidget {
+  final String query;
+  final List<Map<String, dynamic>> items;
+  final ValueChanged<Map<String, dynamic>> onTap;
+
+  const _SearchResults({
+    required this.query,
+    required this.items,
+    required this.onTap,
+  });
+
+  static IconData _iconFor(String type) {
+    if (type == 'Cadeaukaart') return Icons.card_giftcard_rounded;
+    if (type == 'QR-code' || type == 'QR-set') return Icons.qr_code_2_rounded;
+    return Icons.card_membership_rounded;
+  }
+
+  static String _labelFor(String type) {
+    if (type == 'Cadeaukaart') return 'Cadeaukaart';
+    if (type == 'QR-set') return 'QR-set';
+    if (type == 'QR-code') return 'QR-code';
+    return 'Klantenkaart';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.search_off_rounded, size: 48, color: Colors.black38),
+            const SizedBox(height: 12),
+            Text(
+              'Geen resultaten voor “$query”',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Zoek op de naam, het soort kaart of een notitie.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '${items.length} ${items.length == 1 ? 'resultaat' : 'resultaten'}',
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF333333),
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...items.map((item) {
+          final type = item['type']?.toString() ?? '';
+          final name = item['name']?.toString().trim() ?? '';
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              child: ListTile(
+                onTap: () => onTap(item),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                leading: CircleAvatar(
+                  backgroundColor: const Color(0xFFF8E3EA),
+                  child: Icon(_iconFor(type), color: const Color(0xFFD51B46)),
+                ),
+                title: Text(
+                  name.isEmpty ? _labelFor(type) : name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                subtitle: Text(_labelFor(type)),
+                trailing: const Icon(Icons.chevron_right_rounded),
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 }
@@ -705,6 +909,7 @@ class _PreviewCardState extends State<_PreviewCard> {
   @override
   Widget build(BuildContext context) {
     final useImage = hasAssetLogo || hasCustomLogo;
+    final usesBrandBackground = useImage && widget.brandColor.isNotEmpty;
 
     return GestureDetector(
       onTapDown: (_) => setPressed(true),
@@ -720,7 +925,7 @@ class _PreviewCardState extends State<_PreviewCard> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: hasAssetLogo ? cardColor : Colors.white,
+            color: usesBrandBackground ? cardColor : Colors.white,
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
@@ -735,19 +940,21 @@ class _PreviewCardState extends State<_PreviewCard> {
               Expanded(
                 child: useImage
                     ? Center(
-                        child: hasCustomLogo
-                            ? Image.file(
-                                File(widget.customImage),
-                                fit: BoxFit.contain,
-                                height: 72,
-                                width: double.infinity,
-                              )
-                            : Image.asset(
-                                widget.logoAsset,
-                                fit: BoxFit.contain,
-                                height: 72,
-                                width: double.infinity,
-                              ),
+                        child: Transform.scale(
+                          scale: 1.35,
+                          child: hasCustomLogo
+                              ? Image.file(
+                                  File(widget.customImage),
+                                  fit: BoxFit.contain,
+                                  height: 72,
+                                  width: double.infinity,
+                                )
+                              : SizedBox(
+                                  height: 72,
+                                  width: double.infinity,
+                                  child: BrandLogo(source: widget.logoAsset),
+                                ),
+                        ),
                       )
                     : Center(
                         child: Text(
@@ -771,7 +978,7 @@ class _PreviewCardState extends State<_PreviewCard> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 7),
                   decoration: BoxDecoration(
-                    color: hasAssetLogo
+                    color: usesBrandBackground
                         ? Colors.white.withOpacity(0.18)
                         : const Color(0xFFF8E3EA),
                     borderRadius: BorderRadius.circular(14),
@@ -784,7 +991,7 @@ class _PreviewCardState extends State<_PreviewCard> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
-                      color: hasAssetLogo
+                      color: usesBrandBackground
                           ? Colors.white
                           : const Color(0xFFD51B46),
                     ),
