@@ -520,7 +520,7 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                 child: Center(
                   child: useImage
                       ? Transform.scale(
-                          scale: 1.35,
+                          scale: hasCustomLogo ? 1.65 : 1.0,
                           child: hasCustomLogo
                               ? Image.file(
                                   File(customImage),
