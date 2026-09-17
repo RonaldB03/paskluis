@@ -321,7 +321,7 @@ class GiftCardsScreen extends StatelessWidget {
                     crossAxisCount: 2,
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
-                    childAspectRatio: 1.58,
+                    childAspectRatio: 1.42,
                   ),
                   itemBuilder: (context, index) {
                     final item = items[index];
@@ -464,10 +464,10 @@ class _GiftCardTileState extends State<_GiftCardTile> {
           '',
         );
     final logoScale = normalizedBrand.contains('albertheijn')
-        ? 2.05
+        ? 2.65
         : normalizedBrand.contains('gallgall')
-        ? 1.75
-        : 1.45;
+        ? 2.15
+        : 1.75;
 
     return GestureDetector(
       onTapDown: (_) => setPressed(true),
@@ -481,7 +481,7 @@ class _GiftCardTileState extends State<_GiftCardTile> {
         curve: Curves.easeOut,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.fromLTRB(15, 13, 15, 14),
           decoration: BoxDecoration(
             color: usesBrandBackground ? cardColor : Colors.white,
             borderRadius: BorderRadius.circular(22),
@@ -515,12 +515,12 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                                 child: Image.file(
                                   File(customImage),
                                   fit: BoxFit.contain,
-                                  height: 66,
+                                  height: 82,
                                   width: double.infinity,
                                 ),
                               )
                             : SizedBox(
-                                height: 66,
+                                height: 82,
                                 width: double.infinity,
                                 child: BrandLogo(
                                   source: logoAsset,
@@ -543,10 +543,10 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 7),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 9),
+                padding: const EdgeInsets.symmetric(vertical: 7),
                 decoration: BoxDecoration(
                   color: usesBrandBackground
                       ? Colors.white.withOpacity(0.18)
@@ -557,7 +557,7 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                   balance.isEmpty ? 'Saldo onbekend' : '€ $balance',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 17,
+                    fontSize: 15,
                     fontWeight: FontWeight.w900,
                     color: usesBrandBackground
                         ? Colors.white
