@@ -18,6 +18,24 @@ class CardBrandTemplate {
   });
 }
 
+CardBrandTemplate cardBrandTemplateFromJson(Map<String, dynamic> json) {
+  final rawColor = (json['brand_color']?.toString() ?? '#D51B46')
+      .replaceFirst('#', '');
+  final colorValue = int.tryParse('FF$rawColor', radix: 16) ?? 0xFFD51B46;
+  final supportedTypes = <String>[
+    if (json['supports_loyalty_card'] == true) 'Pasje',
+    if (json['supports_gift_card'] == true) 'Cadeaukaart',
+  ];
+
+  return CardBrandTemplate(
+    id: json['slug']?.toString() ?? '',
+    name: json['name']?.toString() ?? '',
+    logoAsset: json['logo_path']?.toString() ?? '',
+    color: Color(colorValue),
+    supportedTypes: supportedTypes,
+  );
+}
+
 /// 🔥 ALLE MERKEN (CENTRAAL)
 const List<CardBrandTemplate> cardBrandTemplates = [
   CardBrandTemplate(
