@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -109,6 +111,8 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
     final name = item['name'] ?? 'Kaart';
     final code = item['code'] ?? '';
     final logoAsset = item['logoAsset'] ?? '';
+    final customImagePath = item['customImage'] ?? '';
+    final customImage = customImagePath.isEmpty ? null : File(customImagePath);
 
     return PopScope(
       canPop: false,
@@ -176,7 +180,10 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                             height: 138,
                             width: double.infinity,
                             padding: const EdgeInsets.all(28),
-                            child: logoAsset.isNotEmpty
+                            child: customImage != null &&
+                                    customImage.existsSync()
+                                ? Image.file(customImage, fit: BoxFit.contain)
+                                : logoAsset.isNotEmpty
                                 ? Image.asset(logoAsset, fit: BoxFit.contain)
                                 : const Icon(
                                     Icons.card_membership_rounded,
