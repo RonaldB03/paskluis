@@ -30,6 +30,8 @@ jobs:
 
       - name: GitHub Pages instellen
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Beheerportaal uploaden
         uses: actions/upload-pages-artifact@v3
