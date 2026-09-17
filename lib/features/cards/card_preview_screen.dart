@@ -184,7 +184,13 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                             padding: const EdgeInsets.all(28),
                             child: customImage != null &&
                                     customImage.existsSync()
-                                ? Image.file(customImage, fit: BoxFit.contain)
+                                ? Transform.scale(
+                                    scale: 1.7,
+                                    child: Image.file(
+                                      customImage,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  )
                                 : logoAsset.isNotEmpty
                                 ? BrandLogo(source: logoAsset)
                                 : const Icon(
