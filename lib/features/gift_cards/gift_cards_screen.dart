@@ -493,21 +493,25 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                 ),
               ),
               Expanded(
-                child: Center(
-                  child: hasLogo
-                      ? hasCustomLogo
-                            ? Image.file(
-                                File(customImage),
-                                fit: BoxFit.contain,
-                                height: 66,
-                                width: double.infinity,
+                child: ClipRect(
+                  child: Center(
+                    child: hasLogo
+                        ? hasCustomLogo
+                            ? Transform.scale(
+                                scale: 1.5,
+                                child: Image.file(
+                                  File(customImage),
+                                  fit: BoxFit.contain,
+                                  height: 66,
+                                  width: double.infinity,
+                                ),
                               )
                             : SizedBox(
                                 height: 66,
                                 width: double.infinity,
                                 child: BrandLogo(source: logoAsset),
                               )
-                      : Text(
+                        : Text(
                           title,
                           textAlign: TextAlign.center,
                           maxLines: 2,
@@ -519,7 +523,8 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                                 ? Colors.white
                                 : const Color(0xFF333333),
                           ),
-                        ),
+                          ),
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
