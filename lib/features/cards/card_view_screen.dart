@@ -35,7 +35,9 @@ class _CardViewScreenState extends State<CardViewScreen> {
   void initState() {
     super.initState();
 
-    items = widget.items.map((item) => Map<String, dynamic>.from(item)).toList();
+    items = widget.items
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
     currentIndex = items.isEmpty
         ? 0
         : widget.initialIndex.clamp(0, items.length - 1).toInt();
@@ -89,8 +91,8 @@ class _CardViewScreenState extends State<CardViewScreen> {
   }
 
   List<Map<String, dynamic>> getLinkedGiftCards(
-      Map<String, dynamic> loyaltyCard,
-      ) {
+    Map<String, dynamic> loyaltyCard,
+  ) {
     final brandId = loyaltyCard['brandId']?.toString() ?? '';
 
     if (brandId.isEmpty) return [];
@@ -98,10 +100,10 @@ class _CardViewScreenState extends State<CardViewScreen> {
     final giftCards = StorageService.cardsBox.values
         .where(
           (item) =>
-      item is Map &&
-          item['type'] == 'Cadeaukaart' &&
-          item['brandId']?.toString() == brandId,
-    )
+              item is Map &&
+              item['type'] == 'Cadeaukaart' &&
+              item['brandId']?.toString() == brandId,
+        )
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
 
@@ -111,11 +113,13 @@ class _CardViewScreenState extends State<CardViewScreen> {
 
       if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
 
-      final aDate = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
+      final aDate =
+          DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
           DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
-      final bDate = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
+      final bDate =
+          DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
           DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
@@ -133,10 +137,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => GiftCardViewScreen(
-          items: giftCards,
-          initialIndex: 0,
-        ),
+        builder: (_) => GiftCardViewScreen(items: giftCards, initialIndex: 0),
       ),
     );
 
@@ -159,7 +160,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
     item['lastUsedAt'] = DateTime.now().toIso8601String();
     item['updatedAt'] = DateTime.now().toIso8601String();
 
-    await StorageService.cardsBox.put(key, item);
+    await StorageService.saveCard(key, item);
 
     if (!mounted) return;
 
@@ -185,7 +186,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
       'updatedAt': DateTime.now().toIso8601String(),
     };
 
-    await StorageService.cardsBox.put(key, newItem);
+    await StorageService.saveCard(key, newItem);
 
     if (!mounted) return;
 
@@ -212,9 +213,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
     final updatedItem = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (_) => EditCardScreen(
-          item: items[currentIndex],
-        ),
+        builder: (_) => EditCardScreen(item: items[currentIndex]),
       ),
     );
 
@@ -243,9 +242,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
               child: const Text('Annuleren'),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(context, true),
               child: const Text('Verwijderen'),
             ),
@@ -268,7 +265,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
 
     if (key == null) return;
 
-    await StorageService.cardsBox.delete(key);
+    await StorageService.deleteCard(key);
 
     if (!mounted) return;
 
@@ -309,11 +306,8 @@ class _CardViewScreenState extends State<CardViewScreen> {
     Clipboard.setData(ClipboardData(text: code));
     HapticFeedback.lightImpact();
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Code gekopieerd'),
-      ),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Code gekopieerd')));
   }
 
   void openDetails() {
@@ -355,11 +349,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
                 const SizedBox(height: 22),
                 _DetailRow(label: 'Naam', value: name),
                 const SizedBox(height: 16),
-                _DetailRow(
-                  label: 'Code',
-                  value: code,
-                  showCopy: true,
-                ),
+                _DetailRow(label: 'Code', value: code, showCopy: true),
                 if (brandId.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   _DetailRow(label: 'Merk', value: brandId),
@@ -430,9 +420,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
     if (items.isEmpty) {
       return const Scaffold(
         backgroundColor: Color(0xFFF4F4F6),
-        body: Center(
-          child: Text('Geen kaarten'),
-        ),
+        body: Center(child: Text('Geen kaarten')),
       );
     }
 
@@ -451,9 +439,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
           currentItem['name']?.toString() ?? 'Klantenkaart',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontWeight: FontWeight.w900,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w900),
         ),
         actions: [
           IconButton(
@@ -505,10 +491,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
 
                     return Opacity(
                       opacity: opacity,
-                      child: Transform.scale(
-                        scale: scale,
-                        child: child,
-                      ),
+                      child: Transform.scale(scale: scale, child: child),
                     );
                   },
                   child: _BarcodeCard(
@@ -524,10 +507,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
           ),
           if (items.length > 1) ...[
             const SizedBox(height: 8),
-            _Dots(
-              count: items.length,
-              activeIndex: currentIndex,
-            ),
+            _Dots(count: items.length, activeIndex: currentIndex),
           ],
           const SizedBox(height: 16),
           const Text(
@@ -577,10 +557,7 @@ class _BarcodeCard extends StatelessWidget {
     final code = item['code']?.toString() ?? '';
 
     return code
-        .replaceAllMapped(
-      RegExp(r'.{1,4}'),
-          (match) => '${match.group(0)} ',
-    )
+        .replaceAllMapped(RegExp(r'.{1,4}'), (match) => '${match.group(0)} ')
         .trim();
   }
 
@@ -598,10 +575,7 @@ class _BarcodeCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(34),
           gradient: LinearGradient(
-            colors: [
-              brandColor,
-              brandColor.withOpacity(0.82),
-            ],
+            colors: [brandColor, brandColor.withOpacity(0.82)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -625,20 +599,14 @@ class _BarcodeCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: hasCustomLogo
-                          ? Image.file(
-                        File(customImage),
-                        fit: BoxFit.contain,
-                      )
+                          ? Image.file(File(customImage), fit: BoxFit.contain)
                           : hasAssetLogo
-                          ? Image.asset(
-                        logoAsset,
-                        fit: BoxFit.contain,
-                      )
+                          ? Image.asset(logoAsset, fit: BoxFit.contain)
                           : const Icon(
-                        Icons.card_membership_rounded,
-                        color: Colors.white,
-                        size: 70,
-                      ),
+                              Icons.card_membership_rounded,
+                              color: Colors.white,
+                              size: 70,
+                            ),
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -750,10 +718,7 @@ class _LinkedGiftCardInline extends StatelessWidget {
   final List<Map<String, dynamic>> giftCards;
   final VoidCallback onTap;
 
-  const _LinkedGiftCardInline({
-    required this.giftCards,
-    required this.onTap,
-  });
+  const _LinkedGiftCardInline({required this.giftCards, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -822,10 +787,7 @@ class _LinkedGiftCardInline extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Color(0xFFD51B46),
-              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFFD51B46)),
             ],
           ),
         ),
@@ -838,10 +800,7 @@ class _LinkedGiftCardAction extends StatelessWidget {
   final List<Map<String, dynamic>> giftCards;
   final VoidCallback onTap;
 
-  const _LinkedGiftCardAction({
-    required this.giftCards,
-    required this.onTap,
-  });
+  const _LinkedGiftCardAction({required this.giftCards, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -906,10 +865,7 @@ class _LinkedGiftCardAction extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: Color(0xFFD51B46),
-            ),
+            const Icon(Icons.chevron_right_rounded, color: Color(0xFFD51B46)),
           ],
         ),
       ),
@@ -921,10 +877,7 @@ class _Dots extends StatelessWidget {
   final int count;
   final int activeIndex;
 
-  const _Dots({
-    required this.count,
-    required this.activeIndex,
-  });
+  const _Dots({required this.count, required this.activeIndex});
 
   @override
   Widget build(BuildContext context) {
@@ -970,10 +923,7 @@ class _DetailRow extends StatelessWidget {
               children: [
                 TextSpan(
                   text: '$label\n',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    color: Colors.black54,
-                  ),
+                  style: const TextStyle(fontSize: 15, color: Colors.black54),
                 ),
                 TextSpan(
                   text: value,
@@ -992,11 +942,8 @@ class _DetailRow extends StatelessWidget {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: value));
               HapticFeedback.lightImpact();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Gekopieerd'),
-                ),
-              );
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(const SnackBar(content: Text('Gekopieerd')));
             },
             child: const Text('Kopiëren'),
           ),

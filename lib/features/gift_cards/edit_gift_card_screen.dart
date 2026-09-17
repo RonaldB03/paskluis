@@ -3,15 +3,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../data/services/media_storage_service.dart';
 import '../scanner/scanner_screen.dart';
 
 class EditGiftCardScreen extends StatefulWidget {
   final Map<String, dynamic> item;
 
-  const EditGiftCardScreen({
-    super.key,
-    required this.item,
-  });
+  const EditGiftCardScreen({super.key, required this.item});
 
   @override
   State<EditGiftCardScreen> createState() => _EditGiftCardScreenState();
@@ -80,11 +78,22 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
 
     if (image == null) return;
 
-    setState(() {
-      customImage = image.path;
-      logoAsset = '';
-      brandColor = '';
-    });
+    try {
+      final storedPath = await MediaStorageService.persistImage(image.path);
+      if (!mounted) return;
+      setState(() {
+        customImage = storedPath;
+        logoAsset = '';
+        brandColor = '';
+      });
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('De afbeelding kon niet worden opgeslagen.'),
+        ),
+      );
+    }
   }
 
   Future<void> scanCode() async {
@@ -201,10 +210,7 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
           const SizedBox(height: 24),
           const Text(
             'Cadeaukaartgegevens',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -302,23 +308,23 @@ class _LogoPreview extends StatelessWidget {
             child: Center(
               child: hasCustomLogo
                   ? Image.file(
-                File(customImage),
-                fit: BoxFit.contain,
-                height: 90,
-                width: double.infinity,
-              )
+                      File(customImage),
+                      fit: BoxFit.contain,
+                      height: 90,
+                      width: double.infinity,
+                    )
                   : hasPresetLogo
                   ? Image.asset(
-                logoAsset,
-                fit: BoxFit.contain,
-                height: 90,
-                width: double.infinity,
-              )
+                      logoAsset,
+                      fit: BoxFit.contain,
+                      height: 90,
+                      width: double.infinity,
+                    )
                   : const Icon(
-                Icons.image_outlined,
-                size: 56,
-                color: Colors.black38,
-              ),
+                      Icons.image_outlined,
+                      size: 56,
+                      color: Colors.black38,
+                    ),
             ),
           ),
           const SizedBox(height: 12),

@@ -10,9 +10,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
   Future<void> openManual(BuildContext context) async {
     final result = await Navigator.push<Map<String, String>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const AddQrCodeScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const AddQrCodeScreen()),
     );
 
     if (!context.mounted || result == null) return;
@@ -23,9 +21,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
   Future<void> openScanner(BuildContext context) async {
     final code = await Navigator.push<String>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const QrScannerScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
     );
 
     if (!context.mounted || code == null || code.trim().isEmpty) return;
@@ -33,9 +29,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
-        builder: (_) => AddQrCodeScreen(
-          initialCode: code.trim(),
-        ),
+        builder: (_) => AddQrCodeScreen(initialCode: code.trim()),
       ),
     );
 
@@ -47,9 +41,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
   Future<void> openMultiScanner(BuildContext context) async {
     final codes = await Navigator.push<List<String>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const MultiQrScannerScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const MultiQrScannerScreen()),
     );
 
     if (!context.mounted || codes == null || codes.isEmpty) return;
@@ -136,10 +128,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
         centerTitle: true,
         title: const Text(
           'QR-code toevoegen',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
         ),
         actions: [
           TextButton(
@@ -187,7 +176,8 @@ class ChooseQrCodeScreen extends StatelessWidget {
           _QrChoiceTile(
             icon: Icons.confirmation_number_rounded,
             title: 'Meerdere QR-codes',
-            subtitle: 'Scan meerdere tickets achter elkaar en sla ze als set op',
+            subtitle:
+                'Scan meerdere tickets achter elkaar en sla ze als set op',
             onTap: () => openMultiScanner(context),
           ),
           const SizedBox(height: 10),

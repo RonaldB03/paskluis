@@ -20,6 +20,7 @@ import '../gift_cards/gift_cards_screen.dart';
 
 import '../qr_codes/qr_codes_screen.dart';
 import '../qr_codes/choose_qr_code_screen.dart';
+import '../settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -48,10 +49,12 @@ class _HomeScreenState extends State<HomeScreen> {
       final aLastUsed = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '');
       final bLastUsed = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '');
 
-      final aCreated = DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
+      final aCreated =
+          DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
-      final bCreated = DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
+      final bCreated =
+          DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
       final aDate = aLastUsed ?? aCreated;
@@ -78,9 +81,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<Map<String, dynamic>> saveNewCard(
-      Map<String, String> result, {
-        required String forcedType,
-      }) async {
+    Map<String, String> result, {
+    required String forcedType,
+  }) async {
     final now = DateTime.now().toIso8601String();
 
     final Map<String, dynamic> card = {
@@ -128,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
         MaterialPageRoute(
           builder: (_) => CardPreviewScreen(
             item: savedCard.map(
-                  (key, value) => MapEntry(key, value?.toString() ?? ''),
+              (key, value) => MapEntry(key, value?.toString() ?? ''),
             ),
           ),
         ),
@@ -139,9 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> openQrAddFlow() async {
     final result = await Navigator.push<Map<String, String>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const ChooseQrCodeScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const ChooseQrCodeScreen()),
     );
 
     if (!mounted || result == null) return;
@@ -162,8 +163,8 @@ class _HomeScreenState extends State<HomeScreen> {
         'name': result['name'] ?? 'QR-codes (${codeList.length})',
         'code': '',
         'codes': codes,
-        'used': result['used'] ??
-            List.filled(codeList.length, 'false').join('|||'),
+        'used':
+            result['used'] ?? List.filled(codeList.length, 'false').join('|||'),
         'note': result['note'] ?? '',
         'cardNumber': '',
         'pinCode': '',
@@ -189,9 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> openGiftCardAddFlow() async {
     final result = await Navigator.push<Map<String, String>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const ChooseGiftCardTemplateScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const ChooseGiftCardTemplateScreen()),
     );
 
     if (!mounted || result == null) return;
@@ -200,17 +199,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> editLoyaltyCard(
-      BuildContext context,
-      Map<String, dynamic> item,
-      ) async {
+    BuildContext context,
+    Map<String, dynamic> item,
+  ) async {
     final key = findHiveKey(item);
     if (key == null) return;
 
     final updated = await Navigator.push<Map<String, dynamic>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => EditCardScreen(item: item),
-      ),
+      MaterialPageRoute(builder: (_) => EditCardScreen(item: item)),
     );
 
     if (updated == null) return;
@@ -219,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
       StorageService.cardsBox.get(key) as Map,
     );
 
-    await StorageService.cardsBox.put(key, {
+    await StorageService.saveCard(key, {
       ...oldItem,
       ...updated,
       'id': oldItem['id'],
@@ -231,9 +228,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> editGiftCard(
-      BuildContext context,
-      Map<String, dynamic> item,
-      ) async {
+    BuildContext context,
+    Map<String, dynamic> item,
+  ) async {
     final key = findHiveKey(item);
     if (key == null) return;
 
@@ -263,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
       StorageService.cardsBox.get(key) as Map,
     );
 
-    await StorageService.cardsBox.put(key, {
+    await StorageService.saveCard(key, {
       ...oldItem,
       ...updated,
       'id': oldItem['id'],
@@ -277,9 +274,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> deleteItem(
-      BuildContext context,
-      Map<String, dynamic> item,
-      ) async {
+    BuildContext context,
+    Map<String, dynamic> item,
+  ) async {
     final key = findHiveKey(item);
     if (key == null) return;
 
@@ -310,19 +307,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (confirmed != true) return;
 
-    await StorageService.cardsBox.delete(key);
+    await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$name is verwijderd.')),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('$name is verwijderd.')));
   }
 
-  void showItemOptions(
-      BuildContext context,
-      Map<String, dynamic> item,
-      ) {
+  void showItemOptions(BuildContext context, Map<String, dynamic> item) {
     final name = item['name']?.toString() ?? 'Kaart';
     final type = item['type']?.toString() ?? '';
 
@@ -405,10 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const Text(
                   'Wat wil je toevoegen?',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 18),
                 _AddChoiceTile(
@@ -456,20 +446,17 @@ class _HomeScreenState extends State<HomeScreen> {
       screen = const GiftCardsScreen();
     }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => screen),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
 
   void openCardView(
-      List<Map<String, dynamic>> categoryItems,
-      Map<String, dynamic> selectedItem,
-      ) {
+    List<Map<String, dynamic>> categoryItems,
+    Map<String, dynamic> selectedItem,
+  ) {
     final selectedId = selectedItem['id']?.toString() ?? '';
 
     final initialIndex = categoryItems.indexWhere(
-          (item) => item['id']?.toString() == selectedId,
+      (item) => item['id']?.toString() == selectedId,
     );
 
     final type = selectedItem['type']?.toString() ?? '';
@@ -505,9 +492,11 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, box, _) {
         final cards = getItemsByType('Pasje');
         final qrCodes = StorageService.cardsBox.values
-            .where((item) =>
-        item is Map &&
-            (item['type'] == 'QR-code' || item['type'] == 'QR-set'))
+            .where(
+              (item) =>
+                  item is Map &&
+                  (item['type'] == 'QR-code' || item['type'] == 'QR-set'),
+            )
             .map((item) => Map<String, dynamic>.from(item as Map))
             .toList();
         final giftCards = getItemsByType('Cadeaukaart');
@@ -522,12 +511,17 @@ class _HomeScreenState extends State<HomeScreen> {
             foregroundColor: const Color(0xFF333333),
             actions: [
               IconButton(
-                onPressed: showAddChoices,
-                icon: const Icon(
-                  Icons.add,
-                  color: Color(0xFFD51B46),
-                  size: 32,
+                tooltip: 'Instellingen',
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
                 ),
+                icon: const Icon(Icons.settings_outlined),
+              ),
+              IconButton(
+                tooltip: 'Toevoegen',
+                onPressed: showAddChoices,
+                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
               ),
             ],
           ),
@@ -540,8 +534,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 items: getPreviewItems(cards),
                 hasItems: cards.isNotEmpty,
                 actionTitle: cards.isEmpty ? 'Voeg kaart toe' : 'Al je kaarten',
-                onActionTap:
-                cards.isEmpty ? openLoyaltyAddFlow : () => openTab(1),
+                onActionTap: cards.isEmpty
+                    ? openLoyaltyAddFlow
+                    : () => openTab(1),
                 onItemTap: (item) => openCardView(cards, item),
                 onItemLongPress: (item) => showItemOptions(context, item),
               ),
@@ -551,8 +546,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.qr_code,
                 items: getPreviewItems(qrCodes),
                 hasItems: qrCodes.isNotEmpty,
-                actionTitle:
-                qrCodes.isEmpty ? 'Voeg QR-code toe' : 'Al je QR-codes',
+                actionTitle: qrCodes.isEmpty
+                    ? 'Voeg QR-code toe'
+                    : 'Al je QR-codes',
                 onActionTap: qrCodes.isEmpty ? openQrAddFlow : () => openTab(2),
                 onItemTap: (item) => openCardView(qrCodes, item),
                 onItemLongPress: (item) => showItemOptions(context, item),
@@ -566,17 +562,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 actionTitle: giftCards.isEmpty
                     ? 'Voeg cadeaukaart toe'
                     : 'Al je cadeaukaarten',
-                onActionTap:
-                giftCards.isEmpty ? openGiftCardAddFlow : () => openTab(3),
+                onActionTap: giftCards.isEmpty
+                    ? openGiftCardAddFlow
+                    : () => openTab(3),
                 onItemTap: (item) => openCardView(giftCards, item),
                 onItemLongPress: (item) => showItemOptions(context, item),
               ),
             ],
           ),
-          bottomNavigationBar: MainBottomNav(
-            currentIndex: 0,
-            onTap: openTab,
-          ),
+          bottomNavigationBar: MainBottomNav(currentIndex: 0, onTap: openTab),
         );
       },
     );
@@ -741,35 +735,35 @@ class _PreviewCardState extends State<_PreviewCard> {
               Expanded(
                 child: useImage
                     ? Center(
-                  child: hasCustomLogo
-                      ? Image.file(
-                    File(widget.customImage),
-                    fit: BoxFit.contain,
-                    height: 72,
-                    width: double.infinity,
-                  )
-                      : Image.asset(
-                    widget.logoAsset,
-                    fit: BoxFit.contain,
-                    height: 72,
-                    width: double.infinity,
-                  ),
-                )
+                        child: hasCustomLogo
+                            ? Image.file(
+                                File(widget.customImage),
+                                fit: BoxFit.contain,
+                                height: 72,
+                                width: double.infinity,
+                              )
+                            : Image.asset(
+                                widget.logoAsset,
+                                fit: BoxFit.contain,
+                                height: 72,
+                                width: double.infinity,
+                              ),
+                      )
                     : Center(
-                  child: Text(
-                    widget.title,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: hasAssetLogo
-                          ? Colors.white
-                          : const Color(0xFF333333),
-                    ),
-                  ),
-                ),
+                        child: Text(
+                          widget.title,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: hasAssetLogo
+                                ? Colors.white
+                                : const Color(0xFF333333),
+                          ),
+                        ),
+                      ),
               ),
               if (isGiftCard) ...[
                 const SizedBox(height: 8),
@@ -790,8 +784,9 @@ class _PreviewCardState extends State<_PreviewCard> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
-                      color:
-                      hasAssetLogo ? Colors.white : const Color(0xFFD51B46),
+                      color: hasAssetLogo
+                          ? Colors.white
+                          : const Color(0xFFD51B46),
                     ),
                   ),
                 ),
@@ -868,10 +863,7 @@ class _AddChoiceTile extends StatelessWidget {
         backgroundColor: const Color(0xFFF8E3EA),
         child: Icon(icon, color: const Color(0xFFD51B46)),
       ),
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w700),
-      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
       trailing: const Icon(Icons.chevron_right),
     );
   }

@@ -8,10 +8,7 @@ import 'edit_card_screen.dart';
 class CardPreviewScreen extends StatefulWidget {
   final Map<String, String> item;
 
-  const CardPreviewScreen({
-    super.key,
-    required this.item,
-  });
+  const CardPreviewScreen({super.key, required this.item});
 
   @override
   State<CardPreviewScreen> createState() => _CardPreviewScreenState();
@@ -40,15 +37,13 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
       curve: Curves.easeOut,
     );
 
-    slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.08),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: animationController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     animationController.forward();
     HapticFeedback.lightImpact();
@@ -82,26 +77,21 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
     final code = item['code'] ?? '';
 
     return code
-        .replaceAllMapped(
-      RegExp(r'.{1,4}'),
-          (match) => '${match.group(0)} ',
-    )
+        .replaceAllMapped(RegExp(r'.{1,4}'), (match) => '${match.group(0)} ')
         .trim();
   }
 
   Future<void> openEdit() async {
     final updated = await Navigator.push<Map<String, dynamic>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => EditCardScreen(item: item),
-      ),
+      MaterialPageRoute(builder: (_) => EditCardScreen(item: item)),
     );
 
     if (!mounted || updated == null) return;
 
     setState(() {
       item = updated.map(
-            (key, value) => MapEntry(key, value?.toString() ?? ''),
+        (key, value) => MapEntry(key, value?.toString() ?? ''),
       );
     });
   }
@@ -109,10 +99,8 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
   void goToCardsScreen() {
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(
-        builder: (_) => const CardsScreen(),
-      ),
-          (route) => false,
+      MaterialPageRoute(builder: (_) => const CardsScreen()),
+      (route) => false,
     );
   }
 
@@ -141,9 +129,7 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
           ),
           title: Text(
             name,
-            style: const TextStyle(
-              fontWeight: FontWeight.w900,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w900),
           ),
           actions: [
             TextButton(
@@ -170,10 +156,7 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(32),
                       gradient: LinearGradient(
-                        colors: [
-                          brandColor,
-                          brandColor.withOpacity(0.82),
-                        ],
+                        colors: [brandColor, brandColor.withOpacity(0.82)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -194,15 +177,12 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                             width: double.infinity,
                             padding: const EdgeInsets.all(28),
                             child: logoAsset.isNotEmpty
-                                ? Image.asset(
-                              logoAsset,
-                              fit: BoxFit.contain,
-                            )
+                                ? Image.asset(logoAsset, fit: BoxFit.contain)
                                 : const Icon(
-                              Icons.card_membership_rounded,
-                              color: Colors.white,
-                              size: 70,
-                            ),
+                                    Icons.card_membership_rounded,
+                                    color: Colors.white,
+                                    size: 70,
+                                  ),
                           ),
                           Container(
                             width: double.infinity,
@@ -267,8 +247,7 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
 
                   _InfoBlock(
                     title: 'Kaart opgeslagen',
-                    subtitle:
-                    'Deze klantenkaart staat nu in je PasKluis en is klaar voor gebruik.',
+                    subtitle: 'Deze klantenkaart staat nu in je PasKluis en is klaar voor gebruik.',
                     icon: Icons.check_circle_rounded,
                     color: brandColor,
                   ),
@@ -335,18 +314,13 @@ class _InfoBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: color.withOpacity(0.12),
-        ),
+        border: Border.all(color: color.withOpacity(0.12)),
       ),
       child: Row(
         children: [
           CircleAvatar(
             backgroundColor: color.withOpacity(0.14),
-            child: Icon(
-              icon,
-              color: color,
-            ),
+            child: Icon(icon, color: color),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -413,11 +387,7 @@ class _PreviewAction extends StatelessWidget {
                   color: const Color(0xFFD51B46).withOpacity(0.10),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFFD51B46),
-                  size: 26,
-                ),
+                child: Icon(icon, color: const Color(0xFFD51B46), size: 26),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -444,10 +414,7 @@ class _PreviewAction extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Colors.black26,
-              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.black26),
             ],
           ),
         ),

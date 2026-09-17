@@ -16,18 +16,12 @@ class MainBottomNav extends StatelessWidget {
       selectedIndex: currentIndex,
       onDestinationSelected: onTap,
       destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.home_rounded),
-          label: 'Home',
-        ),
+        NavigationDestination(icon: Icon(Icons.home_rounded), label: 'Home'),
         NavigationDestination(
           icon: Icon(Icons.card_membership),
           label: 'Klantenkaarten',
         ),
-        NavigationDestination(
-          icon: Icon(Icons.qr_code),
-          label: 'QR-codes',
-        ),
+        NavigationDestination(icon: Icon(Icons.qr_code), label: 'QR-codes'),
         NavigationDestination(
           icon: Icon(Icons.card_giftcard),
           label: 'Cadeaukaarten',

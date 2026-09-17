@@ -19,9 +19,7 @@ class _ChooseGiftCardTemplateScreenState
   Future<void> openCustomGiftCard() async {
     final result = await Navigator.push<Map<String, String>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const AddGiftCardScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const AddGiftCardScreen()),
     );
 
     if (!mounted || result == null) return;
@@ -32,9 +30,7 @@ class _ChooseGiftCardTemplateScreenState
     final code = await Navigator.push<String>(
       context,
       MaterialPageRoute(
-        builder: (_) => const GiftCardScannerScreen(
-          showManualAfterDelay: true,
-        ),
+        builder: (_) => const GiftCardScannerScreen(showManualAfterDelay: true),
       ),
     );
 
@@ -73,10 +69,7 @@ class _ChooseGiftCardTemplateScreenState
         centerTitle: true,
         title: const Text(
           'Cadeaukaart toevoegen',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
         ),
         actions: [
           TextButton(
@@ -137,9 +130,7 @@ class _ChooseGiftCardTemplateScreenState
 
           const SizedBox(height: 6),
 
-          _CustomGiftCardTile(
-            onTap: openCustomGiftCard,
-          ),
+          _CustomGiftCardTile(onTap: openCustomGiftCard),
         ],
       ),
     );
@@ -150,10 +141,7 @@ class _BrandListTile extends StatelessWidget {
   final CardBrandTemplate brand;
   final VoidCallback onTap;
 
-  const _BrandListTile({
-    required this.brand,
-    required this.onTap,
-  });
+  const _BrandListTile({required this.brand, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -178,10 +166,7 @@ class _BrandListTile extends StatelessWidget {
                   color: brand.color,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Image.asset(
-                  brand.logoAsset,
-                  fit: BoxFit.contain,
-                ),
+                child: Image.asset(brand.logoAsset, fit: BoxFit.contain),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -212,9 +197,7 @@ class _BrandListTile extends StatelessWidget {
 class _CustomGiftCardTile extends StatelessWidget {
   final VoidCallback onTap;
 
-  const _CustomGiftCardTile({
-    required this.onTap,
-  });
+  const _CustomGiftCardTile({required this.onTap});
 
   @override
   Widget build(BuildContext context) {

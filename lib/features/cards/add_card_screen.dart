@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../data/services/media_storage_service.dart';
 import '../scanner/scanner_screen.dart';
 
 class AddCardScreen extends StatefulWidget {
@@ -37,7 +38,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
   bool get isBrandMode =>
       (widget.initialLogoAsset ?? '').isNotEmpty &&
-          (widget.initialBrandColor ?? '').isNotEmpty;
+      (widget.initialBrandColor ?? '').isNotEmpty;
 
   Color get brandColor {
     final parsed = int.tryParse(widget.initialBrandColor ?? '');
@@ -66,9 +67,18 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
     if (image == null) return;
 
-    setState(() {
-      customImage = File(image.path);
-    });
+    try {
+      final storedPath = await MediaStorageService.persistImage(image.path);
+      if (!mounted) return;
+      setState(() => customImage = File(storedPath));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('De afbeelding kon niet worden opgeslagen.'),
+        ),
+      );
+    }
   }
 
   Future<void> scanCode() async {
@@ -76,7 +86,9 @@ class _AddCardScreenState extends State<AddCardScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => ScannerScreen(
-          mode: selectedType == 'QR-code' ? ScannerMode.qr : ScannerMode.barcode,
+          mode: selectedType == 'QR-code'
+              ? ScannerMode.qr
+              : ScannerMode.barcode,
           showManualAfterDelay: true,
         ),
       ),
@@ -130,10 +142,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: const Color(0xFF3A3A3C),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -177,16 +186,16 @@ class _AddCardScreenState extends State<AddCardScreen> {
                 ),
                 child: customImage != null
                     ? Image.file(
-                  customImage!,
-                  fit: BoxFit.contain,
-                  width: double.infinity,
-                )
+                        customImage!,
+                        fit: BoxFit.contain,
+                        width: double.infinity,
+                      )
                     : const Center(
-                  child: Text(
-                    'Logo toevoegen (optioneel)',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                ),
+                        child: Text(
+                          'Logo toevoegen (optioneel)',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
               ),
             ),
           ],
@@ -207,7 +216,9 @@ class _AddCardScreenState extends State<AddCardScreen> {
           OutlinedButton.icon(
             onPressed: scanCode,
             icon: const Icon(Icons.qr_code_scanner),
-            label: Text(selectedType == 'QR-code' ? 'QR-code scannen' : 'Barcode scannen'),
+            label: Text(
+              selectedType == 'QR-code' ? 'QR-code scannen' : 'Barcode scannen',
+            ),
           ),
           const SizedBox(height: 28),
           FilledButton.icon(

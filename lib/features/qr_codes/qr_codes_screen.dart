@@ -33,11 +33,13 @@ class QrCodesScreen extends StatelessWidget {
 
       if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
 
-      final aDate = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
+      final aDate =
+          DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
           DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
-      final bDate = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
+      final bDate =
+          DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
           DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0);
 
@@ -89,9 +91,7 @@ class QrCodesScreen extends StatelessWidget {
   Future<void> openAddQrCode(BuildContext context) async {
     final result = await Navigator.push<Map<String, String>>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const ChooseQrCodeScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const ChooseQrCodeScreen()),
     );
 
     if (!context.mounted || result == null) return;
@@ -116,8 +116,8 @@ class QrCodesScreen extends StatelessWidget {
         'name': result['name'] ?? 'QR-codes (${codeList.length})',
         'code': '',
         'codes': codes,
-        'used': result['used'] ??
-            List.filled(codeList.length, 'false').join('|||'),
+        'used':
+            result['used'] ?? List.filled(codeList.length, 'false').join('|||'),
         'note': result['note'] ?? '',
         'cardNumber': '',
         'pinCode': '',
@@ -162,18 +162,16 @@ class QrCodesScreen extends StatelessWidget {
   }
 
   Future<void> editQrCode(
-      BuildContext context,
-      Map<String, dynamic> item,
-      ) async {
+    BuildContext context,
+    Map<String, dynamic> item,
+  ) async {
     if (item['type']?.toString() == 'QR-set') {
       final key = findHiveKey(item);
       if (key == null) return;
 
       final updated = await Navigator.push<Map<String, dynamic>>(
         context,
-        MaterialPageRoute(
-          builder: (_) => EditQrSetScreen(item: item),
-        ),
+        MaterialPageRoute(builder: (_) => EditQrSetScreen(item: item)),
       );
 
       if (!context.mounted || updated == null) return;
@@ -182,7 +180,7 @@ class QrCodesScreen extends StatelessWidget {
         StorageService.cardsBox.get(key) as Map,
       );
 
-      await StorageService.cardsBox.put(key, {
+      await StorageService.saveCard(key, {
         ...oldItem,
         ...updated,
         'id': oldItem['id'],
@@ -221,7 +219,7 @@ class QrCodesScreen extends StatelessWidget {
       StorageService.cardsBox.get(key) as Map,
     );
 
-    await StorageService.cardsBox.put(key, {
+    await StorageService.saveCard(key, {
       ...oldItem,
       ...updated,
       'id': oldItem['id'],
@@ -241,7 +239,7 @@ class QrCodesScreen extends StatelessWidget {
       StorageService.cardsBox.get(key) as Map,
     );
 
-    await StorageService.cardsBox.put(key, {
+    await StorageService.saveCard(key, {
       ...oldItem,
       'isFavorite': oldItem['isFavorite'] != true,
       'updatedAt': DateTime.now().toIso8601String(),
@@ -249,9 +247,9 @@ class QrCodesScreen extends StatelessWidget {
   }
 
   Future<void> deleteQrCode(
-      BuildContext context,
-      Map<String, dynamic> item,
-      ) async {
+    BuildContext context,
+    Map<String, dynamic> item,
+  ) async {
     final key = findHiveKey(item);
     if (key == null) return;
 
@@ -282,13 +280,12 @@ class QrCodesScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
-    await StorageService.cardsBox.delete(key);
+    await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$name is verwijderd.')),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('$name is verwijderd.')));
   }
 
   void openTab(BuildContext context, int index) {
@@ -310,23 +307,19 @@ class QrCodesScreen extends StatelessWidget {
         return;
     }
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => screen),
-    );
+    Navigator.of(context)
+        .pushReplacement(MaterialPageRoute(builder: (_) => screen));
   }
 
   void openQrView(
-      BuildContext context,
-      List<Map<String, dynamic>> items,
-      int index,
-      ) {
+    BuildContext context,
+    List<Map<String, dynamic>> items,
+    int index,
+  ) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => QrCodeViewScreen(
-          items: items,
-          initialIndex: index,
-        ),
+        builder: (_) => QrCodeViewScreen(items: items, initialIndex: index),
       ),
     );
   }
@@ -407,10 +400,7 @@ class QrCodesScreen extends StatelessWidget {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             leading: IconButton(
-              icon: const Icon(
-                Icons.home_rounded,
-                color: Color(0xFFD51B46),
-              ),
+              icon: const Icon(Icons.home_rounded, color: Color(0xFFD51B46)),
               onPressed: () => openTab(context, 0),
             ),
             title: const Text(
@@ -423,39 +413,32 @@ class QrCodesScreen extends StatelessWidget {
             elevation: 0,
             actions: [
               IconButton(
-                icon: const Icon(
-                  Icons.add,
-                  color: Color(0xFFD51B46),
-                  size: 32,
-                ),
+                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
                 onPressed: () => openAddQrCode(context),
               ),
             ],
           ),
           body: items.isEmpty
-              ? _EmptyQrState(
-            onAdd: () => openAddQrCode(context),
-          )
+              ? _EmptyQrState(onAdd: () => openAddQrCode(context))
               : GridView.builder(
-            padding: const EdgeInsets.all(24),
-            itemCount: items.length,
-            gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 1.0,
-            ),
-            itemBuilder: (context, index) {
-              final item = items[index];
+                  padding: const EdgeInsets.all(24),
+                  itemCount: items.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 1.0,
+                  ),
+                  itemBuilder: (context, index) {
+                    final item = items[index];
 
-              return _QrTile(
-                item: item,
-                onTap: () => openQrView(context, items, index),
-                onLongPress: () => showQrOptions(context, item),
-              );
-            },
-          ),
+                    return _QrTile(
+                      item: item,
+                      onTap: () => openQrView(context, items, index),
+                      onLongPress: () => showQrOptions(context, item),
+                    );
+                  },
+                ),
           bottomNavigationBar: MainBottomNav(
             currentIndex: 2,
             onTap: (index) => openTab(context, index),
@@ -547,7 +530,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
     final key = findHiveKey(item);
     if (key == null) return;
 
-    await StorageService.cardsBox.put(key, updated);
+    await StorageService.saveCard(key, updated);
 
     setState(() {
       widget.items[currentIndex] = Map<String, dynamic>.from(updated);
@@ -626,10 +609,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
-        title: Text(
-          name,
-          style: const TextStyle(fontWeight: FontWeight.w900),
-        ),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w900)),
         centerTitle: true,
         backgroundColor: const Color(0xFFF4F4F6),
         foregroundColor: const Color(0xFF333333),
@@ -659,12 +639,12 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
 
           final codes = isCurrentSet
               ? (current['codes']?.toString() ?? '')
-              .split('|||')
-              .where((code) => code.trim().isNotEmpty)
-              .toList()
-              : [
-            current['code']?.toString() ?? '',
-          ].where((code) => code.trim().isNotEmpty).toList();
+                    .split('|||')
+                    .where((code) => code.trim().isNotEmpty)
+                    .toList()
+              : [current['code']?.toString() ?? '']
+                    .where((code) => code.trim().isNotEmpty)
+                    .toList();
 
           final rawUsed = current['used']?.toString() ?? '';
           final used = rawUsed.isEmpty
@@ -675,15 +655,16 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
             used.add(false);
           }
 
-          final safeTicketIndex =
-          ticketIndex >= codes.length ? 0 : ticketIndex;
+          final safeTicketIndex = ticketIndex >= codes.length ? 0 : ticketIndex;
 
           final currentName = current['name']?.toString() ?? 'QR-code';
-          final currentCode =
-          codes.isEmpty ? '' : codes[safeTicketIndex].trim();
+          final currentCode = codes.isEmpty
+              ? ''
+              : codes[safeTicketIndex].trim();
           final currentNote = current['note']?.toString() ?? '';
-          final currentUsed =
-          used.isEmpty ? false : used[safeTicketIndex] == true;
+          final currentUsed = used.isEmpty
+              ? false
+              : used[safeTicketIndex] == true;
 
           final usedCount = used.where((value) => value == true).length;
 
@@ -858,9 +839,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(28),
                     ),
-                    textStyle: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w900),
                   ),
                 ),
               ),
@@ -893,9 +872,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
 class _EmptyQrState extends StatelessWidget {
   final VoidCallback onAdd;
 
-  const _EmptyQrState({
-    required this.onAdd,
-  });
+  const _EmptyQrState({required this.onAdd});
 
   @override
   Widget build(BuildContext context) {
@@ -1017,17 +994,17 @@ class _QrTile extends StatelessWidget {
                   child: Center(
                     child: firstCode.isEmpty
                         ? const Icon(
-                      Icons.qr_code_2_rounded,
-                      size: 64,
-                      color: Color(0xFFD51B46),
-                    )
+                            Icons.qr_code_2_rounded,
+                            size: 64,
+                            color: Color(0xFFD51B46),
+                          )
                         : QrImageView(
-                      data: firstCode,
-                      version: QrVersions.auto,
-                      size: 86,
-                      backgroundColor: Colors.white,
-                      errorCorrectionLevel: QrErrorCorrectLevel.M,
-                    ),
+                            data: firstCode,
+                            version: QrVersions.auto,
+                            size: 86,
+                            backgroundColor: Colors.white,
+                            errorCorrectionLevel: QrErrorCorrectLevel.M,
+                          ),
                   ),
                 ),
                 const SizedBox(height: 8),

@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
+import 'media_storage_service.dart';
+
 class StorageService {
   static const String cardsBoxName = 'cards';
   static const String encryptionKeyName = 'paskluis_hive_key';
@@ -31,13 +33,32 @@ class StorageService {
     final key = List<int>.generate(32, (_) => Random.secure().nextInt(256));
     final encodedKey = base64UrlEncode(key);
 
-    await _secureStorage.write(
-      key: encryptionKeyName,
-      value: encodedKey,
-    );
+    await _secureStorage.write(key: encryptionKeyName, value: encodedKey);
 
     return key;
   }
 
   static Box get cardsBox => Hive.box(cardsBoxName);
+
+  static Future<void> saveCard(dynamic key, Map<dynamic, dynamic> value) async {
+    final oldItem = cardsBox.get(key);
+    final oldImage = oldItem is Map ? oldItem['customImage']?.toString() : null;
+    final newImage = value['customImage']?.toString();
+
+    await cardsBox.put(key, value);
+
+    if (oldImage != null && oldImage.isNotEmpty && oldImage != newImage) {
+      await MediaStorageService.deleteIfManaged(oldImage);
+    }
+  }
+
+  static Future<void> deleteCard(dynamic key) async {
+    final item = cardsBox.get(key);
+    if (item is Map) {
+      await MediaStorageService.deleteIfManaged(
+        item['customImage']?.toString(),
+      );
+    }
+    await cardsBox.delete(key);
+  }
 }
