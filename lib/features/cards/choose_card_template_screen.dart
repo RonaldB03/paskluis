@@ -190,6 +190,13 @@ class _BrandListTile extends StatelessWidget {
 
   const _BrandListTile({required this.brand, required this.onTap});
 
+  double get logoScale {
+    final name = brand.name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    if (name.contains('gallgall')) return 1.75;
+    if (name.contains('albertheijn')) return 1.15;
+    return 1.25;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -213,9 +220,9 @@ class _BrandListTile extends StatelessWidget {
                   color: brand.color,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Transform.scale(
-                  scale: 1.35,
-                  child: BrandLogo(source: brand.logoAsset),
+                child: BrandLogo(
+                  source: brand.logoAsset,
+                  scale: logoScale,
                 ),
               ),
               const SizedBox(width: 14),
