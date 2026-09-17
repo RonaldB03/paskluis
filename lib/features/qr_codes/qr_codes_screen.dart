@@ -6,6 +6,7 @@ import '../../data/services/storage_service.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
+import '../../shared/widgets/main_tab_route.dart';
 
 import '../cards/cards_screen.dart';
 import '../gift_cards/gift_cards_screen.dart';
@@ -309,8 +310,10 @@ class QrCodesScreen extends StatelessWidget {
         return;
     }
 
-    Navigator.of(context)
-        .pushReplacement(MaterialPageRoute(builder: (_) => screen));
+    Navigator.of(context).pushAndRemoveUntil(
+      mainTabRoute(screen, forward: index > 2),
+      (_) => false,
+    );
   }
 
   void openQrView(
@@ -401,10 +404,7 @@ class QrCodesScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.home_rounded, color: Color(0xFFD51B46)),
-              onPressed: () => openTab(context, 0),
-            ),
+            automaticallyImplyLeading: false,
             title: const PremiumAppTitle('QR-codes'),
             centerTitle: true,
             backgroundColor: Colors.white,

@@ -720,7 +720,7 @@ class _BarcodeCard extends StatelessWidget {
                                     )
                                   : BrandLogo(
                                       source: logoAsset,
-                                      scale: isWideGallLogo ? 1.22 : null,
+                                      scale: isWideGallLogo ? 1.55 : null,
                                     ),
                             )
                           : const Icon(

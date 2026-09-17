@@ -13,6 +13,7 @@ import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
+import '../../shared/widgets/main_tab_route.dart';
 
 import '../cards/card_preview_screen.dart';
 import '../cards/card_view_screen.dart';
@@ -610,7 +611,10 @@ class _HomeScreenState extends State<HomeScreen> {
       screen = const GiftCardsScreen();
     }
 
-    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+    Navigator.of(context).pushAndRemoveUntil(
+      mainTabRoute(screen, forward: true),
+      (_) => false,
+    );
   }
 
   void openCardView(
@@ -704,6 +708,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return Scaffold(
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
+            automaticallyImplyLeading: false,
             title: const PremiumAppTitle('PasKluis'),
             centerTitle: true,
             backgroundColor: Colors.white,
@@ -1095,6 +1100,16 @@ class _PreviewCardState extends State<_PreviewCard> {
 
   bool get isGiftCard => widget.type == 'Cadeaukaart';
 
+  double? get giftLogoScale {
+    if (!isGiftCard) return null;
+    final brand = '${widget.title} ${widget.logoAsset}'
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
+    if (brand.contains('albertheijn')) return 2.05;
+    if (brand.contains('gallgall')) return 1.75;
+    return 1.45;
+  }
+
   void setPressed(bool value) {
     if (!mounted) return;
     setState(() => isPressed = value);
@@ -1135,7 +1150,7 @@ class _PreviewCardState extends State<_PreviewCard> {
                 child: useImage
                     ? Center(
                         child: Transform.scale(
-                          scale: hasCustomLogo ? 1.65 : 1.0,
+                          scale: hasCustomLogo ? 1.18 : 1.0,
                           child: hasCustomLogo
                               ? Image.file(
                                   File(widget.customImage),
@@ -1146,7 +1161,10 @@ class _PreviewCardState extends State<_PreviewCard> {
                               : SizedBox(
                                   height: 72,
                                   width: double.infinity,
-                                  child: BrandLogo(source: widget.logoAsset),
+                                  child: BrandLogo(
+                                    source: widget.logoAsset,
+                                    scale: giftLogoScale,
+                                  ),
                                 ),
                         ),
                       )

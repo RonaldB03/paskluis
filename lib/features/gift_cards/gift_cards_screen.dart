@@ -9,6 +9,7 @@ import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
+import '../../shared/widgets/main_tab_route.dart';
 
 import '../cards/card_preview_screen.dart';
 import '../cards/cards_screen.dart';
@@ -263,8 +264,10 @@ class GiftCardsScreen extends StatelessWidget {
         return;
     }
 
-    Navigator.of(context)
-        .pushReplacement(MaterialPageRoute(builder: (_) => screen));
+    Navigator.of(context).pushAndRemoveUntil(
+      mainTabRoute(screen, forward: index > 3),
+      (_) => false,
+    );
   }
 
   void openGiftCard(
@@ -290,10 +293,7 @@ class GiftCardsScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.home_rounded, color: Color(0xFFD51B46)),
-              onPressed: () => openTab(context, 0),
-            ),
+            automaticallyImplyLeading: false,
             title: const PremiumAppTitle('Cadeaukaarten'),
             centerTitle: true,
             backgroundColor: Colors.white,
@@ -458,6 +458,16 @@ class _GiftCardTileState extends State<_GiftCardTile> {
     final hasLogo = hasAssetLogo || hasCustomLogo;
     final usesBrandBackground =
         hasLogo && (widget.item['brandColor']?.toString() ?? '').isNotEmpty;
+    final normalizedBrand =
+        '${widget.item['brandId']} $title $logoAsset'.toLowerCase().replaceAll(
+          RegExp(r'[^a-z0-9]'),
+          '',
+        );
+    final logoScale = normalizedBrand.contains('albertheijn')
+        ? 2.05
+        : normalizedBrand.contains('gallgall')
+        ? 1.75
+        : 1.45;
 
     return GestureDetector(
       onTapDown: (_) => setPressed(true),
@@ -512,7 +522,10 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                             : SizedBox(
                                 height: 66,
                                 width: double.infinity,
-                                child: BrandLogo(source: logoAsset),
+                                child: BrandLogo(
+                                  source: logoAsset,
+                                  scale: logoScale,
+                                ),
                               )
                         : Text(
                           title,
