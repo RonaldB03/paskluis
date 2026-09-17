@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/services/account_service.dart';
 import '../../data/services/supabase_service.dart';
+import 'account_management_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -25,6 +26,7 @@ class _AccountScreenState extends State<AccountScreen> {
   bool _busy = false;
   bool _loadingStatus = false;
   bool _hidePassword = true;
+  bool _isAdmin = false;
 
   User? get _user => AccountService.currentUser;
 
@@ -35,8 +37,10 @@ class _AccountScreenState extends State<AccountScreen> {
       if (!mounted) return;
       setState(() {});
       _loadPlusStatus();
+      _loadAdminStatus();
     });
     _loadPlusStatus();
+    _loadAdminStatus();
   }
 
   @override
@@ -62,6 +66,19 @@ class _AccountScreenState extends State<AccountScreen> {
       // Account access still works when the status cannot be refreshed.
     } finally {
       if (mounted) setState(() => _loadingStatus = false);
+    }
+  }
+
+  Future<void> _loadAdminStatus() async {
+    if (_user == null) {
+      if (mounted) setState(() => _isAdmin = false);
+      return;
+    }
+    try {
+      final isAdmin = await AccountService.isCurrentUserAdmin();
+      if (mounted) setState(() => _isAdmin = isAdmin);
+    } catch (_) {
+      if (mounted) setState(() => _isAdmin = false);
     }
   }
 
@@ -335,6 +352,33 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 16),
           _StatusCard(status: _plusStatus, loading: _loadingStatus),
+          if (_isAdmin) ...[
+            const SizedBox(height: 16),
+            Card(
+              elevation: 0,
+              color: const Color(0xFFFFEDF2),
+              child: ListTile(
+                leading: const Icon(
+                  Icons.admin_panel_settings_rounded,
+                  color: Color(0xFFD51B46),
+                ),
+                title: const Text(
+                  'Accounts en Plus beheren',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+                subtitle: const Text(
+                  'Activeer of deactiveer PasKluis Plus voor gebruikers.',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AccountManagementScreen(),
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           const Card(
             elevation: 0,
