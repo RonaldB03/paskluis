@@ -601,7 +601,7 @@ class _BarcodeCard extends StatelessWidget {
                     Expanded(
                       child: hasCustomLogo || hasAssetLogo
                           ? Transform.scale(
-                              scale: 1.25,
+                              scale: hasCustomLogo ? 1.7 : 1.0,
                               child: hasCustomLogo
                                   ? Image.file(
                                       File(customImage),
