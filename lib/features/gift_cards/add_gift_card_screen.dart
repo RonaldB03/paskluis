@@ -159,7 +159,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
 
     try {
       final result = await scanner.analyzeImage(image.path);
-      final value = result?.barcodes.firstOrNull.rawValue?.trim();
+      final value = result?.barcodes.firstOrNull?.rawValue?.trim();
       if (!mounted) return;
       if (value == null || value.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(

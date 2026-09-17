@@ -6,6 +6,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../data/services/image_color_service.dart';
+import '../../data/services/smart_card_import_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 
@@ -13,6 +14,7 @@ import '../cards/card_preview_screen.dart';
 import '../cards/card_view_screen.dart';
 import '../cards/cards_screen.dart';
 import '../cards/choose_card_template_screen.dart';
+import '../cards/add_card_screen.dart';
 import '../cards/edit_card_screen.dart';
 
 import '../gift_cards/add_gift_card_screen.dart';
@@ -21,6 +23,7 @@ import '../gift_cards/gift_card_view_screen.dart';
 import '../gift_cards/gift_cards_screen.dart';
 
 import '../qr_codes/qr_codes_screen.dart';
+import '../qr_codes/add_qr_code_screen.dart';
 import '../qr_codes/choose_qr_code_screen.dart';
 import '../settings/settings_screen.dart';
 import '../premium/premium_gate.dart';
@@ -237,6 +240,98 @@ class _HomeScreenState extends State<HomeScreen> {
     await saveNewCard(result, forcedType: 'Cadeaukaart');
   }
 
+  Future<void> openSmartImport() async {
+    Navigator.pop(context);
+    final result = await SmartCardImportService.pickAndAnalyze();
+    if (!mounted || result == null) return;
+
+    final type = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(
+          Icons.auto_awesome_rounded,
+          color: Color(0xFFD51B46),
+          size: 38,
+        ),
+        title: Text(
+          result.brand == null
+              ? 'Kaart herkend'
+              : '${result.brand!.name} herkend',
+        ),
+        content: Text(
+          'PasKluis denkt dat dit een ${result.type.toLowerCase()} is. Kies het juiste type om de gegevens te controleren.',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'Pasje'),
+            child: const Text('Klantenkaart'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, 'QR-code'),
+            child: const Text('QR-code'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, 'Cadeaukaart'),
+            child: const Text('Cadeaukaart'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || type == null) return;
+
+    final brand = result.brand;
+    Map<String, String>? saved;
+    if (type == 'Cadeaukaart') {
+      if (!await PremiumGate.canAddGiftCard(context) || !mounted) return;
+      saved = await Navigator.push<Map<String, String>>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddGiftCardScreen(
+            initialName: result.name,
+            initialCode: result.code,
+            initialPinCode: result.pinCode,
+            initialCurrentBalance: result.balance,
+            initialBrandId: brand?.id,
+            initialLogoAsset: brand?.logoAsset,
+            initialBrandColor: brand?.color.value.toString(),
+          ),
+        ),
+      );
+    } else if (type == 'QR-code') {
+      saved = await Navigator.push<Map<String, String>>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddQrCodeScreen(
+            initialName: result.name,
+            initialCode: result.code,
+            initialBrandId: brand?.id,
+            initialLogoAsset: brand?.logoAsset,
+            initialBrandColor: brand?.color.value.toString(),
+          ),
+        ),
+      );
+    } else {
+      saved = await Navigator.push<Map<String, String>>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddCardScreen(
+            initialType: 'Pasje',
+            initialName: result.name,
+            initialCode: result.code,
+            initialBrandId: brand?.id,
+            initialLogoAsset: brand?.logoAsset,
+            initialBrandColor: brand?.color.value.toString(),
+          ),
+        ),
+      );
+    }
+
+    if (!mounted || saved == null) return;
+    await saveNewCard(saved, forcedType: type);
+  }
+
   Future<void> editLoyaltyCard(
     BuildContext context,
     Map<String, dynamic> item,
@@ -441,6 +536,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 18),
                 _AddChoiceTile(
+                  icon: Icons.auto_awesome_rounded,
+                  title: 'Slim importeren uit foto',
+                  onTap: openSmartImport,
+                ),
+                _AddChoiceTile(
                   icon: Icons.card_membership,
                   title: 'Klantenkaart toevoegen',
                   onTap: () {
@@ -553,6 +653,9 @@ class _HomeScreenState extends State<HomeScreen> {
             .toList();
         final giftCards = getItemsByType('Cadeaukaart');
         final allItems = [...cards, ...qrCodes, ...giftCards];
+        final favorites = allItems
+            .where((item) => item['isFavorite'] == true)
+            .toList();
         final normalizedQuery = _searchQuery.trim().toLowerCase();
         final searchResults = normalizedQuery.isEmpty
             ? <Map<String, dynamic>>[]
@@ -633,6 +736,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: (item) => openCardView(categoryFor(item), item),
                 )
               else ...[
+              if (favorites.isNotEmpty) ...[
+                _FavoritesSection(
+                  items: favorites,
+                  onItemTap: (item) => openCardView(categoryFor(item), item),
+                ),
+                const SizedBox(height: 24),
+              ],
               _CategorySection(
                 title: 'Klantenkaarten',
                 icon: Icons.card_membership,
@@ -679,6 +789,61 @@ class _HomeScreenState extends State<HomeScreen> {
           bottomNavigationBar: MainBottomNav(currentIndex: 0, onTap: openTab),
         );
       },
+    );
+  }
+}
+
+class _FavoritesSection extends StatelessWidget {
+  final List<Map<String, dynamic>> items;
+  final ValueChanged<Map<String, dynamic>> onItemTap;
+
+  const _FavoritesSection({required this.items, required this.onItemTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.star_rounded, color: Color(0xFFD5A021)),
+            SizedBox(width: 8),
+            Text(
+              'Favorieten',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF333333),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 122,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return SizedBox(
+                width: 190,
+                child: _PreviewCard(
+                  title: item['name']?.toString() ?? 'Kaart',
+                  logoAsset: item['logoAsset']?.toString() ?? '',
+                  customImage: item['customImage']?.toString() ?? '',
+                  brandColor: item['brandColor']?.toString() ?? '',
+                  balance: item['currentBalance']?.toString() ?? '',
+                  type: item['type']?.toString() ?? '',
+                  onTap: () => onItemTap(item),
+                  onLongPress: () {},
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -830,7 +995,7 @@ class _CategorySection extends StatelessWidget {
             crossAxisCount: 2,
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
-            childAspectRatio: 1.45,
+            childAspectRatio: 1.58,
           ),
           itemBuilder: (context, index) {
             if (index == items.length) {

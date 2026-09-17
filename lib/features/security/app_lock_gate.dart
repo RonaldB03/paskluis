@@ -15,6 +15,7 @@ class AppLockGate extends StatefulWidget {
 class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   bool _unlocked = !SettingsService.appLockEnabled;
   bool _authenticating = false;
+  bool _privacyCover = false;
 
   @override
   void initState() {
@@ -33,8 +34,23 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused && SettingsService.appLockEnabled) {
-      setState(() => _unlocked = false);
+    if (!mounted) return;
+
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      setState(() {
+        _privacyCover = true;
+        if (SettingsService.appLockEnabled) _unlocked = false;
+      });
+      return;
+    }
+
+    if (state == AppLifecycleState.resumed) {
+      setState(() => _privacyCover = false);
+      if (SettingsService.appLockEnabled && !_unlocked) {
+        _unlock();
+      }
     }
   }
 
@@ -53,6 +69,10 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    if (_privacyCover) {
+      return const ColoredBox(color: Color(0xFFF4F4F6));
+    }
+
     if (_unlocked || !SettingsService.appLockEnabled) return widget.child;
 
     return Scaffold(

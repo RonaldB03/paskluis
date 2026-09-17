@@ -29,7 +29,7 @@ abstract final class PremiumGate {
       builder: (dialogContext) => AlertDialog(
         icon: const Icon(
           Icons.workspace_premium_rounded,
-          color: Color(0xFFD51B46),
+          color: Color(0xFFD5A021),
           size: 42,
         ),
         title: const Text(

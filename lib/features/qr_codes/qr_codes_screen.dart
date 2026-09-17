@@ -610,6 +610,57 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
   Widget build(BuildContext context) {
     final name = item['name']?.toString() ?? 'QR-code';
     final isFavorite = item['isFavorite'] == true;
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+
+    if (isLandscape) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: pageController,
+                itemCount: widget.items.length,
+                onPageChanged: (index) => setState(() {
+                  currentIndex = index;
+                  ticketIndex = 0;
+                }),
+                itemBuilder: (context, index) {
+                  final current = widget.items[index];
+                  final isSet = current['type']?.toString() == 'QR-set';
+                  final codes = isSet
+                      ? (current['codes']?.toString() ?? '')
+                            .split('|||')
+                            .where((code) => code.trim().isNotEmpty)
+                            .toList()
+                      : [current['code']?.toString() ?? '']
+                            .where((code) => code.trim().isNotEmpty)
+                            .toList();
+                  final safeIndex = ticketIndex >= codes.length ? 0 : ticketIndex;
+                  return _LandscapeQrPage(
+                    name: current['name']?.toString() ?? 'QR-code',
+                    code: codes.isEmpty ? '' : codes[safeIndex],
+                    position: isSet && codes.isNotEmpty
+                        ? 'Ticket ${safeIndex + 1} van ${codes.length}'
+                        : '',
+                  );
+                },
+              ),
+              Positioned(
+                left: 8,
+                top: 4,
+                child: IconButton.filledTonal(
+                  tooltip: 'Terug',
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
@@ -873,6 +924,64 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _LandscapeQrPage extends StatelessWidget {
+  final String name;
+  final String code;
+  final String position;
+
+  const _LandscapeQrPage({
+    required this.name,
+    required this.code,
+    required this.position,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(76, 8, 32, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (position.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(position, style: const TextStyle(color: Colors.black54)),
+                ],
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: code.isEmpty
+                  ? const Text('Geen QR-code beschikbaar')
+                  : QrImageView(
+                      data: code,
+                      version: QrVersions.auto,
+                      size: MediaQuery.sizeOf(context).height - 36,
+                      backgroundColor: Colors.white,
+                      errorCorrectionLevel: QrErrorCorrectLevel.M,
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }

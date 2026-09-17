@@ -319,7 +319,7 @@ class GiftCardsScreen extends StatelessWidget {
                     crossAxisCount: 2,
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
-                    childAspectRatio: 1.28,
+                    childAspectRatio: 1.58,
                   ),
                   itemBuilder: (context, index) {
                     final item = items[index];

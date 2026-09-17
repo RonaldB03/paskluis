@@ -427,6 +427,42 @@ class _CardViewScreenState extends State<CardViewScreen> {
 
     final currentItem = items[currentIndex];
     final isFavorite = currentItem['isFavorite'] == true;
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+
+    if (isLandscape) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: pageController,
+                itemCount: items.length,
+                onPageChanged: (index) {
+                  HapticFeedback.selectionClick();
+                  setState(() => currentIndex = index);
+                  markCurrentCardAsUsed();
+                },
+                itemBuilder: (context, index) => _LandscapeBarcodeCard(
+                  item: items[index],
+                  barcode: getBarcodeType(items[index]),
+                ),
+              ),
+              Positioned(
+                left: 8,
+                top: 4,
+                child: IconButton.filledTonal(
+                  tooltip: 'Terug',
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
@@ -520,6 +556,60 @@ class _CardViewScreenState extends State<CardViewScreen> {
             ),
           ),
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _LandscapeBarcodeCard extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final Barcode barcode;
+
+  const _LandscapeBarcodeCard({required this.item, required this.barcode});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = item['name']?.toString() ?? 'Klantenkaart';
+    final code = item['code']?.toString() ?? '';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(76, 12, 32, 16),
+      child: Column(
+        children: [
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: Center(
+              child: code.isEmpty
+                  ? const Text('Geen barcode beschikbaar')
+                  : BarcodeWidget(
+                      barcode: barcode,
+                      data: code,
+                      width: double.infinity,
+                      height: double.infinity,
+                      drawText: false,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 10,
+                      ),
+                    ),
+            ),
+          ),
+          Text(
+            code,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 16,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
         ],
       ),
     );

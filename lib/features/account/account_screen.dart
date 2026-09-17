@@ -453,17 +453,28 @@ class _StatusCard extends StatelessWidget {
     return Card(
       elevation: 0,
       color: status.isActive
-          ? const Color(0xFFFFEDF2)
+          ? const Color(0xFFFFF6D8)
           : const Color(0xFFFFFFFF),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: status.isActive
+              ? const Color(0xFFD5A021)
+              : Colors.transparent,
+          width: 1.4,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
             Icon(
               status.isActive
-                  ? Icons.verified_rounded
+                  ? Icons.workspace_premium_rounded
                   : Icons.workspace_premium_outlined,
-              color: const Color(0xFFD51B46),
+              color: status.isActive
+                  ? const Color(0xFFD5A021)
+                  : const Color(0xFFD51B46),
               size: 34,
             ),
             const SizedBox(width: 14),
@@ -477,9 +488,12 @@ class _StatusCard extends StatelessWidget {
                         : status.isActive
                         ? 'PasKluis Plus is actief'
                         : 'Gratis versie',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
+                      color: status.isActive
+                          ? const Color(0xFF8A6500)
+                          : const Color(0xFF26252C),
                     ),
                   ),
                   const SizedBox(height: 4),
