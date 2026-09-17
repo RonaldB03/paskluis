@@ -106,13 +106,35 @@ function renderBrands() {
   $('#brands-body').innerHTML=state.brands.map((b)=>`<tr><td><div class="user-cell"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(b.slug)}</span></div></td><td><span style="display:inline-block;width:24px;height:24px;border-radius:7px;background:${escapeHtml(b.brand_color)};border:1px solid #ddd"></span></td><td>${b.supports_loyalty_card?'Klantenkaart':''}${b.supports_loyalty_card&&b.supports_gift_card?' · ':''}${b.supports_gift_card?'Cadeaukaart':''}</td><td><span class="pill ${b.is_active?'active':''}">${b.is_active?'Actief':'Verborgen'}</span></td><td><button class="secondary small-button" data-edit-brand="${b.id}">Bewerken</button></td></tr>`).join('') || '<tr><td colspan="5">Nog geen winkels toegevoegd.</td></tr>';
 }
 
+function renderLogoPreview(source='') {
+  const preview=$('#brand-logo-preview');
+  preview.innerHTML=source?`<img src="${escapeHtml(source)}" alt="Logo voorbeeld" onerror="this.parentElement.innerHTML='<span>Voorbeeld is alleen in de app beschikbaar</span>'" />`:'<span>Nog geen logo gekozen</span>';
+}
+
 function openBrandDialog(brand=null) {
-  $('#brand-form-title').textContent=brand?'Winkel bewerken':'Nieuwe winkel'; $('#brand-id').value=brand?.id||''; $('#brand-name').value=brand?.name||''; $('#brand-slug').value=brand?.slug||''; $('#brand-logo').value=brand?.logo_path||''; $('#brand-color').value=brand?.brand_color||'#D51B46'; $('#brand-loyalty').checked=brand?.supports_loyalty_card??true; $('#brand-gift').checked=brand?.supports_gift_card??false; $('#brand-active').checked=brand?.is_active??true; $('#brand-error').textContent=''; $('#brand-dialog').showModal();
+  $('#brand-form-title').textContent=brand?'Winkel bewerken':'Nieuwe winkel'; $('#brand-id').value=brand?.id||''; $('#brand-name').value=brand?.name||''; $('#brand-slug').value=brand?.slug||''; $('#brand-logo').value=brand?.logo_path||''; $('#brand-logo-file').value=''; $('#brand-color').value=brand?.brand_color||'#D51B46'; $('#brand-loyalty').checked=brand?.supports_loyalty_card??true; $('#brand-gift').checked=brand?.supports_gift_card??false; $('#brand-active').checked=brand?.is_active??true; $('#brand-error').textContent=''; renderLogoPreview(brand?.logo_path?.startsWith('http')?brand.logo_path:''); $('#brand-dialog').showModal();
+}
+
+async function uploadBrandLogo(slug) {
+  const file=$('#brand-logo-file').files[0];
+  if(!file) return $('#brand-logo').value.trim()||null;
+  if(file.size>2097152) throw new Error('Het logo is groter dan 2 MB.');
+  const extension=(file.name.split('.').pop()||'png').toLowerCase();
+  const path=`${slug}/${Date.now()}.${extension}`;
+  const { error }=await supabase.storage.from('brand-logos').upload(path,file,{contentType:file.type,upsert:false});
+  if(error) throw error;
+  return supabase.storage.from('brand-logos').getPublicUrl(path).data.publicUrl;
 }
 
 async function saveBrand() {
-  const id=$('#brand-id').value; const payload={name:$('#brand-name').value.trim(),slug:$('#brand-slug').value.trim(),logo_path:$('#brand-logo').value.trim()||null,brand_color:$('#brand-color').value,supports_loyalty_card:$('#brand-loyalty').checked,supports_gift_card:$('#brand-gift').checked,is_active:$('#brand-active').checked,updated_at:new Date().toISOString()};
-  const result=id?await supabase.from('brands').update(payload).eq('id',id):await supabase.from('brands').insert(payload); if(result.error){ $('#brand-error').textContent=result.error.message; return; } $('#brand-dialog').close(); toast('Winkel opgeslagen.'); await refreshAll();
+  const id=$('#brand-id').value; const slug=$('#brand-slug').value.trim();
+  try {
+    const logoPath=await uploadBrandLogo(slug);
+    const payload={name:$('#brand-name').value.trim(),slug,logo_path:logoPath,brand_color:$('#brand-color').value,supports_loyalty_card:$('#brand-loyalty').checked,supports_gift_card:$('#brand-gift').checked,is_active:$('#brand-active').checked,updated_at:new Date().toISOString()};
+    const result=id?await supabase.from('brands').update(payload).eq('id',id):await supabase.from('brands').insert(payload);
+    if(result.error) throw result.error;
+    $('#brand-dialog').close(); toast('Winkel en logo opgeslagen.'); await refreshAll();
+  } catch(error) { $('#brand-error').textContent=error.message||'Opslaan is niet gelukt.'; }
 }
 
 function showPage(page) { $$('.page').forEach((node)=>node.classList.remove('active-page')); $$('.nav-button').forEach((node)=>node.classList.toggle('active',node.dataset.page===page)); $(`#page-${page}`).classList.add('active-page'); $('#mobile-nav').value=page; }
@@ -124,5 +146,6 @@ $('#user-search').addEventListener('input',renderUsers); $('#users-body').addEve
 $('#refresh-support').addEventListener('click',refreshAll); $('#thread-list').addEventListener('click',(event)=>{ const button=event.target.closest('[data-thread]'); if(button) openThread(button.dataset.thread); });
 $('#reply-form').addEventListener('submit',(event)=>{ event.preventDefault(); const text=$('#reply-message').value.trim(); if(text) sendReply(text); }); $('#toggle-thread-status').addEventListener('click',toggleThreadStatus);
 $('#new-brand').addEventListener('click',()=>openBrandDialog()); $('#brands-body').addEventListener('click',(event)=>{ const button=event.target.closest('[data-edit-brand]'); if(button) openBrandDialog(state.brands.find((b)=>b.id===button.dataset.editBrand)); }); $('#cancel-brand').addEventListener('click',()=>$('#brand-dialog').close()); $('#brand-form').addEventListener('submit',(event)=>{ event.preventDefault(); saveBrand(); });
+$('#brand-logo-file').addEventListener('change',(event)=>{ const file=event.target.files[0]; if(file) renderLogoPreview(URL.createObjectURL(file)); });
 
 boot();
