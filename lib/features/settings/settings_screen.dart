@@ -128,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: ListTile(
               leading: Icon(Icons.info_outline_rounded),
               title: Text('PasKluis'),
-              subtitle: Text('Versie 1.2.0'),
+              subtitle: Text('Versie 1.2.1'),
             ),
           ),
         ],
