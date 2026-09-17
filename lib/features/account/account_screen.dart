@@ -389,7 +389,7 @@ class _PlusHero extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Slimme cadeaukaarten, automatische winkelherkenning en persoonlijke hulp.',
+            'Bewaar onbeperkt cadeaukaarten voor eenmalig € 1,99. Geen abonnement en geen reclame.',
             style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],
@@ -442,9 +442,9 @@ class _StatusCard extends StatelessWidget {
                   Text(
                     status.isActive
                         ? status.expiresAt == null
-                              ? 'Je hebt onbeperkt toegang.'
+                              ? 'Je hebt onbeperkt toegang.${_source(status.source)}'
                               : 'Je toegang is actief tot ${_date(status.expiresAt!)}.'
-                        : 'Klantenkaarten en QR-codes blijven gratis. Plus-aankopen volgen later.',
+                        : 'Eén cadeaukaart is gratis. Klantenkaarten en QR-codes blijven onbeperkt gratis.',
                   ),
                 ],
               ),
@@ -457,6 +457,13 @@ class _StatusCard extends StatelessWidget {
 
   static String _date(DateTime value) =>
       '${value.day.toString().padLeft(2, '0')}-${value.month.toString().padLeft(2, '0')}-${value.year}';
+
+  static String _source(String? source) {
+    if (source == 'complimentary') return ' Handmatig geactiveerd via beheer.';
+    if (source == 'apple') return ' Geactiveerd via Apple.';
+    if (source == 'google') return ' Geactiveerd via Google Play.';
+    return '';
+  }
 }
 
 class _OfflineAccountCard extends StatelessWidget {
