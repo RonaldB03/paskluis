@@ -4,6 +4,8 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../shared/widgets/brand_logo.dart';
+
 import 'cards_screen.dart';
 import 'edit_card_screen.dart';
 
@@ -184,7 +186,7 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                                     customImage.existsSync()
                                 ? Image.file(customImage, fit: BoxFit.contain)
                                 : logoAsset.isNotEmpty
-                                ? Image.asset(logoAsset, fit: BoxFit.contain)
+                                ? BrandLogo(source: logoAsset)
                                 : const Icon(
                                     Icons.card_membership_rounded,
                                     color: Colors.white,
