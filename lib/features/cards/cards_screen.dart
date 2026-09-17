@@ -6,6 +6,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../data/templates/card_templates.dart';
+import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 
 import '../gift_cards/gift_cards_screen.dart';
@@ -416,11 +417,10 @@ class _EmptyCardsState extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Center(
-                  child: Image.asset(
-                    brand.logoAsset,
-                    fit: BoxFit.contain,
+                  child: SizedBox(
                     height: 74,
                     width: double.infinity,
+                    child: BrandLogo(source: brand.logoAsset),
                   ),
                 ),
               ),
@@ -477,6 +477,8 @@ class _StoredCardTileState extends State<_StoredCardTile> {
     final title = widget.item['name']?.toString() ?? 'Kaart';
     final isFavorite = widget.item['isFavorite'] == true;
     final useImage = hasAssetLogo || hasCustomLogo;
+    final usesBrandBackground =
+        useImage && (widget.item['brandColor']?.toString() ?? '').isNotEmpty;
 
     return GestureDetector(
       onTapDown: (_) => setPressed(true),
@@ -492,7 +494,7 @@ class _StoredCardTileState extends State<_StoredCardTile> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            color: hasAssetLogo ? cardColor : Colors.white,
+            color: usesBrandBackground ? cardColor : Colors.white,
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
@@ -508,26 +510,30 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                 alignment: Alignment.topRight,
                 child: Icon(
                   isFavorite ? Icons.star : Icons.card_membership,
-                  color: hasAssetLogo ? Colors.white : const Color(0xFFD51B46),
+                  color: usesBrandBackground
+                      ? Colors.white
+                      : const Color(0xFFD51B46),
                   size: 22,
                 ),
               ),
               Expanded(
                 child: Center(
                   child: useImage
-                      ? hasCustomLogo
-                            ? Image.file(
-                                File(customImage),
-                                fit: BoxFit.contain,
-                                height: 74,
-                                width: double.infinity,
-                              )
-                            : Image.asset(
-                                logoAsset,
-                                fit: BoxFit.contain,
-                                height: 74,
-                                width: double.infinity,
-                              )
+                      ? Transform.scale(
+                          scale: 1.35,
+                          child: hasCustomLogo
+                              ? Image.file(
+                                  File(customImage),
+                                  fit: BoxFit.contain,
+                                  height: 74,
+                                  width: double.infinity,
+                                )
+                              : SizedBox(
+                                  height: 74,
+                                  width: double.infinity,
+                                  child: BrandLogo(source: logoAsset),
+                                ),
+                        )
                       : Text(
                           title,
                           textAlign: TextAlign.center,
@@ -536,7 +542,7 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
-                            color: hasAssetLogo
+                            color: usesBrandBackground
                                 ? Colors.white
                                 : const Color(0xFF333333),
                           ),
