@@ -4,6 +4,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
+import '../../shared/widgets/main_tab_swipe_region.dart';
+import '../../shared/widgets/premium_app_title.dart';
 
 import '../cards/cards_screen.dart';
 import '../gift_cards/gift_cards_screen.dart';
@@ -403,10 +405,7 @@ class QrCodesScreen extends StatelessWidget {
               icon: const Icon(Icons.home_rounded, color: Color(0xFFD51B46)),
               onPressed: () => openTab(context, 0),
             ),
-            title: const Text(
-              'QR-codes',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
+            title: const PremiumAppTitle('QR-codes'),
             centerTitle: true,
             backgroundColor: Colors.white,
             foregroundColor: const Color(0xFF333333),
@@ -418,9 +417,12 @@ class QrCodesScreen extends StatelessWidget {
               ),
             ],
           ),
-          body: items.isEmpty
-              ? _EmptyQrState(onAdd: () => openAddQrCode(context))
-              : GridView.builder(
+          body: MainTabSwipeRegion(
+            currentIndex: 2,
+            onSwitch: (index) => openTab(context, index),
+            child: items.isEmpty
+                ? _EmptyQrState(onAdd: () => openAddQrCode(context))
+                : GridView.builder(
                   padding: const EdgeInsets.all(24),
                   itemCount: items.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -438,7 +440,8 @@ class QrCodesScreen extends StatelessWidget {
                       onLongPress: () => showQrOptions(context, item),
                     );
                   },
-                ),
+                  ),
+          ),
           bottomNavigationBar: MainBottomNav(
             currentIndex: 2,
             onTap: (index) => openTab(context, index),
@@ -463,7 +466,8 @@ class QrCodeViewScreen extends StatefulWidget {
   State<QrCodeViewScreen> createState() => _QrCodeViewScreenState();
 }
 
-class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
+class _QrCodeViewScreenState extends State<QrCodeViewScreen>
+    with WidgetsBindingObserver {
   late final PageController pageController;
   late int currentIndex;
   late int ticketIndex;
@@ -504,6 +508,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     currentIndex = widget.initialIndex;
     ticketIndex = 0;
     pageController = PageController(initialPage: widget.initialIndex);
@@ -511,8 +516,18 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {});
+      if (pageController.hasClients) pageController.jumpToPage(currentIndex);
+    });
   }
 
   dynamic findHiveKey(Map<String, dynamic> item) {
