@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
+import '../../data/services/image_color_service.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 
 import '../cards/card_preview_screen.dart';
@@ -30,6 +31,30 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _repairMissingCustomLogoColors();
+  }
+
+  Future<void> _repairMissingCustomLogoColors() async {
+    for (final key in StorageService.cardsBox.keys.toList()) {
+      final raw = StorageService.cardsBox.get(key);
+      if (raw is! Map) continue;
+
+      final item = Map<String, dynamic>.from(raw);
+      final path = item['customImage']?.toString() ?? '';
+      final color = item['brandColor']?.toString() ?? '';
+      if (path.isEmpty || color.isNotEmpty || !File(path).existsSync()) continue;
+
+      final detected = await ImageColorService.dominantEdgeColor(path);
+      if (detected == null) continue;
+
+      item['brandColor'] = detected.value.toString();
+      item['updatedAt'] = DateTime.now().toIso8601String();
+      await StorageService.saveCard(key, item);
+    }
+  }
   List<Map<String, dynamic>> getItemsByType(String type) {
     return StorageService.cardsBox.values
         .where((item) => item is Map && item['type'] == type)
@@ -474,6 +499,19 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    if (type == 'QR-code' || type == 'QR-set') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => QrCodeViewScreen(
+            items: categoryItems,
+            initialIndex: initialIndex < 0 ? 0 : initialIndex,
+          ),
+        ),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -720,7 +758,9 @@ class _PreviewCardState extends State<_PreviewCard> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: hasAssetLogo ? cardColor : Colors.white,
+            color: useImage && widget.brandColor.isNotEmpty
+                ? cardColor
+                : Colors.white,
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
@@ -735,19 +775,22 @@ class _PreviewCardState extends State<_PreviewCard> {
               Expanded(
                 child: useImage
                     ? Center(
-                        child: hasCustomLogo
-                            ? Image.file(
-                                File(widget.customImage),
-                                fit: BoxFit.contain,
-                                height: 72,
-                                width: double.infinity,
-                              )
-                            : Image.asset(
-                                widget.logoAsset,
-                                fit: BoxFit.contain,
-                                height: 72,
-                                width: double.infinity,
-                              ),
+                        child: Transform.scale(
+                          scale: 1.35,
+                          child: hasCustomLogo
+                              ? Image.file(
+                                  File(widget.customImage),
+                                  fit: BoxFit.contain,
+                                  height: 72,
+                                  width: double.infinity,
+                                )
+                              : Image.asset(
+                                  widget.logoAsset,
+                                  fit: BoxFit.contain,
+                                  height: 72,
+                                  width: double.infinity,
+                                ),
+                        ),
                       )
                     : Center(
                         child: Text(
