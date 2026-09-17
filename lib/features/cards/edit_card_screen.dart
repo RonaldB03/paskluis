@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/services/media_storage_service.dart';
+import '../../data/services/image_color_service.dart';
 import '../scanner/scanner_screen.dart';
 
 class EditCardScreen extends StatefulWidget {
@@ -92,12 +93,13 @@ class _EditCardScreenState extends State<EditCardScreen> {
 
     try {
       final storedPath = await MediaStorageService.persistImage(image.path);
+      final detectedColor = await ImageColorService.dominantEdgeColor(storedPath);
       if (!mounted) return;
       HapticFeedback.selectionClick();
       setState(() {
         customImage = storedPath;
         logoAsset = '';
-        brandColor = '';
+        brandColor = detectedColor?.value.toString() ?? '';
       });
     } catch (_) {
       if (!mounted) return;
