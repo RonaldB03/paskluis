@@ -4,6 +4,7 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/image_color_service.dart';
@@ -134,6 +135,54 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     setState(() {
       codeController.text = result.trim();
     });
+  }
+
+  Future<void> importCodeFromScreenshot() async {
+    HapticFeedback.selectionClick();
+    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (image == null) return;
+
+    final scanner = MobileScannerController(
+      formats: const [
+        BarcodeFormat.ean13,
+        BarcodeFormat.ean8,
+        BarcodeFormat.code128,
+        BarcodeFormat.code39,
+        BarcodeFormat.code93,
+        BarcodeFormat.codabar,
+        BarcodeFormat.upcA,
+        BarcodeFormat.upcE,
+        BarcodeFormat.itf,
+        BarcodeFormat.qrCode,
+      ],
+    );
+
+    try {
+      final result = await scanner.analyzeImage(image.path);
+      final value = result?.barcodes.firstOrNull.rawValue?.trim();
+      if (!mounted) return;
+      if (value == null || value.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Geen barcode of QR-code gevonden in deze foto.'),
+          ),
+        );
+        return;
+      }
+      setState(() => codeController.text = value);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Code gevonden en ingevuld. Controleer hem voor opslaan.'),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('De afbeelding kon niet worden gelezen.')),
+      );
+    } finally {
+      await scanner.dispose();
+    }
   }
 
   Future<void> pickImage() async {
@@ -328,6 +377,23 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                       color: Color(0xFFD51B46),
                       width: 1.2,
                     ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: importCodeFromScreenshot,
+                  icon: const Icon(Icons.add_photo_alternate_rounded),
+                  label: const Text('Importeren uit foto of screenshot'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFD51B46),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(22),
                     ),
