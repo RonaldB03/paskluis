@@ -537,12 +537,13 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
     });
   }
 
-  Future<void> markCurrentTicketAsUsed() async {
+  Future<void> toggleCurrentTicketUsed() async {
     final codes = currentCodes;
     if (codes.isEmpty) return;
 
     final used = currentUsed;
-    used[ticketIndex] = true;
+    final willBeUsed = !used[ticketIndex];
+    used[ticketIndex] = willBeUsed;
 
     final updated = Map<String, dynamic>.from(item);
     updated['used'] = used.map((v) => v ? 'true' : 'false').join('|||');
@@ -556,9 +557,13 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          isSet
-              ? 'Ticket ${ticketIndex + 1} gemarkeerd als gebruikt.'
-              : 'QR-code gemarkeerd als gebruikt.',
+          willBeUsed
+              ? isSet
+                  ? 'Ticket ${ticketIndex + 1} gemarkeerd als gebruikt.'
+                  : 'QR-code gemarkeerd als gebruikt.'
+              : isSet
+                  ? 'Ticket ${ticketIndex + 1} is weer beschikbaar.'
+                  : 'QR-code is weer beschikbaar.',
         ),
       ),
     );
@@ -824,11 +829,15 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
               SizedBox(
                 height: 56,
                 child: FilledButton.icon(
-                  onPressed: currentUsed ? null : markCurrentTicketAsUsed,
-                  icon: const Icon(Icons.check_circle_rounded),
+                  onPressed: toggleCurrentTicketUsed,
+                  icon: Icon(
+                    currentUsed
+                        ? Icons.undo_rounded
+                        : Icons.check_circle_rounded,
+                  ),
                   label: Text(
                     currentUsed
-                        ? 'Al gebruikt'
+                        ? 'Markeer als niet gebruikt'
                         : isCurrentSet
                         ? 'Dit ticket gebruikt'
                         : 'QR-code gebruikt',
