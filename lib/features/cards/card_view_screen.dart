@@ -25,7 +25,8 @@ class CardViewScreen extends StatefulWidget {
   State<CardViewScreen> createState() => _CardViewScreenState();
 }
 
-class _CardViewScreenState extends State<CardViewScreen> {
+class _CardViewScreenState extends State<CardViewScreen>
+    with WidgetsBindingObserver {
   late final PageController pageController;
   late List<Map<String, dynamic>> items;
   late int currentIndex;
@@ -35,6 +36,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     items = widget.items
         .map((item) => Map<String, dynamic>.from(item))
@@ -55,9 +57,19 @@ class _CardViewScreenState extends State<CardViewScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     pageController.dispose();
     restoreScreen();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {});
+      if (pageController.hasClients) pageController.jumpToPage(currentIndex);
+    });
   }
 
   Future<void> setupScreen() async {
@@ -639,6 +651,15 @@ class _BarcodeCard extends StatelessWidget {
 
   bool get hasAssetLogo => (item['logoAsset']?.toString() ?? '').isNotEmpty;
 
+  bool get isWideGallLogo {
+    final value = '${item['brandId']} ${item['name']} $logoSource'
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return value.contains('gallgall');
+  }
+
+  String get logoSource => item['logoAsset']?.toString() ?? '';
+
   bool get hasCustomLogo {
     final path = item['customImage']?.toString() ?? '';
     return path.isNotEmpty && File(path).existsSync();
@@ -697,7 +718,10 @@ class _BarcodeCard extends StatelessWidget {
                                       File(customImage),
                                       fit: BoxFit.contain,
                                     )
-                                  : BrandLogo(source: logoAsset),
+                                  : BrandLogo(
+                                      source: logoAsset,
+                                      scale: isWideGallLogo ? 1.22 : null,
+                                    ),
                             )
                           : const Icon(
                               Icons.card_membership_rounded,
