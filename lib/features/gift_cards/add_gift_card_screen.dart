@@ -4,7 +4,7 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:mobile_scanner/mobile_scanner.dart' as mobile;
 
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/image_color_service.dart';
@@ -142,18 +142,18 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     final image = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (image == null) return;
 
-    final scanner = MobileScannerController(
+    final scanner = mobile.MobileScannerController(
       formats: const [
-        BarcodeFormat.ean13,
-        BarcodeFormat.ean8,
-        BarcodeFormat.code128,
-        BarcodeFormat.code39,
-        BarcodeFormat.code93,
-        BarcodeFormat.codabar,
-        BarcodeFormat.upcA,
-        BarcodeFormat.upcE,
-        BarcodeFormat.itf,
-        BarcodeFormat.qrCode,
+        mobile.BarcodeFormat.ean13,
+        mobile.BarcodeFormat.ean8,
+        mobile.BarcodeFormat.code128,
+        mobile.BarcodeFormat.code39,
+        mobile.BarcodeFormat.code93,
+        mobile.BarcodeFormat.codabar,
+        mobile.BarcodeFormat.upcA,
+        mobile.BarcodeFormat.upcE,
+        mobile.BarcodeFormat.itf,
+        mobile.BarcodeFormat.qrCode,
       ],
     );
 
