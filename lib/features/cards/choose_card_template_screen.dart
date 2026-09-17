@@ -208,12 +208,15 @@ class _BrandListTile extends StatelessWidget {
               Container(
                 width: 82,
                 height: 44,
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
                   color: brand.color,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: BrandLogo(source: brand.logoAsset),
+                child: Transform.scale(
+                  scale: 1.35,
+                  child: BrandLogo(source: brand.logoAsset),
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
