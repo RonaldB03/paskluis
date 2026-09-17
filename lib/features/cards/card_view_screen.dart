@@ -7,6 +7,7 @@ import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/storage_service.dart';
+import '../../shared/widgets/brand_logo.dart';
 import '../gift_cards/gift_card_view_screen.dart';
 import 'edit_card_screen.dart';
 
@@ -601,7 +602,7 @@ class _BarcodeCard extends StatelessWidget {
                       child: hasCustomLogo
                           ? Image.file(File(customImage), fit: BoxFit.contain)
                           : hasAssetLogo
-                          ? Image.asset(logoAsset, fit: BoxFit.contain)
+                          ? BrandLogo(source: logoAsset)
                           : const Icon(
                               Icons.card_membership_rounded,
                               color: Colors.white,
