@@ -24,6 +24,8 @@ class AddGiftCardScreen extends StatefulWidget {
   final String? initialLogoAsset;
   final String? initialBrandColor;
   final String? initialCustomImage;
+  final String? initialExpiryDate;
+  final bool initialExpiryNotificationsEnabled;
 
   const AddGiftCardScreen({
     super.key,
@@ -39,6 +41,8 @@ class AddGiftCardScreen extends StatefulWidget {
     this.initialLogoAsset,
     this.initialBrandColor,
     this.initialCustomImage,
+    this.initialExpiryDate,
+    this.initialExpiryNotificationsEnabled = true,
   });
 
   @override
@@ -56,6 +60,8 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   String logoAsset = '';
   String brandColor = '';
   String customImage = '';
+  DateTime? expiryDate;
+  late bool expiryNotificationsEnabled;
 
   bool get hasAssetLogo => logoAsset.isNotEmpty;
 
@@ -100,6 +106,8 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     logoAsset = widget.initialLogoAsset ?? '';
     brandColor = widget.initialBrandColor ?? '';
     customImage = widget.initialCustomImage ?? '';
+    expiryDate = DateTime.tryParse(widget.initialExpiryDate ?? '');
+    expiryNotificationsEnabled = widget.initialExpiryNotificationsEnabled;
 
     nameController.addListener(refresh);
     codeController.addListener(refresh);
@@ -226,6 +234,21 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     return value.trim().replaceAll(',', '.');
   }
 
+  String formatDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+
+  Future<void> pickExpiryDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: expiryDate ?? now.add(const Duration(days: 365)),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year + 20),
+      helpText: 'Kies de vervaldatum',
+    );
+    if (picked != null && mounted) setState(() => expiryDate = picked);
+  }
+
   void saveGiftCard() {
     final name = nameController.text.trim();
     final code = codeController.text.trim();
@@ -267,6 +290,9 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       'updatedAt': now,
       'lastUsedAt': '',
       'balanceHistory': '[]',
+      'expiryDate': expiryDate?.toIso8601String() ?? '',
+      'expiryNotificationsEnabled': expiryNotificationsEnabled.toString(),
+      'isArchived': 'false',
     });
   }
 
@@ -335,6 +361,40 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                 icon: Icons.lock_outline_rounded,
                 keyboardType: TextInputType.text,
               ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          _SectionCard(
+            title: 'Geldigheid',
+            subtitle: 'Optioneel. PasKluis kan je herinneren voordat de kaart verloopt.',
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.event_rounded, color: Color(0xFFD51B46)),
+                title: Text(
+                  expiryDate == null ? 'Vervaldatum toevoegen' : formatDate(expiryDate!),
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                trailing: expiryDate == null
+                    ? const Icon(Icons.chevron_right_rounded)
+                    : IconButton(
+                        tooltip: 'Vervaldatum verwijderen',
+                        onPressed: () => setState(() => expiryDate = null),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                onTap: pickExpiryDate,
+              ),
+              if (expiryDate != null)
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  value: expiryNotificationsEnabled,
+                  activeColor: const Color(0xFFD51B46),
+                  title: const Text('Herinneringen', style: TextStyle(fontWeight: FontWeight.w800)),
+                  subtitle: const Text('30 dagen, 7 dagen en op de vervaldatum'),
+                  onChanged: (value) => setState(() => expiryNotificationsEnabled = value),
+                ),
             ],
           ),
 

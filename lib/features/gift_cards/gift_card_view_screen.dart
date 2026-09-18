@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:barcode_widget/barcode_widget.dart';
@@ -8,6 +9,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/security_service.dart';
 import '../../data/services/storage_service.dart';
+import '../../data/services/notification_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import 'edit_gift_card_screen.dart';
 
@@ -142,6 +144,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     };
 
     await StorageService.saveCard(key, newItem);
+    await NotificationService.syncGiftCard(newItem);
 
     if (!mounted) return;
 
@@ -171,6 +174,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
     if (key == null) return;
 
+    await NotificationService.cancelGiftCard(id);
     await StorageService.deleteCard(key);
 
     if (!mounted) return;
@@ -276,7 +280,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                   ),
                 ),
                 const SizedBox(height: 18),
-                const Text(
+                Text(
                   'Beveiliging niet gelukt',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -387,8 +391,17 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 ),
                 const SizedBox(height: 22),
                 _ActionButton(
+                  icon: Icons.shopping_bag_rounded,
+                  label: 'Bedrag besteed',
+                  onTap: () {
+                    Navigator.pop(context);
+                    openBalanceEditor(spentMode: true);
+                  },
+                ),
+                const SizedBox(height: 10),
+                _ActionButton(
                   icon: Icons.account_balance_wallet_rounded,
-                  label: 'Saldo bijwerken',
+                  label: 'Nieuw saldo invoeren',
                   onTap: () {
                     Navigator.pop(context);
                     openBalanceEditor();
@@ -396,12 +409,12 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 ),
                 const SizedBox(height: 10),
                 _ActionButton(
-                  icon: Icons.delete_outline,
-                  label: 'Cadeaukaart verwijderen',
-                  destructive: true,
-                  onTap: () {
+                  icon: Icons.check_circle_outline_rounded,
+                  label: 'Kaart volledig gebruikt',
+                  onTap: () async {
                     Navigator.pop(context);
-                    confirmDelete();
+                    await _saveBalance(0, kind: 'used');
+                    if (mounted) _offerArchive();
                   },
                 ),
               ],
@@ -412,14 +425,69 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     );
   }
 
-  void openBalanceEditor() {
+  double _balanceOf(Map<String, dynamic> item) => double.tryParse(
+        (item['currentBalance']?.toString() ?? '').replaceAll(',', '.'),
+      ) ?? 0;
+
+  List<Map<String, dynamic>> _historyOf(Map<String, dynamic> item) {
+    try {
+      final decoded = jsonDecode(item['balanceHistory']?.toString() ?? '[]');
+      if (decoded is List) {
+        return decoded.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  String _money(double value) => value.toStringAsFixed(2);
+
+  Future<void> _saveBalance(double newBalance, {required String kind}) async {
+    if (items.isEmpty) return;
+    final updated = Map<String, dynamic>.from(items[currentIndex]);
+    final oldBalance = _balanceOf(updated);
+    final history = _historyOf(updated);
+    history.add({
+      'id': DateTime.now().microsecondsSinceEpoch.toString(),
+      'createdAt': DateTime.now().toIso8601String(),
+      'type': kind,
+      'oldBalance': _money(oldBalance),
+      'newBalance': _money(newBalance),
+      'amount': _money((oldBalance - newBalance).abs()),
+    });
+    updated['currentBalance'] = _money(newBalance);
+    updated['balanceHistory'] = jsonEncode(history);
+    await updateCurrentItem(updated);
+    HapticFeedback.mediumImpact();
+  }
+
+  Future<void> _offerArchive() async {
+    final archive = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Cadeaukaart is leeg'),
+        content: const Text('Wil je deze kaart archiveren? Je kunt hem later altijd terugzetten.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Bewaren')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Archiveren')),
+        ],
+      ),
+    );
+    if (archive != true || items.isEmpty) return;
+    final updated = Map<String, dynamic>.from(items[currentIndex]);
+    updated['isArchived'] = true;
+    updated['archivedAt'] = DateTime.now().toIso8601String();
+    await updateCurrentItem(updated);
+    if (mounted) Navigator.pop(context);
+  }
+
+  void openBalanceEditor({bool spentMode = false}) {
     if (items.isEmpty) return;
 
     HapticFeedback.selectionClick();
 
     final item = items[currentIndex];
     final controller = TextEditingController(
-      text: item['currentBalance']?.toString() ?? '',
+      text: spentMode ? '' : item['currentBalance']?.toString() ?? '',
     );
 
     showModalBottomSheet(
@@ -442,8 +510,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Saldo aanpassen',
+                Text(
+                  spentMode ? 'Bedrag besteed' : 'Nieuw saldo invoeren',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -458,7 +526,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                     decimal: true,
                   ),
                   decoration: InputDecoration(
-                    labelText: 'Nieuw saldo',
+                    labelText: spentMode ? 'Besteed bedrag' : 'Nieuw saldo',
                     prefixText: '€ ',
                     filled: true,
                     fillColor: const Color(0xFFF4F4F6),
@@ -481,33 +549,30 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                   height: 56,
                   child: FilledButton.icon(
                     onPressed: () async {
-                      final newBalance = controller.text.trim().replaceAll(
-                        ',',
-                        '.',
-                      );
-
-                      final updated = Map<String, dynamic>.from(
-                        items[currentIndex],
-                      );
-
-                      updated['currentBalance'] = newBalance;
-
-                      await updateCurrentItem(updated);
+                      final entered = double.tryParse(controller.text.trim().replaceAll(',', '.'));
+                      if (entered == null || entered < 0) return;
+                      final oldBalance = _balanceOf(items[currentIndex]);
+                      if (spentMode && entered > oldBalance) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Het bedrag is hoger dan het huidige saldo.')),
+                        );
+                        return;
+                      }
+                      final newBalance = spentMode ? oldBalance - entered : entered;
+                      await _saveBalance(newBalance, kind: spentMode ? 'spent' : 'adjusted');
 
                       if (!mounted) return;
 
                       Navigator.pop(context);
 
-                      if (newBalance == '0' ||
-                          newBalance == '0.00' ||
-                          newBalance == '0,00') {
+                      if (newBalance == 0) {
                         Future.delayed(const Duration(milliseconds: 250), () {
-                          if (mounted) confirmDelete();
+                          if (mounted) _offerArchive();
                         });
                       }
                     },
                     icon: const Icon(Icons.save_rounded),
-                    label: const Text('Saldo opslaan'),
+                    label: Text(spentMode ? 'Bedrag verwerken' : 'Saldo opslaan'),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFD51B46),
                       foregroundColor: Colors.white,
@@ -526,6 +591,88 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
           ),
         );
       },
+    );
+  }
+
+  void openBalanceHistory() {
+    if (items.isEmpty) return;
+    final history = _historyOf(items[currentIndex]).reversed.toList();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Saldohistorie', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 16),
+              if (history.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text('Nog geen saldowijzigingen.'),
+                )
+              else
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * .55),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: history.length,
+                    separatorBuilder: (_, __) => const Divider(),
+                    itemBuilder: (_, index) {
+                      final entry = history[index];
+                      final date = DateTime.tryParse(entry['createdAt']?.toString() ?? '');
+                      final type = entry['type']?.toString();
+                      final title = type == 'spent'
+                          ? '€ ${entry['amount']} besteed'
+                          : type == 'used'
+                              ? 'Volledig gebruikt'
+                              : type == 'undo'
+                                  ? 'Wijziging ongedaan gemaakt'
+                                  : 'Saldo aangepast';
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const CircleAvatar(
+                          backgroundColor: Color(0xFFF8E3EA),
+                          child: Icon(Icons.receipt_long_rounded, color: Color(0xFFD51B46)),
+                        ),
+                        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                        subtitle: Text(
+                          '${date == null ? '' : '${date.day}-${date.month}-${date.year} • '}€ ${entry['oldBalance']} → € ${entry['newBalance']}',
+                        ),
+                        trailing: index == 0 && type != 'undo'
+                            ? TextButton(
+                                onPressed: () async {
+                                  final updated = Map<String, dynamic>.from(items[currentIndex]);
+                                  final all = _historyOf(updated);
+                                  final restored = double.tryParse(entry['oldBalance']?.toString() ?? '') ?? 0;
+                                  all.add({
+                                    'id': DateTime.now().microsecondsSinceEpoch.toString(),
+                                    'createdAt': DateTime.now().toIso8601String(),
+                                    'type': 'undo',
+                                    'oldBalance': _money(_balanceOf(updated)),
+                                    'newBalance': _money(restored),
+                                    'amount': '0.00',
+                                  });
+                                  updated['currentBalance'] = _money(restored);
+                                  updated['balanceHistory'] = jsonEncode(all);
+                                  await updateCurrentItem(updated);
+                                  if (context.mounted) Navigator.pop(context);
+                                },
+                                child: const Text('Ongedaan'),
+                              )
+                            : null,
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -553,6 +700,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     final pinCode = item['pinCode']?.toString() ?? '';
     final initialBalance = item['initialBalance']?.toString() ?? '';
     final currentBalance = item['currentBalance']?.toString() ?? '';
+    final expiryDate = DateTime.tryParse(item['expiryDate']?.toString() ?? '');
     final isFavorite = item['isFavorite'] == true;
 
     bool sheetShowPin = false;
@@ -656,6 +804,14 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                         ),
                       ],
 
+                      if (expiryDate != null) ...[
+                        const SizedBox(height: 16),
+                        _DetailRow(
+                          label: 'Vervaldatum',
+                          value: '${expiryDate.day.toString().padLeft(2, '0')}-${expiryDate.month.toString().padLeft(2, '0')}-${expiryDate.year}',
+                        ),
+                      ],
+
                       if (pinCode.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         Row(
@@ -704,6 +860,17 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                         onTap: () {
                           Navigator.pop(context);
                           openBalanceEditor();
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      _ActionButton(
+                        icon: Icons.history_rounded,
+                        label: 'Saldohistorie',
+                        onTap: () {
+                          Navigator.pop(context);
+                          openBalanceHistory();
                         },
                       ),
 

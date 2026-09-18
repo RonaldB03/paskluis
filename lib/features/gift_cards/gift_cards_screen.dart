@@ -6,6 +6,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../data/services/settings_service.dart';
+import '../../data/services/notification_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
@@ -28,7 +29,11 @@ class GiftCardsScreen extends StatelessWidget {
 
   List<Map<String, dynamic>> getItems() {
     final items = StorageService.cardsBox.values
-        .where((item) => item is Map && item['type'] == 'Cadeaukaart')
+        .where((item) =>
+            item is Map &&
+            item['type'] == 'Cadeaukaart' &&
+            item['isArchived'] != true &&
+            item['isArchived']?.toString() != 'true')
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
 
@@ -79,9 +84,14 @@ class GiftCardsScreen extends StatelessWidget {
       'updatedAt': result['updatedAt'] ?? now,
       'lastUsedAt': result['lastUsedAt'] ?? '',
       'balanceHistory': result['balanceHistory'] ?? '[]',
+      'expiryDate': result['expiryDate'] ?? '',
+      'expiryNotificationsEnabled':
+          result['expiryNotificationsEnabled'] == 'true',
+      'isArchived': result['isArchived'] == 'true',
     };
 
     await StorageService.cardsBox.add(card);
+    await NotificationService.syncGiftCard(card);
     return card;
   }
 
@@ -188,6 +198,7 @@ class GiftCardsScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
+    await NotificationService.cancelGiftCard(item['id']?.toString() ?? '');
     await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
@@ -291,6 +302,55 @@ class GiftCardsScreen extends StatelessWidget {
     );
   }
 
+  Future<void> showArchivedCards(BuildContext context) async {
+    final archived = StorageService.cardsBox.values
+        .where((item) =>
+            item is Map &&
+            item['type'] == 'Cadeaukaart' &&
+            (item['isArchived'] == true || item['isArchived']?.toString() == 'true'))
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Archief', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 14),
+              if (archived.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(28),
+                  child: Text('Er staan nog geen cadeaukaarten in het archief.'),
+                )
+              else
+                ...archived.map((item) => ListTile(
+                      leading: const CircleAvatar(child: Icon(Icons.card_giftcard_rounded)),
+                      title: Text(item['name']?.toString() ?? 'Cadeaukaart'),
+                      subtitle: Text('Saldo € ${item['currentBalance'] ?? '0.00'}'),
+                      trailing: TextButton(
+                        onPressed: () async {
+                          final key = findHiveKey(item);
+                          if (key == null) return;
+                          final restored = {...item, 'isArchived': false, 'archivedAt': ''};
+                          await StorageService.saveCard(key, restored);
+                          await NotificationService.syncGiftCard(restored);
+                          if (sheetContext.mounted) Navigator.pop(sheetContext);
+                        },
+                        child: const Text('Terugzetten'),
+                      ),
+                    )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -313,6 +373,11 @@ class GiftCardsScreen extends StatelessWidget {
             foregroundColor: const Color(0xFF333333),
             elevation: 0,
             actions: [
+              IconButton(
+                tooltip: 'Archief',
+                icon: const Icon(Icons.archive_outlined),
+                onPressed: () => showArchivedCards(context),
+              ),
               IconButton(
                 icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
                 onPressed: () => openAddGiftCard(context),
@@ -470,6 +535,10 @@ class _GiftCardTileState extends State<_GiftCardTile> {
     final customImage = widget.item['customImage']?.toString() ?? '';
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final isFavorite = widget.item['isFavorite'] == true;
+    final expiryDate = DateTime.tryParse(widget.item['expiryDate']?.toString() ?? '');
+    final isExpired = expiryDate != null &&
+        DateTime(expiryDate.year, expiryDate.month, expiryDate.day)
+            .isBefore(DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day));
     final hasLogo = hasAssetLogo || hasCustomLogo;
     final usesBrandBackground =
         hasLogo && (widget.item['brandColor']?.toString() ?? '').isNotEmpty;
@@ -589,6 +658,22 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                         ? Colors.white
                         : const Color(0xFFD51B46),
                     size: 24,
+                  ),
+                ),
+              if (isExpired)
+                Positioned(
+                  top: 2,
+                  left: 2,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade700,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'Verlopen',
+                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
+                    ),
                   ),
                 ),
             ],

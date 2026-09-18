@@ -5,6 +5,7 @@ import 'core/theme/app_theme.dart';
 import 'data/services/storage_service.dart';
 import 'data/services/settings_service.dart';
 import 'data/services/supabase_service.dart';
+import 'data/services/notification_service.dart';
 import 'features/security/app_lock_gate.dart';
 
 void main() async {
@@ -31,6 +32,10 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap> {
   Future<void> _initialize() async {
     await SettingsService.init();
     await StorageService.init();
+    await NotificationService.init();
+    for (final item in StorageService.cardsBox.values.whereType<Map>()) {
+      await NotificationService.syncGiftCard(item);
+    }
     await SupabaseService.init();
   }
 

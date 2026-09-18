@@ -8,6 +8,7 @@ import '../../data/services/storage_service.dart';
 import '../../data/services/image_color_service.dart';
 import '../../data/services/brand_sync_service.dart';
 import '../../data/services/media_storage_service.dart';
+import '../../data/services/notification_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
@@ -97,7 +98,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   List<Map<String, dynamic>> getItemsByType(String type) {
     return StorageService.cardsBox.values
-        .where((item) => item is Map && item['type'] == type)
+        .where((item) =>
+            item is Map &&
+            item['type'] == type &&
+            item['isArchived'] != true &&
+            item['isArchived']?.toString() != 'true')
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
   }
@@ -170,9 +175,13 @@ class _HomeScreenState extends State<HomeScreen> {
       'updatedAt': result['updatedAt'] ?? now,
       'lastUsedAt': result['lastUsedAt'] ?? '',
       'balanceHistory': result['balanceHistory'] ?? '[]',
+      'expiryDate': result['expiryDate'] ?? '',
+      'expiryNotificationsEnabled': result['expiryNotificationsEnabled'] == 'true',
+      'isArchived': result['isArchived'] == 'true',
     };
 
     await StorageService.cardsBox.add(card);
+    await NotificationService.syncGiftCard(card);
     return card;
   }
 
@@ -397,6 +406,10 @@ class _HomeScreenState extends State<HomeScreen> {
           initialLogoAsset: item['logoAsset']?.toString() ?? '',
           initialBrandColor: item['brandColor']?.toString() ?? '',
           initialCustomImage: item['customImage']?.toString() ?? '',
+          initialExpiryDate: item['expiryDate']?.toString() ?? '',
+          initialExpiryNotificationsEnabled:
+              item['expiryNotificationsEnabled'] == true ||
+              item['expiryNotificationsEnabled']?.toString() == 'true',
         ),
       ),
     );
@@ -407,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
       StorageService.cardsBox.get(key) as Map,
     );
 
-    await StorageService.saveCard(key, {
+    final saved = <String, dynamic>{
       ...oldItem,
       ...updated,
       'id': oldItem['id'],
@@ -416,8 +429,14 @@ class _HomeScreenState extends State<HomeScreen> {
       'isFavorite': oldItem['isFavorite'] == true,
       'lastUsedAt': oldItem['lastUsedAt'] ?? '',
       'balanceHistory': oldItem['balanceHistory'] ?? '[]',
+      'expiryDate': updated['expiryDate'] ?? oldItem['expiryDate'] ?? '',
+      'expiryNotificationsEnabled':
+          updated['expiryNotificationsEnabled'] == 'true',
+      'isArchived': oldItem['isArchived'] ?? false,
       'updatedAt': DateTime.now().toIso8601String(),
-    });
+    };
+    await StorageService.saveCard(key, saved);
+    await NotificationService.syncGiftCard(saved);
   }
 
   Future<void> deleteItem(

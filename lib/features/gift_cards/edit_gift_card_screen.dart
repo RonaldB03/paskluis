@@ -30,6 +30,8 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
   String logoAsset = '';
   String brandColor = '';
   String customImage = '';
+  DateTime? expiryDate;
+  bool expiryNotificationsEnabled = true;
 
   bool get hasPresetLogo => logoAsset.isNotEmpty;
 
@@ -60,6 +62,9 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
     logoAsset = widget.item['logoAsset']?.toString() ?? '';
     brandColor = widget.item['brandColor']?.toString() ?? '';
     customImage = widget.item['customImage']?.toString() ?? '';
+    expiryDate = DateTime.tryParse(widget.item['expiryDate']?.toString() ?? '');
+    expiryNotificationsEnabled = widget.item['expiryNotificationsEnabled'] == true ||
+        widget.item['expiryNotificationsEnabled']?.toString() == 'true';
   }
 
   @override
@@ -141,6 +146,8 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
     updated['logoAsset'] = logoAsset;
     updated['brandColor'] = brandColor;
     updated['customImage'] = customImage;
+    updated['expiryDate'] = expiryDate?.toIso8601String() ?? '';
+    updated['expiryNotificationsEnabled'] = expiryNotificationsEnabled;
     updated['updatedAt'] = DateTime.now().toIso8601String();
 
     Navigator.pop(context, updated);
@@ -261,6 +268,36 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
               border: OutlineInputBorder(),
             ),
           ),
+          const SizedBox(height: 20),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.event_rounded, color: Color(0xFFD51B46)),
+            title: Text(
+              expiryDate == null
+                  ? 'Vervaldatum toevoegen'
+                  : '${expiryDate!.day.toString().padLeft(2, '0')}-${expiryDate!.month.toString().padLeft(2, '0')}-${expiryDate!.year}',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () async {
+              final now = DateTime.now();
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: expiryDate ?? now.add(const Duration(days: 365)),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(now.year + 20),
+              );
+              if (picked != null && mounted) setState(() => expiryDate = picked);
+            },
+          ),
+          if (expiryDate != null)
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: expiryNotificationsEnabled,
+              title: const Text('Vervaldatumherinneringen'),
+              subtitle: const Text('30 dagen, 7 dagen en op de dag zelf'),
+              onChanged: (value) => setState(() => expiryNotificationsEnabled = value),
+            ),
           const SizedBox(height: 28),
           FilledButton.icon(
             onPressed: save,
