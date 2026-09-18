@@ -270,6 +270,13 @@ class GiftCardsScreen extends StatelessWidget {
     );
   }
 
+  void openHome(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      mainTabRoute(const HomeScreen(), forward: false),
+      (_) => false,
+    );
+  }
+
   void openGiftCard(
     BuildContext context,
     List<Map<String, dynamic>> items,
@@ -285,7 +292,12 @@ class GiftCardsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box>(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) openHome(context);
+      },
+      child: ValueListenableBuilder<Box>(
       valueListenable: StorageService.cardsBox.listenable(),
       builder: (context, box, _) {
         final items = getItems();
@@ -340,6 +352,7 @@ class GiftCardsScreen extends StatelessWidget {
           ),
         );
       },
+      ),
     );
   }
 }
@@ -458,6 +471,8 @@ class _GiftCardTileState extends State<_GiftCardTile> {
     final hasLogo = hasAssetLogo || hasCustomLogo;
     final usesBrandBackground =
         hasLogo && (widget.item['brandColor']?.toString() ?? '').isNotEmpty;
+    final hasDarkBrandBackground =
+        usesBrandBackground && cardColor.computeLuminance() < 0.55;
     final normalizedBrand =
         '${widget.item['brandId']} $title $logoAsset'.toLowerCase().replaceAll(
           RegExp(r'[^a-z0-9]'),
@@ -481,7 +496,7 @@ class _GiftCardTileState extends State<_GiftCardTile> {
         curve: Curves.easeOut,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.fromLTRB(15, 13, 15, 14),
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 11),
           decoration: BoxDecoration(
             color: usesBrandBackground ? cardColor : Colors.white,
             borderRadius: BorderRadius.circular(22),
@@ -493,18 +508,10 @@ class _GiftCardTileState extends State<_GiftCardTile> {
               ),
             ],
           ),
-          child: Column(
+          child: Stack(
             children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: Icon(
-                  isFavorite ? Icons.star : Icons.card_giftcard,
-                  color: usesBrandBackground
-                      ? Colors.white
-                      : const Color(0xFFD51B46),
-                  size: 22,
-                ),
-              ),
+              Column(
+                children: [
               Expanded(
                 child: ClipRect(
                   child: Center(
@@ -515,12 +522,12 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                                 child: Image.file(
                                   File(customImage),
                                   fit: BoxFit.contain,
-                                  height: 82,
+                                  height: 96,
                                   width: double.infinity,
                                 ),
                               )
                             : SizedBox(
-                                height: 82,
+                                height: 96,
                                 width: double.infinity,
                                 child: BrandLogo(
                                   source: logoAsset,
@@ -543,14 +550,14 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                   ),
                 ),
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 5),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 7),
                 decoration: BoxDecoration(
-                  color: usesBrandBackground
-                      ? Colors.white.withOpacity(0.18)
-                      : const Color(0xFFF8E3EA),
+                  color: hasDarkBrandBackground
+                      ? Colors.white.withOpacity(0.22)
+                      : const Color(0xFFD51B46),
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Text(
@@ -559,12 +566,24 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w900,
-                    color: usesBrandBackground
-                        ? Colors.white
-                        : const Color(0xFFD51B46),
+                    color: Colors.white,
                   ),
                 ),
               ),
+                ],
+              ),
+              if (isFavorite)
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: Icon(
+                    Icons.star,
+                    color: hasDarkBrandBackground
+                        ? Colors.white
+                        : const Color(0xFFD51B46),
+                    size: 24,
+                  ),
+                ),
             ],
           ),
         ),

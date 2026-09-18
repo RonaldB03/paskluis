@@ -316,6 +316,13 @@ class QrCodesScreen extends StatelessWidget {
     );
   }
 
+  void openHome(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      mainTabRoute(const HomeScreen(), forward: false),
+      (_) => false,
+    );
+  }
+
   void openQrView(
     BuildContext context,
     List<Map<String, dynamic>> items,
@@ -396,7 +403,12 @@ class QrCodesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box>(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) openHome(context);
+      },
+      child: ValueListenableBuilder<Box>(
       valueListenable: StorageService.cardsBox.listenable(),
       builder: (context, box, _) {
         final items = getItems();
@@ -448,6 +460,7 @@ class QrCodesScreen extends StatelessWidget {
           ),
         );
       },
+      ),
     );
   }
 }

@@ -150,6 +150,13 @@ class CardsScreen extends StatelessWidget {
     );
   }
 
+  void openHome(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      mainTabRoute(const HomeScreen(), forward: false),
+      (_) => false,
+    );
+  }
+
   void openCard(
     BuildContext context,
     List<Map<String, dynamic>> items,
@@ -292,7 +299,12 @@ class CardsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box>(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) openHome(context);
+      },
+      child: ValueListenableBuilder<Box>(
       valueListenable: StorageService.cardsBox.listenable(),
       builder: (context, box, _) {
         final items = getItems();
@@ -346,6 +358,7 @@ class CardsScreen extends StatelessWidget {
           ),
         );
       },
+      ),
     );
   }
 }
@@ -479,6 +492,8 @@ class _StoredCardTileState extends State<_StoredCardTile> {
     final useImage = hasAssetLogo || hasCustomLogo;
     final usesBrandBackground =
         useImage && (widget.item['brandColor']?.toString() ?? '').isNotEmpty;
+    final hasDarkBrandBackground =
+        usesBrandBackground && cardColor.computeLuminance() < 0.55;
 
     return GestureDetector(
       onTapDown: (_) => setPressed(true),
@@ -492,7 +507,7 @@ class _StoredCardTileState extends State<_StoredCardTile> {
         curve: Curves.easeOut,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: usesBrandBackground ? cardColor : Colors.white,
             borderRadius: BorderRadius.circular(18),
@@ -504,33 +519,23 @@ class _StoredCardTileState extends State<_StoredCardTile> {
               ),
             ],
           ),
-          child: Column(
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: Icon(
-                  isFavorite ? Icons.star : Icons.card_membership,
-                  color: usesBrandBackground
-                      ? Colors.white
-                      : const Color(0xFFD51B46),
-                  size: 22,
-                ),
-              ),
-              Expanded(
-                child: ClipRect(
-                  child: Center(
+              ClipRect(
+                child: Center(
                   child: useImage
                       ? Transform.scale(
-                          scale: hasCustomLogo ? 1.65 : 1.0,
+                          scale: hasCustomLogo ? 1.75 : 1.0,
                           child: hasCustomLogo
                               ? Image.file(
                                   File(customImage),
                                   fit: BoxFit.contain,
-                                  height: 74,
+                                  height: 92,
                                   width: double.infinity,
                                 )
                               : SizedBox(
-                                  height: 74,
+                                  height: 92,
                                   width: double.infinity,
                                   child: BrandLogo(source: logoAsset),
                                 ),
@@ -548,9 +553,20 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                                 : const Color(0xFF333333),
                           ),
                         ),
-                  ),
                 ),
               ),
+              if (isFavorite)
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: Icon(
+                    Icons.star,
+                    color: hasDarkBrandBackground
+                        ? Colors.white
+                        : const Color(0xFFD51B46),
+                    size: 24,
+                  ),
+                ),
             ],
           ),
         ),

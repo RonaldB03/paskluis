@@ -15,9 +15,9 @@ class BrandLogo extends StatelessWidget {
   double get effectiveScale {
     if (scale != null) return scale!;
     final normalized = source.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-    if (normalized.contains('gallgall')) return 1.75;
-    if (normalized.contains('albertheijn')) return 0.95;
-    return 1.25;
+    if (normalized.contains('gallgall')) return 2.0;
+    if (normalized.contains('albertheijn')) return 1.15;
+    return 1.5;
   }
 
   @override
