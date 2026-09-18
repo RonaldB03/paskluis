@@ -25,8 +25,10 @@ workflows:
           else
             echo "Nog geen testmap aanwezig; stap overgeslagen."
           fi
+      - name: iOS-code signing aan Xcode koppelen
+        script: xcode-project use-profiles
       - name: iOS-app bouwen
-        script: flutter build ipa --release --export-method app-store
+        script: flutter build ipa --release --export-options-plist=$HOME/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
