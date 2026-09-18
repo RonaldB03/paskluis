@@ -273,8 +273,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (!mounted || outcome == null) return;
 
-    if (outcome.manualType != null) {
-      switch (outcome.manualType!) {
+    if (outcome.importResult == null && outcome.selectedType != null) {
+      switch (outcome.selectedType!) {
         case SmartAddManualType.loyalty:
           await openLoyaltyAddFlow();
         case SmartAddManualType.qr:
@@ -287,42 +287,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final result = outcome.importResult;
     if (result == null) return;
-
-    final type = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        icon: const Icon(
-          Icons.auto_awesome_rounded,
-          color: Color(0xFFD51B46),
-          size: 38,
-        ),
-        title: Text(
-          result.brand == null
-              ? 'Kaart herkend'
-              : '${result.brand!.name} herkend',
-        ),
-        content: Text(
-          'PasKluis denkt dat dit een ${result.type.toLowerCase()} is. Kies het juiste type om de gegevens te controleren.',
-          textAlign: TextAlign.center,
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, 'Pasje'),
-            child: const Text('Klantenkaart'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, 'QR-code'),
-            child: const Text('QR-code'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, 'Cadeaukaart'),
-            child: const Text('Cadeaukaart'),
-          ),
-        ],
-      ),
-    );
-    if (!mounted || type == null) return;
+    final type = switch (outcome.selectedType) {
+      SmartAddManualType.loyalty => 'Pasje',
+      SmartAddManualType.qr => 'QR-code',
+      SmartAddManualType.gift => 'Cadeaukaart',
+      null => result.type,
+    };
 
     final brand = result.brand;
     Map<String, String>? saved;
@@ -1083,6 +1053,8 @@ class _PreviewCardState extends State<_PreviewCard> {
   Widget build(BuildContext context) {
     final useImage = hasAssetLogo || hasCustomLogo;
     final usesBrandBackground = useImage && widget.brandColor.isNotEmpty;
+    final hasDarkBrandBackground =
+        usesBrandBackground && cardColor.computeLuminance() < 0.55;
 
     return GestureDetector(
       onTapDown: (_) => setPressed(true),
@@ -1154,7 +1126,7 @@ class _PreviewCardState extends State<_PreviewCard> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 7),
                   decoration: BoxDecoration(
-                    color: usesBrandBackground
+                    color: hasDarkBrandBackground
                         ? Colors.white.withOpacity(0.18)
                         : const Color(0xFFF8E3EA),
                     borderRadius: BorderRadius.circular(14),
@@ -1167,7 +1139,7 @@ class _PreviewCardState extends State<_PreviewCard> {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w900,
-                      color: usesBrandBackground
+                      color: hasDarkBrandBackground
                           ? Colors.white
                           : const Color(0xFFD51B46),
                     ),

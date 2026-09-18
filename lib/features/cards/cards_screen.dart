@@ -478,6 +478,16 @@ class _StoredCardTileState extends State<_StoredCardTile> {
     return path.isNotEmpty && File(path).existsSync();
   }
 
+  double get gridLogoScale {
+    final value = '${widget.item['brandId']} ${widget.item['name']} '
+            '${widget.item['logoAsset']}'
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
+    if (value.contains('gallgall')) return 1.72;
+    if (value.contains('albertheijn')) return 1.05;
+    return 1.35;
+  }
+
   void setPressed(bool value) {
     if (!mounted) return;
     setState(() => isPressed = value);
@@ -526,7 +536,7 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                 child: Center(
                   child: useImage
                       ? Transform.scale(
-                          scale: hasCustomLogo ? 1.75 : 1.0,
+                          scale: hasCustomLogo ? 1.55 : 1.0,
                           child: hasCustomLogo
                               ? Image.file(
                                   File(customImage),
@@ -537,7 +547,10 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                               : SizedBox(
                                   height: 92,
                                   width: double.infinity,
-                                  child: BrandLogo(source: logoAsset),
+                                  child: BrandLogo(
+                                    source: logoAsset,
+                                    scale: gridLogoScale,
+                                  ),
                                 ),
                         )
                       : Text(

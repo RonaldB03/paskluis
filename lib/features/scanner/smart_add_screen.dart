@@ -8,10 +8,10 @@ enum SmartAddManualType { loyalty, qr, gift }
 
 class SmartAddOutcome {
   final SmartCardImportResult? importResult;
-  final SmartAddManualType? manualType;
+  final SmartAddManualType? selectedType;
 
-  const SmartAddOutcome.import(this.importResult) : manualType = null;
-  const SmartAddOutcome.manual(this.manualType) : importResult = null;
+  const SmartAddOutcome.import(this.importResult, this.selectedType);
+  const SmartAddOutcome.manual(this.selectedType) : importResult = null;
 }
 
 class SmartAddScreen extends StatefulWidget {
@@ -23,6 +23,7 @@ class SmartAddScreen extends StatefulWidget {
 
 class _SmartAddScreenState extends State<SmartAddScreen> {
   bool analyzing = false;
+  SmartAddManualType? selectedType;
 
   Future<void> analyze(ImageSource source) async {
     if (analyzing) return;
@@ -36,7 +37,7 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
         setState(() => analyzing = false);
         return;
       }
-      Navigator.pop(context, SmartAddOutcome.import(result));
+      Navigator.pop(context, SmartAddOutcome.import(result, selectedType));
     } catch (_) {
       if (!mounted) return;
       setState(() => analyzing = false);
@@ -53,6 +54,13 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
   void manual(SmartAddManualType type) {
     Navigator.pop(context, SmartAddOutcome.manual(type));
   }
+
+  String get selectedLabel => switch (selectedType) {
+    SmartAddManualType.loyalty => 'klantenkaart',
+    SmartAddManualType.qr => 'QR-code',
+    SmartAddManualType.gift => 'cadeaukaart',
+    null => 'kaart',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -72,20 +80,26 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
           children: [
-            const Icon(
-              Icons.auto_awesome_rounded,
+            Icon(
+              selectedType == null
+                  ? Icons.add_card_rounded
+                  : Icons.auto_awesome_rounded,
               color: Color(0xFFD51B46),
               size: 42,
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Hoe wil je de kaart toevoegen?',
+            Text(
+              selectedType == null
+                  ? 'Wat wil je toevoegen?'
+                  : 'Hoe wil je deze $selectedLabel toevoegen?',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'PasKluis probeert het type, de winkel, code, pincode en het saldo alvast voor je in te vullen.',
+            Text(
+              selectedType == null
+                  ? 'Kies eerst het soort kaart. Daarna kies je scannen, zelf invoeren of importeren uit een screenshot.'
+                  : 'Je kunt een winkel kiezen en de code scannen, alles zelf invoeren, of gegevens uit een screenshot laten herkennen.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -94,19 +108,50 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            _SmartChoice(
-              icon: Icons.photo_camera_rounded,
-              title: 'Maak een foto',
-              subtitle: 'Fotografeer de kaart en laat PasKluis hem herkennen',
-              onTap: analyzing ? null : () => analyze(ImageSource.camera),
-            ),
-            const SizedBox(height: 12),
-            _SmartChoice(
-              icon: Icons.photo_library_rounded,
-              title: 'Kies foto of screenshot',
-              subtitle: 'Gebruik een kaart uit je mail of een andere app',
-              onTap: analyzing ? null : () => analyze(ImageSource.gallery),
-            ),
+            if (selectedType == null) ...[
+              _SmartChoice(
+                icon: Icons.card_membership_rounded,
+                title: 'Klantenkaart',
+                subtitle: 'Voeg een klantenkaart of ledenpas toe',
+                onTap: () => setState(
+                  () => selectedType = SmartAddManualType.loyalty,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _SmartChoice(
+                icon: Icons.qr_code_rounded,
+                title: 'QR-code',
+                subtitle: 'Voeg één QR-code of meerdere tickets toe',
+                onTap: () => setState(
+                  () => selectedType = SmartAddManualType.qr,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _SmartChoice(
+                icon: Icons.card_giftcard_rounded,
+                title: 'Cadeaukaart',
+                subtitle: 'Voeg een cadeaukaart met eventueel saldo toe',
+                onTap: () => setState(
+                  () => selectedType = SmartAddManualType.gift,
+                ),
+              ),
+            ] else ...[
+              _SmartChoice(
+                icon: Icons.qr_code_scanner_rounded,
+                title: 'Winkel kiezen of zelf invoeren',
+                subtitle: selectedType == SmartAddManualType.qr
+                    ? 'Scan de QR-code of voer de gegevens zelf in'
+                    : 'Kies een winkel, scan de barcode of kies Handmatig',
+                onTap: () => manual(selectedType!),
+              ),
+              const SizedBox(height: 12),
+              _SmartChoice(
+                icon: Icons.photo_library_rounded,
+                title: 'Importeren uit screenshot',
+                subtitle: 'Kies een afbeelding uit je fotobibliotheek',
+                onTap: analyzing ? null : () => analyze(ImageSource.gallery),
+              ),
+            ],
             if (analyzing) ...[
               const SizedBox(height: 18),
               const Center(
@@ -115,48 +160,16 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
               const SizedBox(height: 8),
               const Center(child: Text('Kaart wordt herkend…')),
             ],
-            const SizedBox(height: 28),
-            const Row(
-              children: [
-                Expanded(child: Divider()),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text(
-                    'of handmatig',
-                    style: TextStyle(color: Color(0xFF77777B)),
-                  ),
-                ),
-                Expanded(child: Divider()),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _ManualChoice(
-                    icon: Icons.card_membership_rounded,
-                    label: 'Klantenkaart',
-                    onTap: () => manual(SmartAddManualType.loyalty),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _ManualChoice(
-                    icon: Icons.qr_code_rounded,
-                    label: 'QR-code',
-                    onTap: () => manual(SmartAddManualType.qr),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _ManualChoice(
-                    icon: Icons.card_giftcard_rounded,
-                    label: 'Cadeaukaart',
-                    onTap: () => manual(SmartAddManualType.gift),
-                  ),
-                ),
-              ],
-            ),
+            if (selectedType != null) ...[
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: analyzing
+                    ? null
+                    : () => setState(() => selectedType = null),
+                icon: const Icon(Icons.arrow_back_rounded),
+                label: const Text('Ander type kiezen'),
+              ),
+            ],
             const SizedBox(height: 22),
             const Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -242,48 +255,6 @@ class _SmartChoice extends StatelessWidget {
                 ),
               ),
               const Icon(Icons.chevron_right_rounded, color: Color(0xFFAAAAAE)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ManualChoice extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ManualChoice({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: SizedBox(
-          height: 94,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: const Color(0xFFD51B46), size: 27),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
             ],
           ),
         ),

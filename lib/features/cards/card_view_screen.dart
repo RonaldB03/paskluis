@@ -720,9 +720,9 @@ class _BarcodeCard extends StatelessWidget {
                                     )
                                   : BrandLogo(
                                       source: logoAsset,
-                                      // Wide logos contain considerably more
-                                      // whitespace than square brand marks.
-                                      scale: isWideGallLogo ? 2.15 : null,
+                                      // Fill the available width without
+                                      // clipping either end of wide logos.
+                                      scale: isWideGallLogo ? 1.72 : null,
                                     ),
                             )
                           : const Icon(
