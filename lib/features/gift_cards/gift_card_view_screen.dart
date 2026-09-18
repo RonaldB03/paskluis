@@ -994,6 +994,16 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final logoAsset = widget.item['logoAsset']?.toString() ?? '';
     final customImage = widget.item['customImage']?.toString() ?? '';
+    final normalizedBrand =
+        '${widget.item['brandId']} $name $logoAsset'.toLowerCase().replaceAll(
+          RegExp(r'[^a-z0-9]'),
+          '',
+        );
+    final detailLogoScale = normalizedBrand.contains('gallgall')
+        ? 2.15
+        : normalizedBrand.contains('albertheijn')
+        ? 1.35
+        : 1.5;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 30, 2, 18),
@@ -1035,8 +1045,11 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
                             )
                           : hasAssetLogo
                           ? Padding(
-                              padding: const EdgeInsets.all(6),
-                              child: BrandLogo(source: logoAsset),
+                              padding: const EdgeInsets.all(3),
+                              child: BrandLogo(
+                                source: logoAsset,
+                                scale: detailLogoScale,
+                              ),
                             )
                           : const Icon(
                               Icons.card_giftcard,
