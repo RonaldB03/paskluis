@@ -7,10 +7,6 @@ on:
         description: Git branch to build
         required: true
         default: codex/search-and-premium-build-25
-      workflow:
-        description: Codemagic workflow ID
-        required: true
-        default: ios-release
   push:
     branches:
       - codex/search-and-premium-build-25
@@ -22,14 +18,23 @@ permissions:
 
 jobs:
   start-codemagic:
-    name: Start PasKluis in Codemagic
+    name: Start ${{ matrix.platform }} in Codemagic
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: iOS
+            workflow: ios-release
+          - platform: Android
+            workflow: android-test
     steps:
       - name: Start build through Codemagic API
         env:
           CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
           REQUESTED_BRANCH: ${{ inputs.branch || github.ref_name }}
-          REQUESTED_WORKFLOW: ${{ inputs.workflow || 'ios-release' }}
+          REQUESTED_WORKFLOW: ${{ matrix.workflow }}
+          REQUESTED_PLATFORM: ${{ matrix.platform }}
         shell: bash
         run: |
           set -euo pipefail
@@ -74,4 +79,4 @@ jobs:
             exit 1
           fi
 
-          echo "Codemagic build started successfully: ${build_id}"
+          echo "${REQUESTED_PLATFORM} build started successfully: ${build_id}"
