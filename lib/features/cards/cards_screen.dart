@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
+import '../../data/services/settings_service.dart';
 import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
@@ -335,11 +336,12 @@ class CardsScreen extends StatelessWidget {
                     vertical: 12,
                   ),
                   itemCount: items.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
-                    childAspectRatio: 1.58,
+                    childAspectRatio:
+                        SettingsService.extraClearEnabled ? 2.65 : 1.58,
                   ),
                   itemBuilder: (context, index) {
                     final item = items[index];
@@ -505,13 +507,17 @@ class _StoredCardTileState extends State<_StoredCardTile> {
     final hasDarkBrandBackground =
         usesBrandBackground && cardColor.computeLuminance() < 0.55;
 
-    return GestureDetector(
-      onTapDown: (_) => setPressed(true),
-      onTapCancel: () => setPressed(false),
-      onTapUp: (_) => setPressed(false),
-      onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
-      child: AnimatedScale(
+    return Semantics(
+      button: true,
+      label: '$title, klantenkaart${isFavorite ? ', favoriet' : ''}',
+      hint: 'Tik tweemaal om de kaart te openen',
+      child: GestureDetector(
+        onTapDown: (_) => setPressed(true),
+        onTapCancel: () => setPressed(false),
+        onTapUp: (_) => setPressed(false),
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        child: AnimatedScale(
         scale: isPressed ? 0.96 : 1.0,
         duration: const Duration(milliseconds: 110),
         curve: Curves.easeOut,
@@ -582,6 +588,7 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                 ),
             ],
           ),
+        ),
         ),
       ),
     );

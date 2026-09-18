@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
+import '../../data/services/settings_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
@@ -329,11 +330,12 @@ class GiftCardsScreen extends StatelessWidget {
                     vertical: 12,
                   ),
                   itemCount: items.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
-                    childAspectRatio: 1.42,
+                    childAspectRatio:
+                        SettingsService.extraClearEnabled ? 2.35 : 1.42,
                   ),
                   itemBuilder: (context, index) {
                     final item = items[index];
@@ -484,13 +486,18 @@ class _GiftCardTileState extends State<_GiftCardTile> {
         ? 2.15
         : 1.75;
 
-    return GestureDetector(
-      onTapDown: (_) => setPressed(true),
-      onTapCancel: () => setPressed(false),
-      onTapUp: (_) => setPressed(false),
-      onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
-      child: AnimatedScale(
+    return Semantics(
+      button: true,
+      label:
+          '$title, cadeaukaart, ${balance.isEmpty ? 'saldo onbekend' : 'saldo € $balance'}${isFavorite ? ', favoriet' : ''}',
+      hint: 'Tik tweemaal om de cadeaukaart te openen',
+      child: GestureDetector(
+        onTapDown: (_) => setPressed(true),
+        onTapCancel: () => setPressed(false),
+        onTapUp: (_) => setPressed(false),
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        child: AnimatedScale(
         scale: isPressed ? 0.96 : 1.0,
         duration: const Duration(milliseconds: 110),
         curve: Curves.easeOut,
@@ -586,6 +593,7 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                 ),
             ],
           ),
+        ),
         ),
       ),
     );

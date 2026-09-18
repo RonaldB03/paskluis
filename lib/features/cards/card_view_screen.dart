@@ -720,9 +720,13 @@ class _BarcodeCard extends StatelessWidget {
                                     )
                                   : BrandLogo(
                                       source: logoAsset,
-                                      // Fill the available width without
-                                      // clipping either end of wide logos.
-                                      scale: isWideGallLogo ? 1.72 : null,
+                                      // A wide crop removes empty space around
+                                      // supplied logos while keeping the full
+                                      // wordmark visible.
+                                      fit: isWideGallLogo
+                                          ? BoxFit.cover
+                                          : BoxFit.contain,
+                                      scale: isWideGallLogo ? 1.0 : null,
                                     ),
                             )
                           : const Icon(

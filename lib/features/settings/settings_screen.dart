@@ -14,12 +14,20 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late bool _appLockEnabled;
+  late bool _extraClearEnabled;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
     _appLockEnabled = SettingsService.appLockEnabled;
+    _extraClearEnabled = SettingsService.extraClearEnabled;
+  }
+
+  Future<void> _changeExtraClear(bool enabled) async {
+    await SettingsService.setExtraClearEnabled(enabled);
+    if (!mounted) return;
+    setState(() => _extraClearEnabled = enabled);
   }
 
   Future<void> _changeAppLock(bool enabled) async {
@@ -84,6 +92,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const AccountScreen()),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              side: _extraClearEnabled
+                  ? const BorderSide(color: Color(0xFF303036), width: 1.5)
+                  : BorderSide.none,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: SwitchListTile.adaptive(
+              value: _extraClearEnabled,
+              onChanged: _changeExtraClear,
+              secondary: const Icon(Icons.visibility_outlined),
+              title: const Text(
+                'Extra duidelijk',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: const Text(
+                'Grotere tekst, hoger contrast en grotere kaartvakken.',
               ),
             ),
           ),

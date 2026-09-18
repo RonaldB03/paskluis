@@ -36,11 +36,30 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'PasKluis',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: FutureBuilder<void>(
+    return ValueListenableBuilder<bool>(
+      valueListenable: SettingsService.extraClearNotifier,
+      builder: (context, extraClear, _) => MaterialApp(
+        title: 'PasKluis',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme.copyWith(
+          dividerTheme: extraClear
+              ? const DividerThemeData(color: Color(0xFF303036), thickness: 1)
+              : null,
+        ),
+        builder: (context, child) {
+          if (!extraClear || child == null) return child ?? const SizedBox();
+          final media = MediaQuery.of(context);
+          final systemScale = media.textScaler.scale(1);
+          final scale = (systemScale * 1.18).clamp(1.18, 1.6).toDouble();
+          return MediaQuery(
+            data: media.copyWith(
+              textScaler: TextScaler.linear(scale),
+              highContrast: true,
+            ),
+            child: child,
+          );
+        },
+        home: FutureBuilder<void>(
         future: _initialization,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
@@ -55,6 +74,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap> {
           }
           return const AppLockGate(child: HomeScreen());
         },
+        ),
       ),
     );
   }

@@ -999,8 +999,9 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
           RegExp(r'[^a-z0-9]'),
           '',
         );
-    final detailLogoScale = normalizedBrand.contains('gallgall')
-        ? 2.15
+    final isWideGallLogo = normalizedBrand.contains('gallgall');
+    final detailLogoScale = isWideGallLogo
+        ? 1.0
         : normalizedBrand.contains('albertheijn')
         ? 1.35
         : 1.5;
@@ -1026,65 +1027,66 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
           child: Column(
             children: [
               Container(
-                height: 105,
-                padding: const EdgeInsets.symmetric(horizontal: 22),
+                height: 125,
+                padding: const EdgeInsets.symmetric(horizontal: 26),
                 color: headerColor,
-                child: Row(
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    CircleAvatar(
-                      radius: 29,
-                      backgroundColor: Colors.white.withOpacity(0.20),
-                      child: hasCustomLogo
-                          ? ClipOval(
-                              child: Image.file(
-                                File(customImage),
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.contain,
-                              ),
-                            )
-                          : hasAssetLogo
-                          ? Padding(
-                              padding: const EdgeInsets.all(3),
-                              child: BrandLogo(
-                                source: logoAsset,
-                                scale: detailLogoScale,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.card_giftcard,
-                              color: Colors.white,
-                            ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: widget.onDetails,
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.16),
-                        foregroundColor: Colors.white,
+                    Positioned.fill(
+                      child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 10,
+                          horizontal: 34,
+                          vertical: 18,
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(22),
+                        child: hasCustomLogo
+                            ? Image.file(
+                                File(customImage),
+                                fit: BoxFit.contain,
+                              )
+                            : hasAssetLogo
+                            ? BrandLogo(
+                                source: logoAsset,
+                                fit: isWideGallLogo
+                                    ? BoxFit.cover
+                                    : BoxFit.contain,
+                                scale: detailLogoScale,
+                              )
+                            : Icon(
+                                Icons.card_giftcard,
+                                color: headerColor.computeLuminance() > 0.55
+                                    ? const Color(0xFFD51B46)
+                                    : Colors.white,
+                                size: 62,
+                              ),
+                      ),
+                    ),
+                    if (!hasAssetLogo && !hasCustomLogo)
+                      Positioned(
+                        bottom: 10,
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: headerColor.computeLuminance() > 0.55
+                                ? const Color(0xFF303036)
+                                : Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
-                      child: const Text(
-                        'Details',
-                        style: TextStyle(fontWeight: FontWeight.w800),
+                    Positioned(
+                      top: 4,
+                      right: 0,
+                      child: IconButton(
+                        tooltip: 'Details en opties',
+                        onPressed: widget.onDetails,
+                        icon: const Icon(Icons.more_horiz_rounded),
+                        color: headerColor.computeLuminance() > 0.55
+                            ? const Color(0xFF303036)
+                            : Colors.white,
                       ),
                     ),
                   ],
@@ -1093,14 +1095,14 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
               if (balance.isNotEmpty)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 7),
                   color: const Color(0xFFF8E3EA),
                   child: Text(
                     'Saldo: € $balance',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Color(0xFFD51B46),
-                      fontSize: 26,
+                      fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
