@@ -42,6 +42,8 @@ workflows:
     max_build_duration: 60
 
     environment:
+      groups:
+        - google_play_credentials
       flutter: stable
       android_signing:
         - paskluis_upload
