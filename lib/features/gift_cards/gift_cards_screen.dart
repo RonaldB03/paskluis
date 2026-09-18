@@ -7,6 +7,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/settings_service.dart';
 import '../../data/services/notification_service.dart';
+import '../../data/services/gift_card_share_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
@@ -176,9 +177,9 @@ class GiftCardsScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Cadeaukaart verwijderen?'),
+        title: const Text('Definitief verwijderen?'),
         content: Text(
-          'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+          'Weet je zeker dat je "$name" definitief wilt verwijderen? Dit kun je niet ongedaan maken.',
         ),
         actions: [
           TextButton(
@@ -190,7 +191,7 @@ class GiftCardsScreen extends StatelessWidget {
               backgroundColor: const Color(0xFFD51B46),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Verwijderen'),
+            child: const Text('Definitief verwijderen'),
           ),
         ],
       ),
@@ -199,6 +200,9 @@ class GiftCardsScreen extends StatelessWidget {
     if (confirmed != true) return;
 
     await NotificationService.cancelGiftCard(item['id']?.toString() ?? '');
+    try {
+      await GiftCardShareService.revokeAllForCard(item['id']?.toString() ?? '');
+    } catch (_) {}
     await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
@@ -208,6 +212,12 @@ class GiftCardsScreen extends StatelessWidget {
   }
 
   void showGiftCardOptions(BuildContext context, Map<String, dynamic> item) {
+    if (item['isShared'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Deze kaart is met jou gedeeld en kan alleen door de eigenaar worden beheerd.')),
+      );
+      return;
+    }
     final name = item['name']?.toString() ?? 'Cadeaukaart';
 
     HapticFeedback.mediumImpact();
@@ -238,7 +248,7 @@ class GiftCardsScreen extends StatelessWidget {
                 const SizedBox(height: 16),
                 _OptionTile(
                   icon: Icons.delete_rounded,
-                  title: 'Verwijderen',
+                  title: 'Definitief verwijderen',
                   isDestructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -332,16 +342,30 @@ class GiftCardsScreen extends StatelessWidget {
                       leading: const CircleAvatar(child: Icon(Icons.card_giftcard_rounded)),
                       title: Text(item['name']?.toString() ?? 'Cadeaukaart'),
                       subtitle: Text('Saldo € ${item['currentBalance'] ?? '0.00'}'),
-                      trailing: TextButton(
-                        onPressed: () async {
-                          final key = findHiveKey(item);
-                          if (key == null) return;
-                          final restored = {...item, 'isArchived': false, 'archivedAt': ''};
-                          await StorageService.saveCard(key, restored);
-                          await NotificationService.syncGiftCard(restored);
-                          if (sheetContext.mounted) Navigator.pop(sheetContext);
-                        },
-                        child: const Text('Terugzetten'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: () async {
+                              final key = findHiveKey(item);
+                              if (key == null) return;
+                              final restored = {...item, 'isArchived': false, 'archivedAt': ''};
+                              await StorageService.saveCard(key, restored);
+                              await NotificationService.syncGiftCard(restored);
+                              if (sheetContext.mounted) Navigator.pop(sheetContext);
+                            },
+                            child: const Text('Terugzetten'),
+                          ),
+                          IconButton(
+                            tooltip: 'Definitief verwijderen',
+                            color: Colors.red,
+                            onPressed: () async {
+                              Navigator.pop(sheetContext);
+                              await deleteGiftCard(context, item);
+                            },
+                            icon: const Icon(Icons.delete_forever_rounded),
+                          ),
+                        ],
                       ),
                     )),
             ],
@@ -373,6 +397,26 @@ class GiftCardsScreen extends StatelessWidget {
             foregroundColor: const Color(0xFF333333),
             elevation: 0,
             actions: [
+              IconButton(
+                tooltip: 'Gedeelde kaarten vernieuwen',
+                icon: const Icon(Icons.sync_rounded),
+                onPressed: () async {
+                  try {
+                    await GiftCardShareService.syncIncomingToLocal();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Gedeelde kaarten zijn bijgewerkt.')),
+                      );
+                    }
+                  } catch (_) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Bijwerken lukte niet. Controleer of je bent ingelogd.')),
+                      );
+                    }
+                  }
+                },
+              ),
               IconButton(
                 tooltip: 'Archief',
                 icon: const Icon(Icons.archive_outlined),

@@ -6,6 +6,7 @@ import 'data/services/storage_service.dart';
 import 'data/services/settings_service.dart';
 import 'data/services/supabase_service.dart';
 import 'data/services/notification_service.dart';
+import 'data/services/gift_card_share_service.dart';
 import 'features/security/app_lock_gate.dart';
 
 void main() async {
@@ -37,6 +38,12 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap> {
       await NotificationService.syncGiftCard(item);
     }
     await SupabaseService.init();
+    try {
+      await GiftCardShareService.syncIncomingToLocal();
+    } catch (_) {
+      // Sharing is optional; offline or an unavailable backend may never
+      // prevent access to cards stored on this device.
+    }
   }
 
   @override

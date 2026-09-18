@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/services/account_service.dart';
 import '../../data/services/supabase_service.dart';
+import '../../data/services/gift_card_share_service.dart';
 import 'account_management_screen.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -122,6 +123,11 @@ class _AccountScreenState extends State<AccountScreen> {
           email: _emailController.text,
           password: _passwordController.text,
         );
+        try {
+          await GiftCardShareService.syncIncomingToLocal();
+        } catch (_) {
+          // Inloggen blijft bruikbaar als delen tijdelijk niet beschikbaar is.
+        }
         if (mounted) _showMessage('Je bent ingelogd.');
       }
       _passwordController.clear();
