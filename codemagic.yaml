@@ -26,7 +26,7 @@ workflows:
             echo "Nog geen testmap aanwezig; stap overgeslagen."
           fi
       - name: iOS-app bouwen
-        script: flutter build ipa --release --export-options-plist=$CM_EXPORT_OPTIONS_PLIST
+        script: flutter build ipa --release --export-method app-store
 
     artifacts:
       - build/ios/ipa/*.ipa
