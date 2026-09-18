@@ -28,7 +28,10 @@ workflows:
       - name: iOS-code signing aan Xcode koppelen
         script: xcode-project use-profiles
       - name: iOS-app bouwen
-        script: flutter build ipa --release --export-options-plist=$HOME/export_options.plist
+        script: |
+          IOS_BUILD_NUMBER=$((BUILD_NUMBER + 33))
+          echo "iOS-buildnummer: $IOS_BUILD_NUMBER"
+          flutter build ipa --release --build-number="$IOS_BUILD_NUMBER" --export-options-plist=$HOME/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
