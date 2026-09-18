@@ -24,10 +24,20 @@ class SmartCardImportResult {
 }
 
 abstract final class SmartCardImportService {
-  static Future<SmartCardImportResult?> pickAndAnalyze() async {
-    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+  static Future<SmartCardImportResult?> pickAndAnalyze({
+    ImageSource source = ImageSource.gallery,
+  }) async {
+    final image = await ImagePicker().pickImage(
+      source: source,
+      imageQuality: 95,
+      preferredCameraDevice: CameraDevice.rear,
+    );
     if (image == null) return null;
 
+    return analyzeImage(image.path);
+  }
+
+  static Future<SmartCardImportResult> analyzeImage(String imagePath) async {
     final scanner = mobile.MobileScannerController(
       formats: const [
         mobile.BarcodeFormat.ean13,
@@ -45,10 +55,10 @@ abstract final class SmartCardImportService {
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
     try {
-      final capture = await scanner.analyzeImage(image.path);
+      final capture = await scanner.analyzeImage(imagePath);
       final scanned = capture?.barcodes.firstOrNull;
       final recognized = await recognizer.processImage(
-        InputImage.fromFilePath(image.path),
+        InputImage.fromFilePath(imagePath),
       );
       final text = recognized.text.trim();
       final normalized = _normalize(text);
@@ -62,7 +72,13 @@ abstract final class SmartCardImportService {
         r'cadeau|gift\s?card|tegoed|saldo|balance|pin\s?code|krascode',
         caseSensitive: false,
       ).hasMatch(text);
-      final type = isQr ? 'QR-code' : giftWords ? 'Cadeaukaart' : 'Pasje';
+      final brandSupportsGift =
+          brand?.supportedTypes.contains('Cadeaukaart') == true;
+      final type = isQr
+          ? 'QR-code'
+          : giftWords || (brandSupportsGift && _findBalance(text).isNotEmpty)
+              ? 'Cadeaukaart'
+              : 'Pasje';
 
       return SmartCardImportResult(
         type: type,
@@ -83,12 +99,30 @@ abstract final class SmartCardImportService {
     String text,
   ) {
     for (final brand in brands) {
-      final candidates = [brand.name, brand.id]
+      final candidates = [brand.name, brand.id, ..._brandAliases(brand.id)]
           .map(_normalize)
           .where((value) => value.length >= 3);
       if (candidates.any(text.contains)) return brand;
     }
     return null;
+  }
+
+  static List<String> _brandAliases(String brandId) {
+    switch (_normalize(brandId)) {
+      case 'albertheijn':
+        return const ['AH', 'Bonuskaart'];
+      case 'gallengall':
+      case 'gallgall':
+        return const ['Gall & Gall', 'Gall en Gall'];
+      case 'hema':
+        return const ['HEMA pas', 'HEMA cadeaukaart'];
+      case 'jumbo':
+        return const ['Jumbo Extra'];
+      case 'kruidvat':
+        return const ['Kruidvat Club'];
+      default:
+        return const [];
+    }
   }
 
   static String _findCardNumber(String text) {

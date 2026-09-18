@@ -34,3 +34,31 @@ workflows:
     publishing:
       app_store_connect:
         auth: integration
+
+  android-test:
+    name: Android Test Build
+    max_build_duration: 60
+
+    environment:
+      flutter: stable
+
+    scripts:
+      - name: Dependencies installeren
+        script: flutter pub get
+      - name: Broncode controleren
+        script: flutter analyze
+      - name: Tests uitvoeren
+        script: |
+          if [ -d test ]; then
+            flutter test
+          else
+            echo "Nog geen testmap aanwezig; stap overgeslagen."
+          fi
+      - name: Android App Bundle bouwen
+        script: flutter build appbundle --release
+      - name: Android test-APK bouwen
+        script: flutter build apk --release
+
+    artifacts:
+      - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/flutter-apk/*.apk

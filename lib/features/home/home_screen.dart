@@ -6,7 +6,6 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../data/services/image_color_service.dart';
-import '../../data/services/smart_card_import_service.dart';
 import '../../data/services/brand_sync_service.dart';
 import '../../data/services/media_storage_service.dart';
 import '../../shared/widgets/brand_logo.dart';
@@ -32,6 +31,7 @@ import '../qr_codes/add_qr_code_screen.dart';
 import '../qr_codes/choose_qr_code_screen.dart';
 import '../settings/settings_screen.dart';
 import '../premium/premium_gate.dart';
+import '../scanner/smart_add_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -266,10 +266,27 @@ class _HomeScreenState extends State<HomeScreen> {
     await saveNewCard(result, forcedType: 'Cadeaukaart');
   }
 
-  Future<void> openSmartImport() async {
-    Navigator.pop(context);
-    final result = await SmartCardImportService.pickAndAnalyze();
-    if (!mounted || result == null) return;
+  Future<void> openSmartAdd() async {
+    final outcome = await Navigator.push<SmartAddOutcome>(
+      context,
+      MaterialPageRoute(builder: (_) => const SmartAddScreen()),
+    );
+    if (!mounted || outcome == null) return;
+
+    if (outcome.manualType != null) {
+      switch (outcome.manualType!) {
+        case SmartAddManualType.loyalty:
+          await openLoyaltyAddFlow();
+        case SmartAddManualType.qr:
+          await openQrAddFlow();
+        case SmartAddManualType.gift:
+          await openGiftCardAddFlow();
+      }
+      return;
+    }
+
+    final result = outcome.importResult;
+    if (result == null) return;
 
     final type = await showDialog<String>(
       context: context,
@@ -542,60 +559,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void showAddChoices() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Wat wil je toevoegen?',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 18),
-                _AddChoiceTile(
-                  icon: Icons.auto_awesome_rounded,
-                  title: 'Slim importeren uit foto',
-                  onTap: openSmartImport,
-                ),
-                _AddChoiceTile(
-                  icon: Icons.card_membership,
-                  title: 'Klantenkaart toevoegen',
-                  onTap: () {
-                    Navigator.pop(context);
-                    openLoyaltyAddFlow();
-                  },
-                ),
-                _AddChoiceTile(
-                  icon: Icons.qr_code,
-                  title: 'QR-code toevoegen',
-                  onTap: () {
-                    Navigator.pop(context);
-                    openQrAddFlow();
-                  },
-                ),
-                _AddChoiceTile(
-                  icon: Icons.card_giftcard,
-                  title: 'Cadeaukaart toevoegen',
-                  onTap: () {
-                    Navigator.pop(context);
-                    openGiftCardAddFlow();
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+    openSmartAdd();
   }
 
   void openTab(int index) {
@@ -1259,31 +1223,6 @@ class _ActionCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _AddChoiceTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-
-  const _AddChoiceTile({
-    required this.icon,
-    required this.title,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      leading: CircleAvatar(
-        backgroundColor: const Color(0xFFF8E3EA),
-        child: Icon(icon, color: const Color(0xFFD51B46)),
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      trailing: const Icon(Icons.chevron_right),
     );
   }
 }
