@@ -58,11 +58,32 @@ workflows:
           else
             echo "Nog geen testmap aanwezig; stap overgeslagen."
           fi
+      - name: Volgende Google Play-buildnummer bepalen
+        script: |
+          set -e
+          LATEST_BUILD_NUMBER=$(google-play get-latest-build-number --package-name nl.paskluis.app)
+          if [ -z "$LATEST_BUILD_NUMBER" ]; then
+            echo "Geen bestaand buildnummer gevonden in Google Play."
+            exit 1
+          fi
+          NEXT_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          echo "Laatste Google Play-buildnummer: $LATEST_BUILD_NUMBER"
+          echo "Nieuw buildnummer: $NEXT_BUILD_NUMBER"
+          echo "$NEXT_BUILD_NUMBER" > "$CM_BUILD_DIR/android_build_number.txt"
       - name: Android App Bundle bouwen
-        script: flutter build appbundle --release
+        script: |
+          NEXT_BUILD_NUMBER=$(cat "$CM_BUILD_DIR/android_build_number.txt")
+          flutter build appbundle --release --build-number="$NEXT_BUILD_NUMBER"
       - name: Android test-APK bouwen
-        script: flutter build apk --release
+        script: |
+          NEXT_BUILD_NUMBER=$(cat "$CM_BUILD_DIR/android_build_number.txt")
+          flutter build apk --release --build-number="$NEXT_BUILD_NUMBER"
 
     artifacts:
       - build/app/outputs/bundle/release/*.aab
       - build/app/outputs/flutter-apk/*.apk
+
+    publishing:
+      google_play:
+        credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
