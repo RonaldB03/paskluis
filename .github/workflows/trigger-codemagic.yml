@@ -12,6 +12,7 @@ on:
       - codex/search-and-premium-build-25
     paths-ignore:
       - .github/workflows/trigger-codemagic.yml
+      - codemagic.yaml
 
 permissions:
   contents: read
