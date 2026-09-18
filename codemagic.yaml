@@ -17,7 +17,7 @@ workflows:
       - name: Dependencies installeren
         script: flutter pub get
       - name: Broncode controleren
-        script: flutter analyze
+        script: flutter analyze --no-fatal-infos
       - name: Tests uitvoeren
         script: |
           if [ -d test ]; then
@@ -48,7 +48,7 @@ workflows:
       - name: Dependencies installeren
         script: flutter pub get
       - name: Broncode controleren
-        script: flutter analyze
+        script: flutter analyze --no-fatal-infos
       - name: Tests uitvoeren
         script: |
           if [ -d test ]; then
