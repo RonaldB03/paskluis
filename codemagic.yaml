@@ -41,6 +41,8 @@ workflows:
 
     environment:
       flutter: stable
+      android_signing:
+        - paskluis_upload
 
     scripts:
       - name: Dependencies installeren

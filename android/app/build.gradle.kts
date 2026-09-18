@@ -5,6 +5,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val codemagicKeystorePath = System.getenv("CM_KEYSTORE_PATH")
+val codemagicKeystorePassword = System.getenv("CM_KEYSTORE_PASSWORD")
+val codemagicKeyAlias = System.getenv("CM_KEY_ALIAS")
+val codemagicKeyPassword = System.getenv("CM_KEY_PASSWORD")
+
 android {
     namespace = "nl.paskluis.app"
     compileSdk = flutter.compileSdkVersion
@@ -29,10 +34,22 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (!codemagicKeystorePath.isNullOrBlank()) {
+            create("release") {
+                storeFile = file(codemagicKeystorePath)
+                storePassword = codemagicKeystorePassword
+                keyAlias = codemagicKeyAlias
+                keyPassword = codemagicKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Signing is supplied by the release environment (for example Codemagic).
-            // Never sign a production artifact with the debug key.
+            if (!codemagicKeystorePath.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }
