@@ -37,7 +37,8 @@ class _ChooseGiftCardTemplateScreenState
       return;
     }
     if (!mounted || scan == null) return;
-    if (scan.code.trim().isEmpty) {
+    final importResult = scan;
+    if (importResult.code.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Geen code gevonden. Probeer een duidelijkere foto.'),
@@ -46,18 +47,18 @@ class _ChooseGiftCardTemplateScreenState
       return;
     }
 
-    final brand = scan.brand;
+    final brand = importResult.brand;
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
         builder: (_) => AddGiftCardScreen(
           initialName: brand == null ? null : '${brand.name} cadeaukaart',
-          initialCode: scan.code.trim(),
-          initialCodeFormat: scan.codeFormat,
-          initialPinCode: scan.pinCode,
-          initialCurrentBalance: scan.balance,
-          initialExpiryDate: scan.expiryDate,
-          initialCardNumber: scan.code.trim(),
+          initialCode: importResult.code.trim(),
+          initialCodeFormat: importResult.codeFormat,
+          initialPinCode: importResult.pinCode,
+          initialCurrentBalance: importResult.balance,
+          initialExpiryDate: importResult.expiryDate,
+          initialCardNumber: importResult.code.trim(),
           initialBrandId: brand?.id,
           initialLogoAsset: brand?.logoAsset,
           initialBrandColor: brand?.color.value.toString(),
