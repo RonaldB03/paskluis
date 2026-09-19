@@ -20,9 +20,10 @@ workflows:
       - name: Broncode controleren
         script: |
           set +e
-          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee /tmp/flutter_analyze.log
-          ANALYZE_STATUS=${PIPESTATUS[0]}
+          flutter analyze --no-fatal-infos --no-fatal-warnings > /tmp/flutter_analyze.log 2>&1
+          ANALYZE_STATUS=$?
           set -e
+          cat /tmp/flutter_analyze.log
 
           if grep -Eq '^[[:space:]]*error[[:space:]]*•' /tmp/flutter_analyze.log; then
             echo "Echte analyzerfouten gevonden."
@@ -74,9 +75,10 @@ workflows:
       - name: Broncode controleren
         script: |
           set +e
-          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee /tmp/flutter_analyze.log
-          ANALYZE_STATUS=${PIPESTATUS[0]}
+          flutter analyze --no-fatal-infos --no-fatal-warnings > /tmp/flutter_analyze.log 2>&1
+          ANALYZE_STATUS=$?
           set -e
+          cat /tmp/flutter_analyze.log
 
           if grep -Eq '^[[:space:]]*error[[:space:]]*•' /tmp/flutter_analyze.log; then
             echo "Echte analyzerfouten gevonden."
