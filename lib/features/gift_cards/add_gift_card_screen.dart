@@ -9,6 +9,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/image_color_service.dart';
 import '../../data/services/smart_card_import_service.dart';
+import '../../data/services/brand_catalog_service.dart';
+import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../scanner/scanner_screen.dart';
 
@@ -66,6 +68,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   DateTime? expiryDate;
   late bool expiryNotificationsEnabled;
   late ScannerMode selectedCodeMode;
+  bool customBrandSelected = false;
 
   bool get hasAssetLogo => logoAsset.isNotEmpty;
 
@@ -117,6 +120,8 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       'barcode' => ScannerMode.barcode,
       _ => ScannerMode.auto,
     };
+    customBrandSelected = brandId.isEmpty &&
+        (widget.isEditing || nameController.text.trim().isNotEmpty);
 
     nameController.addListener(refresh);
     codeController.addListener(refresh);
@@ -180,6 +185,9 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
         codeController.text = result.code;
         if (result.pinCode.isNotEmpty) pinCodeController.text = result.pinCode;
         if (result.balance.isNotEmpty) balanceController.text = result.balance;
+        if (result.expiryDate.isNotEmpty) {
+          expiryDate = DateTime.tryParse(result.expiryDate);
+        }
         if (nameController.text.trim().isEmpty && result.name.isNotEmpty) {
           nameController.text = result.name;
         }
@@ -187,6 +195,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
           brandId = result.brand!.id;
           logoAsset = result.brand!.logoAsset;
           brandColor = result.brand!.color.value.toString();
+          customBrandSelected = false;
         }
         selectedCodeMode = result.codeFormat == 'qr'
             ? ScannerMode.qr
@@ -225,6 +234,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
         logoAsset = '';
         brandColor = detectedColor?.value.toString() ?? '';
         brandId = '';
+        customBrandSelected = true;
       });
     } catch (_) {
       if (!mounted) return;
@@ -234,6 +244,70 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
         ),
       );
     }
+  }
+
+  Future<void> chooseBrand() async {
+    final catalog = await BrandCatalogService.load();
+    if (!mounted) return;
+    final brands = catalog
+        .where((brand) => brand.supportedTypes.contains('Cadeaukaart'))
+        .toList();
+    final selected = await showModalBottomSheet<CardBrandTemplate>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.68,
+          child: Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Text(
+                  'Kies de winkel',
+                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                  itemCount: brands.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                  itemBuilder: (context, index) {
+                    final brand = brands[index];
+                    return ListTile(
+                      tileColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      leading: SizedBox(
+                        width: 62,
+                        child: BrandLogo(source: brand.logoAsset),
+                      ),
+                      title: Text(
+                        brand.name,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => Navigator.pop(context, brand),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      brandId = selected.id;
+      logoAsset = selected.logoAsset;
+      brandColor = selected.color.value.toString();
+      customImage = '';
+      customBrandSelected = false;
+      nameController.text = '${selected.name} cadeaukaart';
+    });
   }
 
   void removeLogo() {
@@ -346,6 +420,75 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
         children: [
+          if (brandId.isEmpty && logoAsset.isEmpty && !customBrandSelected) ...[
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3F6),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFD51B46).withOpacity(0.18)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Welke winkel hoort bij deze cadeaukaart?',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    codeController.text.trim().isEmpty
+                        ? 'Kies een bestaande winkel of maak een eigen cadeaukaart.'
+                        : 'De kaartcode is gevonden, maar de winkel nog niet.',
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                  const SizedBox(height: 14),
+                  FilledButton.icon(
+                    onPressed: chooseBrand,
+                    icon: const Icon(Icons.storefront_rounded),
+                    label: const Text('Kies een winkel'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => setState(() {
+                      customBrandSelected = true;
+                      if (nameController.text.trim().isEmpty) {
+                        nameController.text = 'Eigen cadeaukaart';
+                      }
+                    }),
+                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                    label: const Text('Eigen cadeaukaart'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ] else if (brandId.isNotEmpty || customBrandSelected) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Row(
+                children: [
+                  if (logoAsset.isNotEmpty)
+                    SizedBox(width: 58, height: 38, child: BrandLogo(source: logoAsset))
+                  else
+                    const Icon(Icons.card_giftcard_rounded, color: Color(0xFFD51B46)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      customBrandSelected ? 'Eigen cadeaukaart' : name,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  TextButton(onPressed: chooseBrand, child: const Text('Wijzigen')),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           _GiftCardLivePreview(
             name: name,
             code: codeController.text.trim(),
@@ -364,22 +507,6 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
             title: 'Wat is het saldo?',
             subtitle: 'Vul het huidige saldo van deze cadeaukaart in.',
             children: [
-              DropdownButtonFormField<ScannerMode>(
-                value: selectedCodeMode,
-                decoration: const InputDecoration(
-                  labelText: 'Type code',
-                  border: OutlineInputBorder(),
-                ),
-                items: const [
-                  DropdownMenuItem(value: ScannerMode.auto, child: Text('Automatisch herkennen')),
-                  DropdownMenuItem(value: ScannerMode.barcode, child: Text('Streepjescode')),
-                  DropdownMenuItem(value: ScannerMode.qr, child: Text('QR-code')),
-                ],
-                onChanged: (value) {
-                  if (value != null) setState(() => selectedCodeMode = value);
-                },
-              ),
-              const SizedBox(height: 14),
               _InputField(
                 controller: balanceController,
                 label: 'Saldo',
@@ -446,9 +573,9 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
               const SizedBox(height: 14),
               _InputField(
                 controller: codeController,
-                label: 'Barcode / kaartnummer',
+                label: 'Kaartcode / kaartnummer',
                 icon: Icons.qr_code_scanner_rounded,
-                keyboardType: TextInputType.number,
+                keyboardType: TextInputType.text,
                 suffix: IconButton(
                   onPressed: scanCode,
                   icon: const Icon(

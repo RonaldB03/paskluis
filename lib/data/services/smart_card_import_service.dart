@@ -12,6 +12,7 @@ class SmartCardImportResult {
   final String pinCode;
   final String balance;
   final String codeFormat;
+  final String expiryDate;
   final CardBrandTemplate? brand;
 
   const SmartCardImportResult({
@@ -21,6 +22,7 @@ class SmartCardImportResult {
     required this.pinCode,
     required this.balance,
     required this.codeFormat,
+    required this.expiryDate,
     this.brand,
   });
 }
@@ -89,6 +91,7 @@ abstract final class SmartCardImportService {
         pinCode: _findPin(text, recognized, code),
         balance: _findBalance(text),
         codeFormat: isQr ? 'qr' : 'barcode',
+        expiryDate: _findExpiryDate(text),
         brand: brand,
       );
     } finally {
@@ -184,6 +187,37 @@ abstract final class SmartCardImportService {
       caseSensitive: false,
     ).firstMatch(text);
     return (match?.group(1) ?? match?.group(2) ?? '').replaceAll(',', '.');
+  }
+
+  static String _findExpiryDate(String text) {
+    final fullDate = RegExp(
+      r'(?:geldig\s*tot|verval(?:datum)?|expiry|expires)?\s*[:\-]?\s*(\d{1,2})[\-\/.](\d{1,2})[\-\/.](\d{2,4})',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (fullDate != null) {
+      final day = int.tryParse(fullDate.group(1) ?? '');
+      final month = int.tryParse(fullDate.group(2) ?? '');
+      var year = int.tryParse(fullDate.group(3) ?? '');
+      if (year != null && year < 100) year += 2000;
+      if (day != null && month != null && year != null &&
+          day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+        return DateTime(year, month, day).toIso8601String();
+      }
+    }
+
+    final monthYear = RegExp(
+      r'(?:geldig\s*tot|verval(?:datum)?|expiry|expires)\s*[:\-]?\s*(\d{1,2})[\-\/.](\d{2,4})',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (monthYear != null) {
+      final month = int.tryParse(monthYear.group(1) ?? '');
+      var year = int.tryParse(monthYear.group(2) ?? '');
+      if (year != null && year < 100) year += 2000;
+      if (month != null && year != null && month >= 1 && month <= 12) {
+        return DateTime(year, month + 1, 0).toIso8601String();
+      }
+    }
+    return '';
   }
 
   static String _suggestName(String text, String type) {
