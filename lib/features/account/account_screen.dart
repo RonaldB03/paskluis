@@ -621,7 +621,7 @@ class _PlusHero extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Bewaar onbeperkt cadeaukaarten voor eenmalig € 1,99. Geen abonnement en geen reclame.',
+            'Bewaar onbeperkt cadeaukaarten voor € 2 eenmalig. Levenslange toegang, geen abonnement en geen reclame.',
             style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],

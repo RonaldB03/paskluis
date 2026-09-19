@@ -18,55 +18,111 @@ class MainBottomNav extends StatelessWidget {
       future: AccountService.loadPlusStatus(),
       builder: (context, snapshot) {
         final plus = snapshot.data?.isActive == true;
-        return Container(
-          decoration: BoxDecoration(
-            border: Border(
-              top: BorderSide(
-                color: plus ? const Color(0xFFD5A021) : Colors.transparent,
-                width: plus ? 2 : 0,
+        return NavigationBarTheme(
+          data: NavigationBarThemeData(
+            backgroundColor: const Color(0xFFF8F7FC),
+            indicatorColor: Colors.transparent,
+            elevation: 0,
+            iconTheme: WidgetStateProperty.resolveWith(
+              (states) => IconThemeData(
+                color: states.contains(WidgetState.selected)
+                    ? const Color(0xFFD51B46)
+                    : const Color(0xFF2F2D35),
+                size: 25,
+              ),
+            ),
+            labelTextStyle: WidgetStateProperty.resolveWith(
+              (states) => TextStyle(
+                color: states.contains(WidgetState.selected)
+                    ? const Color(0xFF26242B)
+                    : const Color(0xFF55535B),
+                fontSize: 12,
+                fontWeight: states.contains(WidgetState.selected)
+                    ? FontWeight.w800
+                    : FontWeight.w500,
               ),
             ),
           ),
-          child: NavigationBarTheme(
-            data: NavigationBarThemeData(
-              indicatorColor: plus
-                  ? const Color(0xFFFFE7A3)
-                  : const Color(0xFFE2E4FF),
-              iconTheme: WidgetStateProperty.resolveWith(
-                (states) => IconThemeData(
-                  color: states.contains(WidgetState.selected) && plus
-                      ? const Color(0xFF9A6C00)
-                      : null,
+          child: NavigationBar(
+            height: 78,
+            selectedIndex: currentIndex,
+            onDestinationSelected: onTap,
+            destinations: [
+              const NavigationDestination(
+                icon: _NavIcon(icon: Icons.home_rounded),
+                selectedIcon: _NavIcon(
+                  icon: Icons.home_rounded,
+                  selected: true,
                 ),
+                label: 'Home',
               ),
-            ),
-            child: NavigationBar(
-              selectedIndex: currentIndex,
-              onDestinationSelected: onTap,
-              destinations: [
-                const NavigationDestination(
-                  icon: Icon(Icons.home_rounded),
-                  label: 'Home',
+              const NavigationDestination(
+                icon: _NavIcon(icon: Icons.card_membership),
+                selectedIcon: _NavIcon(
+                  icon: Icons.card_membership,
+                  selected: true,
                 ),
-                const NavigationDestination(
-                  icon: Icon(Icons.card_membership),
-                  label: 'Klantenkaarten',
+                label: 'Klantenkaarten',
+              ),
+              const NavigationDestination(
+                icon: _NavIcon(icon: Icons.qr_code),
+                selectedIcon: _NavIcon(
+                  icon: Icons.qr_code,
+                  selected: true,
                 ),
-                const NavigationDestination(
-                  icon: Icon(Icons.qr_code),
-                  label: 'QR-codes',
+                label: 'QR-codes',
+              ),
+              NavigationDestination(
+                icon: _NavIcon(
+                  icon: plus
+                      ? Icons.workspace_premium_rounded
+                      : Icons.card_giftcard,
                 ),
-                NavigationDestination(
-                  icon: Icon(
-                    plus ? Icons.workspace_premium_rounded : Icons.card_giftcard,
-                  ),
-                  label: 'Cadeaukaarten',
+                selectedIcon: _NavIcon(
+                  icon: plus
+                      ? Icons.workspace_premium_rounded
+                      : Icons.card_giftcard,
+                  selected: true,
                 ),
-              ],
-            ),
+                label: 'Cadeaukaarten',
+              ),
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+class _NavIcon extends StatelessWidget {
+  final IconData icon;
+  final bool selected;
+
+  const _NavIcon({required this.icon, this.selected = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 34,
+      height: 32,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(top: 0, child: Icon(icon, size: 25)),
+          if (selected)
+            Positioned(
+              bottom: 0,
+              child: Container(
+                width: 18,
+                height: 3,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD51B46),
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

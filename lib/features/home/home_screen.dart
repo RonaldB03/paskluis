@@ -90,6 +90,20 @@ class _HomeScreenState extends State<HomeScreen> {
     await _repairMissingCustomLogoColors();
   }
 
+  Future<void> _refreshHome() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await Future.wait<void>([
+      _loadNearbyLocation(),
+      () async {
+        try {
+          await _refreshVisualAssets();
+        } catch (_) {
+          // Location refreshing must keep working while brand sync is offline.
+        }
+      }(),
+    ]);
+  }
+
   Future<void> _repairMovedCustomImages() async {
     for (final key in StorageService.cardsBox.keys.toList()) {
       final raw = StorageService.cardsBox.get(key);
@@ -769,9 +783,13 @@ class _HomeScreenState extends State<HomeScreen> {
           body: MainTabSwipeRegion(
             currentIndex: 0,
             onSwitch: openTab,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
-              children: [
+            child: RefreshIndicator(
+              onRefresh: _refreshHome,
+              color: const Color(0xFFD51B46),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
+                children: [
                 TextField(
                   controller: _searchController,
                   onChanged: (value) => setState(() => _searchQuery = value),
@@ -861,7 +879,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     onItemLongPress: (item) => showItemOptions(context, item),
                   ),
                 ],
-              ],
+                ],
+              ),
             ),
           ),
           bottomNavigationBar: MainBottomNav(currentIndex: 0, onTap: openTab),
@@ -1242,25 +1261,11 @@ class _CategorySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(icon, color: const Color(0xFFD51B46)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF333333),
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: onActionTap,
-              child: Text(actionTitle),
-            ),
-          ],
+        _ResponsiveSectionHeader(
+          title: title,
+          icon: icon,
+          actionTitle: actionTitle,
+          onActionTap: onActionTap,
         ),
         const SizedBox(height: 12),
         if (!hasItems)
@@ -1279,6 +1284,105 @@ class _CategorySection extends StatelessWidget {
             onItemLongPress: onItemLongPress,
           ),
       ],
+    );
+  }
+}
+
+class _ResponsiveSectionHeader extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final String actionTitle;
+  final VoidCallback onActionTap;
+
+  const _ResponsiveSectionHeader({
+    required this.title,
+    required this.icon,
+    required this.actionTitle,
+    required this.onActionTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const titleStyle = TextStyle(
+      fontSize: 22,
+      fontWeight: FontWeight.w800,
+      color: Color(0xFF333333),
+    );
+    final actionStyle = Theme.of(context).textTheme.bodyLarge?.copyWith(
+      color: const Color(0xFF56649A),
+      fontWeight: FontWeight.w500,
+    );
+    final textDirection = Directionality.of(context);
+    final textScaler = MediaQuery.textScalerOf(context);
+
+    double textWidth(String value, TextStyle? style) {
+      final painter = TextPainter(
+        text: TextSpan(text: value, style: style),
+        maxLines: 1,
+        textDirection: textDirection,
+        textScaler: textScaler,
+      )..layout();
+      return painter.width;
+    }
+
+    final actionButton = TextButton(
+      onPressed: onActionTap,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+      ),
+      child: Text(actionTitle, maxLines: 1, style: actionStyle),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final requiredWidth =
+            24 +
+            8 +
+            textWidth(title, titleStyle) +
+            12 +
+            textWidth(actionTitle, actionStyle) +
+            12;
+        final fitsOnOneLine = requiredWidth <= constraints.maxWidth;
+
+        final titleRow = Row(
+          children: [
+            Icon(icon, color: const Color(0xFFD51B46)),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: titleStyle,
+              ),
+            ),
+          ],
+        );
+
+        if (fitsOnOneLine) {
+          return Row(
+            children: [
+              Icon(icon, color: const Color(0xFFD51B46)),
+              const SizedBox(width: 8),
+              Text(title, maxLines: 1, style: titleStyle),
+              const Spacer(),
+              actionButton,
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            titleRow,
+            const SizedBox(height: 4),
+            Align(alignment: Alignment.centerRight, child: actionButton),
+          ],
+        );
+      },
     );
   }
 }

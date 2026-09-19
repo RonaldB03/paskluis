@@ -467,11 +467,17 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
             automaticallyImplyLeading: false,
             title: const PremiumAppTitle('Cadeaukaarten'),
             centerTitle: true,
+            titleSpacing: 4,
             backgroundColor: Colors.white,
             foregroundColor: const Color(0xFF333333),
             elevation: 0,
             actions: [
               IconButton(
+                constraints: const BoxConstraints.tightFor(
+                  width: 44,
+                  height: 48,
+                ),
+                padding: EdgeInsets.zero,
                 tooltip: 'Gedeelde kaarten vernieuwen',
                 icon: const Icon(Icons.sync_rounded),
                 onPressed: () async {
@@ -492,11 +498,21 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
                 },
               ),
               IconButton(
+                constraints: const BoxConstraints.tightFor(
+                  width: 44,
+                  height: 48,
+                ),
+                padding: EdgeInsets.zero,
                 tooltip: 'Archief',
                 icon: const Icon(Icons.archive_outlined),
                 onPressed: () => showArchivedCards(context),
               ),
               IconButton(
+                constraints: const BoxConstraints.tightFor(
+                  width: 44,
+                  height: 48,
+                ),
+                padding: EdgeInsets.zero,
                 icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
                 onPressed: () => openAddGiftCard(context),
               ),
@@ -547,74 +563,50 @@ class _GiftCardsOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (hasPlus && items.isEmpty) {
-      return _EmptyGiftCardState(onAdd: onAdd);
-    }
-    if (hasPlus) {
-      return GridView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        itemCount: items.length,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: SettingsService.extraClearEnabled ? 2.35 : 1.42,
-        ),
-        itemBuilder: (context, index) {
-          final item = items[index];
-          return GiftCardTile(
-            item: item,
-            onTap: () => onOpenCard(index),
-            onLongPress: () => onLongPress(item),
-          );
-        },
-      );
-    }
-
     return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        if (items.isEmpty)
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 270,
-              child: _EmptyGiftCardState(onAdd: onAdd),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio:
+                  SettingsService.extraClearEnabled ? 2.35 : 1.42,
             ),
-          )
-        else
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            sliver: SliverGrid(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
-                childAspectRatio:
-                    SettingsService.extraClearEnabled ? 2.35 : 1.42,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final item = items[index];
-                  return GiftCardTile(
-                    item: item,
-                    onTap: () => onOpenCard(index),
-                    onLongPress: () => onLongPress(item),
-                  );
-                },
-                childCount: items.length,
-              ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                if (items.isEmpty) {
+                  return _AddGiftCardTile(onAdd: onAdd);
+                }
+                final item = items[index];
+                return GiftCardTile(
+                  item: item,
+                  onTap: () => onOpenCard(index),
+                  onLongPress: () => onLongPress(item),
+                );
+              },
+              childCount: items.isEmpty ? 1 : items.length,
             ),
-          ),
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Center(
-            child: loadingPlus
-                ? const CircularProgressIndicator(strokeWidth: 2)
-                : Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
-                    child: _PlusGiftCardLimitCard(onOpenPlus: onOpenPlus),
-                  ),
           ),
         ),
+        if (!hasPlus)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 32, 20, 8),
+              child: loadingPlus
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : _PlusGiftCardLimitCard(onOpenPlus: onOpenPlus),
+            ),
+          ),
+        const SliverToBoxAdapter(child: SizedBox(height: 32)),
       ],
     );
   }
@@ -658,9 +650,39 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Met de gratis versie kun je één cadeaukaart bewaren. Wil je meer cadeaukaarten toevoegen? Kies dan PasKluis Plus.',
+            'Met de gratis versie bewaar je één cadeaukaart. Met PasKluis Plus bewaar je er onbeperkt, zonder abonnement.',
             textAlign: TextAlign.center,
             style: TextStyle(height: 1.35, color: Color(0xFF6D5000)),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.62),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.all_inclusive_rounded,
+                    size: 19,
+                    color: Color(0xFFA87800),
+                  ),
+                  SizedBox(width: 7),
+                  Text(
+                    '€ 2 eenmalig • levenslange toegang',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF6D5000),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 14),
           FilledButton.icon(
@@ -678,66 +700,68 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
   }
 }
 
-class _EmptyGiftCardState extends StatelessWidget {
+class _AddGiftCardTile extends StatelessWidget {
   final VoidCallback onAdd;
 
-  const _EmptyGiftCardState({required this.onAdd});
+  const _AddGiftCardTile({required this.onAdd});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircleAvatar(
-              radius: 44,
-              backgroundColor: Color(0xFFF8E3EA),
-              child: Icon(
-                Icons.card_giftcard,
-                size: 48,
-                color: Color(0xFFD51B46),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onAdd,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFF0CCD6)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 12,
+                offset: Offset(0, 5),
               ),
-            ),
-            const SizedBox(height: 22),
-            const Text(
-              'Voeg een cadeaukaart toe',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 26,
-                height: 1.15,
-                fontWeight: FontWeight.w900,
-                color: Color(0xFF333333),
-              ),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Bewaar cadeaukaarten met barcode, saldo en pincode of krascode.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.35,
-                color: Color(0xFF555557),
-              ),
-            ),
-            const SizedBox(height: 26),
-            SizedBox(
-              height: 54,
-              child: FilledButton.icon(
-                onPressed: onAdd,
-                icon: const Icon(Icons.add),
-                label: const Text('Voeg cadeaukaart toe'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFD51B46),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w900),
+            ],
+          ),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: Color(0xFFF8E3EA),
+                child: Icon(
+                  Icons.add_card_rounded,
+                  size: 24,
+                  color: Color(0xFFD51B46),
                 ),
               ),
-            ),
-          ],
+              SizedBox(height: 7),
+              Text(
+                'Voeg cadeaukaart toe',
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14.5,
+                  height: 1.1,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF333333),
+                ),
+              ),
+              SizedBox(height: 3),
+              Text(
+                'Tik om te beginnen',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  color: Color(0xFF77747C),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
