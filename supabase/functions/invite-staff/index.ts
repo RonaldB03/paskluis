@@ -72,8 +72,10 @@ Deno.serve(async (request) => {
 
     return Response.json({ invited: true, email, role }, { headers: corsHeaders });
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[invite-staff]', { message, error });
     return Response.json(
-      { error: error instanceof Error ? error.message : 'Uitnodigen is niet gelukt.' },
+      { error: message || 'Uitnodigen is niet gelukt.' },
       { status: 400, headers: corsHeaders },
     );
   }
