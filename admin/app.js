@@ -5,6 +5,16 @@ const SUPABASE_KEY = 'sb_publishable_D22GtKy7nDvnLv7LeBL1SA_1_ZGbN7d';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const state = { user:null, profile:null, profiles:[], entitlements:[], threads:[], messages:[], brands:[], selectedThread:null };
+const logoContexts = [
+  ['home','Home'],
+  ['loyalty','Klantenkaarten'],
+  ['gift','Cadeaukaarten'],
+  ['detail','Detailkaart'],
+  ['picker','Winkelkeuze']
+];
+let activeLogoContext='home';
+let logoLayouts={};
+let previewLogoSource='';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
@@ -55,7 +65,7 @@ function renderStats() {
 function renderUsers() {
   const query=$('#user-search').value.trim().toLowerCase();
   const rows=state.profiles.filter((p)=>`${p.display_name||''} ${p.email||''}`.toLowerCase().includes(query));
-  $('#users-body').innerHTML=rows.map((p)=>{ const plus=activeEntitlement(p.id); const canManage=state.profile.role==='admin'; const isCurrent=p.id===state.user.id; return `<tr><td><div class="user-cell"><strong>${escapeHtml(p.display_name||'Naamloos account')}${isCurrent?' <span class="you-label">jij</span>':''}</strong><span>${escapeHtml(p.email||p.id)}</span></div></td><td><span class="pill">${escapeHtml(p.role)}</span></td><td><span class="pill ${plus?'active':''}">${plus?'Plus actief':'Gratis'}</span></td><td>${canManage?`<button class="${plus?'secondary':'primary'} small-button" data-plus-user="${p.id}" data-plus-action="${plus?'revoke':'grant'}">${plus?'Plus intrekken':'Gratis Plus geven'}</button>`:'–'}</td></tr>`; }).join('') || '<tr><td colspan="4">Geen gebruikers gevonden.</td></tr>';
+  $('#users-body').innerHTML=rows.map((p)=>{ const plus=activeEntitlement(p.id); const canManage=state.profile.role==='admin' && p.id!==state.user.id; return `<tr><td><div class="user-cell"><strong>${escapeHtml(p.display_name||'Naamloos account')}</strong><span>${escapeHtml(p.email||p.id)}</span></div></td><td><span class="pill">${escapeHtml(p.role)}</span></td><td><span class="pill ${plus?'active':''}">${plus?'Plus actief':'Gratis'}</span></td><td>${canManage?`<button class="${plus?'secondary':'primary'} small-button" data-plus-user="${p.id}" data-plus-action="${plus?'revoke':'grant'}">${plus?'Plus intrekken':'Gratis Plus geven'}</button>`:'–'}</td></tr>`; }).join('') || '<tr><td colspan="4">Geen gebruikers gevonden.</td></tr>';
 }
 
 async function changePlus(userId,action) {
@@ -107,12 +117,50 @@ function renderBrands() {
 }
 
 function renderLogoPreview(source='') {
+  previewLogoSource=source.startsWith('assets/')?`../${source}`:source;
   const preview=$('#brand-logo-preview');
-  preview.innerHTML=source?`<img src="${escapeHtml(source)}" alt="Logo voorbeeld" onerror="this.parentElement.innerHTML='<span>Voorbeeld is alleen in de app beschikbaar</span>'" />`:'<span>Nog geen logo gekozen</span>';
+  preview.innerHTML=previewLogoSource?`<img src="${escapeHtml(previewLogoSource)}" alt="Logo voorbeeld" onerror="this.parentElement.innerHTML='<span>Voorbeeld kon niet worden geladen</span>'" />`:'<span>Nog geen logo gekozen</span>';
+  renderLayoutEditor();
+}
+
+function defaultLogoLayout() { return {scale:1,x:0,y:0}; }
+function readLogoLayouts(brand) {
+  logoLayouts=Object.fromEntries(logoContexts.map(([key])=>[key,{
+    scale:Number(brand?.[`logo_${key}_scale`]??1),
+    x:Number(brand?.[`logo_${key}_x`]??0),
+    y:Number(brand?.[`logo_${key}_y`]??0)
+  }]));
+}
+function renderLayoutEditor() {
+  const tabs=$('#logo-layout-tabs'); if(!tabs) return;
+  tabs.innerHTML=logoContexts.map(([key,label])=>`<button type="button" class="layout-tab ${key===activeLogoContext?'active':''}" data-logo-context="${key}">${label}</button>`).join('');
+  const values=logoLayouts[activeLogoContext]||defaultLogoLayout();
+  $('#layout-scale').value=Math.round(values.scale*100);
+  $('#layout-x').value=values.x;
+  $('#layout-y').value=values.y;
+  $('#layout-scale-output').textContent=`${Math.round(values.scale*100)}%`;
+  $('#layout-x-output').textContent=`${values.x}%`;
+  $('#layout-y-output').textContent=`${values.y}%`;
+  const image=$('#layout-preview-image');
+  image.src=previewLogoSource||'';
+  image.classList.toggle('hidden',!previewLogoSource);
+  $('#layout-preview-empty').classList.toggle('hidden',Boolean(previewLogoSource));
+  image.style.transform=`translate(${values.x}%,${values.y}%) scale(${values.scale})`;
+  const preview=$('#layout-card-preview');
+  preview.style.background=$('#brand-color').value||'#fff';
+  preview.className=`layout-card-preview ${activeLogoContext}`;
+}
+function updateActiveLogoLayout() {
+  logoLayouts[activeLogoContext]={
+    scale:Number($('#layout-scale').value)/100,
+    x:Number($('#layout-x').value),
+    y:Number($('#layout-y').value)
+  };
+  renderLayoutEditor();
 }
 
 function openBrandDialog(brand=null) {
-  $('#brand-form-title').textContent=brand?'Winkel bewerken':'Nieuwe winkel'; $('#brand-id').value=brand?.id||''; $('#brand-name').value=brand?.name||''; $('#brand-slug').value=brand?.slug||''; $('#brand-logo').value=brand?.logo_path||''; $('#brand-logo-file').value=''; $('#brand-color').value=brand?.brand_color||'#D51B46'; $('#brand-loyalty').checked=brand?.supports_loyalty_card??true; $('#brand-gift').checked=brand?.supports_gift_card??false; $('#brand-active').checked=brand?.is_active??true; $('#brand-error').textContent=''; renderLogoPreview(brand?.logo_path?.startsWith('http')?brand.logo_path:''); $('#brand-dialog').showModal();
+  activeLogoContext='home'; readLogoLayouts(brand); $('#brand-form-title').textContent=brand?'Winkel bewerken':'Nieuwe winkel'; $('#brand-id').value=brand?.id||''; $('#brand-name').value=brand?.name||''; $('#brand-slug').value=brand?.slug||''; $('#brand-logo').value=brand?.logo_path||''; $('#brand-logo-file').value=''; $('#brand-color').value=brand?.brand_color||'#D51B46'; $('#brand-loyalty').checked=brand?.supports_loyalty_card??true; $('#brand-gift').checked=brand?.supports_gift_card??false; $('#brand-active').checked=brand?.is_active??true; $('#brand-error').textContent=''; renderLogoPreview(brand?.logo_path||''); $('#brand-dialog').showModal();
 }
 
 async function uploadBrandLogo(slug) {
@@ -130,7 +178,12 @@ async function saveBrand() {
   const id=$('#brand-id').value; const slug=$('#brand-slug').value.trim();
   try {
     const logoPath=await uploadBrandLogo(slug);
-    const payload={name:$('#brand-name').value.trim(),slug,logo_path:logoPath,brand_color:$('#brand-color').value,supports_loyalty_card:$('#brand-loyalty').checked,supports_gift_card:$('#brand-gift').checked,is_active:$('#brand-active').checked,updated_at:new Date().toISOString()};
+    const layoutPayload=Object.fromEntries(logoContexts.flatMap(([key])=>[
+      [`logo_${key}_scale`,logoLayouts[key]?.scale??1],
+      [`logo_${key}_x`,logoLayouts[key]?.x??0],
+      [`logo_${key}_y`,logoLayouts[key]?.y??0]
+    ]));
+    const payload={name:$('#brand-name').value.trim(),slug,logo_path:logoPath,brand_color:$('#brand-color').value,supports_loyalty_card:$('#brand-loyalty').checked,supports_gift_card:$('#brand-gift').checked,is_active:$('#brand-active').checked,...layoutPayload,updated_at:new Date().toISOString()};
     const result=id?await supabase.from('brands').update(payload).eq('id',id):await supabase.from('brands').insert(payload);
     if(result.error) throw result.error;
     $('#brand-dialog').close(); toast('Winkel en logo opgeslagen.'); await refreshAll();
@@ -147,5 +200,10 @@ $('#refresh-support').addEventListener('click',refreshAll); $('#thread-list').ad
 $('#reply-form').addEventListener('submit',(event)=>{ event.preventDefault(); const text=$('#reply-message').value.trim(); if(text) sendReply(text); }); $('#toggle-thread-status').addEventListener('click',toggleThreadStatus);
 $('#new-brand').addEventListener('click',()=>openBrandDialog()); $('#brands-body').addEventListener('click',(event)=>{ const button=event.target.closest('[data-edit-brand]'); if(button) openBrandDialog(state.brands.find((b)=>b.id===button.dataset.editBrand)); }); $('#cancel-brand').addEventListener('click',()=>$('#brand-dialog').close()); $('#brand-form').addEventListener('submit',(event)=>{ event.preventDefault(); saveBrand(); });
 $('#brand-logo-file').addEventListener('change',(event)=>{ const file=event.target.files[0]; if(file) renderLogoPreview(URL.createObjectURL(file)); });
+$('#brand-logo').addEventListener('input',(event)=>renderLogoPreview(event.target.value.trim()));
+$('#brand-color').addEventListener('input',renderLayoutEditor);
+$('#logo-layout-tabs').addEventListener('click',(event)=>{ const button=event.target.closest('[data-logo-context]'); if(button){ activeLogoContext=button.dataset.logoContext; renderLayoutEditor(); } });
+['layout-scale','layout-x','layout-y'].forEach((id)=>$(`#${id}`).addEventListener('input',updateActiveLogoLayout));
+$('#reset-logo-layout').addEventListener('click',()=>{ logoLayouts[activeLogoContext]=defaultLogoLayout(); renderLayoutEditor(); });
 
 boot();

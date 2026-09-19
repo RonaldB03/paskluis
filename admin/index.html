@@ -76,8 +76,7 @@
         </section>
 
         <section id="page-users" class="page">
-          <div class="page-heading"><div><h1>Gebruikers & Plus</h1><p>Activeer of deactiveer Plus voor ieder geregistreerd account, inclusief je eigen account.</p></div><input id="user-search" class="search" type="search" placeholder="Zoek naam of e-mail" /></div>
-          <article class="panel users-info"><strong>Een nieuwe gebruiker registreren</strong><p>De gebruiker maakt eerst zelf een account aan in de PasKluis-app. Daarna verschijnt het account automatisch in dit overzicht en kun je Plus hier aan- of uitzetten.</p></article>
+          <div class="page-heading"><div><h1>Gebruikers & Plus</h1><p>Geef vrienden gratis toegang of trek die weer in.</p></div><input id="user-search" class="search" type="search" placeholder="Zoek naam of e-mail" /></div>
           <div class="table-wrap"><table><thead><tr><th>Gebruiker</th><th>Rol</th><th>Status</th><th>Actie</th></tr></thead><tbody id="users-body"></tbody></table></div>
         </section>
 
@@ -113,6 +112,26 @@
           <small>PNG, JPG, WebP of SVG · maximaal 2 MB</small>
         </label>
         <div id="brand-logo-preview" class="logo-preview"><span>Nog geen logo gekozen</span></div>
+        <section class="logo-layout-editor">
+          <div>
+            <h3>Logo-weergave instellen</h3>
+            <p>Pas het logo per scherm aan. De voorbeelden reageren direct.</p>
+          </div>
+          <div id="logo-layout-tabs" class="layout-tabs"></div>
+          <div class="layout-workspace">
+            <div id="layout-card-preview" class="layout-card-preview">
+              <img id="layout-preview-image" alt="Live logo voorbeeld" />
+              <span id="layout-preview-empty">Kies eerst een logo</span>
+              <div id="layout-balance" class="layout-balance">€ 50</div>
+            </div>
+            <div class="layout-controls">
+              <label>Grootte <output id="layout-scale-output">100%</output><input id="layout-scale" type="range" min="50" max="250" value="100" /></label>
+              <label>Links/rechts <output id="layout-x-output">0%</output><input id="layout-x" type="range" min="-50" max="50" value="0" /></label>
+              <label>Omhoog/omlaag <output id="layout-y-output">0%</output><input id="layout-y" type="range" min="-50" max="50" value="0" /></label>
+              <button id="reset-logo-layout" class="secondary small-button" type="button">Deze weergave herstellen</button>
+            </div>
+          </div>
+        </section>
         <label>Merkkleur<input id="brand-color" type="color" value="#D51B46" /></label>
         <div class="check-row"><label><input id="brand-loyalty" type="checkbox" checked /> Klantenkaart</label><label><input id="brand-gift" type="checkbox" /> Cadeaukaart</label><label><input id="brand-active" type="checkbox" checked /> Actief</label></div>
         <p id="brand-error" class="error"></p>
