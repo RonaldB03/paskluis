@@ -1,151 +1,18 @@
-<!doctype html>
-<html lang="nl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex,nofollow" />
-    <title>PasKluis Beheer</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div id="login-view" class="login-shell">
-      <form id="login-form" class="login-card">
-        <div class="brand-mark">P</div>
-        <h1>PasKluis Beheer</h1>
-        <p>Log in met je PasKluis-beheerdersaccount.</p>
-        <label>
-          E-mailadres
-          <input id="login-email" type="email" autocomplete="email" required />
-        </label>
-        <label>
-          Wachtwoord
-          <input id="login-password" type="password" autocomplete="current-password" minlength="8" required />
-        </label>
-        <button type="submit" class="primary">Inloggen</button>
-        <p id="login-error" class="error" role="alert"></p>
-      </form>
-    </div>
-
-    <div id="denied-view" class="login-shell hidden">
-      <div class="login-card">
-        <div class="brand-mark">!</div>
-        <h1>Geen toegang</h1>
-        <p>Dit account heeft geen beheerrechten voor PasKluis.</p>
-        <button id="denied-logout" class="secondary">Uitloggen</button>
-      </div>
-    </div>
-
-    <div id="app-view" class="app-shell hidden">
-      <aside class="sidebar">
-        <div class="sidebar-brand">
-          <div class="brand-mark small">P</div>
-          <div><strong>PasKluis</strong><span>Beheer</span></div>
-        </div>
-        <nav>
-          <button data-page="dashboard" class="nav-button active">Overzicht</button>
-          <button data-page="users" class="nav-button">Gebruikers & Plus</button>
-          <button data-page="support" class="nav-button">Klantenservice <span id="open-count" class="badge">0</span></button>
-          <button data-page="brands" class="nav-button">Winkels & logo’s</button>
-        </nav>
-        <div class="sidebar-user">
-          <span id="admin-email"></span>
-          <button id="logout-button" class="link-button">Uitloggen</button>
-        </div>
-      </aside>
-
-      <main class="main-content">
-        <header class="mobile-header">
-          <strong>PasKluis Beheer</strong>
-          <select id="mobile-nav" aria-label="Pagina kiezen">
-            <option value="dashboard">Overzicht</option>
-            <option value="users">Gebruikers & Plus</option>
-            <option value="support">Klantenservice</option>
-            <option value="brands">Winkels & logo’s</option>
-          </select>
-        </header>
-
-        <section id="page-dashboard" class="page active-page">
-          <div class="page-heading"><div><h1>Overzicht</h1><p>De actuele stand van PasKluis.</p></div><button class="secondary refresh-all">Vernieuwen</button></div>
-          <div class="stats-grid">
-            <article class="stat-card"><span>Gebruikers</span><strong id="stat-users">–</strong></article>
-            <article class="stat-card"><span>Plus actief</span><strong id="stat-plus">–</strong></article>
-            <article class="stat-card"><span>Open vragen</span><strong id="stat-support">–</strong></article>
-            <article class="stat-card"><span>Actieve winkels</span><strong id="stat-brands">–</strong></article>
-          </div>
-          <article class="panel"><h2>Snelle start</h2><p>Beantwoord openstaande klantvragen en beheer gratis Plus-toegang vanuit één beveiligde omgeving.</p></article>
-        </section>
-
-        <section id="page-users" class="page">
-          <div class="page-heading"><div><h1>Gebruikers & Plus</h1><p>Geef vrienden gratis toegang of trek die weer in.</p></div><input id="user-search" class="search" type="search" placeholder="Zoek naam of e-mail" /></div>
-          <div class="table-wrap"><table><thead><tr><th>Gebruiker</th><th>Rol</th><th>Status</th><th>Actie</th></tr></thead><tbody id="users-body"></tbody></table></div>
-        </section>
-
-        <section id="page-support" class="page">
-          <div class="page-heading"><div><h1>Klantenservice</h1><p>Lees en beantwoord berichten uit de app.</p></div><button id="refresh-support" class="secondary">Vernieuwen</button></div>
-          <div class="support-layout">
-            <div id="thread-list" class="thread-list"></div>
-            <div id="conversation-empty" class="conversation empty-panel">Selecteer een gesprek.</div>
-            <div id="conversation" class="conversation hidden">
-              <div class="conversation-head"><div><strong id="conversation-subject"></strong><span id="conversation-user"></span></div><div><button id="toggle-thread-status" class="secondary small-button"></button></div></div>
-              <div id="message-list" class="message-list"></div>
-              <form id="reply-form" class="reply-form"><textarea id="reply-message" maxlength="5000" placeholder="Schrijf je antwoord…" required></textarea><button class="primary" type="submit">Versturen</button></form>
-            </div>
-          </div>
-        </section>
-
-        <section id="page-brands" class="page">
-          <div class="page-heading"><div><h1>Winkels & logo’s</h1><p>Beheer de centrale lijst met kaartaanbieders.</p></div><button id="new-brand" class="primary">Nieuwe winkel</button></div>
-          <div class="table-wrap"><table><thead><tr><th>Winkel</th><th>Kleur</th><th>Kaarttypen</th><th>Status</th><th></th></tr></thead><tbody id="brands-body"></tbody></table></div>
-        </section>
-      </main>
-    </div>
-
-    <dialog id="brand-dialog">
-      <form id="brand-form" method="dialog">
-        <h2 id="brand-form-title">Nieuwe winkel</h2>
-        <input id="brand-id" type="hidden" />
-        <label>Naam<input id="brand-name" required maxlength="100" /></label>
-        <label>Slug<input id="brand-slug" required pattern="[a-z0-9-]+" placeholder="bijvoorbeeld-bol-com" /></label>
-        <label>Huidig logo-pad of URL<input id="brand-logo" placeholder="https://… of assets/logos/logo.png" /></label>
-        <label class="upload-field">Nieuw logo uploaden
-          <input id="brand-logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" />
-          <small>PNG, JPG, WebP of SVG · maximaal 2 MB</small>
-        </label>
-        <div id="brand-logo-preview" class="logo-preview"><span>Nog geen logo gekozen</span></div>
-        <div class="app-layout-note">
-          <strong>Logo-weergave instellen</strong>
-          <span>Het passend maken gebeurt voortaan in de PasKluis-app via Instellingen → Account → Winkellogo’s passend maken. Daar zie je altijd de echte kaartweergave.</span>
-        </div>
-        <section class="logo-layout-editor hidden" aria-hidden="true">
-          <div>
-            <h3>Logo-weergave instellen</h3>
-            <p>Pas het logo per scherm aan. De voorbeelden reageren direct.</p>
-          </div>
-          <div id="logo-layout-tabs" class="layout-tabs"></div>
-          <div class="layout-workspace">
-            <div class="phone-preview-shell">
-              <div class="phone-preview-label">Live voorbeeld in de app</div>
-              <div id="layout-card-preview" class="layout-card-preview" aria-live="polite">
-                <span id="layout-preview-empty">Kies eerst een logo</span>
-              </div>
-            </div>
-            <div class="layout-controls">
-              <label>Grootte <output id="layout-scale-output">100%</output><input id="layout-scale" type="range" min="50" max="250" value="100" /></label>
-              <label>Links/rechts <output id="layout-x-output">0%</output><input id="layout-x" type="range" min="-100" max="100" value="0" /></label>
-              <label>Omhoog/omlaag <output id="layout-y-output">0%</output><input id="layout-y" type="range" min="-100" max="100" value="0" /></label>
-              <button id="toggle-picker-keyboard" class="secondary small-button hidden" type="button">Toetsenbord tonen</button>
-              <button id="reset-logo-layout" class="secondary small-button" type="button">Deze weergave herstellen</button>
-            </div>
-          </div>
-        </section>
-        <label>Merkkleur<input id="brand-color" type="color" value="#D51B46" /></label>
-        <div class="check-row"><label><input id="brand-loyalty" type="checkbox" checked /> Klantenkaart</label><label><input id="brand-gift" type="checkbox" /> Cadeaukaart</label><label><input id="brand-active" type="checkbox" checked /> Actief</label></div>
-        <p id="brand-error" class="error"></p>
-        <div class="dialog-actions"><button type="button" id="cancel-brand" class="secondary">Annuleren</button><button type="submit" class="primary">Opslaan</button></div>
-      </form>
-    </dialog>
-
-    <div id="toast" class="toast" role="status"></div>
-    <script type="module" src="app.js"></script>
-  </body>
-</html>
+<!doctype html><html lang="nl"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><meta name="robots" content="noindex,nofollow"/><title>PasKluis Beheer</title><link rel="stylesheet" href="styles.css"/></head><body>
+<div id="login-view" class="login-shell"><form id="login-form" class="login-card"><div class="brand-mark">P</div><div><h1>PasKluis Beheer</h1><p>Log in met je medewerkersaccount.</p></div><label>E-mailadres<input id="login-email" type="email" autocomplete="email" required/></label><label>Wachtwoord<input id="login-password" type="password" autocomplete="current-password" minlength="8" required/></label><button type="submit" class="primary">Inloggen</button><p id="login-error" class="error" role="alert"></p></form></div>
+<div id="denied-view" class="login-shell hidden"><div class="login-card"><div class="brand-mark">!</div><h1>Geen toegang</h1><p>Dit account heeft geen beheerrechten.</p><button id="denied-logout" class="secondary">Uitloggen</button></div></div>
+<div id="app-view" class="app-shell hidden"><aside class="sidebar"><div class="sidebar-brand"><div class="brand-mark small">P</div><div><strong>PasKluis</strong><span>Beheer</span></div></div><nav>
+<button data-page="dashboard" class="nav-button active"><span>Overzicht</span></button><button data-page="users" class="nav-button admin-nav"><span>Gebruikers & Plus</span></button><button data-page="team" class="nav-button admin-nav"><span>Medewerkers</span></button><button data-page="support" class="nav-button"><span>Klantenservice</span><span id="open-count" class="badge">0</span></button><button data-page="brands" class="nav-button admin-nav"><span>Winkels & herkenning</span></button><button data-page="settings" class="nav-button admin-nav"><span>App-instellingen</span></button><button data-page="activity" class="nav-button admin-nav"><span>Activiteitenlog</span></button>
+</nav><div class="sidebar-user"><strong id="admin-name"></strong><span id="admin-email"></span><span id="admin-role" class="role-label"></span><button id="logout-button" class="link-button">Uitloggen</button></div></aside>
+<main class="main-content"><header class="mobile-header"><strong>PasKluis Beheer</strong><select id="mobile-nav" aria-label="Pagina kiezen"></select></header>
+<section id="page-dashboard" class="page active-page"><div class="page-heading"><div><h1>Goed overzicht</h1><p>Alles wat aandacht nodig heeft, bij elkaar.</p></div><button class="secondary refresh-all">Vernieuwen</button></div><div class="stats-grid"><article class="stat-card"><span>Gebruikers</span><strong id="stat-users">–</strong><small id="stat-new-users">– nieuw deze week</small></article><article class="stat-card"><span>Plus actief</span><strong id="stat-plus">–</strong><small id="stat-plus-share">– van gebruikers</small></article><article class="stat-card"><span>Open vragen</span><strong id="stat-support">–</strong><small id="stat-urgent">– met hoge prioriteit</small></article><article class="stat-card"><span>Actieve winkels</span><strong id="stat-brands">–</strong><small id="stat-staff">– medewerkers</small></article></div><div class="dashboard-grid"><article class="panel"><div class="panel-heading"><h2>Aandacht nodig</h2></div><div id="attention-list" class="action-list"></div></article><article class="panel"><div class="panel-heading"><h2>Laatste wijzigingen</h2><button class="text-button admin-only" data-go="activity">Alles bekijken</button></div><div id="recent-activity" class="timeline compact"></div></article></div></section>
+<section id="page-users" class="page admin-page"><div class="page-heading"><div><h1>Gebruikers & Plus</h1><p>Accounts bekijken en toegang beheren.</p></div><div class="toolbar"><select id="user-filter"><option value="all">Alle gebruikers</option><option value="plus">Alleen Plus</option><option value="free">Alleen gratis</option></select><input id="user-search" class="search" type="search" placeholder="Zoek naam of e-mail"/></div></div><div class="table-wrap"><table><thead><tr><th>Gebruiker</th><th>Aangemaakt</th><th>Account</th><th>Plus</th><th></th></tr></thead><tbody id="users-body"></tbody></table></div></section>
+<section id="page-team" class="page admin-page"><div class="page-heading"><div><h1>Medewerkers</h1><p>Beheerders en klantenservice veilig toegang geven.</p></div><button id="new-staff" class="primary">Medewerker toevoegen</button></div><div class="permission-note"><strong>Duidelijke rechten</strong><span>Beheerders kunnen alles beheren. Klantenservice ziet alleen het overzicht, gebruikersinformatie en klantgesprekken.</span></div><div id="team-grid" class="team-grid"></div></section>
+<section id="page-support" class="page"><div class="page-heading"><div><h1>Klantenservice</h1><p>Beantwoord vragen en houd de opvolging overzichtelijk.</p></div><div class="toolbar"><select id="support-filter"><option value="active">Openstaand</option><option value="open">Open</option><option value="waiting_for_user">Wacht op gebruiker</option><option value="closed">Gesloten</option><option value="all">Alles</option></select><button id="refresh-support" class="secondary">Vernieuwen</button></div></div><div class="support-layout"><div id="thread-list" class="thread-list"></div><div id="conversation-empty" class="conversation empty-panel">Selecteer een gesprek.</div><div id="conversation" class="conversation hidden"><div class="conversation-head"><div><strong id="conversation-subject"></strong><span id="conversation-user"></span></div><button id="toggle-thread-status" class="secondary small-button"></button></div><div class="ticket-controls"><label>Categorie<select id="thread-category"><option value="overig">Overig</option><option value="account">Account</option><option value="plus">Plus</option><option value="scanner">Scanner</option><option value="cadeaukaart">Cadeaukaart</option><option value="technisch">Technisch</option></select></label><label>Prioriteit<select id="thread-priority"><option value="low">Laag</option><option value="normal">Normaal</option><option value="high">Hoog</option><option value="urgent">Urgent</option></select></label><label class="note-label">Interne notitie<input id="thread-note" maxlength="500" placeholder="Niet zichtbaar voor gebruiker"/></label><button id="save-thread-meta" class="secondary small-button">Opslaan</button></div><div id="message-list" class="message-list"></div><form id="reply-form" class="reply-form"><textarea id="reply-message" maxlength="5000" placeholder="Schrijf je antwoord…" required></textarea><button class="primary" type="submit">Versturen</button></form></div></div></section>
+<section id="page-brands" class="page admin-page"><div class="page-heading"><div><h1>Winkels & herkenning</h1><p>Beheer aanbieders, logo-bestanden en automatische herkenning.</p></div><div class="toolbar"><input id="brand-search" class="search" type="search" placeholder="Zoek winkel"/><button id="new-brand" class="primary">Nieuwe winkel</button></div></div><div class="table-wrap"><table><thead><tr><th>Winkel</th><th>Kaarttypen</th><th>Herkenning</th><th>Volgorde</th><th>Status</th><th></th></tr></thead><tbody id="brands-body"></tbody></table></div></section>
+<section id="page-settings" class="page admin-page"><div class="page-heading"><div><h1>App-instellingen</h1><p>Wijzig centrale instellingen zonder een nieuwe build.</p></div><button id="save-settings" class="primary">Wijzigingen opslaan</button></div><div id="settings-grid" class="settings-grid"></div></section>
+<section id="page-activity" class="page admin-page"><div class="page-heading"><div><h1>Activiteitenlog</h1><p>Bekijk wie wat heeft aangepast.</p></div><div class="toolbar"><select id="activity-filter"><option value="all">Alle wijzigingen</option><option value="profiles">Medewerkers</option><option value="entitlements">Plus</option><option value="brands">Winkels</option><option value="app_settings">Instellingen</option><option value="support_threads">Klantenservice</option></select><button id="refresh-activity" class="secondary">Vernieuwen</button></div></div><article class="panel"><div id="activity-list" class="timeline"></div></article></section>
+</main></div>
+<dialog id="brand-dialog"><form id="brand-form" method="dialog"><div class="dialog-title"><div><h2 id="brand-form-title">Nieuwe winkel</h2><p>De precieze logo-afstelling gebeurt in de app.</p></div><button type="button" class="icon-button dialog-close" aria-label="Sluiten">×</button></div><input id="brand-id" type="hidden"/><div class="form-grid"><label>Naam<input id="brand-name" required maxlength="100"/></label><label>Slug<input id="brand-slug" required pattern="[a-z0-9-]+" placeholder="bijvoorbeeld-bol-com"/></label></div><label>Huidig logo-pad of URL<input id="brand-logo" placeholder="https://… of assets/logos/logo.png"/></label><label class="upload-field">Nieuw logo uploaden<input id="brand-logo-file" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"/><small>PNG, JPG, WebP of SVG · maximaal 2 MB</small></label><div id="brand-logo-preview" class="logo-preview"><span>Nog geen logo gekozen</span></div><div class="form-grid"><label>Merkkleur<input id="brand-color" type="color" value="#D51B46"/></label><label>Volgorde<input id="brand-order" type="number" min="0" step="1" value="0"/></label></div><label>Alternatieve namen<textarea id="brand-aliases" rows="2" placeholder="Eén per regel, bijvoorbeeld bol, bol.com cadeaukaart"></textarea></label><label>Woorden voor herkenning<textarea id="brand-keywords" rows="2" placeholder="Tekst die op de kaart of afbeelding kan staan"></textarea></label><label>Barcode-prefixen<input id="brand-prefixes" placeholder="Komma-gescheiden, bijvoorbeeld 6064, 8710"/></label><div class="check-row"><label><input id="brand-loyalty" type="checkbox" checked/> Klantenkaart</label><label><input id="brand-gift" type="checkbox"/> Cadeaukaart</label><label><input id="brand-featured" type="checkbox"/> Uitgelicht</label><label><input id="brand-active" type="checkbox" checked/> Actief</label></div><p id="brand-error" class="error"></p><div class="dialog-actions"><button type="button" id="cancel-brand" class="secondary">Annuleren</button><button type="submit" class="primary">Opslaan</button></div></form></dialog>
+<dialog id="staff-dialog"><form id="staff-form" method="dialog"><div class="dialog-title"><div><h2>Medewerker toevoegen</h2><p>De medewerker ontvangt een veilige uitnodiging per e-mail.</p></div><button type="button" class="icon-button dialog-close" aria-label="Sluiten">×</button></div><label>Naam<input id="staff-name" maxlength="100" autocomplete="off"/></label><label>E-mailadres<input id="staff-email" type="email" required autocomplete="off"/></label><label>Rol<select id="staff-role"><option value="support">Klantenservice</option><option value="admin">Beheerder</option></select></label><div id="staff-role-explanation" class="permission-note small"></div><p id="staff-error" class="error"></p><div class="dialog-actions"><button type="button" class="secondary dialog-close">Annuleren</button><button type="submit" class="primary">Uitnodiging versturen</button></div></form></dialog>
+<dialog id="user-dialog"><div id="user-detail"></div></dialog><dialog id="confirm-dialog"><form method="dialog"><h2 id="confirm-title">Weet je het zeker?</h2><p id="confirm-message"></p><div class="dialog-actions"><button value="cancel" class="secondary">Annuleren</button><button value="confirm" class="danger">Doorgaan</button></div></form></dialog><div id="toast" class="toast" role="status"></div><script type="module" src="app.js"></script></body></html>

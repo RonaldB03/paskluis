@@ -1,209 +1,71 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const SUPABASE_URL = 'https://ajldblvvlbvmgejrmhyj.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_D22GtKy7nDvnLv7LeBL1SA_1_ZGbN7d';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL='https://ajldblvvlbvmgejrmhyj.supabase.co';
+const SUPABASE_KEY='sb_publishable_D22GtKy7nDvnLv7LeBL1SA_1_ZGbN7d';
+const supabase=createClient(SUPABASE_URL,SUPABASE_KEY);
+const state={user:null,profile:null,profiles:[],entitlements:[],threads:[],messages:[],brands:[],settings:[],audit:[],selectedThread:null};
+const $=(s)=>document.querySelector(s);const $$=(s)=>[...document.querySelectorAll(s)];
 
-const state = { user:null, profile:null, profiles:[], entitlements:[], threads:[], messages:[], brands:[], selectedThread:null };
-const logoContexts = [
-  ['home','Home'],
-  ['loyalty','Klantenkaarten'],
-  ['gift','Cadeaukaarten'],
-  ['detail','Detailkaart'],
-  ['picker','Winkelkeuze']
-];
-let activeLogoContext='home';
-let logoLayouts={};
-let previewLogoSource='';
-const $ = (selector) => document.querySelector(selector);
-const $$ = (selector) => [...document.querySelectorAll(selector)];
+function toast(message){const n=$('#toast');n.textContent=message;n.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>n.classList.remove('show'),3000)}
+function escapeHtml(value=''){return String(value).replace(/[&<>'"]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function formatDate(value,withTime=true){if(!value)return '–';return new Intl.DateTimeFormat('nl-NL',withTime?{dateStyle:'short',timeStyle:'short'}:{dateStyle:'medium'}).format(new Date(value))}
+function profileFor(id){return state.profiles.find((p)=>p.id===id)}
+function activeEntitlement(userId){const now=Date.now();return state.entitlements.find((e)=>e.user_id===userId&&e.product_id==='paskluis_plus'&&!e.revoked_at&&(!e.expires_at||new Date(e.expires_at).getTime()>now))}
+function roleLabel(role){return role==='admin'?'Beheerder':role==='support'?'Klantenservice':'Gebruiker'}
+function statusLabel(status){return status==='closed'?'Gesloten':status==='waiting_for_user'?'Wacht op gebruiker':'Open'}
+function splitValues(value){return value.split(/[\n,]/).map((v)=>v.trim()).filter(Boolean)}
 
-function toast(message) { const node=$('#toast'); node.textContent=message; node.classList.add('show'); setTimeout(()=>node.classList.remove('show'),2600); }
-function escapeHtml(value='') { return String(value).replace(/[&<>'"]/g,(char)=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char])); }
-function formatDate(value) { if(!value) return '–'; return new Intl.DateTimeFormat('nl-NL',{dateStyle:'short',timeStyle:'short'}).format(new Date(value)); }
-function activeEntitlement(userId) { const now=Date.now(); return state.entitlements.find((item)=>item.user_id===userId && item.product_id==='paskluis_plus' && !item.revoked_at && (!item.expires_at || new Date(item.expires_at).getTime()>now)); }
-function profileFor(id) { return state.profiles.find((profile)=>profile.id===id); }
+async function boot(){const{data:{session}}=await supabase.auth.getSession();if(!session)return showLogin();await authorize(session.user)}
+async function authorize(user){state.user=user;const{data:profile,error}=await supabase.from('profiles').select('id,display_name,email,role').eq('id',user.id).single();if(error||!['admin','support'].includes(profile?.role)){await supabase.auth.signOut();return showDenied()}state.profile=profile;$('#admin-name').textContent=profile.display_name||roleLabel(profile.role);$('#admin-email').textContent=profile.email||user.email;$('#admin-role').textContent=roleLabel(profile.role);$('#login-view').classList.add('hidden');$('#denied-view').classList.add('hidden');$('#app-view').classList.remove('hidden');applyPermissions();await supabase.rpc('touch_last_seen').catch(()=>{});await refreshAll()}
+function showLogin(){$('#login-view').classList.remove('hidden');$('#app-view').classList.add('hidden');$('#denied-view').classList.add('hidden')}
+function showDenied(){$('#denied-view').classList.remove('hidden');$('#login-view').classList.add('hidden');$('#app-view').classList.add('hidden')}
+function applyPermissions(){const admin=state.profile.role==='admin';$$('.admin-nav,.admin-only').forEach((n)=>n.classList.toggle('hidden',!admin));const pages=admin?[['dashboard','Overzicht'],['users','Gebruikers & Plus'],['team','Medewerkers'],['support','Klantenservice'],['brands','Winkels & herkenning'],['settings','App-instellingen'],['activity','Activiteitenlog']]:[['dashboard','Overzicht'],['support','Klantenservice']];$('#mobile-nav').innerHTML=pages.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
 
-async function boot() {
-  const { data:{ session } } = await supabase.auth.getSession();
-  if (!session) return showLogin();
-  await authorize(session.user);
-}
+async function refreshAll(){const requests=[supabase.from('profiles').select('id,display_name,email,role,created_at,updated_at,last_seen_at').order('created_at',{ascending:false}),supabase.from('entitlements').select('*').order('created_at',{ascending:false}),supabase.from('support_threads').select('*').order('updated_at',{ascending:false}),supabase.from('brands').select('*').order('sort_order').order('name'),supabase.from('app_settings').select('*').order('category').order('label'),supabase.from('admin_audit_log').select('*').order('created_at',{ascending:false}).limit(150)];const results=await Promise.all(requests);if(results[0].error){toast('Gegevens konden niet worden geladen. Is de nieuwe SQL uitgevoerd?');return}state.profiles=results[0].data||[];state.entitlements=results[1].data||[];state.threads=results[2].data||[];state.brands=results[3].data||[];state.settings=results[4].data||[];state.audit=results[5].data||[];renderAll()}
+function renderAll(){renderStats();renderUsers();renderTeam();renderThreads();renderBrands();renderSettings();renderActivity()}
 
-async function authorize(user) {
-  state.user=user;
-  const { data:profile, error }=await supabase.from('profiles').select('id,display_name,email,role').eq('id',user.id).single();
-  if(error || !['admin','support'].includes(profile?.role)) { await supabase.auth.signOut(); return showDenied(); }
-  state.profile=profile;
-  $('#admin-email').textContent=profile.email || user.email;
-  $('#login-view').classList.add('hidden'); $('#denied-view').classList.add('hidden'); $('#app-view').classList.remove('hidden');
-  await refreshAll();
-}
+function renderStats(){const plusCount=state.profiles.filter((p)=>activeEntitlement(p.id)).length;const open=state.threads.filter((t)=>t.status!=='closed').length;const weekAgo=Date.now()-7*86400000;const newUsers=state.profiles.filter((p)=>new Date(p.created_at).getTime()>=weekAgo).length;const urgent=state.threads.filter((t)=>t.status!=='closed'&&['high','urgent'].includes(t.priority)).length;const staff=state.profiles.filter((p)=>p.role!=='user').length;$('#stat-users').textContent=state.profiles.length;$('#stat-new-users').textContent=`${newUsers} nieuw deze week`;$('#stat-plus').textContent=plusCount;$('#stat-plus-share').textContent=state.profiles.length?`${Math.round(plusCount/state.profiles.length*100)}% van gebruikers`:'0% van gebruikers';$('#stat-support').textContent=open;$('#stat-urgent').textContent=`${urgent} met hoge prioriteit`;$('#stat-brands').textContent=state.brands.filter((b)=>b.is_active).length;$('#stat-staff').textContent=`${staff} medewerkers`;$('#open-count').textContent=open;const actions=[];if(open)actions.push([`${open} klantvragen openstaand`,'Open klantenservice','support']);if(urgent)actions.push([`${urgent} vragen hebben hoge prioriteit`,'Direct bekijken','support']);const noRecognition=state.brands.filter((b)=>!(b.aliases?.length||b.recognition_keywords?.length||b.barcode_prefixes?.length)).length;if(noRecognition&&state.profile.role==='admin')actions.push([`${noRecognition} winkels zonder herkenningsregels`,'Winkels bekijken','brands']);if(!actions.length)actions.push(['Alles is bijgewerkt','Er zijn momenteel geen openstaande acties','dashboard']);$('#attention-list').innerHTML=actions.map(([title,copy,page])=>`<button class="action-item" data-go="${page}"><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(copy)}</small></div><span>›</span></button>`).join('');$('#recent-activity').innerHTML=activityMarkup(state.audit.slice(0,6))}
 
-function showLogin() { $('#login-view').classList.remove('hidden'); $('#app-view').classList.add('hidden'); $('#denied-view').classList.add('hidden'); }
-function showDenied() { $('#denied-view').classList.remove('hidden'); $('#login-view').classList.add('hidden'); $('#app-view').classList.add('hidden'); }
+function filteredUsers(){const q=$('#user-search').value.trim().toLowerCase();const filter=$('#user-filter').value;return state.profiles.filter((p)=>p.role==='user'&&`${p.display_name||''} ${p.email||''}`.toLowerCase().includes(q)&&(filter==='all'||(filter==='plus'&&activeEntitlement(p.id))||(filter==='free'&&!activeEntitlement(p.id))))}
+function renderUsers(){if(!$('#users-body'))return;const rows=filteredUsers();$('#users-body').innerHTML=rows.map((p)=>{const plus=activeEntitlement(p.id);return `<tr><td><div class="user-cell"><strong>${escapeHtml(p.display_name||'Naamloos account')}</strong><span>${escapeHtml(p.email||p.id)}</span></div></td><td>${formatDate(p.created_at,false)}</td><td><span class="pill">Gebruiker</span></td><td><span class="pill ${plus?'active':''}">${plus?`Plus · ${escapeHtml(plus.source)}`:'Gratis'}</span></td><td><button class="secondary small-button" data-view-user="${p.id}">Bekijken</button></td></tr>`}).join('')||'<tr><td colspan="5" class="empty-text">Geen gebruikers gevonden.</td></tr>'}
+function openUser(id){const p=profileFor(id);if(!p)return;const plus=activeEntitlement(id);$('#user-detail').innerHTML=`<div class="dialog-title"><div><h2>${escapeHtml(p.display_name||'Naamloos account')}</h2><p>${escapeHtml(p.email||p.id)}</p></div><button class="icon-button dialog-close" aria-label="Sluiten">×</button></div><div class="detail-grid"><div class="detail-box"><span>Account</span><strong>${roleLabel(p.role)}</strong></div><div class="detail-box"><span>Aangemaakt</span><strong>${formatDate(p.created_at,false)}</strong></div><div class="detail-box"><span>Laatste activiteit</span><strong>${formatDate(p.last_seen_at)}</strong></div><div class="detail-box"><span>Toegang</span><strong>${plus?'PasKluis Plus':'Gratis'}</strong></div></div>${plus?`<div class="detail-box"><span>Plus-bron</span><strong>${escapeHtml(plus.source)}</strong><small>${plus.expires_at?`Tot ${formatDate(plus.expires_at,false)}`:'Geen einddatum'}</small></div>`:''}<div class="detail-actions"><button class="${plus?'secondary':'primary'}" data-plus-user="${p.id}" data-plus-action="${plus?'revoke':'grant'}">${plus?'Plus intrekken':'Gratis Plus geven'}</button></div>`;$('#user-dialog').showModal()}
+async function changePlus(userId,action){if(state.profile.role!=='admin')return;const ok=await confirmAction(action==='grant'?'Gratis Plus geven?':'Plus intrekken?',action==='grant'?'Deze gebruiker krijgt Plus zonder betaling.':'De handmatig toegekende Plus-toegang wordt beëindigd.');if(!ok)return;if(action==='grant'){const{error}=await supabase.from('entitlements').insert({user_id:userId,product_id:'paskluis_plus',source:'complimentary',created_by:state.user.id,note:'Toegekend via PasKluis Beheer'});if(error)return toast(error.message.includes('duplicate')?'Plus is al actief.':'Plus kon niet worden toegekend.')}else{const{error}=await supabase.from('entitlements').update({revoked_at:new Date().toISOString()}).eq('user_id',userId).eq('product_id','paskluis_plus').is('revoked_at',null);if(error)return toast('Plus kon niet worden ingetrokken.')}$('#user-dialog').close();toast(action==='grant'?'Plus is toegekend.':'Plus is ingetrokken.');await refreshAll()}
 
-async function refreshAll() {
-  const [profiles,entitlements,threads,brands]=await Promise.all([
-    supabase.from('profiles').select('id,display_name,email,role,created_at').order('created_at',{ascending:false}),
-    supabase.from('entitlements').select('*').order('created_at',{ascending:false}),
-    supabase.from('support_threads').select('*').order('updated_at',{ascending:false}),
-    supabase.from('brands').select('*').order('sort_order').order('name')
-  ]);
-  if(profiles.error) return toast('Gegevens konden niet worden geladen.');
-  state.profiles=profiles.data||[]; state.entitlements=entitlements.data||[]; state.threads=threads.data||[]; state.brands=brands.data||[];
-  renderAll();
-}
+function renderTeam(){if(!$('#team-grid'))return;const staff=state.profiles.filter((p)=>p.role!=='user');$('#team-grid').innerHTML=staff.map((p)=>`<article class="team-card"><div class="team-card-head"><div class="avatar">${escapeHtml((p.display_name||p.email||'?').charAt(0).toUpperCase())}</div><div class="team-card-info"><strong>${escapeHtml(p.display_name||'Naamloos')}</strong><span>${escapeHtml(p.email||p.id)}</span></div></div><label>Rol<select data-staff-role="${escapeHtml(p.email||'')}" ${p.id===state.user.id?'disabled':''}><option value="support" ${p.role==='support'?'selected':''}>Klantenservice</option><option value="admin" ${p.role==='admin'?'selected':''}>Beheerder</option></select></label><div class="team-card-actions"><span class="pill ${p.role==='admin'?'active':''}">${roleLabel(p.role)}</span>${p.id!==state.user.id?`<button class="text-button" data-remove-staff="${escapeHtml(p.email||'')}">Toegang verwijderen</button>`:''}</div></article>`).join('')||'<div class="empty-text">Nog geen medewerkers.</div>'}
+function updateRoleExplanation(){const admin=$('#staff-role').value==='admin';$('#staff-role-explanation').innerHTML=`<strong>${admin?'Beheerder':'Klantenservice'}</strong><span>${admin?'Volledige toegang tot gebruikers, medewerkers, winkels, instellingen en klantenservice.':'Toegang tot het overzicht en klantgesprekken, zonder kritieke beheerinstellingen.'}</span>`}
+async function setStaffRole(email,role){const{error}=await supabase.rpc('set_staff_role_by_email',{p_email:email,p_role:role});if(error){toast(error.message);await refreshAll();return false}toast(role==='user'?'Medewerkerstoegang verwijderd.':'Rol aangepast.');await refreshAll();return true}
+async function inviteStaff(){const email=$('#staff-email').value.trim();const role=$('#staff-role').value;const displayName=$('#staff-name').value.trim();$('#staff-error').textContent='';const{data,error}=await supabase.functions.invoke('invite-staff',{body:{email,role,displayName,redirectTo:location.origin}});if(error||data?.error){const fallback=await supabase.rpc('set_staff_role_by_email',{p_email:email,p_role:role});if(fallback.error){$('#staff-error').textContent=data?.error||'Uitnodigen lukt nog niet. Deploy eerst de functie invite-staff, of laat deze medewerker een PasKluis-account aanmaken.';return}}$('#staff-dialog').close();$('#staff-form').reset();toast(data?.existing?'Bestaand account heeft toegang gekregen.':'Uitnodiging is verstuurd.');await refreshAll()}
 
-function renderAll() { renderStats(); renderUsers(); renderThreads(); renderBrands(); }
-function renderStats() {
-  const plusUsers=new Set(state.entitlements.filter((e)=>activeEntitlement(e.user_id)).map((e)=>e.user_id));
-  const open=state.threads.filter((t)=>t.status!=='closed').length;
-  $('#stat-users').textContent=state.profiles.length; $('#stat-plus').textContent=plusUsers.size; $('#stat-support').textContent=open; $('#stat-brands').textContent=state.brands.filter((b)=>b.is_active).length; $('#open-count').textContent=open;
-}
+function filteredThreads(){const filter=$('#support-filter').value;return state.threads.filter((t)=>filter==='all'||(filter==='active'&&t.status!=='closed')||t.status===filter)}
+function renderThreads(){const items=filteredThreads();$('#thread-list').innerHTML=items.map((t)=>{const user=profileFor(t.user_id);return `<button class="thread-item ${state.selectedThread?.id===t.id?'active':''}" data-thread="${t.id}"><strong>${escapeHtml(t.subject)}</strong><span>${escapeHtml(user?.display_name||user?.email||'Onbekende gebruiker')} · ${formatDate(t.updated_at)}</span><div class="thread-meta"><span class="pill ${t.status==='open'?'open':t.status==='waiting_for_user'?'waiting':'closed'}">${statusLabel(t.status)}</span>${['high','urgent'].includes(t.priority)?`<span class="pill ${t.priority}">${t.priority==='urgent'?'Urgent':'Hoog'}</span>`:''}</div></button>`}).join('')||'<div class="empty-text">Geen gesprekken in dit filter.</div>'}
+async function openThread(id){state.selectedThread=state.threads.find((t)=>t.id===id);renderThreads();const{data,error}=await supabase.from('support_messages').select('*').eq('thread_id',id).order('created_at');if(error)return toast('Berichten konden niet worden geladen.');state.messages=data||[];const user=profileFor(state.selectedThread.user_id);$('#conversation-empty').classList.add('hidden');$('#conversation').classList.remove('hidden');$('#conversation-subject').textContent=state.selectedThread.subject;$('#conversation-user').textContent=user?.email||user?.display_name||state.selectedThread.user_id;$('#toggle-thread-status').textContent=state.selectedThread.status==='closed'?'Heropenen':'Sluiten';$('#reply-form').classList.toggle('hidden',state.selectedThread.status==='closed');$('#thread-category').value=state.selectedThread.category||'overig';$('#thread-priority').value=state.selectedThread.priority||'normal';$('#thread-note').value=state.selectedThread.internal_note||'';const list=$('#message-list');list.innerHTML=state.messages.map((m)=>`<div class="message ${m.sender_id===state.user.id?'mine':''}">${escapeHtml(m.message)}<small>${formatDate(m.created_at)}</small></div>`).join('');list.scrollTop=list.scrollHeight}
+async function saveThreadMeta(){if(!state.selectedThread)return;const{error}=await supabase.from('support_threads').update({category:$('#thread-category').value,priority:$('#thread-priority').value,internal_note:$('#thread-note').value.trim()||null}).eq('id',state.selectedThread.id);if(error)return toast('Gegevens konden niet worden opgeslagen.');toast('Gespreksgegevens opgeslagen.');await refreshAll();await openThread(state.selectedThread.id)}
+async function sendReply(text){const thread=state.selectedThread;if(!thread)return;const{error}=await supabase.from('support_messages').insert({thread_id:thread.id,sender_id:state.user.id,message:text});if(error)return toast('Antwoord kon niet worden verzonden.');await supabase.from('support_threads').update({status:'waiting_for_user',assigned_to:state.user.id,first_responded_at:thread.first_responded_at||new Date().toISOString(),updated_at:new Date().toISOString()}).eq('id',thread.id);$('#reply-message').value='';await refreshAll();await openThread(thread.id);toast('Antwoord verzonden.')}
+async function toggleThreadStatus(){const thread=state.selectedThread;if(!thread)return;const next=thread.status==='closed'?'open':'closed';const{error}=await supabase.from('support_threads').update({status:next,updated_at:new Date().toISOString()}).eq('id',thread.id);if(error)return toast('Status kon niet worden aangepast.');await refreshAll();await openThread(thread.id)}
 
-function renderUsers() {
-  const query=$('#user-search').value.trim().toLowerCase();
-  const rows=state.profiles.filter((p)=>`${p.display_name||''} ${p.email||''}`.toLowerCase().includes(query));
-  $('#users-body').innerHTML=rows.map((p)=>{ const plus=activeEntitlement(p.id); const canManage=state.profile.role==='admin' && p.id!==state.user.id; return `<tr><td><div class="user-cell"><strong>${escapeHtml(p.display_name||'Naamloos account')}</strong><span>${escapeHtml(p.email||p.id)}</span></div></td><td><span class="pill">${escapeHtml(p.role)}</span></td><td><span class="pill ${plus?'active':''}">${plus?'Plus actief':'Gratis'}</span></td><td>${canManage?`<button class="${plus?'secondary':'primary'} small-button" data-plus-user="${p.id}" data-plus-action="${plus?'revoke':'grant'}">${plus?'Plus intrekken':'Gratis Plus geven'}</button>`:'–'}</td></tr>`; }).join('') || '<tr><td colspan="4">Geen gebruikers gevonden.</td></tr>';
-}
+function renderBrands(){const q=$('#brand-search').value.trim().toLowerCase();const brands=state.brands.filter((b)=>`${b.name} ${b.slug} ${(b.aliases||[]).join(' ')}`.toLowerCase().includes(q));$('#brands-body').innerHTML=brands.map((b)=>{const count=(b.aliases?.length||0)+(b.recognition_keywords?.length||0)+(b.barcode_prefixes?.length||0);return `<tr><td><div class="user-cell"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(b.slug)}</span></div></td><td>${b.supports_loyalty_card?'Klantenkaart':''}${b.supports_loyalty_card&&b.supports_gift_card?' · ':''}${b.supports_gift_card?'Cadeaukaart':''}</td><td><span class="pill ${count?'active':''}">${count?`${count} regels`:'Nog leeg'}</span></td><td>${b.sort_order??0}</td><td><span class="pill ${b.is_active?'active':''}">${b.is_active?'Actief':'Verborgen'}</span></td><td><button class="secondary small-button" data-edit-brand="${b.id}">Bewerken</button></td></tr>`}).join('')||'<tr><td colspan="6" class="empty-text">Geen winkels gevonden.</td></tr>'}
+function renderLogoPreview(source=''){const src=source.startsWith('assets/')?`../${source}`:source;$('#brand-logo-preview').innerHTML=src?`<img src="${escapeHtml(src)}" alt="Logo voorbeeld" onerror="this.parentElement.innerHTML='<span>Voorbeeld kon niet worden geladen</span>'"/>`:'<span>Nog geen logo gekozen</span>'}
+function openBrandDialog(brand=null){$('#brand-form-title').textContent=brand?'Winkel bewerken':'Nieuwe winkel';$('#brand-id').value=brand?.id||'';$('#brand-name').value=brand?.name||'';$('#brand-slug').value=brand?.slug||'';$('#brand-logo').value=brand?.logo_path||'';$('#brand-logo-file').value='';$('#brand-color').value=brand?.brand_color||'#D51B46';$('#brand-order').value=brand?.sort_order??0;$('#brand-aliases').value=(brand?.aliases||[]).join('\n');$('#brand-keywords').value=(brand?.recognition_keywords||[]).join('\n');$('#brand-prefixes').value=(brand?.barcode_prefixes||[]).join(', ');$('#brand-loyalty').checked=brand?.supports_loyalty_card??true;$('#brand-gift').checked=brand?.supports_gift_card??false;$('#brand-featured').checked=brand?.is_featured??false;$('#brand-active').checked=brand?.is_active??true;$('#brand-error').textContent='';renderLogoPreview(brand?.logo_path||'');$('#brand-dialog').showModal()}
+async function uploadBrandLogo(slug){const file=$('#brand-logo-file').files[0];if(!file)return $('#brand-logo').value.trim()||null;if(file.size>2097152)throw new Error('Het logo is groter dan 2 MB.');const extension=(file.name.split('.').pop()||'png').toLowerCase();const path=`${slug}/${Date.now()}.${extension}`;const{error}=await supabase.storage.from('brand-logos').upload(path,file,{contentType:file.type,upsert:false});if(error)throw error;return supabase.storage.from('brand-logos').getPublicUrl(path).data.publicUrl}
+async function saveBrand(){const id=$('#brand-id').value;const slug=$('#brand-slug').value.trim();try{const logoPath=await uploadBrandLogo(slug);const payload={name:$('#brand-name').value.trim(),slug,logo_path:logoPath,brand_color:$('#brand-color').value,sort_order:Number($('#brand-order').value)||0,aliases:splitValues($('#brand-aliases').value),recognition_keywords:splitValues($('#brand-keywords').value),barcode_prefixes:splitValues($('#brand-prefixes').value),supports_loyalty_card:$('#brand-loyalty').checked,supports_gift_card:$('#brand-gift').checked,is_featured:$('#brand-featured').checked,is_active:$('#brand-active').checked,updated_at:new Date().toISOString()};const result=id?await supabase.from('brands').update(payload).eq('id',id):await supabase.from('brands').insert(payload);if(result.error)throw result.error;$('#brand-dialog').close();toast('Winkel opgeslagen. Logo-afstelling blijft in de app.');await refreshAll()}catch(error){$('#brand-error').textContent=error.message||'Opslaan is niet gelukt.'}}
 
-async function changePlus(userId,action) {
-  if(state.profile.role!=='admin') return;
-  if(action==='grant') {
-    const { error }=await supabase.from('entitlements').insert({user_id:userId,product_id:'paskluis_plus',source:'complimentary',created_by:state.user.id,note:'Toegekend via PasKluis Beheer'});
-    if(error) return toast(error.message.includes('duplicate')?'Plus is al actief.':'Plus kon niet worden toegekend.');
-    toast('Gratis Plus is toegekend.');
-  } else {
-    const { error }=await supabase.from('entitlements').update({revoked_at:new Date().toISOString()}).eq('user_id',userId).eq('product_id','paskluis_plus').is('revoked_at',null);
-    if(error) return toast('Plus kon niet worden ingetrokken.');
-    toast('Plus is ingetrokken.');
-  }
-  await refreshAll();
-}
+const settingCategory={plus:'Plus & toegang',home:'Home & locatie',app:'App & onderhoud',versions:'Appversies',general:'Algemeen'};
+function settingInput(s){const value=s.value;if(typeof value==='boolean')return `<input class="toggle-input" data-setting="${escapeHtml(s.key)}" type="checkbox" ${value?'checked':''}/>`;if(typeof value==='number')return `<input data-setting="${escapeHtml(s.key)}" type="number" value="${value}"/>`;return `<input data-setting="${escapeHtml(s.key)}" value="${escapeHtml(value??'')}"/>`}
+function renderSettings(){const groups=Object.groupBy?Object.groupBy(state.settings,(s)=>s.category):state.settings.reduce((a,s)=>((a[s.category]??=[]).push(s),a),{});$('#settings-grid').innerHTML=Object.entries(groups).map(([category,items])=>`<section class="setting-group"><h2>${escapeHtml(settingCategory[category]||category)}</h2>${items.map((s)=>`<div class="setting-row"><div class="setting-copy"><strong>${escapeHtml(s.label)}</strong><small>${escapeHtml(s.description||'')}</small></div>${settingInput(s)}</div>`).join('')}</section>`).join('')||'<div class="empty-text">Voer eerst migratie 006 uit om app-instellingen te beheren.</div>'}
+async function saveSettings(){const changes=$$('[data-setting]').map((input)=>{const original=state.settings.find((s)=>s.key===input.dataset.setting);let value=input.type==='checkbox'?input.checked:input.type==='number'?Number(input.value):input.value;return{...original,value,updated_by:state.user.id,updated_at:new Date().toISOString()}});for(const item of changes){const{error}=await supabase.from('app_settings').update({value:item.value,updated_by:item.updated_by,updated_at:item.updated_at}).eq('key',item.key);if(error)return toast(`Instelling ${item.label} kon niet worden opgeslagen.`)}toast('App-instellingen opgeslagen.');await refreshAll()}
 
-function renderThreads() {
-  $('#thread-list').innerHTML=state.threads.map((t)=>{ const user=profileFor(t.user_id); return `<button class="thread-item ${state.selectedThread?.id===t.id?'active':''}" data-thread="${t.id}"><strong>${escapeHtml(t.subject)}</strong><span>${escapeHtml(user?.display_name||user?.email||'Onbekende gebruiker')} · ${formatDate(t.updated_at)}</span><span class="pill ${t.status==='open'?'open':''}">${statusLabel(t.status)}</span></button>`; }).join('') || '<div class="empty-panel" style="padding:30px">Geen gesprekken.</div>';
-}
-function statusLabel(status) { return status==='closed'?'Gesloten':status==='waiting_for_user'?'Wacht op gebruiker':'Open'; }
+function auditTitle(item){const names={profiles:'Medewerker',entitlements:'Plus-toegang',brands:'Winkel',app_settings:'App-instelling',support_threads:'Klantenservice'};const verb={insert:'toegevoegd',update:'gewijzigd',delete:'verwijderd'};return `${names[item.entity_type]||item.entity_type} ${verb[item.action]||item.action}`}
+function activityMarkup(items){return items.map((item)=>{const actor=profileFor(item.actor_id);return `<div class="timeline-item"><span class="timeline-dot"></span><div class="timeline-copy"><strong>${escapeHtml(auditTitle(item))}</strong><span>${escapeHtml(actor?.display_name||actor?.email||'Systeem')}</span></div><time>${formatDate(item.created_at)}</time></div>`}).join('')||'<div class="empty-text">Nog geen wijzigingen geregistreerd.</div>'}
+function renderActivity(){if(!$('#activity-list'))return;const filter=$('#activity-filter').value;$('#activity-list').innerHTML=activityMarkup(state.audit.filter((a)=>filter==='all'||a.entity_type===filter))}
 
-async function openThread(id) {
-  state.selectedThread=state.threads.find((t)=>t.id===id); renderThreads();
-  const { data,error }=await supabase.from('support_messages').select('*').eq('thread_id',id).order('created_at');
-  if(error) return toast('Berichten konden niet worden geladen.');
-  state.messages=data||[]; const user=profileFor(state.selectedThread.user_id);
-  $('#conversation-empty').classList.add('hidden'); $('#conversation').classList.remove('hidden'); $('#conversation-subject').textContent=state.selectedThread.subject; $('#conversation-user').textContent=user?.email||user?.display_name||state.selectedThread.user_id;
-  $('#toggle-thread-status').textContent=state.selectedThread.status==='closed'?'Heropenen':'Sluiten'; $('#reply-form').classList.toggle('hidden',state.selectedThread.status==='closed');
-  const list=$('#message-list'); list.innerHTML=state.messages.map((m)=>`<div class="message ${m.sender_id===state.user.id?'mine':''}">${escapeHtml(m.message)}<small>${formatDate(m.created_at)}</small></div>`).join(''); list.scrollTop=list.scrollHeight;
-}
+function showPage(page){if(state.profile.role!=='admin'&&!['dashboard','support'].includes(page))page='dashboard';$$('.page').forEach((n)=>n.classList.remove('active-page'));$$('.nav-button').forEach((n)=>n.classList.toggle('active',n.dataset.page===page));$(`#page-${page}`).classList.add('active-page');$('#mobile-nav').value=page}
+function confirmAction(title,message){return new Promise((resolve)=>{const d=$('#confirm-dialog');$('#confirm-title').textContent=title;$('#confirm-message').textContent=message;const done=()=>{d.removeEventListener('close',done);resolve(d.returnValue==='confirm')};d.addEventListener('close',done);d.showModal()})}
 
-async function sendReply(text) {
-  const thread=state.selectedThread; if(!thread) return;
-  const { error }=await supabase.from('support_messages').insert({thread_id:thread.id,sender_id:state.user.id,message:text});
-  if(error) return toast('Antwoord kon niet worden verzonden.');
-  await supabase.from('support_threads').update({status:'waiting_for_user',assigned_to:state.user.id,updated_at:new Date().toISOString()}).eq('id',thread.id);
-  $('#reply-message').value=''; await refreshAll(); await openThread(thread.id); toast('Antwoord verzonden.');
-}
-
-async function toggleThreadStatus() {
-  const thread=state.selectedThread; if(!thread) return; const next=thread.status==='closed'?'open':'closed';
-  const { error }=await supabase.from('support_threads').update({status:next,updated_at:new Date().toISOString()}).eq('id',thread.id);
-  if(error) return toast('Status kon niet worden aangepast.');
-  await refreshAll(); await openThread(thread.id);
-}
-
-function renderBrands() {
-  $('#brands-body').innerHTML=state.brands.map((b)=>`<tr><td><div class="user-cell"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(b.slug)}</span></div></td><td><span style="display:inline-block;width:24px;height:24px;border-radius:7px;background:${escapeHtml(b.brand_color)};border:1px solid #ddd"></span></td><td>${b.supports_loyalty_card?'Klantenkaart':''}${b.supports_loyalty_card&&b.supports_gift_card?' · ':''}${b.supports_gift_card?'Cadeaukaart':''}</td><td><span class="pill ${b.is_active?'active':''}">${b.is_active?'Actief':'Verborgen'}</span></td><td><button class="secondary small-button" data-edit-brand="${b.id}">Bewerken</button></td></tr>`).join('') || '<tr><td colspan="5">Nog geen winkels toegevoegd.</td></tr>';
-}
-
-function renderLogoPreview(source='') {
-  previewLogoSource=source.startsWith('assets/')?`../${source}`:source;
-  const preview=$('#brand-logo-preview');
-  preview.innerHTML=previewLogoSource?`<img src="${escapeHtml(previewLogoSource)}" alt="Logo voorbeeld" onerror="this.parentElement.innerHTML='<span>Voorbeeld kon niet worden geladen</span>'" />`:'<span>Nog geen logo gekozen</span>';
-  renderLayoutEditor();
-}
-
-function defaultLogoLayout() { return {scale:1,x:0,y:0}; }
-function readLogoLayouts(brand) {
-  logoLayouts=Object.fromEntries(logoContexts.map(([key])=>[key,{
-    scale:Number(brand?.[`logo_${key}_scale`]??1),
-    x:Number(brand?.[`logo_${key}_x`]??0),
-    y:Number(brand?.[`logo_${key}_y`]??0)
-  }]));
-}
-function renderLayoutEditor() {
-  const tabs=$('#logo-layout-tabs'); if(!tabs) return;
-  tabs.innerHTML=logoContexts.map(([key,label])=>`<button type="button" class="layout-tab ${key===activeLogoContext?'active':''}" data-logo-context="${key}">${label}</button>`).join('');
-  const values=logoLayouts[activeLogoContext]||defaultLogoLayout();
-  $('#layout-scale').value=Math.round(values.scale*100);
-  $('#layout-x').value=values.x;
-  $('#layout-y').value=values.y;
-  $('#layout-scale-output').textContent=`${Math.round(values.scale*100)}%`;
-  $('#layout-x-output').textContent=`${values.x}%`;
-  $('#layout-y-output').textContent=`${values.y}%`;
-  const image=$('#layout-preview-image');
-  image.src=previewLogoSource||'';
-  image.classList.toggle('hidden',!previewLogoSource);
-  $('#layout-preview-empty').classList.toggle('hidden',Boolean(previewLogoSource));
-  image.style.transform=`translate(${values.x}%,${values.y}%) scale(${values.scale})`;
-  const preview=$('#layout-card-preview');
-  preview.style.background=$('#brand-color').value||'#fff';
-  preview.className=`layout-card-preview ${activeLogoContext}`;
-}
-function updateActiveLogoLayout() {
-  logoLayouts[activeLogoContext]={
-    scale:Number($('#layout-scale').value)/100,
-    x:Number($('#layout-x').value),
-    y:Number($('#layout-y').value)
-  };
-  renderLayoutEditor();
-}
-
-function openBrandDialog(brand=null) {
-  activeLogoContext='home'; readLogoLayouts(brand); $('#brand-form-title').textContent=brand?'Winkel bewerken':'Nieuwe winkel'; $('#brand-id').value=brand?.id||''; $('#brand-name').value=brand?.name||''; $('#brand-slug').value=brand?.slug||''; $('#brand-logo').value=brand?.logo_path||''; $('#brand-logo-file').value=''; $('#brand-color').value=brand?.brand_color||'#D51B46'; $('#brand-loyalty').checked=brand?.supports_loyalty_card??true; $('#brand-gift').checked=brand?.supports_gift_card??false; $('#brand-active').checked=brand?.is_active??true; $('#brand-error').textContent=''; renderLogoPreview(brand?.logo_path||''); $('#brand-dialog').showModal();
-}
-
-async function uploadBrandLogo(slug) {
-  const file=$('#brand-logo-file').files[0];
-  if(!file) return $('#brand-logo').value.trim()||null;
-  if(file.size>2097152) throw new Error('Het logo is groter dan 2 MB.');
-  const extension=(file.name.split('.').pop()||'png').toLowerCase();
-  const path=`${slug}/${Date.now()}.${extension}`;
-  const { error }=await supabase.storage.from('brand-logos').upload(path,file,{contentType:file.type,upsert:false});
-  if(error) throw error;
-  return supabase.storage.from('brand-logos').getPublicUrl(path).data.publicUrl;
-}
-
-async function saveBrand() {
-  const id=$('#brand-id').value; const slug=$('#brand-slug').value.trim();
-  try {
-    const logoPath=await uploadBrandLogo(slug);
-    const layoutPayload=Object.fromEntries(logoContexts.flatMap(([key])=>[
-      [`logo_${key}_scale`,logoLayouts[key]?.scale??1],
-      [`logo_${key}_x`,logoLayouts[key]?.x??0],
-      [`logo_${key}_y`,logoLayouts[key]?.y??0]
-    ]));
-    const payload={name:$('#brand-name').value.trim(),slug,logo_path:logoPath,brand_color:$('#brand-color').value,supports_loyalty_card:$('#brand-loyalty').checked,supports_gift_card:$('#brand-gift').checked,is_active:$('#brand-active').checked,...layoutPayload,updated_at:new Date().toISOString()};
-    const result=id?await supabase.from('brands').update(payload).eq('id',id):await supabase.from('brands').insert(payload);
-    if(result.error) throw result.error;
-    $('#brand-dialog').close(); toast('Winkel en logo opgeslagen.'); await refreshAll();
-  } catch(error) { $('#brand-error').textContent=error.message||'Opslaan is niet gelukt.'; }
-}
-
-function showPage(page) { $$('.page').forEach((node)=>node.classList.remove('active-page')); $$('.nav-button').forEach((node)=>node.classList.toggle('active',node.dataset.page===page)); $(`#page-${page}`).classList.add('active-page'); $('#mobile-nav').value=page; }
-
-$('#login-form').addEventListener('submit',async(event)=>{ event.preventDefault(); $('#login-error').textContent=''; const { data,error }=await supabase.auth.signInWithPassword({email:$('#login-email').value.trim(),password:$('#login-password').value}); if(error) return $('#login-error').textContent='E-mailadres of wachtwoord klopt niet.'; await authorize(data.user); });
-$('#logout-button').addEventListener('click',async()=>{ await supabase.auth.signOut(); location.reload(); }); $('#denied-logout').addEventListener('click',async()=>{ await supabase.auth.signOut(); location.reload(); });
-$$('.nav-button').forEach((button)=>button.addEventListener('click',()=>showPage(button.dataset.page))); $('#mobile-nav').addEventListener('change',(e)=>showPage(e.target.value)); $$('.refresh-all').forEach((button)=>button.addEventListener('click',refreshAll));
-$('#user-search').addEventListener('input',renderUsers); $('#users-body').addEventListener('click',(event)=>{ const button=event.target.closest('[data-plus-user]'); if(button) changePlus(button.dataset.plusUser,button.dataset.plusAction); });
-$('#refresh-support').addEventListener('click',refreshAll); $('#thread-list').addEventListener('click',(event)=>{ const button=event.target.closest('[data-thread]'); if(button) openThread(button.dataset.thread); });
-$('#reply-form').addEventListener('submit',(event)=>{ event.preventDefault(); const text=$('#reply-message').value.trim(); if(text) sendReply(text); }); $('#toggle-thread-status').addEventListener('click',toggleThreadStatus);
-$('#new-brand').addEventListener('click',()=>openBrandDialog()); $('#brands-body').addEventListener('click',(event)=>{ const button=event.target.closest('[data-edit-brand]'); if(button) openBrandDialog(state.brands.find((b)=>b.id===button.dataset.editBrand)); }); $('#cancel-brand').addEventListener('click',()=>$('#brand-dialog').close()); $('#brand-form').addEventListener('submit',(event)=>{ event.preventDefault(); saveBrand(); });
-$('#brand-logo-file').addEventListener('change',(event)=>{ const file=event.target.files[0]; if(file) renderLogoPreview(URL.createObjectURL(file)); });
-$('#brand-logo').addEventListener('input',(event)=>renderLogoPreview(event.target.value.trim()));
-$('#brand-color').addEventListener('input',renderLayoutEditor);
-$('#logo-layout-tabs').addEventListener('click',(event)=>{ const button=event.target.closest('[data-logo-context]'); if(button){ activeLogoContext=button.dataset.logoContext; renderLayoutEditor(); } });
-['layout-scale','layout-x','layout-y'].forEach((id)=>$(`#${id}`).addEventListener('input',updateActiveLogoLayout));
-$('#reset-logo-layout').addEventListener('click',()=>{ logoLayouts[activeLogoContext]=defaultLogoLayout(); renderLayoutEditor(); });
-
+$('#login-form').addEventListener('submit',async(e)=>{e.preventDefault();$('#login-error').textContent='';const{data,error}=await supabase.auth.signInWithPassword({email:$('#login-email').value.trim(),password:$('#login-password').value});if(error)return $('#login-error').textContent='E-mailadres of wachtwoord klopt niet.';await authorize(data.user)});$('#logout-button').addEventListener('click',async()=>{await supabase.auth.signOut();location.reload()});$('#denied-logout').addEventListener('click',async()=>{await supabase.auth.signOut();location.reload()});
+$$('.nav-button').forEach((b)=>b.addEventListener('click',()=>showPage(b.dataset.page)));$('#mobile-nav').addEventListener('change',(e)=>showPage(e.target.value));document.addEventListener('click',(e)=>{const go=e.target.closest('[data-go]');if(go)showPage(go.dataset.go);const close=e.target.closest('.dialog-close');if(close)close.closest('dialog').close()});$$('.refresh-all').forEach((b)=>b.addEventListener('click',refreshAll));
+$('#user-search').addEventListener('input',renderUsers);$('#user-filter').addEventListener('change',renderUsers);$('#users-body').addEventListener('click',(e)=>{const b=e.target.closest('[data-view-user]');if(b)openUser(b.dataset.viewUser)});$('#user-detail').addEventListener('click',(e)=>{const b=e.target.closest('[data-plus-user]');if(b)changePlus(b.dataset.plusUser,b.dataset.plusAction)});
+$('#new-staff').addEventListener('click',()=>{$('#staff-form').reset();$('#staff-error').textContent='';updateRoleExplanation();$('#staff-dialog').showModal()});$('#staff-role').addEventListener('change',updateRoleExplanation);$('#staff-form').addEventListener('submit',(e)=>{e.preventDefault();inviteStaff()});$('#team-grid').addEventListener('change',async(e)=>{const select=e.target.closest('[data-staff-role]');if(!select)return;const ok=await confirmAction('Rol aanpassen?',`${select.dataset.staffRole} wordt ${roleLabel(select.value).toLowerCase()}.`);if(ok)await setStaffRole(select.dataset.staffRole,select.value);else renderTeam()});$('#team-grid').addEventListener('click',async(e)=>{const b=e.target.closest('[data-remove-staff]');if(!b)return;const ok=await confirmAction('Medewerkerstoegang verwijderen?',`${b.dataset.removeStaff} wordt weer een normaal gebruikersaccount.`);if(ok)await setStaffRole(b.dataset.removeStaff,'user')});
+$('#support-filter').addEventListener('change',renderThreads);$('#refresh-support').addEventListener('click',refreshAll);$('#thread-list').addEventListener('click',(e)=>{const b=e.target.closest('[data-thread]');if(b)openThread(b.dataset.thread)});$('#save-thread-meta').addEventListener('click',saveThreadMeta);$('#reply-form').addEventListener('submit',(e)=>{e.preventDefault();const text=$('#reply-message').value.trim();if(text)sendReply(text)});$('#toggle-thread-status').addEventListener('click',toggleThreadStatus);
+$('#brand-search').addEventListener('input',renderBrands);$('#new-brand').addEventListener('click',()=>openBrandDialog());$('#brands-body').addEventListener('click',(e)=>{const b=e.target.closest('[data-edit-brand]');if(b)openBrandDialog(state.brands.find((x)=>x.id===b.dataset.editBrand))});$('#cancel-brand').addEventListener('click',()=>$('#brand-dialog').close());$('#brand-form').addEventListener('submit',(e)=>{e.preventDefault();saveBrand()});$('#brand-logo-file').addEventListener('change',(e)=>{const file=e.target.files[0];if(file)renderLogoPreview(URL.createObjectURL(file))});$('#brand-logo').addEventListener('input',(e)=>renderLogoPreview(e.target.value.trim()));
+$('#save-settings').addEventListener('click',saveSettings);$('#activity-filter').addEventListener('change',renderActivity);$('#refresh-activity').addEventListener('click',refreshAll);
 boot();
