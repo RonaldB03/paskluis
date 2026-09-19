@@ -141,14 +141,39 @@ function renderLayoutEditor() {
   $('#layout-scale-output').textContent=`${Math.round(values.scale*100)}%`;
   $('#layout-x-output').textContent=`${values.x}%`;
   $('#layout-y-output').textContent=`${values.y}%`;
-  const image=$('#layout-preview-image');
-  image.src=previewLogoSource||'';
-  image.classList.toggle('hidden',!previewLogoSource);
-  $('#layout-preview-empty').classList.toggle('hidden',Boolean(previewLogoSource));
-  image.style.transform=`translate(${values.x}%,${values.y}%) scale(${values.scale})`;
   const preview=$('#layout-card-preview');
-  preview.style.background=$('#brand-color').value||'#fff';
-  preview.className=`layout-card-preview ${activeLogoContext}`;
+  preview.className=`layout-card-preview context-${activeLogoContext}`;
+  preview.innerHTML=buildScreenPreview(activeLogoContext);
+  preview.querySelectorAll('.live-brand-logo').forEach((image)=>{
+    image.style.transform=`translate(${values.x}%,${values.y}%) scale(${values.scale})`;
+  });
+}
+
+function liveLogo(className='') {
+  if(!previewLogoSource) return '<span class="preview-no-logo">Kies eerst een logo</span>';
+  return `<img class="live-brand-logo ${className}" src="${escapeHtml(previewLogoSource)}" alt="Live logo voorbeeld" />`;
+}
+
+function previewHeader(title,actions='＋') {
+  return `<div class="mock-status"><b>15:50</b><span>▮▮▮ ◉ 82%</span></div><div class="mock-header"><strong>${title}</strong><span>${actions}</span></div>`;
+}
+
+function previewNav(active) {
+  return `<div class="mock-nav"><span class="${active==='home'?'active':''}">⌂<small>Home</small></span><span class="${active==='loyalty'?'active':''}">▣<small>Klantenkaarten</small></span><span>▦<small>QR-codes</small></span><span class="${active==='gift'?'active':''}">♙<small>Cadeaukaarten</small></span></div>`;
+}
+
+function mockBarcode() {
+  return '<div class="mock-barcode"></div><b class="mock-code">2620 2120 0000 1</b>';
+}
+
+function buildScreenPreview(context) {
+  const color=$('#brand-color').value||'#D51B46';
+  const name=escapeHtml($('#brand-name').value.trim()||'Voorbeeldwinkel');
+  if(context==='home') return `<div class="mock-phone">${previewHeader('PasKluis','⚙ ＋')}<div class="mock-scroll"><div class="mock-search">⌕ &nbsp; Zoek in PasKluis</div><h4>★ &nbsp;Favorieten</h4><div class="mock-grid"><div class="mock-tile logo-tile" style="background:${color}">${liveLogo()}</div><div class="mock-tile pink-tile">▦<b>Al je kaarten</b></div></div><h4>▣ &nbsp;Klantenkaarten</h4><div class="mock-grid"><div class="mock-tile logo-tile">${liveLogo()}</div><div class="mock-tile pink-tile">▦<b>Al je kaarten</b></div></div></div>${previewNav('home')}</div>`;
+  if(context==='loyalty') return `<div class="mock-phone">${previewHeader('Klantenkaarten')}<div class="mock-scroll"><div class="mock-grid loyalty-grid"><div class="mock-tile logo-tile">${liveLogo()}<i>★</i></div><div class="mock-tile muted-tile">Andere kaart</div><div class="mock-tile muted-tile">Andere kaart</div><div class="mock-tile muted-tile">Andere kaart</div></div></div>${previewNav('loyalty')}</div>`;
+  if(context==='gift') return `<div class="mock-phone">${previewHeader('Cadeaukaarten','↻ ▣ ＋')}<div class="mock-scroll"><div class="mock-grid gift-grid"><div class="mock-gift-tile"><div class="mock-gift-logo">${liveLogo()}</div><b>€ 50</b></div><div class="mock-gift-tile muted-gift"><div>Andere kaart</div><b>€ 25</b></div></div></div>${previewNav('gift')}</div>`;
+  if(context==='detail') return `<div class="mock-phone detail-phone"><div class="mock-status"><b>15:50</b><span>▮▮▮ ◉ 82%</span></div><div class="mock-detail-header"><span>‹</span><strong>${name}</strong><span>★ ···</span></div><div class="mock-detail-card"><div class="mock-detail-logo">${liveLogo()}</div>${mockBarcode()}<div class="mock-gift-callout">U heeft een cadeaukaart beschikbaar<br><b>Saldo: € 50</b></div><b class="mock-options">ⓘ Details en opties</b></div><div class="mock-dots">● ○ ○ ○ ○</div></div>`;
+  return `<div class="mock-phone picker-phone"><div class="mock-status"><b>15:50</b><span>▮▮▮ ◉ 82%</span></div><div class="mock-detail-header"><span>‹</span><strong>Kaart toevoegen</strong><span>Handmatig</span></div><div class="mock-search">⌕ &nbsp; Zoek winkel</div><h4>Populaire kaarten</h4><div class="mock-picker-list"><div class="mock-picker-row"><div class="mock-picker-logo">${liveLogo()}</div><b>${name}</b><span>›</span></div><div class="mock-picker-row muted-row"><div></div><b>Andere winkel</b><span>›</span></div><div class="mock-picker-row muted-row"><div></div><b>Andere winkel</b><span>›</span></div></div></div>`;
 }
 function updateActiveLogoLayout() {
   logoLayouts[activeLogoContext]={
@@ -202,8 +227,10 @@ $('#new-brand').addEventListener('click',()=>openBrandDialog()); $('#brands-body
 $('#brand-logo-file').addEventListener('change',(event)=>{ const file=event.target.files[0]; if(file) renderLogoPreview(URL.createObjectURL(file)); });
 $('#brand-logo').addEventListener('input',(event)=>renderLogoPreview(event.target.value.trim()));
 $('#brand-color').addEventListener('input',renderLayoutEditor);
+$('#brand-name').addEventListener('input',renderLayoutEditor);
 $('#logo-layout-tabs').addEventListener('click',(event)=>{ const button=event.target.closest('[data-logo-context]'); if(button){ activeLogoContext=button.dataset.logoContext; renderLayoutEditor(); } });
 ['layout-scale','layout-x','layout-y'].forEach((id)=>$(`#${id}`).addEventListener('input',updateActiveLogoLayout));
 $('#reset-logo-layout').addEventListener('click',()=>{ logoLayouts[activeLogoContext]=defaultLogoLayout(); renderLayoutEditor(); });
 
 boot();
+
