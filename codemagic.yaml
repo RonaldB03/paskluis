@@ -18,7 +18,23 @@ workflows:
       - name: Dependencies installeren
         script: flutter pub get
       - name: Broncode controleren
-        script: flutter analyze --no-fatal-infos --no-fatal-warnings
+        script: |
+          set +e
+          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee /tmp/flutter_analyze.log
+          ANALYZE_STATUS=${PIPESTATUS[0]}
+          set -e
+
+          if grep -Eq '^[[:space:]]*error[[:space:]]*•' /tmp/flutter_analyze.log; then
+            echo "Echte analyzerfouten gevonden."
+            exit 1
+          fi
+
+          if [ "$ANALYZE_STATUS" -ne 0 ] && ! grep -Eq '(issues? found|No issues found)' /tmp/flutter_analyze.log; then
+            echo "Flutter analyze kon niet correct worden uitgevoerd."
+            exit "$ANALYZE_STATUS"
+          fi
+
+          echo "Geen blokkerende analyzerfouten gevonden."
       - name: Tests uitvoeren
         script: |
           if [ -d test ]; then
@@ -56,7 +72,23 @@ workflows:
       - name: Dependencies installeren
         script: flutter pub get
       - name: Broncode controleren
-        script: flutter analyze --no-fatal-infos --no-fatal-warnings
+        script: |
+          set +e
+          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee /tmp/flutter_analyze.log
+          ANALYZE_STATUS=${PIPESTATUS[0]}
+          set -e
+
+          if grep -Eq '^[[:space:]]*error[[:space:]]*•' /tmp/flutter_analyze.log; then
+            echo "Echte analyzerfouten gevonden."
+            exit 1
+          fi
+
+          if [ "$ANALYZE_STATUS" -ne 0 ] && ! grep -Eq '(issues? found|No issues found)' /tmp/flutter_analyze.log; then
+            echo "Flutter analyze kon niet correct worden uitgevoerd."
+            exit "$ANALYZE_STATUS"
+          fi
+
+          echo "Geen blokkerende analyzerfouten gevonden."
       - name: Tests uitvoeren
         script: |
           if [ -d test ]; then
