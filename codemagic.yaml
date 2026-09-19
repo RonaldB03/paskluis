@@ -1,4 +1,4 @@
-# PasKluis build trigger 2026-09-19: gift card sharing and expiry update
+# PasKluis build trigger 2026-09-19: QR support for loyalty and gift cards
 workflows:
   ios-release:
     name: iOS Release Build
