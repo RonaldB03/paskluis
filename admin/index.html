@@ -119,10 +119,11 @@
           </div>
           <div id="logo-layout-tabs" class="layout-tabs"></div>
           <div class="layout-workspace">
-            <div id="layout-card-preview" class="layout-card-preview">
-              <img id="layout-preview-image" alt="Live logo voorbeeld" />
-              <span id="layout-preview-empty">Kies eerst een logo</span>
-              <div id="layout-balance" class="layout-balance">€ 50</div>
+            <div class="phone-preview-shell">
+              <div class="phone-preview-label">Live voorbeeld in de app</div>
+              <div id="layout-card-preview" class="layout-card-preview" aria-live="polite">
+                <span id="layout-preview-empty">Kies eerst een logo</span>
+              </div>
             </div>
             <div class="layout-controls">
               <label>Grootte <output id="layout-scale-output">100%</output><input id="layout-scale" type="range" min="50" max="250" value="100" /></label>
@@ -143,3 +144,4 @@
     <script type="module" src="app.js"></script>
   </body>
 </html>
+
