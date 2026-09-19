@@ -7,6 +7,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/image_color_service.dart';
 import '../../data/services/brand_sync_service.dart';
+import '../../data/services/location_service.dart';
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/templates/card_templates.dart';
@@ -47,11 +48,40 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _searchController = TextEditingController();
   String _searchQuery = '';
+  LocationAccessState _locationState = LocationAccessState.checking;
+  DeviceLocation? _currentLocation;
 
   @override
   void initState() {
     super.initState();
     _refreshVisualAssets();
+    _loadNearbyLocation();
+  }
+
+  Future<void> _loadNearbyLocation({bool requestPermission = false}) async {
+    if (mounted) {
+      setState(() => _locationState = LocationAccessState.checking);
+    }
+    final snapshot = await LocationService.resolve(
+      requestPermission: requestPermission,
+    );
+    if (!mounted) return;
+    setState(() {
+      _locationState = snapshot.state;
+      _currentLocation = snapshot.location;
+    });
+  }
+
+  Future<void> _handleNearbyAction() async {
+    if (_locationState == LocationAccessState.permissionDeniedForever) {
+      await LocationService.openAppSettings();
+      return;
+    }
+    if (_locationState == LocationAccessState.servicesDisabled) {
+      await LocationService.openLocationSettings();
+      return;
+    }
+    await _loadNearbyLocation(requestPermission: true);
   }
 
   Future<void> _refreshVisualAssets() async {
@@ -136,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return bDate.compareTo(aDate);
     });
 
-    return sorted.take(3).toList();
+    return sorted;
   }
 
   dynamic findHiveKey(Map<String, dynamic> item) {
@@ -190,8 +220,12 @@ class _HomeScreenState extends State<HomeScreen> {
       'isArchived': result['isArchived'] == 'true',
     };
 
-    await StorageService.cardsBox.add(card);
-    await NotificationService.syncGiftCard(card);
+    await StorageService.addCard(card);
+    try {
+      await NotificationService.syncGiftCard(card);
+    } catch (_) {
+      // Saving the card is the primary action; reminders are best effort.
+    }
     return card;
   }
 
@@ -282,7 +316,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (!mounted || result == null) return;
 
-    await saveNewCard(result, forcedType: 'Cadeaukaart');
+    if (result['persisted'] != 'true') {
+      await saveNewCard(result, forcedType: 'Cadeaukaart');
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cadeaukaart is opgeslagen.')),
+      );
+    }
   }
 
   Future<void> openSmartAdd() async {
@@ -367,7 +408,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (!mounted || saved == null) return;
-    await saveNewCard(saved, forcedType: type);
+    if (type != 'Cadeaukaart' || saved['persisted'] != 'true') {
+      await saveNewCard(saved, forcedType: type);
+    }
+    if (type == 'Cadeaukaart' && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cadeaukaart is opgeslagen.')),
+      );
+    }
   }
 
   Future<void> editLoyaltyCard(
@@ -652,9 +700,27 @@ class _HomeScreenState extends State<HomeScreen> {
             .toList();
         final giftCards = getItemsByType('Cadeaukaart');
         final allItems = [...cards, ...qrCodes, ...giftCards];
-        final favorites = allItems
-            .where((item) => item['isFavorite'] == true)
-            .toList();
+        final favorites = getPreviewItems(
+          allItems.where((item) => item['isFavorite'] == true).toList(),
+        );
+        final nearbyItems = <Map<String, dynamic>>[];
+        final currentLocation = _currentLocation;
+        if (currentLocation != null) {
+          nearbyItems.addAll(
+            allItems.where((item) {
+              final distance = LocationService.distanceTo(item, currentLocation);
+              return distance != null &&
+                  distance <= LocationService.nearbyRadiusMeters;
+            }),
+          );
+          nearbyItems.sort((a, b) {
+            final aDistance = LocationService.distanceTo(a, currentLocation) ??
+                double.infinity;
+            final bDistance = LocationService.distanceTo(b, currentLocation) ??
+                double.infinity;
+            return aDistance.compareTo(bDistance);
+          });
+        }
         final normalizedQuery = _searchQuery.trim().toLowerCase();
         final searchResults = normalizedQuery.isEmpty
             ? <Map<String, dynamic>>[]
@@ -704,90 +770,98 @@ class _HomeScreenState extends State<HomeScreen> {
             currentIndex: 0,
             onSwitch: openTab,
             child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
-            children: [
-              TextField(
-                controller: _searchController,
-                onChanged: (value) => setState(() => _searchQuery = value),
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  hintText: 'Zoek in PasKluis',
-                  prefixIcon: const Icon(Icons.search_rounded),
-                  suffixIcon: _searchQuery.isEmpty
-                      ? null
-                      : IconButton(
-                          tooltip: 'Zoekopdracht wissen',
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                          icon: const Icon(Icons.close_rounded),
-                        ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide.none,
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
+              children: [
+                TextField(
+                  controller: _searchController,
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: 'Zoek in PasKluis',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: _searchQuery.isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: 'Zoekopdracht wissen',
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = '');
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              if (normalizedQuery.isNotEmpty)
-                _SearchResults(
-                  query: _searchQuery.trim(),
-                  items: searchResults,
-                  onTap: (item) => openCardView(categoryFor(item), item),
-                )
-              else ...[
-              if (favorites.isNotEmpty) ...[
-                _FavoritesSection(
-                  items: favorites,
-                  onItemTap: (item) => openCardView(categoryFor(item), item),
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
+                if (normalizedQuery.isNotEmpty)
+                  _SearchResults(
+                    query: _searchQuery.trim(),
+                    items: searchResults,
+                    onTap: (item) => openCardView(categoryFor(item), item),
+                  )
+                else ...[
+                  _FavoritesSection(
+                    items: favorites,
+                    onItemTap: (item) => openCardView(categoryFor(item), item),
+                    onItemLongPress: (item) => showItemOptions(context, item),
+                  ),
+                  const SizedBox(height: 26),
+                  _NearbySection(
+                    state: _locationState,
+                    items: nearbyItems,
+                    onAction: _handleNearbyAction,
+                    onItemTap: (item) => openCardView(categoryFor(item), item),
+                    onItemLongPress: (item) => showItemOptions(context, item),
+                  ),
+                  const SizedBox(height: 28),
+                  _CategorySection(
+                    title: 'Klantenkaarten',
+                    icon: Icons.card_membership,
+                    items: getPreviewItems(cards),
+                    hasItems: cards.isNotEmpty,
+                    actionTitle:
+                        cards.isEmpty ? 'Voeg kaart toe' : 'Al je kaarten',
+                    onActionTap:
+                        cards.isEmpty ? openLoyaltyAddFlow : () => openTab(1),
+                    onItemTap: (item) => openCardView(cards, item),
+                    onItemLongPress: (item) => showItemOptions(context, item),
+                  ),
+                  const SizedBox(height: 28),
+                  _CategorySection(
+                    title: 'QR-codes',
+                    icon: Icons.qr_code,
+                    items: getPreviewItems(qrCodes),
+                    hasItems: qrCodes.isNotEmpty,
+                    actionTitle: qrCodes.isEmpty
+                        ? 'Voeg QR-code toe'
+                        : 'Al je QR-codes',
+                    onActionTap:
+                        qrCodes.isEmpty ? openQrAddFlow : () => openTab(2),
+                    onItemTap: (item) => openCardView(qrCodes, item),
+                    onItemLongPress: (item) => showItemOptions(context, item),
+                  ),
+                  const SizedBox(height: 28),
+                  _CategorySection(
+                    title: 'Cadeaukaarten',
+                    icon: Icons.card_giftcard,
+                    items: getPreviewItems(giftCards),
+                    hasItems: giftCards.isNotEmpty,
+                    actionTitle: giftCards.isEmpty
+                        ? 'Voeg cadeaukaart toe'
+                        : 'Al je cadeaukaarten',
+                    onActionTap: giftCards.isEmpty
+                        ? openGiftCardAddFlow
+                        : () => openTab(3),
+                    onItemTap: (item) => openCardView(giftCards, item),
+                    onItemLongPress: (item) => showItemOptions(context, item),
+                  ),
+                ],
               ],
-              _CategorySection(
-                title: 'Klantenkaarten',
-                icon: Icons.card_membership,
-                items: getPreviewItems(cards),
-                hasItems: cards.isNotEmpty,
-                actionTitle: cards.isEmpty ? 'Voeg kaart toe' : 'Al je kaarten',
-                onActionTap: cards.isEmpty
-                    ? openLoyaltyAddFlow
-                    : () => openTab(1),
-                onItemTap: (item) => openCardView(cards, item),
-                onItemLongPress: (item) => showItemOptions(context, item),
-              ),
-              const SizedBox(height: 28),
-              _CategorySection(
-                title: 'QR-codes',
-                icon: Icons.qr_code,
-                items: getPreviewItems(qrCodes),
-                hasItems: qrCodes.isNotEmpty,
-                actionTitle: qrCodes.isEmpty
-                    ? 'Voeg QR-code toe'
-                    : 'Al je QR-codes',
-                onActionTap: qrCodes.isEmpty ? openQrAddFlow : () => openTab(2),
-                onItemTap: (item) => openCardView(qrCodes, item),
-                onItemLongPress: (item) => showItemOptions(context, item),
-              ),
-              const SizedBox(height: 28),
-              _CategorySection(
-                title: 'Cadeaukaarten',
-                icon: Icons.card_giftcard,
-                items: getPreviewItems(giftCards),
-                hasItems: giftCards.isNotEmpty,
-                actionTitle: giftCards.isEmpty
-                    ? 'Voeg cadeaukaart toe'
-                    : 'Al je cadeaukaarten',
-                onActionTap: giftCards.isEmpty
-                    ? openGiftCardAddFlow
-                    : () => openTab(3),
-                onItemTap: (item) => openCardView(giftCards, item),
-                onItemLongPress: (item) => showItemOptions(context, item),
-              ),
-              ],
-            ],
             ),
           ),
           bottomNavigationBar: MainBottomNav(currentIndex: 0, onTap: openTab),
@@ -800,8 +874,13 @@ class _HomeScreenState extends State<HomeScreen> {
 class _FavoritesSection extends StatelessWidget {
   final List<Map<String, dynamic>> items;
   final ValueChanged<Map<String, dynamic>> onItemTap;
+  final ValueChanged<Map<String, dynamic>> onItemLongPress;
 
-  const _FavoritesSection({required this.items, required this.onItemTap});
+  const _FavoritesSection({
+    required this.items,
+    required this.onItemTap,
+    required this.onItemLongPress,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -823,16 +902,146 @@ class _FavoritesSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 122,
+        if (items.isEmpty)
+          const _HomeSectionPrompt(
+            icon: Icons.star_border_rounded,
+            title: 'Nog geen favorieten',
+            subtitle: 'Markeer je belangrijkste kaarten met een ster.',
+          )
+        else
+          _HomeCardStrip(
+            items: items,
+            onItemTap: onItemTap,
+            onItemLongPress: onItemLongPress,
+          ),
+      ],
+    );
+  }
+}
+
+class _NearbySection extends StatelessWidget {
+  final LocationAccessState state;
+  final List<Map<String, dynamic>> items;
+  final VoidCallback onAction;
+  final ValueChanged<Map<String, dynamic>> onItemTap;
+  final ValueChanged<Map<String, dynamic>> onItemLongPress;
+
+  const _NearbySection({
+    required this.state,
+    required this.items,
+    required this.onAction,
+    required this.onItemTap,
+    required this.onItemLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget content;
+    if (state == LocationAccessState.checking) {
+      content = const SizedBox(
+        height: 92,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    } else if (state == LocationAccessState.ready && items.isNotEmpty) {
+      content = _HomeCardStrip(
+        items: items,
+        onItemTap: onItemTap,
+        onItemLongPress: onItemLongPress,
+      );
+    } else if (state == LocationAccessState.ready) {
+      content = const _HomeSectionPrompt(
+        icon: Icons.location_history_rounded,
+        title: 'Nog geen kaart op deze plek',
+        subtitle:
+            'Open een kaart bij een winkel. PasKluis onthoudt die plek alleen op dit toestel.',
+      );
+    } else if (state == LocationAccessState.servicesDisabled) {
+      content = _HomeSectionPrompt(
+        icon: Icons.location_disabled_rounded,
+        title: 'Locatievoorzieningen staan uit',
+        subtitle: 'Zet locatie aan om eerder gebruikte kaarten hier te tonen.',
+        actionLabel: 'Locatie aanzetten',
+        onAction: onAction,
+      );
+    } else if (state == LocationAccessState.permissionDeniedForever) {
+      content = _HomeSectionPrompt(
+        icon: Icons.location_off_rounded,
+        title: 'Locatie staat uit voor PasKluis',
+        subtitle: 'Je kunt dit aanpassen in de instellingen van je telefoon.',
+        actionLabel: 'Open instellingen',
+        onAction: onAction,
+      );
+    } else if (state == LocationAccessState.permissionNeeded) {
+      content = _HomeSectionPrompt(
+        icon: Icons.near_me_outlined,
+        title: 'Toon kaarten die je hier gebruikt',
+        subtitle: 'Je locatie blijft op je telefoon en wordt niet geüpload.',
+        actionLabel: 'Locatie gebruiken',
+        onAction: onAction,
+      );
+    } else {
+      content = _HomeSectionPrompt(
+        icon: Icons.location_searching_rounded,
+        title: 'Locatie niet beschikbaar',
+        subtitle: 'Probeer het opnieuw wanneer je bereik hebt.',
+        actionLabel: 'Opnieuw',
+        onAction: onAction,
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.near_me_rounded, color: Color(0xFFD51B46)),
+            SizedBox(width: 8),
+            Text(
+              'In de buurt',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF333333),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        content,
+      ],
+    );
+  }
+}
+
+class _HomeCardStrip extends StatelessWidget {
+  final List<Map<String, dynamic>> items;
+  final ValueChanged<Map<String, dynamic>> onItemTap;
+  final ValueChanged<Map<String, dynamic>> onItemLongPress;
+
+  const _HomeCardStrip({
+    required this.items,
+    required this.onItemTap,
+    required this.onItemLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = ((constraints.maxWidth - 16) / 3)
+            .clamp(96.0, 142.0)
+            .toDouble();
+        final cardHeight = (cardWidth / 1.18).clamp(88.0, 112.0).toDouble();
+        return SizedBox(
+          height: cardHeight,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final item = items[index];
               return SizedBox(
-                width: 190,
+                width: cardWidth,
                 child: HomePreviewCard(
                   item: item,
                   title: item['name']?.toString() ?? 'Kaart',
@@ -842,13 +1051,69 @@ class _FavoritesSection extends StatelessWidget {
                   balance: item['currentBalance']?.toString() ?? '',
                   type: item['type']?.toString() ?? '',
                   onTap: () => onItemTap(item),
-                  onLongPress: () {},
+                  onLongPress: () => onItemLongPress(item),
                 ),
               );
             },
           ),
-        ),
-      ],
+        );
+      },
+    );
+  }
+}
+
+class _HomeSectionPrompt extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const _HomeSectionPrompt({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 92),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: const Color(0xFFF8E3EA),
+            child: Icon(icon, color: const Color(0xFFD51B46)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+                ),
+              ],
+            ),
+          ),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(width: 8),
+            TextButton(onPressed: onAction, child: Text(actionLabel!)),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -958,8 +1223,8 @@ class _CategorySection extends StatelessWidget {
   final bool hasItems;
   final String actionTitle;
   final VoidCallback onActionTap;
-  final Function(Map<String, dynamic> item) onItemTap;
-  final Function(Map<String, dynamic> item) onItemLongPress;
+  final ValueChanged<Map<String, dynamic>> onItemTap;
+  final ValueChanged<Map<String, dynamic>> onItemLongPress;
 
   const _CategorySection({
     required this.title,
@@ -981,51 +1246,38 @@ class _CategorySection extends StatelessWidget {
           children: [
             Icon(icon, color: const Color(0xFFD51B46)),
             const SizedBox(width: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF333333),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF333333),
+                ),
               ),
+            ),
+            TextButton(
+              onPressed: onActionTap,
+              child: Text(actionTitle),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: items.length + 1,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.58,
+        if (!hasItems)
+          SizedBox(
+            height: 92,
+            child: _ActionCard(
+              title: actionTitle,
+              icon: Icons.add,
+              onTap: onActionTap,
+            ),
+          )
+        else
+          _HomeCardStrip(
+            items: items,
+            onItemTap: onItemTap,
+            onItemLongPress: onItemLongPress,
           ),
-          itemBuilder: (context, index) {
-            if (index == items.length) {
-              return _ActionCard(
-                title: actionTitle,
-                icon: hasItems ? Icons.apps : Icons.add,
-                onTap: onActionTap,
-              );
-            }
-
-            final item = items[index];
-
-            return HomePreviewCard(
-              item: item,
-              title: item['name']?.toString() ?? 'Kaart',
-              logoAsset: item['logoAsset']?.toString() ?? '',
-              customImage: item['customImage']?.toString() ?? '',
-              brandColor: item['brandColor']?.toString() ?? '',
-              balance: item['currentBalance']?.toString() ?? '',
-              type: item['type']?.toString() ?? '',
-              onTap: () => onItemTap(item),
-              onLongPress: () => onItemLongPress(item),
-            );
-          },
-        ),
       ],
     );
   }
@@ -1087,117 +1339,127 @@ class _HomePreviewCardState extends State<HomePreviewCard> {
     final hasDarkBrandBackground =
         usesBrandBackground && cardColor.computeLuminance() < 0.55;
 
-    return GestureDetector(
-      onTapDown: (_) => setPressed(true),
-      onTapCancel: () => setPressed(false),
-      onTapUp: (_) => setPressed(false),
-      onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
-      child: AnimatedScale(
-        scale: isPressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 110),
-        curve: Curves.easeOut,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: usesBrandBackground ? cardColor : Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isPressed ? 0.035 : 0.06),
-                blurRadius: isPressed ? 8 : 12,
-                offset: Offset(0, isPressed ? 3 : 5),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 150;
+        final logoHeight = compact ? 42.0 : 72.0;
+        return GestureDetector(
+          onTapDown: (_) => setPressed(true),
+          onTapCancel: () => setPressed(false),
+          onTapUp: (_) => setPressed(false),
+          onTap: widget.onTap,
+          onLongPress: widget.onLongPress,
+          child: AnimatedScale(
+            scale: isPressed ? 0.96 : 1.0,
+            duration: const Duration(milliseconds: 110),
+            curve: Curves.easeOut,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: EdgeInsets.all(compact ? 8 : 14),
+              decoration: BoxDecoration(
+                color: usesBrandBackground ? cardColor : Colors.white,
+                borderRadius: BorderRadius.circular(compact ? 15 : 18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(
+                      alpha: isPressed ? 0.035 : 0.06,
+                    ),
+                    blurRadius: isPressed ? 8 : 12,
+                    offset: Offset(0, isPressed ? 3 : 5),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Expanded(
-                child: useImage
-                    ? Center(
-                        child: Transform.scale(
-                          scale: hasCustomLogo ? 1.18 : 1.0,
-                          child: hasCustomLogo
-                              ? Image.file(
-                                  File(widget.customImage),
-                                  fit: BoxFit.contain,
-                                  height: 72,
-                                  width: double.infinity,
-                                )
-                              : SizedBox(
-                                  height: 72,
-                                  width: double.infinity,
-                                  child: BrandLogo(
-                                    source: widget.logoAsset,
-                                    scale: logoLayoutValue(
-                                      widget.item,
-                                      'home',
-                                      'scale',
-                                      1,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: useImage
+                        ? Center(
+                            child: Transform.scale(
+                              scale: hasCustomLogo && !compact ? 1.18 : 1.0,
+                              child: hasCustomLogo
+                                  ? Image.file(
+                                      File(widget.customImage),
+                                      fit: BoxFit.contain,
+                                      height: logoHeight,
+                                      width: double.infinity,
+                                    )
+                                  : SizedBox(
+                                      height: logoHeight,
+                                      width: double.infinity,
+                                      child: BrandLogo(
+                                        source: widget.logoAsset,
+                                        scale: logoLayoutValue(
+                                          widget.item,
+                                          'home',
+                                          'scale',
+                                          1,
+                                        ),
+                                        offsetX: logoLayoutValue(
+                                          widget.item,
+                                          'home',
+                                          'x',
+                                          0,
+                                        ),
+                                        offsetY: logoLayoutValue(
+                                          widget.item,
+                                          'home',
+                                          'y',
+                                          0,
+                                        ),
+                                      ),
                                     ),
-                                    offsetX: logoLayoutValue(
-                                      widget.item,
-                                      'home',
-                                      'x',
-                                      0,
-                                    ),
-                                    offsetY: logoLayoutValue(
-                                      widget.item,
-                                      'home',
-                                      'y',
-                                      0,
-                                    ),
-                                  ),
-                                ),
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          widget.title,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: hasAssetLogo
-                                ? Colors.white
-                                : const Color(0xFF333333),
+                            ),
+                          )
+                        : Center(
+                            child: Text(
+                              widget.title,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: compact ? 12 : 17,
+                                fontWeight: FontWeight.w800,
+                                color: hasAssetLogo
+                                    ? Colors.white
+                                    : const Color(0xFF333333),
+                              ),
+                            ),
                           ),
+                  ),
+                  if (isGiftCard) ...[
+                    SizedBox(height: compact ? 4 : 8),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(vertical: compact ? 4 : 7),
+                      decoration: BoxDecoration(
+                        color: hasDarkBrandBackground
+                            ? Colors.white.withValues(alpha: 0.18)
+                            : const Color(0xFFF8E3EA),
+                        borderRadius: BorderRadius.circular(compact ? 10 : 14),
+                      ),
+                      child: Text(
+                        widget.balance.isEmpty
+                            ? 'Saldo onbekend'
+                            : '€ ${formatAmountValue(widget.balance)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: compact ? 11.5 : 15,
+                          fontWeight: FontWeight.w900,
+                          color: hasDarkBrandBackground
+                              ? Colors.white
+                              : const Color(0xFFD51B46),
                         ),
                       ),
-              ),
-              if (isGiftCard) ...[
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 7),
-                  decoration: BoxDecoration(
-                    color: hasDarkBrandBackground
-                        ? Colors.white.withOpacity(0.18)
-                        : const Color(0xFFF8E3EA),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    widget.balance.isEmpty
-                        ? 'Saldo onbekend'
-                        : '€ ${formatAmountValue(widget.balance)}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900,
-                      color: hasDarkBrandBackground
-                          ? Colors.white
-                          : const Color(0xFFD51B46),
                     ),
-                  ),
-                ),
-              ],
-            ],
+                  ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

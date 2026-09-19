@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -10,6 +11,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/services/security_service.dart';
+import '../../data/services/location_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/gift_card_share_service.dart';
@@ -125,6 +127,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     item['updatedAt'] = DateTime.now().toIso8601String();
 
     await StorageService.saveCard(key, item);
+    unawaited(LocationService.rememberCardUse(id));
 
     if (!mounted) return;
 

@@ -6,7 +6,10 @@ import '../account/account_screen.dart';
 
 abstract final class PremiumGate {
   static int get giftCardCount => StorageService.cardsBox.values.where((item) {
-        return item is Map && item['type'] == 'Cadeaukaart';
+        return item is Map &&
+            item['type'] == 'Cadeaukaart' &&
+            item['isArchived'] != true &&
+            item['isArchived']?.toString() != 'true';
       }).length;
 
   static Future<bool> canAddGiftCard(BuildContext context) async {

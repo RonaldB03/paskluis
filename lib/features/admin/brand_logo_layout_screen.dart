@@ -223,7 +223,6 @@ class _BrandLogoLayoutScreenState extends State<BrandLogoLayoutScreen> {
                     child: _ExactAppPreview(
                       variant: _variant.key,
                       brand: _brand!,
-                      brands: _brands,
                       scale: _scale,
                       offsetX: _x,
                       offsetY: _y,
@@ -300,7 +299,6 @@ class _BrandSelector extends StatelessWidget {
 class _ExactAppPreview extends StatelessWidget {
   final String variant;
   final CardBrandTemplate brand;
-  final List<CardBrandTemplate> brands;
   final double scale;
   final double offsetX;
   final double offsetY;
@@ -308,7 +306,6 @@ class _ExactAppPreview extends StatelessWidget {
   const _ExactAppPreview({
     required this.variant,
     required this.brand,
-    required this.brands,
     required this.scale,
     required this.offsetX,
     required this.offsetY,
@@ -376,9 +373,11 @@ class _ExactAppPreview extends StatelessWidget {
     supportedTypes: brand.supportedTypes,
   );
 
-  List<CardBrandTemplate> get pickerBrands => brands
-      .map((item) => item.id == brand.id ? pickerBrand : item)
-      .toList();
+  // In the logo editor the picker is a preview for the selected shop, not a
+  // second shop selector. Showing other brands here made it look as though the
+  // sliders also changed those logos. Keep the exact app layout, but filter the
+  // preview to the shop selected at the top of this screen.
+  List<CardBrandTemplate> get pickerBrands => [pickerBrand];
 
   @override
   Widget build(BuildContext context) {
@@ -411,18 +410,26 @@ class _ExactAppPreview extends StatelessWidget {
     );
   }
 
-  Widget _home() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      if (brand.supportedTypes.contains('Pasje'))
-        _homeSection(title: 'Klantenkaarten', giftCard: false),
-      if (brand.supportedTypes.contains('Pasje') &&
-          brand.supportedTypes.contains('Cadeaukaart'))
-        const SizedBox(height: 28),
-      if (brand.supportedTypes.contains('Cadeaukaart'))
-        _homeSection(title: 'Cadeaukaarten', giftCard: true),
-    ],
-  );
+  Widget _home() {
+    final primaryIsGift = !brand.supportedTypes.contains('Pasje') &&
+        brand.supportedTypes.contains('Cadeaukaart');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _homeSection(title: 'Favorieten', giftCard: primaryIsGift),
+        const SizedBox(height: 24),
+        _homeSection(title: 'In de buurt', giftCard: primaryIsGift),
+        if (brand.supportedTypes.contains('Pasje')) ...[
+          const SizedBox(height: 24),
+          _homeSection(title: 'Klantenkaarten', giftCard: false),
+        ],
+        if (brand.supportedTypes.contains('Cadeaukaart')) ...[
+          const SizedBox(height: 24),
+          _homeSection(title: 'Cadeaukaarten', giftCard: true),
+        ],
+      ],
+    );
+  }
 
   Widget _homeSection({required String title, required bool giftCard}) =>
       Column(
@@ -433,27 +440,37 @@ class _ExactAppPreview extends StatelessWidget {
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: AspectRatio(
-                  aspectRatio: 1.58,
-                  child: HomePreviewCard(
-                    item: _itemForType(giftCard: giftCard),
-                    title: brand.name,
-                    logoAsset: brand.logoAsset,
-                    customImage: '',
-                    brandColor: brand.color.toARGB32().toString(),
-                    balance: giftCard ? '50' : '',
-                    type: giftCard ? 'Cadeaukaart' : 'Pasje',
-                    onTap: () {},
-                    onLongPress: () {},
-                  ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final width = ((constraints.maxWidth - 16) / 3)
+                  .clamp(80.0, 142.0)
+                  .toDouble();
+              final height = (width / 1.18).clamp(76.0, 112.0).toDouble();
+              return SizedBox(
+                height: height,
+                child: Row(
+                  children: List.generate(3, (index) {
+                    return Padding(
+                      padding: EdgeInsets.only(right: index == 2 ? 0 : 8),
+                      child: SizedBox(
+                        width: width,
+                        child: HomePreviewCard(
+                          item: _itemForType(giftCard: giftCard),
+                          title: brand.name,
+                          logoAsset: brand.logoAsset,
+                          customImage: '',
+                          brandColor: brand.color.toARGB32().toString(),
+                          balance: giftCard ? '50' : '',
+                          type: giftCard ? 'Cadeaukaart' : 'Pasje',
+                          onTap: () {},
+                          onLongPress: () {},
+                        ),
+                      ),
+                    );
+                  }),
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Expanded(child: SizedBox()),
-            ],
+              );
+            },
           ),
         ],
       );

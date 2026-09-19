@@ -73,6 +73,10 @@ abstract final class AccountService {
 
   static Future<void> signOut() => _client.auth.signOut();
 
+  static Future<UserResponse> updatePassword(String password) {
+    return _client.auth.updateUser(UserAttributes(password: password));
+  }
+
   static Future<bool> isCurrentUserAdmin() async {
     final user = currentUser;
     if (user == null) return false;

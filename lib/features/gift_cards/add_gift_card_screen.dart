@@ -8,7 +8,9 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/image_color_service.dart';
+import '../../data/services/notification_service.dart';
 import '../../data/services/smart_card_import_service.dart';
+import '../../data/services/storage_service.dart';
 import '../../data/services/brand_catalog_service.dart';
 import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
@@ -73,6 +75,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   late bool expiryNotificationsEnabled;
   late ScannerMode selectedCodeMode;
   bool customBrandSelected = false;
+  bool _saving = false;
 
   bool get hasAssetLogo => logoAsset.isNotEmpty;
 
@@ -316,7 +319,8 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     if (picked != null && mounted) setState(() => expiryDate = picked);
   }
 
-  void saveGiftCard() {
+  Future<void> saveGiftCard() async {
+    if (_saving) return;
     final name = nameController.text.trim();
     final code = codeController.text.trim();
     final balance = normalizeAmount(balanceController.text);
@@ -336,9 +340,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
 
     final now = DateTime.now().toIso8601String();
 
-    HapticFeedback.mediumImpact();
-
-    Navigator.pop(context, {
+    final result = <String, String>{
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'type': 'Cadeaukaart',
       'name': name,
@@ -364,7 +366,36 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       'expiryDate': expiryDate?.toIso8601String() ?? '',
       'expiryNotificationsEnabled': expiryNotificationsEnabled.toString(),
       'isArchived': 'false',
-    });
+    };
+
+    if (!widget.isEditing) {
+      setState(() => _saving = true);
+      try {
+        await StorageService.addCard(result);
+        result['persisted'] = 'true';
+        try {
+          await NotificationService.syncGiftCard(result);
+        } catch (_) {
+          // The card is already safely stored. A notification problem must
+          // never make saving the card appear to have failed.
+        }
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Opslaan is niet gelukt. Probeer het nog een keer.',
+            ),
+          ),
+        );
+        setState(() => _saving = false);
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    HapticFeedback.mediumImpact();
+    Navigator.pop(context, result);
   }
 
   @override
@@ -386,14 +417,19 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
         elevation: 0,
         actions: [
           TextButton(
-            onPressed: saveGiftCard,
-            child: const Text(
-              'Opslaan',
-              style: TextStyle(
-                color: Color(0xFFD51B46),
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            onPressed: _saving ? null : saveGiftCard,
+            child: _saving
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text(
+                    'Opslaan',
+                    style: TextStyle(
+                      color: Color(0xFFD51B46),
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -659,10 +695,20 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
             width: double.infinity,
             height: 58,
             child: FilledButton.icon(
-              onPressed: saveGiftCard,
-              icon: const Icon(Icons.save_rounded),
+              onPressed: _saving ? null : saveGiftCard,
+              icon: _saving
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.save_rounded),
               label: Text(
-                widget.isEditing
+                _saving
+                    ? 'Opslaan…'
+                    : widget.isEditing
                     ? 'Wijzigingen opslaan'
                     : 'Cadeaukaart opslaan',
               ),

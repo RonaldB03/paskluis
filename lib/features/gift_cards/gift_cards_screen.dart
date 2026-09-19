@@ -8,6 +8,7 @@ import '../../data/services/storage_service.dart';
 import '../../data/services/settings_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/gift_card_share_service.dart';
+import '../../data/services/account_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/amount_format.dart';
 import '../../shared/utils/logo_layout.dart';
@@ -23,12 +24,51 @@ import '../cards/choose_card_template_screen.dart';
 import '../home/home_screen.dart';
 import '../qr_codes/qr_codes_screen.dart';
 import '../premium/premium_gate.dart';
+import '../account/account_screen.dart';
 
 import 'choose_gift_card_template_screen.dart';
 import 'gift_card_view_screen.dart';
 
-class GiftCardsScreen extends StatelessWidget {
+class GiftCardsScreen extends StatefulWidget {
   const GiftCardsScreen({super.key});
+
+  @override
+  State<GiftCardsScreen> createState() => _GiftCardsScreenState();
+}
+
+class _GiftCardsScreenState extends State<GiftCardsScreen> {
+  bool _hasPlus = false;
+  bool _loadingPlus = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPlusStatus();
+  }
+
+  Future<void> _loadPlusStatus() async {
+    var hasPlus = false;
+    if (AccountService.currentUser != null) {
+      try {
+        hasPlus = (await AccountService.loadPlusStatus()).isActive;
+      } catch (_) {
+        // Existing local cards remain available while offline.
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _hasPlus = hasPlus;
+      _loadingPlus = false;
+    });
+  }
+
+  Future<void> _openPlus(BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AccountScreen()),
+    );
+    await _loadPlusStatus();
+  }
 
   List<Map<String, dynamic>> getItems() {
     final items = StorageService.cardsBox.values
@@ -100,13 +140,19 @@ class GiftCardsScreen extends StatelessWidget {
       'isArchived': result['isArchived'] == 'true',
     };
 
-    await StorageService.cardsBox.add(card);
-    await NotificationService.syncGiftCard(card);
+    await StorageService.addCard(card);
+    try {
+      await NotificationService.syncGiftCard(card);
+    } catch (_) {
+      // Saving the card is the primary action; reminders are best effort.
+    }
     return card;
   }
 
   Future<void> openAddGiftCard(BuildContext context) async {
     if (!await PremiumGate.canAddGiftCard(context)) return;
+    if (!context.mounted) return;
+    await _loadPlusStatus();
     if (!context.mounted) return;
 
     final result = await Navigator.push<Map<String, String>>(
@@ -116,7 +162,14 @@ class GiftCardsScreen extends StatelessWidget {
 
     if (!context.mounted || result == null) return;
 
-    await saveNewCard(result, forcedType: 'Cadeaukaart');
+    if (result['persisted'] != 'true') {
+      await saveNewCard(result, forcedType: 'Cadeaukaart');
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cadeaukaart is opgeslagen.')),
+      );
+    }
   }
 
   Future<void> openLoyaltyAddFlow(BuildContext context) async {
@@ -358,12 +411,22 @@ class GiftCardsScreen extends StatelessWidget {
                         children: [
                           TextButton(
                             onPressed: () async {
+                              if (!await PremiumGate.canAddGiftCard(context)) {
+                                return;
+                              }
+                              if (!sheetContext.mounted) return;
                               final key = findHiveKey(item);
                               if (key == null) return;
-                              final restored = {...item, 'isArchived': false, 'archivedAt': ''};
+                              final restored = {
+                                ...item,
+                                'isArchived': false,
+                                'archivedAt': '',
+                              };
                               await StorageService.saveCard(key, restored);
                               await NotificationService.syncGiftCard(restored);
-                              if (sheetContext.mounted) Navigator.pop(sheetContext);
+                              if (sheetContext.mounted) {
+                                Navigator.pop(sheetContext);
+                              }
                             },
                             child: const Text('Terugzetten'),
                           ),
@@ -442,31 +505,15 @@ class GiftCardsScreen extends StatelessWidget {
           body: MainTabSwipeRegion(
             currentIndex: 3,
             onSwitch: (index) => openTab(context, index),
-            child: items.isEmpty
-                ? _EmptyGiftCardState(onAdd: () => openAddGiftCard(context))
-                : GridView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  itemCount: items.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio:
-                        SettingsService.extraClearEnabled ? 2.35 : 1.42,
-                  ),
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-
-                    return GiftCardTile(
-                      item: item,
-                      onTap: () => openGiftCard(context, items, index),
-                      onLongPress: () => showGiftCardOptions(context, item),
-                    );
-                  },
-                  ),
+            child: _GiftCardsOverview(
+              items: items,
+              hasPlus: _hasPlus,
+              loadingPlus: _loadingPlus,
+              onAdd: () => openAddGiftCard(context),
+              onOpenPlus: () => _openPlus(context),
+              onOpenCard: (index) => openGiftCard(context, items, index),
+              onLongPress: (item) => showGiftCardOptions(context, item),
+            ),
           ),
           bottomNavigationBar: MainBottomNav(
             currentIndex: 3,
@@ -474,6 +521,158 @@ class GiftCardsScreen extends StatelessWidget {
           ),
         );
       },
+      ),
+    );
+  }
+}
+
+class _GiftCardsOverview extends StatelessWidget {
+  final List<Map<String, dynamic>> items;
+  final bool hasPlus;
+  final bool loadingPlus;
+  final VoidCallback onAdd;
+  final VoidCallback onOpenPlus;
+  final ValueChanged<int> onOpenCard;
+  final ValueChanged<Map<String, dynamic>> onLongPress;
+
+  const _GiftCardsOverview({
+    required this.items,
+    required this.hasPlus,
+    required this.loadingPlus,
+    required this.onAdd,
+    required this.onOpenPlus,
+    required this.onOpenCard,
+    required this.onLongPress,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (hasPlus && items.isEmpty) {
+      return _EmptyGiftCardState(onAdd: onAdd);
+    }
+    if (hasPlus) {
+      return GridView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        itemCount: items.length,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: SettingsService.extraClearEnabled ? 2.35 : 1.42,
+        ),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          return GiftCardTile(
+            item: item,
+            onTap: () => onOpenCard(index),
+            onLongPress: () => onLongPress(item),
+          );
+        },
+      );
+    }
+
+    return CustomScrollView(
+      slivers: [
+        if (items.isEmpty)
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 270,
+              child: _EmptyGiftCardState(onAdd: onAdd),
+            ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio:
+                    SettingsService.extraClearEnabled ? 2.35 : 1.42,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (context, index) {
+                  final item = items[index];
+                  return GiftCardTile(
+                    item: item,
+                    onTap: () => onOpenCard(index),
+                    onLongPress: () => onLongPress(item),
+                  );
+                },
+                childCount: items.length,
+              ),
+            ),
+          ),
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(
+            child: loadingPlus
+                ? const CircularProgressIndicator(strokeWidth: 2)
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+                    child: _PlusGiftCardLimitCard(onOpenPlus: onOpenPlus),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PlusGiftCardLimitCard extends StatelessWidget {
+  final VoidCallback onOpenPlus;
+
+  const _PlusGiftCardLimitCard({required this.onOpenPlus});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxWidth: 520),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFF7D9), Color(0xFFFFE7A0)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFD5A021), width: 1.2),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.workspace_premium_rounded,
+            color: Color(0xFFA87800),
+            size: 38,
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            '1 cadeaukaart gratis',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF6D5000),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Met de gratis versie kun je één cadeaukaart bewaren. Wil je meer cadeaukaarten toevoegen? Kies dan PasKluis Plus.',
+            textAlign: TextAlign.center,
+            style: TextStyle(height: 1.35, color: Color(0xFF6D5000)),
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: onOpenPlus,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD5A021),
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.workspace_premium_rounded),
+            label: const Text('Bekijk PasKluis Plus'),
+          ),
+        ],
       ),
     );
   }
@@ -503,7 +702,7 @@ class _EmptyGiftCardState extends StatelessWidget {
             ),
             const SizedBox(height: 22),
             const Text(
-              'Nog geen cadeaukaarten toegevoegd',
+              'Voeg een cadeaukaart toe',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 26,
@@ -528,7 +727,7 @@ class _EmptyGiftCardState extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onAdd,
                 icon: const Icon(Icons.add),
-                label: const Text('Cadeaukaart toevoegen'),
+                label: const Text('Voeg cadeaukaart toe'),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFD51B46),
                   shape: RoundedRectangleBorder(

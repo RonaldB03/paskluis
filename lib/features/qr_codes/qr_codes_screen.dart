@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/storage_service.dart';
+import '../../data/services/location_service.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
@@ -525,6 +528,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
     currentIndex = widget.initialIndex;
     ticketIndex = 0;
     pageController = PageController(initialPage: widget.initialIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) => markCurrentQrAsUsed());
   }
 
   @override
@@ -559,10 +563,23 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
     if (key == null) return;
 
     await StorageService.saveCard(key, updated);
+    if (!mounted) return;
 
     setState(() {
       widget.items[currentIndex] = Map<String, dynamic>.from(updated);
     });
+  }
+
+  Future<void> markCurrentQrAsUsed() async {
+    if (widget.items.isEmpty) return;
+    final updated = Map<String, dynamic>.from(item);
+    final id = updated['id']?.toString() ?? '';
+    if (id.isEmpty) return;
+    updated['lastUsedAt'] = DateTime.now().toIso8601String();
+    updated['updatedAt'] = DateTime.now().toIso8601String();
+    await saveCurrentItem(updated);
+    if (!mounted) return;
+    unawaited(LocationService.rememberCardUse(id));
   }
 
   Future<void> toggleCurrentTicketUsed() async {
@@ -650,10 +667,13 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
               PageView.builder(
                 controller: pageController,
                 itemCount: widget.items.length,
-                onPageChanged: (index) => setState(() {
-                  currentIndex = index;
-                  ticketIndex = 0;
-                }),
+                onPageChanged: (index) {
+                  setState(() {
+                    currentIndex = index;
+                    ticketIndex = 0;
+                  });
+                  markCurrentQrAsUsed();
+                },
                 itemBuilder: (context, index) {
                   final current = widget.items[index];
                   final isSet = current['type']?.toString() == 'QR-set';
@@ -716,6 +736,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
             currentIndex = index;
             ticketIndex = 0;
           });
+          markCurrentQrAsUsed();
         },
         itemBuilder: (context, index) {
           final current = widget.items[index];

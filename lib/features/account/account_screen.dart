@@ -153,6 +153,32 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
+  Future<void> _changePassword() async {
+    FocusScope.of(context).unfocus();
+    final password = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (_) => const _ChangePasswordSheet(),
+    );
+    if (password == null || !mounted || _busy) return;
+
+    setState(() => _busy = true);
+    try {
+      await AccountService.updatePassword(password);
+      if (mounted) _showMessage('Je wachtwoord is gewijzigd.');
+    } on AuthException catch (error) {
+      if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
+    } catch (_) {
+      if (mounted) {
+        _showMessage('Wachtwoord wijzigen is niet gelukt.', error: true);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   String _friendlyAuthError(String message) {
     final normalized = message.toLowerCase();
     if (normalized.contains('invalid login credentials')) {
@@ -359,6 +385,25 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 16),
           _StatusCard(status: _plusStatus, loading: _loadingStatus),
+          const SizedBox(height: 16),
+          Card(
+            elevation: 0,
+            child: ListTile(
+              leading: const Icon(
+                Icons.password_rounded,
+                color: Color(0xFFD51B46),
+              ),
+              title: const Text(
+                'Wachtwoord wijzigen',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+              subtitle: const Text(
+                'Kies een nieuw wachtwoord van minimaal 8 tekens.',
+              ),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: _busy ? null : _changePassword,
+            ),
+          ),
           if (_isAdmin) ...[
             const SizedBox(height: 16),
             Card(
@@ -432,6 +477,117 @@ class _AccountScreenState extends State<AccountScreen> {
             label: const Text('Uitloggen'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ChangePasswordSheet extends StatefulWidget {
+  const _ChangePasswordSheet();
+
+  @override
+  State<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
+}
+
+class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _passwordController = TextEditingController();
+  final _confirmationController = TextEditingController();
+  bool _hidePassword = true;
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmationController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+    Navigator.pop(context, _passwordController.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        4,
+        20,
+        MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Wachtwoord wijzigen',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Gebruik minimaal 8 tekens. Je blijft na de wijziging ingelogd.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _passwordController,
+                autofocus: true,
+                obscureText: _hidePassword,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: 'Nieuw wachtwoord',
+                  prefixIcon: const Icon(Icons.lock_outline_rounded),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    onPressed: () => setState(
+                      () => _hidePassword = !_hidePassword,
+                    ),
+                    icon: Icon(
+                      _hidePassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                    ),
+                  ),
+                ),
+                validator: (value) => (value ?? '').length < 8
+                    ? 'Gebruik minimaal 8 tekens.'
+                    : null,
+              ),
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _confirmationController,
+                obscureText: _hidePassword,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submit(),
+                decoration: const InputDecoration(
+                  labelText: 'Herhaal nieuw wachtwoord',
+                  prefixIcon: Icon(Icons.lock_reset_rounded),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value != _passwordController.text
+                    ? 'De wachtwoorden zijn niet gelijk.'
+                    : null,
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: _submit,
+                  icon: const Icon(Icons.check_rounded),
+                  label: const Text('Wachtwoord opslaan'),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

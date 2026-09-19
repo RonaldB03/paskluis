@@ -40,6 +40,20 @@ class StorageService {
 
   static Box get cardsBox => Hive.box(cardsBoxName);
 
+  static Future<dynamic> addCard(Map<dynamic, dynamic> value) async {
+    final key = await cardsBox.add(value);
+    // Especially on Android, do not close the add flow until Hive has flushed
+    // the encrypted box and the written record can be read back.
+    await cardsBox.flush();
+    final stored = cardsBox.get(key);
+    final expectedId = value['id']?.toString() ?? '';
+    if (stored is! Map ||
+        (expectedId.isNotEmpty && stored['id']?.toString() != expectedId)) {
+      throw StateError('De kaart kon niet worden gecontroleerd na opslaan.');
+    }
+    return key;
+  }
+
   static Future<void> saveCard(dynamic key, Map<dynamic, dynamic> value) async {
     final oldItem = cardsBox.get(key);
     final oldImage = oldItem is Map ? oldItem['customImage']?.toString() : null;

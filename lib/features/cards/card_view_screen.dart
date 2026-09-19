@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:barcode_widget/barcode_widget.dart';
@@ -8,6 +9,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/storage_service.dart';
+import '../../data/services/location_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/logo_layout.dart';
 import '../gift_cards/gift_card_view_screen.dart';
@@ -176,6 +178,7 @@ class _CardViewScreenState extends State<CardViewScreen>
     item['updatedAt'] = DateTime.now().toIso8601String();
 
     await StorageService.saveCard(key, item);
+    unawaited(LocationService.rememberCardUse(id));
 
     if (!mounted) return;
 
