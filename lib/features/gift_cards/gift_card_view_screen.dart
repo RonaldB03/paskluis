@@ -1248,16 +1248,17 @@ class _GiftLandscapeBarcode extends StatelessWidget {
                     ),
                   ),
           ),
-          Text(
-            code,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 16,
-              letterSpacing: 2,
-              fontWeight: FontWeight.w800,
+          if (!isQr)
+            Text(
+              code,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 16,
+                letterSpacing: 2,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
         ],
       ),
     );

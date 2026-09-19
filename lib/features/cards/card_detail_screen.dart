@@ -121,17 +121,18 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
               ),
             ),
 
-            const SizedBox(height: 20),
-
-            SelectableText(
-              code,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 17,
-                letterSpacing: 1,
-                color: Colors.black54,
+            if (!isQrCode) ...[
+              const SizedBox(height: 20),
+              SelectableText(
+                code,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 17,
+                  letterSpacing: 1,
+                  color: Colors.black54,
+                ),
               ),
-            ),
+            ],
 
             if (isGiftCard) ...[
               const SizedBox(height: 28),

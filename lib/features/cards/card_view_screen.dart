@@ -616,16 +616,17 @@ class _LandscapeBarcodeCard extends StatelessWidget {
                     ),
             ),
           ),
-          Text(
-            code,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 16,
-              letterSpacing: 2,
-              fontWeight: FontWeight.w800,
+          if (!isQr)
+            Text(
+              code,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 16,
+                letterSpacing: 2,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -811,18 +812,20 @@ class _BarcodeCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 18),
-                      Text(
-                        formattedCode,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFF111122),
-                          fontSize: 20,
-                          letterSpacing: 2,
-                          height: 1.25,
-                          fontWeight: FontWeight.w800,
+                      if (!isQr) ...[
+                        const SizedBox(height: 18),
+                        Text(
+                          formattedCode,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Color(0xFF111122),
+                            fontSize: 20,
+                            letterSpacing: 2,
+                            height: 1.25,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
+                      ],
                       if (hasLinkedGiftCard) ...[
                         const SizedBox(height: 14),
                         _LinkedGiftCardInline(

@@ -4,11 +4,11 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:mobile_scanner/mobile_scanner.dart' as mobile;
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/image_color_service.dart';
+import '../../data/services/smart_card_import_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../scanner/scanner_screen.dart';
 
@@ -161,32 +161,14 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     });
   }
 
-  Future<void> importCodeFromScreenshot() async {
+  Future<void> importGiftCardPhoto(ImageSource source) async {
     HapticFeedback.selectionClick();
-    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (image == null) return;
-
-    final scanner = mobile.MobileScannerController(
-      formats: const [
-        mobile.BarcodeFormat.ean13,
-        mobile.BarcodeFormat.ean8,
-        mobile.BarcodeFormat.code128,
-        mobile.BarcodeFormat.code39,
-        mobile.BarcodeFormat.code93,
-        mobile.BarcodeFormat.codabar,
-        mobile.BarcodeFormat.upcA,
-        mobile.BarcodeFormat.upcE,
-        mobile.BarcodeFormat.itf,
-        mobile.BarcodeFormat.qrCode,
-      ],
-    );
 
     try {
-      final result = await scanner.analyzeImage(image.path);
-      final detected = result?.barcodes.firstOrNull;
-      final value = detected?.rawValue?.trim();
+      final result = await SmartCardImportService.pickAndAnalyze(source: source);
       if (!mounted) return;
-      if (value == null || value.isEmpty) {
+      if (result == null) return;
+      if (result.code.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Geen barcode of QR-code gevonden in deze foto.'),
@@ -195,14 +177,28 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
         return;
       }
       setState(() {
-        codeController.text = value;
-        selectedCodeMode = detected?.format == mobile.BarcodeFormat.qrCode
+        codeController.text = result.code;
+        if (result.pinCode.isNotEmpty) pinCodeController.text = result.pinCode;
+        if (result.balance.isNotEmpty) balanceController.text = result.balance;
+        if (nameController.text.trim().isEmpty && result.name.isNotEmpty) {
+          nameController.text = result.name;
+        }
+        if (result.brand != null && brandId.isEmpty) {
+          brandId = result.brand!.id;
+          logoAsset = result.brand!.logoAsset;
+          brandColor = result.brand!.color.value.toString();
+        }
+        selectedCodeMode = result.codeFormat == 'qr'
             ? ScannerMode.qr
             : ScannerMode.barcode;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Code gevonden en ingevuld. Controleer hem voor opslaan.'),
+        SnackBar(
+          content: Text(
+            result.pinCode.isEmpty
+                ? 'Code gevonden. Controleer de gegevens voor opslaan.'
+                : 'Code en pincode gevonden. Controleer ze voor opslaan.',
+          ),
         ),
       );
     } catch (_) {
@@ -210,8 +206,6 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('De afbeelding kon niet worden gelezen.')),
       );
-    } finally {
-      await scanner.dispose();
     }
   }
 
@@ -489,9 +483,26 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                 width: double.infinity,
                 height: 52,
                 child: FilledButton.icon(
-                  onPressed: importCodeFromScreenshot,
+                  onPressed: () => importGiftCardPhoto(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt_rounded),
+                  label: const Text('Foto maken en gegevens uitlezen'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFD51B46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: () => importGiftCardPhoto(ImageSource.gallery),
                   icon: const Icon(Icons.add_photo_alternate_rounded),
-                  label: const Text('Importeren uit foto of screenshot'),
+                  label: const Text('Foto of screenshot importeren'),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFD51B46),
                     shape: RoundedRectangleBorder(
@@ -712,7 +723,7 @@ class _GiftCardLivePreview extends StatelessWidget {
                             },
                           ),
                   ),
-                  if (code.isNotEmpty) ...[
+                  if (code.isNotEmpty && !isQr) ...[
                     const SizedBox(height: 12),
                     Text(
                       formattedCode,

@@ -248,18 +248,20 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                                     },
                                   ),
                                 ),
-                                const SizedBox(height: 18),
-                                Text(
-                                  formattedCode,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    letterSpacing: 2,
-                                    height: 1.25,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1F1F24),
+                                if (!isQr) ...[
+                                  const SizedBox(height: 18),
+                                  Text(
+                                    formattedCode,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      letterSpacing: 2,
+                                      height: 1.25,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF1F1F24),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           ),

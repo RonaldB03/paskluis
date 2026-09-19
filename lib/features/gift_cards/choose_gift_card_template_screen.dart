@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../data/templates/card_templates.dart';
 import '../../data/services/brand_catalog_service.dart';
+import '../../data/services/smart_card_import_service.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../shared/widgets/brand_logo.dart';
 import 'add_gift_card_screen.dart';
 import '../scanner/scanner_screen.dart';
@@ -41,18 +43,16 @@ class _ChooseGiftCardTemplateScreenState
     final mode = await showCodeTypeDialog(context);
     if (!mounted || mode == null) return;
 
-    final scan = await Navigator.push<ScannerResult>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ScannerScreen(
-          mode: mode,
-          showManualAfterDelay: true,
-          detailedResult: true,
-        ),
-      ),
+    final scan = await SmartCardImportService.pickAndAnalyze(
+      source: ImageSource.camera,
     );
-
-    if (!mounted || scan == null || scan.code.trim().isEmpty) return;
+    if (!mounted || scan == null) return;
+    if (scan.code.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Geen code gevonden. Probeer een scherpere foto.')),
+      );
+      return;
+    }
 
     final result = await Navigator.push<Map<String, String>>(
       context,
@@ -60,7 +60,13 @@ class _ChooseGiftCardTemplateScreenState
         builder: (_) => AddGiftCardScreen(
           initialName: '${brand.name} cadeaukaart',
           initialCode: scan.code.trim(),
-          initialCodeFormat: scan.codeFormat,
+          initialCodeFormat: scan.codeFormat.isNotEmpty
+              ? scan.codeFormat
+              : mode == ScannerMode.qr
+              ? 'qr'
+              : 'barcode',
+          initialPinCode: scan.pinCode,
+          initialCurrentBalance: scan.balance,
           initialBrandId: brand.id,
           initialLogoAsset: brand.logoAsset,
           initialBrandColor: brand.color.value.toString(),

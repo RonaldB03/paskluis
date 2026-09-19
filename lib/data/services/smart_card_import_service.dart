@@ -86,7 +86,7 @@ abstract final class SmartCardImportService {
         type: type,
         name: brand?.name ?? _suggestName(text, type),
         code: code,
-        pinCode: _findPin(text),
+        pinCode: _findPin(text, recognized, code),
         balance: _findBalance(text),
         codeFormat: isQr ? 'qr' : 'barcode',
         brand: brand,
@@ -138,12 +138,44 @@ abstract final class SmartCardImportService {
     return matches.isEmpty ? '' : matches.first;
   }
 
-  static String _findPin(String text) {
+  static String _findPin(
+    String text,
+    RecognizedText recognized,
+    String cardCode,
+  ) {
     final match = RegExp(
       r'(?:pin(?:code)?|krascode|security\s*code)\s*[:#-]?\s*([A-Z0-9]{3,10})',
       caseSensitive: false,
     ).firstMatch(text);
-    return match?.group(1)?.trim() ?? '';
+    final labelled = match?.group(1)?.trim() ?? '';
+    if (labelled.isNotEmpty) return labelled;
+
+    final boxes = recognized.blocks.expand((block) => block.lines).toList();
+    if (boxes.isEmpty) return '';
+
+    final left = boxes.map((line) => line.boundingBox.left).reduce((a, b) => a < b ? a : b);
+    final right = boxes.map((line) => line.boundingBox.right).reduce((a, b) => a > b ? a : b);
+    final imageCenter = (left + right) / 2;
+    final compactCardCode = cardCode.replaceAll(RegExp(r'\D'), '');
+
+    final candidates = <({String value, double score})>[];
+    for (final line in boxes) {
+      final raw = line.text.trim();
+      final value = raw.replaceAll(RegExp(r'\D'), '');
+      if (value.length < 4 || value.length > 10) continue;
+      if (compactCardCode.contains(value)) continue;
+
+      var score = 0.0;
+      if (RegExp(r'^\s*\d{4,8}\s*$').hasMatch(raw)) score += 40;
+      if (value.length == 6) score += 30;
+      if (value.length >= 4 && value.length <= 8) score += 12;
+      final distance = (line.boundingBox.center.dx - imageCenter).abs();
+      score += 30 / (1 + distance / 100);
+      candidates.add((value: value, score: score));
+    }
+
+    candidates.sort((a, b) => b.score.compareTo(a.score));
+    return candidates.isEmpty ? '' : candidates.first.value;
   }
 
   static String _findBalance(String text) {
