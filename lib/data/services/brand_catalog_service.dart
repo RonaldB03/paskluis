@@ -24,4 +24,67 @@ abstract final class BrandCatalogService {
       return cardBrandTemplates;
     }
   }
+
+  /// Loads the complete managed catalogue without silently falling back to
+  /// bundled demo brands. The admin editor must never save against a partial
+  /// or stale fallback list.
+  static Future<List<CardBrandTemplate>> loadForAdmin() async {
+    final client = SupabaseService.client;
+    if (client == null) {
+      throw StateError('De online diensten zijn niet beschikbaar.');
+    }
+
+    final rows = await client
+        .from('brands')
+        .select()
+        .order('sort_order')
+        .order('name');
+    final brands = rows
+        .map<CardBrandTemplate>(
+          (row) => cardBrandTemplateFromJson(Map<String, dynamic>.from(row)),
+        )
+        .where((brand) => brand.id.isNotEmpty && brand.name.isNotEmpty)
+        .toList();
+    if (brands.isEmpty) {
+      throw StateError('Er zijn geen winkels gevonden.');
+    }
+    return brands;
+  }
+
+  static Future<void> updateLogoLayout({
+    required String brandSlug,
+    required Map<String, double> layout,
+  }) async {
+    final client = SupabaseService.client;
+    if (client == null) {
+      throw StateError('De online diensten zijn niet beschikbaar.');
+    }
+
+    final payload = <String, double>{
+      for (final context in const [
+        'home',
+        'loyalty',
+        'gift',
+        'detail',
+        'picker',
+      ]) ...{
+        'logo_${context}_scale': layout['${context}Scale'] ?? 1,
+        'logo_${context}_x': layout['${context}X'] ?? 0,
+        'logo_${context}_y': layout['${context}Y'] ?? 0,
+      },
+    };
+
+    final updated = await client
+        .from('brands')
+        .update({
+          ...payload,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('slug', brandSlug)
+        .select('id')
+        .maybeSingle();
+    if (updated == null) {
+      throw StateError('De winkel kon niet worden bijgewerkt.');
+    }
+  }
 }

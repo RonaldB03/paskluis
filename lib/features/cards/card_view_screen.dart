@@ -545,7 +545,7 @@ class _CardViewScreenState extends State<CardViewScreen>
                       child: Transform.scale(scale: scale, child: child),
                     );
                   },
-                  child: _BarcodeCard(
+                  child: LoyaltyBarcodeCard(
                     item: item,
                     barcode: getBarcodeType(item),
                     linkedGiftCards: linkedGiftCards,
@@ -634,14 +634,15 @@ class _LandscapeBarcodeCard extends StatelessWidget {
   }
 }
 
-class _BarcodeCard extends StatelessWidget {
+class LoyaltyBarcodeCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final Barcode barcode;
   final List<Map<String, dynamic>> linkedGiftCards;
   final VoidCallback onDetails;
   final VoidCallback onOpenGiftCards;
 
-  const _BarcodeCard({
+  const LoyaltyBarcodeCard({
+    super.key,
     required this.item,
     required this.barcode,
     required this.linkedGiftCards,

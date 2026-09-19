@@ -172,7 +172,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
           ...filteredBrands.map((brand) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: _BrandListTile(
+              child: BrandListTile(
                 brand: brand,
                 onTap: () => scanForBrand(brand),
               ),
@@ -188,11 +188,11 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
   }
 }
 
-class _BrandListTile extends StatelessWidget {
+class BrandListTile extends StatelessWidget {
   final CardBrandTemplate brand;
   final VoidCallback onTap;
 
-  const _BrandListTile({required this.brand, required this.onTap});
+  const BrandListTile({super.key, required this.brand, required this.onTap});
 
   @override
   Widget build(BuildContext context) {

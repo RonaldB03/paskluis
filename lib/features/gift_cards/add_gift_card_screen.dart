@@ -257,12 +257,14 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   }
 
   Future<void> chooseBrand() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    if (!mounted) return;
     final catalog = await BrandCatalogService.load();
     if (!mounted) return;
     final brands = catalog
         .where((brand) => brand.supportedTypes.contains('Cadeaukaart'))
         .toList();
-    var searchQuery = '';
     final selected = await showModalBottomSheet<CardBrandTemplate>(
       context: context,
       showDragHandle: true,
@@ -270,91 +272,13 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       // Open the picker without focusing the search field. The keyboard should
       // only appear after the user explicitly starts searching.
       requestFocus: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) {
-          final filteredBrands = brands.where((brand) {
-            final query = searchQuery.trim().toLowerCase();
-            if (query.isEmpty) return true;
-            return brand.name.toLowerCase().contains(query) ||
-                brand.id.toLowerCase().contains(query);
-          }).toList();
-          return SafeArea(
-        child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.86,
-          child: Column(
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
-                child: Text(
-                  'Kies de winkel',
-                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: TextField(
-                  onChanged: (value) =>
-                      setSheetState(() => searchQuery = value),
-                  textInputAction: TextInputAction.search,
-                  onSubmitted: (_) => FocusScope.of(context).unfocus(),
-                  decoration: InputDecoration(
-                    hintText: 'Zoek winkel',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(18),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                  itemCount: filteredBrands.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 6),
-                  itemBuilder: (context, index) {
-                    final brand = filteredBrands[index];
-                    return ListTile(
-                      tileColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      leading: SizedBox(
-                        width: 62,
-                        child: BrandLogo(
-                          source: brand.logoAsset,
-                          scale: brand.logoLayout['pickerScale'] ?? 1,
-                          offsetX: brand.logoLayout['pickerX'] ?? 0,
-                          offsetY: brand.logoLayout['pickerY'] ?? 0,
-                        ),
-                      ),
-                      title: Text(
-                        brand.name,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () {
-                        FocusScope.of(context).unfocus();
-                        Navigator.pop(context, brand);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-        },
-      ),
+      builder: (context) => GiftBrandPickerSheet(brands: brands),
     );
     if (selected == null || !mounted) return;
     setState(() {
       brandId = selected.id;
       logoAsset = selected.logoAsset;
-      brandColor = selected.color.value.toString();
+      brandColor = selected.color.toARGB32().toString();
       logoLayout = selected.logoLayout;
       customImage = '';
       customBrandSelected = false;
@@ -545,7 +469,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          _GiftCardLivePreview(
+          GiftCardLivePreview(
             name: name,
             code: codeController.text.trim(),
             formattedCode: formattedCode,
@@ -761,7 +685,127 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   }
 }
 
-class _GiftCardLivePreview extends StatelessWidget {
+class GiftBrandPickerSheet extends StatefulWidget {
+  final List<CardBrandTemplate> brands;
+  final double? height;
+  final bool previewOnly;
+  final bool showInlineHandle;
+
+  const GiftBrandPickerSheet({
+    super.key,
+    required this.brands,
+    this.height,
+    this.previewOnly = false,
+    this.showInlineHandle = false,
+  });
+
+  @override
+  State<GiftBrandPickerSheet> createState() =>
+      _GiftBrandPickerSheetState();
+}
+
+class _GiftBrandPickerSheetState extends State<GiftBrandPickerSheet> {
+  String searchQuery = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredBrands = widget.brands.where((brand) {
+      final query = searchQuery.trim().toLowerCase();
+      if (query.isEmpty) return true;
+      return brand.name.toLowerCase().contains(query) ||
+          brand.id.toLowerCase().contains(query);
+    }).toList();
+
+    return SafeArea(
+      child: SizedBox(
+        height: widget.height ?? MediaQuery.sizeOf(context).height * 0.86,
+        child: Column(
+          children: [
+            if (widget.showInlineHandle)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
+                child: Container(
+                  width: 32,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF55555D),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Text(
+                'Kies de winkel',
+                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: TextField(
+                readOnly: widget.previewOnly,
+                onChanged: (value) => setState(() => searchQuery = value),
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => FocusScope.of(context).unfocus(),
+                onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                decoration: InputDecoration(
+                  hintText: 'Zoek winkel',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.separated(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                itemCount: filteredBrands.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 6),
+                itemBuilder: (context, index) {
+                  final brand = filteredBrands[index];
+                  return ListTile(
+                    tileColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    leading: SizedBox(
+                      width: 62,
+                      child: BrandLogo(
+                        source: brand.logoAsset,
+                        scale: brand.logoLayout['pickerScale'] ?? 1,
+                        offsetX: brand.logoLayout['pickerX'] ?? 0,
+                        offsetY: brand.logoLayout['pickerY'] ?? 0,
+                      ),
+                    ),
+                    title: Text(
+                      brand.name,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: widget.previewOnly
+                        ? () {}
+                        : () {
+                            FocusScope.of(context).unfocus();
+                            Navigator.pop(context, brand);
+                          },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class GiftCardLivePreview extends StatelessWidget {
   final String name;
   final String code;
   final String formattedCode;
@@ -773,7 +817,8 @@ class _GiftCardLivePreview extends StatelessWidget {
   final bool isQr;
   final Map<String, double> logoLayout;
 
-  const _GiftCardLivePreview({
+  const GiftCardLivePreview({
+    super.key,
     required this.name,
     required this.code,
     required this.formattedCode,
@@ -1148,4 +1193,3 @@ class _LogoEditor extends StatelessWidget {
     );
   }
 }
-

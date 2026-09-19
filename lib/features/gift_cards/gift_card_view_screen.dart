@@ -1184,7 +1184,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       ),
                     );
                   },
-                  child: _GiftBarcodeCard(
+                  child: GiftBarcodeCard(
                     item: item,
                     barcode: getBarcodeType(item),
                     onDetails: openDetails,
@@ -1269,13 +1269,14 @@ class _GiftLandscapeBarcode extends StatelessWidget {
   }
 }
 
-class _GiftBarcodeCard extends StatefulWidget {
+class GiftBarcodeCard extends StatefulWidget {
   final Map<String, dynamic> item;
   final Barcode barcode;
   final VoidCallback onDetails;
   final VoidCallback onUsed;
 
-  const _GiftBarcodeCard({
+  const GiftBarcodeCard({
+    super.key,
     required this.item,
     required this.barcode,
     required this.onDetails,
@@ -1283,10 +1284,10 @@ class _GiftBarcodeCard extends StatefulWidget {
   });
 
   @override
-  State<_GiftBarcodeCard> createState() => _GiftBarcodeCardState();
+  State<GiftBarcodeCard> createState() => _GiftBarcodeCardState();
 }
 
-class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
+class _GiftBarcodeCardState extends State<GiftBarcodeCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController pulseController;
   late final Animation<double> pulseAnimation;

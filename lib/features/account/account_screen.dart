@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/account_service.dart';
 import '../../data/services/supabase_service.dart';
 import '../../data/services/gift_card_share_service.dart';
+import '../admin/brand_logo_layout_screen.dart';
 import 'account_management_screen.dart';
 
 class AccountScreen extends StatefulWidget {
@@ -380,6 +381,31 @@ class _AccountScreenState extends State<AccountScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => const AccountManagementScreen(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Card(
+              elevation: 0,
+              color: const Color(0xFFFFEDF2),
+              child: ListTile(
+                leading: const Icon(
+                  Icons.tune_rounded,
+                  color: Color(0xFFD51B46),
+                ),
+                title: const Text(
+                  'Winkellogo’s passend maken',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+                subtitle: const Text(
+                  'Stel logo’s af in de echte weergave van PasKluis.',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const BrandLogoLayoutScreen(),
                   ),
                 ),
               ),

@@ -833,7 +833,7 @@ class _FavoritesSection extends StatelessWidget {
               final item = items[index];
               return SizedBox(
                 width: 190,
-                child: _PreviewCard(
+                child: HomePreviewCard(
                   item: item,
                   title: item['name']?.toString() ?? 'Kaart',
                   logoAsset: item['logoAsset']?.toString() ?? '',
@@ -1013,7 +1013,7 @@ class _CategorySection extends StatelessWidget {
 
             final item = items[index];
 
-            return _PreviewCard(
+            return HomePreviewCard(
               item: item,
               title: item['name']?.toString() ?? 'Kaart',
               logoAsset: item['logoAsset']?.toString() ?? '',
@@ -1031,7 +1031,7 @@ class _CategorySection extends StatelessWidget {
   }
 }
 
-class _PreviewCard extends StatefulWidget {
+class HomePreviewCard extends StatefulWidget {
   final Map<String, dynamic> item;
   final String title;
   final String logoAsset;
@@ -1042,7 +1042,8 @@ class _PreviewCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
-  const _PreviewCard({
+  const HomePreviewCard({
+    super.key,
     required this.item,
     required this.title,
     required this.logoAsset,
@@ -1055,10 +1056,10 @@ class _PreviewCard extends StatefulWidget {
   });
 
   @override
-  State<_PreviewCard> createState() => _PreviewCardState();
+  State<HomePreviewCard> createState() => _HomePreviewCardState();
 }
 
-class _PreviewCardState extends State<_PreviewCard> {
+class _HomePreviewCardState extends State<HomePreviewCard> {
   bool isPressed = false;
 
   Color get cardColor {

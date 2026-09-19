@@ -354,7 +354,7 @@ class CardsScreen extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final item = items[index];
 
-                    return _StoredCardTile(
+                    return StoredCardTile(
                       item: item,
                       onTap: () => openCard(context, items, index),
                       onLongPress: () => showCardOptions(context, item),
@@ -455,22 +455,23 @@ class _EmptyCardsState extends StatelessWidget {
   }
 }
 
-class _StoredCardTile extends StatefulWidget {
+class StoredCardTile extends StatefulWidget {
   final Map<String, dynamic> item;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
-  const _StoredCardTile({
+  const StoredCardTile({
+    super.key,
     required this.item,
     required this.onTap,
     required this.onLongPress,
   });
 
   @override
-  State<_StoredCardTile> createState() => _StoredCardTileState();
+  State<StoredCardTile> createState() => _StoredCardTileState();
 }
 
-class _StoredCardTileState extends State<_StoredCardTile> {
+class _StoredCardTileState extends State<StoredCardTile> {
   bool isPressed = false;
 
   Color get cardColor {

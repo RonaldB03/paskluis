@@ -460,7 +460,7 @@ class GiftCardsScreen extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final item = items[index];
 
-                    return _GiftCardTile(
+                    return GiftCardTile(
                       item: item,
                       onTap: () => openGiftCard(context, items, index),
                       onLongPress: () => showGiftCardOptions(context, item),
@@ -545,22 +545,23 @@ class _EmptyGiftCardState extends StatelessWidget {
   }
 }
 
-class _GiftCardTile extends StatefulWidget {
+class GiftCardTile extends StatefulWidget {
   final Map<String, dynamic> item;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
-  const _GiftCardTile({
+  const GiftCardTile({
+    super.key,
     required this.item,
     required this.onTap,
     required this.onLongPress,
   });
 
   @override
-  State<_GiftCardTile> createState() => _GiftCardTileState();
+  State<GiftCardTile> createState() => _GiftCardTileState();
 }
 
-class _GiftCardTileState extends State<_GiftCardTile> {
+class _GiftCardTileState extends State<GiftCardTile> {
   bool isPressed = false;
 
   bool get hasCustomLogo {
