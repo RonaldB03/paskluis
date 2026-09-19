@@ -5,12 +5,16 @@ const SUPABASE_KEY = 'sb_publishable_D22GtKy7nDvnLv7LeBL1SA_1_ZGbN7d';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const state = { user:null, profile:null, profiles:[], entitlements:[], threads:[], messages:[], brands:[], selectedThread:null };
+const storageLogoContexts=['home','loyalty','gift','detail','picker'];
 const logoContexts = [
-  ['home','Home'],
-  ['loyalty','Klantenkaarten'],
-  ['gift','Cadeaukaarten'],
-  ['detail','Detailkaart'],
-  ['picker','Winkelkeuze']
+  {key:'home',storage:'home',label:'Home'},
+  {key:'loyalty',storage:'loyalty',label:'Klantenkaarten'},
+  {key:'gift',storage:'gift',label:'Cadeaukaarten'},
+  {key:'loyaltyDetail',storage:'detail',label:'Klantdetail'},
+  {key:'giftDetail',storage:'detail',label:'Cadeaudetail'},
+  {key:'giftReview',storage:'detail',label:'Cadeau controleren'},
+  {key:'loyaltyPicker',storage:'picker',label:'Klant kiezen'},
+  {key:'giftPicker',storage:'picker',label:'Cadeau kiezen'}
 ];
 let activeLogoContext='home';
 let logoLayouts={};
@@ -125,8 +129,9 @@ function renderLogoPreview(source='') {
 }
 
 function defaultLogoLayout() { return {scale:1,x:0,y:0}; }
+function activeStorageContext() { return logoContexts.find((item)=>item.key===activeLogoContext)?.storage||activeLogoContext; }
 function readLogoLayouts(brand) {
-  logoLayouts=Object.fromEntries(logoContexts.map(([key])=>[key,{
+  logoLayouts=Object.fromEntries(storageLogoContexts.map((key)=>[key,{
     scale:Number(brand?.[`logo_${key}_scale`]??1),
     x:Number(brand?.[`logo_${key}_x`]??0),
     y:Number(brand?.[`logo_${key}_y`]??0)
@@ -134,9 +139,9 @@ function readLogoLayouts(brand) {
 }
 function renderLayoutEditor() {
   const tabs=$('#logo-layout-tabs'); if(!tabs) return;
-  tabs.innerHTML=logoContexts.map(([key,label])=>`<button type="button" class="layout-tab ${key===activeLogoContext?'active':''}" data-logo-context="${key}">${label}</button>`).join('');
-  const values=logoLayouts[activeLogoContext]||defaultLogoLayout();
-  if(activeLogoContext!=='picker') pickerKeyboardOpen=false;
+  tabs.innerHTML=logoContexts.map(({key,label})=>`<button type="button" class="layout-tab ${key===activeLogoContext?'active':''}" data-logo-context="${key}">${label}</button>`).join('');
+  const values=logoLayouts[activeStorageContext()]||defaultLogoLayout();
+  if(activeLogoContext!=='giftPicker') pickerKeyboardOpen=false;
   $('#layout-scale').value=Math.round(values.scale*100);
   $('#layout-x').value=values.x;
   $('#layout-y').value=values.y;
@@ -144,7 +149,7 @@ function renderLayoutEditor() {
   $('#layout-x-output').textContent=`${values.x}%`;
   $('#layout-y-output').textContent=`${values.y}%`;
   const keyboardButton=$('#toggle-picker-keyboard');
-  keyboardButton.classList.toggle('hidden',activeLogoContext!=='picker');
+  keyboardButton.classList.toggle('hidden',activeLogoContext!=='giftPicker');
   keyboardButton.textContent=pickerKeyboardOpen?'Toetsenbord verbergen':'Toetsenbord tonen';
   const preview=$('#layout-card-preview');
   preview.className=`layout-card-preview context-${activeLogoContext}`;
@@ -175,14 +180,17 @@ function buildScreenPreview(context) {
   const color=$('#brand-color').value||'#D51B46';
   const name=escapeHtml($('#brand-name').value.trim()||'Voorbeeldwinkel');
   if(context==='home') return `<div class="mock-phone">${previewHeader('PasKluis','⚙ ＋')}<div class="mock-scroll"><div class="mock-search">⌕ &nbsp; Zoek in PasKluis</div><h4>★ &nbsp;Favorieten</h4><div class="mock-grid"><div class="mock-tile logo-tile" style="background:${color}">${liveLogo()}</div><div class="mock-tile pink-tile">▦<b>Al je kaarten</b></div></div><h4>▣ &nbsp;Klantenkaarten</h4><div class="mock-grid"><div class="mock-tile logo-tile">${liveLogo()}</div><div class="mock-tile pink-tile">▦<b>Al je kaarten</b></div></div></div>${previewNav('home')}</div>`;
-  if(context==='loyalty') return `<div class="mock-phone">${previewHeader('Klantenkaarten')}<div class="mock-scroll"><div class="mock-grid loyalty-grid"><div class="mock-tile logo-tile">${liveLogo()}<i>★</i></div><div class="mock-tile muted-tile">Andere kaart</div><div class="mock-tile muted-tile">Andere kaart</div><div class="mock-tile muted-tile">Andere kaart</div></div></div>${previewNav('loyalty')}</div>`;
+  if(context==='loyalty') return `<div class="mock-phone">${previewHeader('Klantenkaarten')}<div class="mock-scroll"><div class="mock-grid loyalty-grid"><div class="mock-tile logo-tile loyalty-logo">${liveLogo()}<i>★</i></div><div class="mock-tile muted-tile">Andere kaart</div><div class="mock-tile muted-tile">Andere kaart</div><div class="mock-tile muted-tile">Andere kaart</div></div></div>${previewNav('loyalty')}</div>`;
   if(context==='gift') return `<div class="mock-phone">${previewHeader('Cadeaukaarten','↻ ▣ ＋')}<div class="mock-scroll"><div class="mock-grid gift-grid"><div class="mock-gift-tile"><div class="mock-gift-logo">${liveLogo()}</div><b>€ 50</b></div><div class="mock-gift-tile muted-gift"><div>Andere kaart</div><b>€ 25</b></div></div></div>${previewNav('gift')}</div>`;
-  if(context==='detail') return `<div class="mock-phone detail-phone"><div class="mock-status"><b>15:50</b><span>▮▮▮ ◉ 82%</span></div><div class="mock-detail-header"><span>‹</span><strong>${name}</strong><span>★ ···</span></div><div class="mock-detail-card"><div class="mock-detail-logo">${liveLogo()}</div>${mockBarcode()}<div class="mock-gift-callout">U heeft een cadeaukaart beschikbaar<br><b>Saldo: € 50</b></div><b class="mock-options">ⓘ Details en opties</b></div><div class="mock-dots">● ○ ○ ○ ○</div></div>`;
+  if(context==='loyaltyDetail') return `<div class="mock-phone detail-phone">${previewHeader(name,'★ ···')}<div class="mock-loyalty-detail"><div class="mock-loyalty-head" style="background:${color}">${liveLogo()}</div><div class="mock-detail-white">${mockBarcode()}<div class="mock-gift-callout">U heeft een cadeaukaart beschikbaar<br><b>Saldo: € 50</b></div><b class="mock-options">ⓘ Details en opties</b></div></div><div class="mock-dots">● ○ ○ ○ ○</div></div>`;
+  if(context==='giftDetail') return `<div class="mock-phone detail-phone">${previewHeader(name,'★ ···')}<div class="mock-gift-detail"><div class="mock-gift-detail-head" style="background:${color}">${liveLogo()}<span>···</span></div><div class="mock-balance">Saldo: € 50</div><div class="mock-detail-white">${mockBarcode()}<button>Kaart gebruikt?</button><b class="mock-options">ⓘ Details en opties</b></div></div></div>`;
+  if(context==='giftReview') return `<div class="mock-phone detail-phone">${previewHeader('Cadeaukaart afronden','Opslaan')}<div class="mock-selected-brand">${liveLogo()}<b>${name} cadeaukaart</b><span>Wijzigen</span></div><div class="mock-review-card"><div class="mock-review-head" style="background:${color}">${liveLogo()}<b>${name} cadeaukaart</b></div><div class="mock-detail-white">${mockBarcode()}<div class="mock-balance-box">€ 50</div></div></div></div>`;
+  if(context==='loyaltyPicker') return `<div class="mock-phone">${previewHeader('Kaart toevoegen','Handmatig')}<div class="mock-scroll"><div class="mock-search">⌕ &nbsp; Zoek winkel</div><h4>Populaire kaarten</h4><div class="mock-picker-list"><div class="mock-picker-row full-picker"><div class="mock-picker-logo colored" style="background:${color}">${liveLogo()}</div><b>${name}</b><span>›</span></div><div class="mock-picker-row muted-row"><div></div><b>Andere winkel</b><span>›</span></div></div></div></div>`;
   const keyboard=pickerKeyboardOpen?'<div class="mock-keyboard"><span>q</span><span>w</span><span>e</span><span>r</span><span>t</span><span>y</span><span>u</span><span>i</span><span>o</span><span>p</span><span>a</span><span>s</span><span>d</span><span>f</span><span>g</span><span>h</span><span>j</span><span>k</span><span>l</span><span>⌄</span></div>':'';
-  return `<div class="mock-phone picker-phone"><div class="mock-picker-underlay"><div class="mock-status"><b>15:50</b><span>▮▮▮ ◉ 82%</span></div><div class="mock-header"><strong>PasKluis</strong><span>⚙ ＋</span></div><div class="mock-underlay-card"></div>${previewNav('home')}</div><div class="mock-sheet"><div class="mock-sheet-handle"></div><div class="mock-detail-header"><span>‹</span><strong>Kaart toevoegen</strong><span>Handmatig</span></div><div class="mock-search">⌕ &nbsp; Zoek winkel</div><h4>Populaire kaarten</h4><div class="mock-picker-list"><div class="mock-picker-row"><div class="mock-picker-logo">${liveLogo()}</div><b>${name}</b><span>›</span></div><div class="mock-picker-row muted-row"><div></div><b>Andere winkel</b><span>›</span></div><div class="mock-picker-row muted-row"><div></div><b>Andere winkel</b><span>›</span></div></div></div>${keyboard}</div>`;
+  return `<div class="mock-phone picker-phone"><div class="mock-picker-underlay">${previewHeader('Cadeaukaart afronden','Opslaan')}<div class="mock-underlay-card"></div></div><div class="mock-sheet"><div class="mock-sheet-handle"></div><h3>Kies de winkel</h3><div class="mock-search">⌕ &nbsp; Zoek winkel</div><div class="mock-picker-list"><div class="mock-picker-row sheet-picker"><div class="mock-picker-logo">${liveLogo()}</div><b>${name}</b><span>›</span></div><div class="mock-picker-row muted-row"><div></div><b>Andere winkel</b><span>›</span></div><div class="mock-picker-row muted-row"><div></div><b>Andere winkel</b><span>›</span></div></div></div>${keyboard}</div>`;
 }
 function updateActiveLogoLayout() {
-  logoLayouts[activeLogoContext]={
+  logoLayouts[activeStorageContext()]={
     scale:Number($('#layout-scale').value)/100,
     x:Number($('#layout-x').value),
     y:Number($('#layout-y').value)
@@ -209,7 +217,7 @@ async function saveBrand() {
   const id=$('#brand-id').value; const slug=$('#brand-slug').value.trim();
   try {
     const logoPath=await uploadBrandLogo(slug);
-    const layoutPayload=Object.fromEntries(logoContexts.flatMap(([key])=>[
+    const layoutPayload=Object.fromEntries(storageLogoContexts.flatMap((key)=>[
       [`logo_${key}_scale`,logoLayouts[key]?.scale??1],
       [`logo_${key}_x`,logoLayouts[key]?.x??0],
       [`logo_${key}_y`,logoLayouts[key]?.y??0]
@@ -236,8 +244,7 @@ $('#brand-color').addEventListener('input',renderLayoutEditor);
 $('#brand-name').addEventListener('input',renderLayoutEditor);
 $('#logo-layout-tabs').addEventListener('click',(event)=>{ const button=event.target.closest('[data-logo-context]'); if(button){ activeLogoContext=button.dataset.logoContext; renderLayoutEditor(); } });
 ['layout-scale','layout-x','layout-y'].forEach((id)=>$(`#${id}`).addEventListener('input',updateActiveLogoLayout));
-$('#reset-logo-layout').addEventListener('click',()=>{ logoLayouts[activeLogoContext]=defaultLogoLayout(); renderLayoutEditor(); });
+$('#reset-logo-layout').addEventListener('click',()=>{ logoLayouts[activeStorageContext()]=defaultLogoLayout(); renderLayoutEditor(); });
 $('#toggle-picker-keyboard').addEventListener('click',()=>{ pickerKeyboardOpen=!pickerKeyboardOpen; renderLayoutEditor(); });
 
 boot();
-
