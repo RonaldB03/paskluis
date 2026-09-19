@@ -14,6 +14,7 @@ class AddCardScreen extends StatefulWidget {
   final String? initialBrandId;
   final String? initialLogoAsset;
   final String? initialBrandColor;
+  final String? initialCodeFormat;
 
   const AddCardScreen({
     super.key,
@@ -23,6 +24,7 @@ class AddCardScreen extends StatefulWidget {
     this.initialBrandId,
     this.initialLogoAsset,
     this.initialBrandColor,
+    this.initialCodeFormat,
   });
 
   @override
@@ -31,6 +33,7 @@ class AddCardScreen extends StatefulWidget {
 
 class _AddCardScreenState extends State<AddCardScreen> {
   late String selectedType;
+  late ScannerMode selectedCodeMode;
 
   final nameController = TextEditingController();
   final codeController = TextEditingController();
@@ -52,6 +55,11 @@ class _AddCardScreenState extends State<AddCardScreen> {
   void initState() {
     super.initState();
     selectedType = widget.initialType;
+    selectedCodeMode = switch (widget.initialCodeFormat) {
+      'qr' => ScannerMode.qr,
+      'barcode' => ScannerMode.barcode,
+      _ => ScannerMode.auto,
+    };
     nameController.text = widget.initialName ?? '';
     codeController.text = widget.initialCode ?? '';
   }
@@ -92,24 +100,24 @@ class _AddCardScreenState extends State<AddCardScreen> {
   Future<void> scanCode() async {
     FocusManager.instance.primaryFocus?.unfocus();
 
-    final result = await Navigator.push<String>(
+    final result = await Navigator.push<ScannerResult>(
       context,
       MaterialPageRoute(
         builder: (_) => ScannerScreen(
-          mode: selectedType == 'QR-code'
-              ? ScannerMode.qr
-              : ScannerMode.barcode,
+          mode: selectedCodeMode,
           showManualAfterDelay: true,
+          detailedResult: true,
         ),
       ),
     );
 
-    if (result == null || result.isEmpty) return;
-
-    if (result == ScannerScreen.manualEntryResult) return;
+    if (result == null || result.code.isEmpty) return;
 
     setState(() {
-      codeController.text = result;
+      codeController.text = result.code;
+      selectedCodeMode = result.codeFormat == 'qr'
+          ? ScannerMode.qr
+          : ScannerMode.barcode;
     });
   }
 
@@ -128,6 +136,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
       'type': selectedType,
       'name': nameController.text.trim(),
       'code': codeController.text.trim(),
+      'codeFormat': selectedCodeMode == ScannerMode.qr ? 'qr' : 'barcode',
       'note': '',
       'cardNumber': '',
       'pinCode': '',
@@ -214,10 +223,26 @@ class _AddCardScreenState extends State<AddCardScreen> {
             ),
           ],
           const SizedBox(height: 24),
+          DropdownButtonFormField<ScannerMode>(
+            value: selectedCodeMode,
+            decoration: const InputDecoration(
+              labelText: 'Type code',
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem(value: ScannerMode.auto, child: Text('Automatisch herkennen')),
+              DropdownMenuItem(value: ScannerMode.barcode, child: Text('Streepjescode')),
+              DropdownMenuItem(value: ScannerMode.qr, child: Text('QR-code')),
+            ],
+            onChanged: (value) {
+              if (value != null) setState(() => selectedCodeMode = value);
+            },
+          ),
+          const SizedBox(height: 16),
           TextField(
             controller: codeController,
             decoration: InputDecoration(
-              labelText: selectedType == 'QR-code' ? 'QR-code' : 'Barcode',
+              labelText: 'Code',
               hintText: 'Scan of vul handmatig in',
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
@@ -231,7 +256,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
             onPressed: scanCode,
             icon: const Icon(Icons.qr_code_scanner),
             label: Text(
-              selectedType == 'QR-code' ? 'QR-code scannen' : 'Barcode scannen',
+              'Code scannen',
             ),
           ),
           const SizedBox(height: 28),

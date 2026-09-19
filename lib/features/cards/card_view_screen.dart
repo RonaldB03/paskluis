@@ -4,6 +4,7 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:screen_brightness/screen_brightness.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/storage_service.dart';
@@ -584,6 +585,7 @@ class _LandscapeBarcodeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = item['name']?.toString() ?? 'Klantenkaart';
     final code = item['code']?.toString() ?? '';
+    final isQr = item['codeFormat']?.toString() == 'qr';
     return Padding(
       padding: const EdgeInsets.fromLTRB(76, 12, 32, 16),
       child: Column(
@@ -599,6 +601,8 @@ class _LandscapeBarcodeCard extends StatelessWidget {
             child: Center(
               child: code.isEmpty
                   ? const Text('Geen barcode beschikbaar')
+                  : isQr
+                  ? QrImageView(data: code, padding: const EdgeInsets.all(8))
                   : BarcodeWidget(
                       barcode: barcode,
                       data: code,
@@ -650,6 +654,7 @@ class _BarcodeCard extends StatelessWidget {
   }
 
   bool get hasAssetLogo => (item['logoAsset']?.toString() ?? '').isNotEmpty;
+  bool get isQr => item['codeFormat']?.toString() == 'qr';
 
   bool get isWideGallLogo {
     final value = '${item['brandId']} ${item['name']} $logoSource'
@@ -776,7 +781,15 @@ class _BarcodeCard extends StatelessWidget {
                                 color: Colors.black.withOpacity(0.04),
                               ),
                             ),
-                            child: BarcodeWidget(
+                            child: isQr
+                            ? Center(
+                                child: QrImageView(
+                                  data: code,
+                                  size: hasLinkedGiftCard ? 150 : 180,
+                                  padding: EdgeInsets.zero,
+                                ),
+                              )
+                            : BarcodeWidget(
                               barcode: barcode,
                               data: code,
                               width: double.infinity,

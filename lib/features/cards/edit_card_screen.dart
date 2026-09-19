@@ -27,6 +27,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
   String logoAsset = '';
   String brandColor = '';
   String customImage = '';
+  String codeFormat = 'barcode';
 
   bool get hasPresetLogo => logoAsset.isNotEmpty;
 
@@ -68,6 +69,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
     logoAsset = widget.item['logoAsset']?.toString() ?? '';
     brandColor = widget.item['brandColor']?.toString() ?? '';
     customImage = widget.item['customImage']?.toString() ?? '';
+    codeFormat = widget.item['codeFormat']?.toString() ?? 'barcode';
 
     codeController.addListener(() {
       if (mounted) setState(() {});
@@ -124,21 +126,24 @@ class _EditCardScreenState extends State<EditCardScreen> {
   Future<void> scanCode() async {
     HapticFeedback.selectionClick();
 
-    final result = await Navigator.push<String>(
+    final mode = await showCodeTypeDialog(context);
+    if (!mounted || mode == null) return;
+    final result = await Navigator.push<ScannerResult>(
       context,
       MaterialPageRoute(
-        builder: (_) => const ScannerScreen(
-          mode: ScannerMode.barcode,
+        builder: (_) => ScannerScreen(
+          mode: mode,
           showManualAfterDelay: true,
+          detailedResult: true,
         ),
       ),
     );
 
-    if (!mounted || result == null || result.trim().isEmpty) return;
-    if (result == ScannerScreen.manualEntryResult) return;
+    if (!mounted || result == null || result.code.trim().isEmpty) return;
 
     setState(() {
-      codeController.text = result.trim();
+      codeController.text = result.code.trim();
+      codeFormat = result.codeFormat;
     });
   }
 
@@ -163,6 +168,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
     updated['type'] = 'Pasje';
     updated['name'] = name;
     updated['code'] = code;
+    updated['codeFormat'] = codeFormat;
     updated['note'] = noteController.text.trim();
 
     updated['cardNumber'] = '';

@@ -59,22 +59,21 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
   }
 
   Future<void> scanForBrand(CardBrandTemplate brand) async {
-    final code = await Navigator.push<String>(
+    final mode = await showCodeTypeDialog(context);
+    if (!mounted || mode == null) return;
+
+    final result = await Navigator.push<ScannerResult>(
       context,
       MaterialPageRoute(
-        builder: (_) => const ScannerScreen(
-          mode: ScannerMode.barcode,
+        builder: (_) => ScannerScreen(
+          mode: mode,
           showManualAfterDelay: true,
+          detailedResult: true,
         ),
       ),
     );
 
-    if (!mounted || code == null || code.trim().isEmpty) return;
-
-    if (code == ScannerScreen.manualEntryResult) {
-      await openManualForm(brand: brand);
-      return;
-    }
+    if (!mounted || result == null || result.code.trim().isEmpty) return;
 
     final now = DateTime.now().toIso8601String();
 
@@ -82,7 +81,8 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'type': 'Pasje',
       'name': brand.name,
-      'code': code.trim(),
+      'code': result.code.trim(),
+      'codeFormat': result.codeFormat,
       'note': '',
       'cardNumber': '',
       'pinCode': '',

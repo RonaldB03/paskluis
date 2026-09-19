@@ -69,7 +69,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
     final pinCode = widget.item['pinCode']?.toString() ?? '';
     final currentBalance = widget.item['currentBalance']?.toString() ?? '';
 
-    final isQrCode = type == 'QR-code';
+    final isQrCode = type == 'QR-code' ||
+        widget.item['codeFormat']?.toString() == 'qr';
     final isGiftCard = type == 'Cadeaukaart';
 
     return Scaffold(

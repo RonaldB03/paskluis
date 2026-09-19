@@ -11,6 +11,7 @@ class SmartCardImportResult {
   final String code;
   final String pinCode;
   final String balance;
+  final String codeFormat;
   final CardBrandTemplate? brand;
 
   const SmartCardImportResult({
@@ -19,6 +20,7 @@ class SmartCardImportResult {
     required this.code,
     required this.pinCode,
     required this.balance,
+    required this.codeFormat,
     this.brand,
   });
 }
@@ -86,6 +88,7 @@ abstract final class SmartCardImportService {
         code: code,
         pinCode: _findPin(text),
         balance: _findBalance(text),
+        codeFormat: isQr ? 'qr' : 'barcode',
         brand: brand,
       );
     } finally {

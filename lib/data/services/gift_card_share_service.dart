@@ -14,6 +14,7 @@ abstract final class GiftCardShareService {
   static Map<String, dynamic> _safePayload(Map<String, dynamic> card) => {
         'name': card['name']?.toString() ?? '',
         'code': card['code']?.toString() ?? '',
+        'codeFormat': card['codeFormat']?.toString() ?? 'barcode',
         'cardNumber': card['cardNumber']?.toString() ?? '',
         'pinCode': card['pinCode']?.toString() ?? '',
         'initialBalance': card['initialBalance']?.toString() ?? '',

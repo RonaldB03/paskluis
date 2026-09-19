@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/services/security_service.dart';
@@ -1218,6 +1219,7 @@ class _GiftLandscapeBarcode extends StatelessWidget {
   Widget build(BuildContext context) {
     final name = item['name']?.toString() ?? 'Cadeaukaart';
     final code = item['code']?.toString() ?? '';
+    final isQr = item['codeFormat']?.toString() == 'qr';
     return Padding(
       padding: const EdgeInsets.fromLTRB(76, 12, 32, 16),
       child: Column(
@@ -1232,6 +1234,8 @@ class _GiftLandscapeBarcode extends StatelessWidget {
           Expanded(
             child: code.isEmpty
                 ? const Center(child: Text('Geen barcode beschikbaar'))
+                : isQr
+                ? Center(child: QrImageView(data: code, padding: const EdgeInsets.all(8)))
                 : BarcodeWidget(
                     barcode: barcode,
                     data: code,
@@ -1281,6 +1285,8 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController pulseController;
   late final Animation<double> pulseAnimation;
+
+  bool get isQr => widget.item['codeFormat']?.toString() == 'qr';
 
   @override
   void initState() {
@@ -1474,7 +1480,15 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
                           color: Colors.black.withOpacity(0.05),
                         ),
                       ),
-                      child: BarcodeWidget(
+                      child: isQr
+                      ? Center(
+                          child: QrImageView(
+                            data: code,
+                            size: 150,
+                            padding: EdgeInsets.zero,
+                          ),
+                        )
+                      : BarcodeWidget(
                         barcode: widget.barcode,
                         data: code,
                         width: double.infinity,

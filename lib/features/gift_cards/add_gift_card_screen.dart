@@ -5,11 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart' as mobile;
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/image_color_service.dart';
 import '../../shared/widgets/brand_logo.dart';
-import 'gift_card_scanner_screen.dart';
+import '../scanner/scanner_screen.dart';
 
 class AddGiftCardScreen extends StatefulWidget {
   final bool isEditing;
@@ -26,6 +27,7 @@ class AddGiftCardScreen extends StatefulWidget {
   final String? initialCustomImage;
   final String? initialExpiryDate;
   final bool initialExpiryNotificationsEnabled;
+  final String? initialCodeFormat;
 
   const AddGiftCardScreen({
     super.key,
@@ -43,6 +45,7 @@ class AddGiftCardScreen extends StatefulWidget {
     this.initialCustomImage,
     this.initialExpiryDate,
     this.initialExpiryNotificationsEnabled = true,
+    this.initialCodeFormat,
   });
 
   @override
@@ -62,6 +65,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   String customImage = '';
   DateTime? expiryDate;
   late bool expiryNotificationsEnabled;
+  late ScannerMode selectedCodeMode;
 
   bool get hasAssetLogo => logoAsset.isNotEmpty;
 
@@ -108,6 +112,11 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     customImage = widget.initialCustomImage ?? '';
     expiryDate = DateTime.tryParse(widget.initialExpiryDate ?? '');
     expiryNotificationsEnabled = widget.initialExpiryNotificationsEnabled;
+    selectedCodeMode = switch (widget.initialCodeFormat) {
+      'qr' => ScannerMode.qr,
+      'barcode' => ScannerMode.barcode,
+      _ => ScannerMode.auto,
+    };
 
     nameController.addListener(refresh);
     codeController.addListener(refresh);
@@ -131,17 +140,24 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   Future<void> scanCode() async {
     HapticFeedback.selectionClick();
 
-    final result = await Navigator.push<String>(
+    final result = await Navigator.push<ScannerResult>(
       context,
       MaterialPageRoute(
-        builder: (_) => const GiftCardScannerScreen(showManualAfterDelay: true),
+        builder: (_) => ScannerScreen(
+          mode: selectedCodeMode,
+          showManualAfterDelay: true,
+          detailedResult: true,
+        ),
       ),
     );
 
-    if (!mounted || result == null || result.trim().isEmpty) return;
+    if (!mounted || result == null || result.code.trim().isEmpty) return;
 
     setState(() {
-      codeController.text = result.trim();
+      codeController.text = result.code.trim();
+      selectedCodeMode = result.codeFormat == 'qr'
+          ? ScannerMode.qr
+          : ScannerMode.barcode;
     });
   }
 
@@ -167,7 +183,8 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
 
     try {
       final result = await scanner.analyzeImage(image.path);
-      final value = result?.barcodes.firstOrNull?.rawValue?.trim();
+      final detected = result?.barcodes.firstOrNull;
+      final value = detected?.rawValue?.trim();
       if (!mounted) return;
       if (value == null || value.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -177,7 +194,12 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
         );
         return;
       }
-      setState(() => codeController.text = value);
+      setState(() {
+        codeController.text = value;
+        selectedCodeMode = detected?.format == mobile.BarcodeFormat.qrCode
+            ? ScannerMode.qr
+            : ScannerMode.barcode;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Code gevonden en ingevuld. Controleer hem voor opslaan.'),
@@ -276,6 +298,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       'type': 'Cadeaukaart',
       'name': name,
       'code': code,
+      'codeFormat': selectedCodeMode == ScannerMode.qr ? 'qr' : 'barcode',
       'cardNumber': code,
       'pinCode': pinCodeController.text.trim(),
       'initialBalance': balance,
@@ -338,6 +361,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
             cardColor: cardColor,
             logoAsset: logoAsset,
             customImage: customImage,
+            isQr: selectedCodeMode == ScannerMode.qr,
           ),
 
           const SizedBox(height: 16),
@@ -346,6 +370,22 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
             title: 'Wat is het saldo?',
             subtitle: 'Vul het huidige saldo van deze cadeaukaart in.',
             children: [
+              DropdownButtonFormField<ScannerMode>(
+                value: selectedCodeMode,
+                decoration: const InputDecoration(
+                  labelText: 'Type code',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: ScannerMode.auto, child: Text('Automatisch herkennen')),
+                  DropdownMenuItem(value: ScannerMode.barcode, child: Text('Streepjescode')),
+                  DropdownMenuItem(value: ScannerMode.qr, child: Text('QR-code')),
+                ],
+                onChanged: (value) {
+                  if (value != null) setState(() => selectedCodeMode = value);
+                },
+              ),
+              const SizedBox(height: 14),
               _InputField(
                 controller: balanceController,
                 label: 'Saldo',
@@ -535,6 +575,7 @@ class _GiftCardLivePreview extends StatelessWidget {
   final Color cardColor;
   final String logoAsset;
   final String customImage;
+  final bool isQr;
 
   const _GiftCardLivePreview({
     required this.name,
@@ -545,6 +586,7 @@ class _GiftCardLivePreview extends StatelessWidget {
     required this.cardColor,
     required this.logoAsset,
     required this.customImage,
+    required this.isQr,
   });
 
   bool get hasAssetLogo => logoAsset.isNotEmpty;
@@ -637,6 +679,14 @@ class _GiftCardLivePreview extends StatelessWidget {
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
+                            ),
+                          )
+                        : isQr
+                        ? Center(
+                            child: QrImageView(
+                              data: code,
+                              size: 118,
+                              padding: EdgeInsets.zero,
                             ),
                           )
                         : BarcodeWidget(

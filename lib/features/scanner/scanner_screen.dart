@@ -4,16 +4,90 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-enum ScannerMode { barcode, qr }
+enum ScannerMode { auto, barcode, qr }
+
+class ScannerResult {
+  final String code;
+  final String codeFormat;
+
+  const ScannerResult({required this.code, required this.codeFormat});
+}
+
+Future<ScannerMode?> showCodeTypeDialog(BuildContext context) {
+  return showModalBottomSheet<ScannerMode>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Welk type code staat op de kaart?',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            const Text('Automatisch herkennen werkt voor de meeste kaarten.'),
+            const SizedBox(height: 16),
+            _CodeTypeTile(
+              icon: Icons.auto_awesome,
+              title: 'Automatisch herkennen',
+              subtitle: 'Aanbevolen',
+              onTap: () => Navigator.pop(context, ScannerMode.auto),
+            ),
+            _CodeTypeTile(
+              icon: Icons.view_week_outlined,
+              title: 'Streepjescode',
+              onTap: () => Navigator.pop(context, ScannerMode.barcode),
+            ),
+            _CodeTypeTile(
+              icon: Icons.qr_code,
+              title: 'QR-code',
+              onTap: () => Navigator.pop(context, ScannerMode.qr),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _CodeTypeTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback onTap;
+
+  const _CodeTypeTile({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(icon, color: const Color(0xFFD51B46)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: subtitle == null ? null : Text(subtitle!),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      );
+}
 
 class ScannerScreen extends StatefulWidget {
   final ScannerMode mode;
   final bool showManualAfterDelay;
+  final bool detailedResult;
 
   const ScannerScreen({
     super.key,
     required this.mode,
     this.showManualAfterDelay = false,
+    this.detailedResult = false,
   });
 
   static const manualEntryResult = '__manual_entry__';
@@ -24,11 +98,9 @@ class ScannerScreen extends StatefulWidget {
 
 class _ScannerScreenState extends State<ScannerScreen>
     with SingleTickerProviderStateMixin {
-  final MobileScannerController controller = MobileScannerController(
-    detectionSpeed: DetectionSpeed.noDuplicates,
-    facing: CameraFacing.back,
-    torchEnabled: false,
-    formats: [
+  late final MobileScannerController controller;
+
+  static const barcodeFormats = [
       BarcodeFormat.ean13,
       BarcodeFormat.ean8,
       BarcodeFormat.code128,
@@ -38,8 +110,7 @@ class _ScannerScreenState extends State<ScannerScreen>
       BarcodeFormat.upcA,
       BarcodeFormat.upcE,
       BarcodeFormat.itf,
-    ],
-  );
+  ];
 
   late final AnimationController scanLineController;
 
@@ -54,6 +125,17 @@ class _ScannerScreenState extends State<ScannerScreen>
   @override
   void initState() {
     super.initState();
+
+    controller = MobileScannerController(
+      detectionSpeed: DetectionSpeed.noDuplicates,
+      facing: CameraFacing.back,
+      torchEnabled: false,
+      formats: switch (widget.mode) {
+        ScannerMode.qr => const [BarcodeFormat.qrCode],
+        ScannerMode.barcode => barcodeFormats,
+        ScannerMode.auto => const [...barcodeFormats, BarcodeFormat.qrCode],
+      },
+    );
 
     scanLineController = AnimationController(
       vsync: this,
@@ -86,14 +168,22 @@ class _ScannerScreenState extends State<ScannerScreen>
 
     if (value == null || value.isEmpty) return;
 
-    finishWithCode(value);
+    finishWithCode(value, format: barcode?.format);
   }
 
-  void finishWithCode(String code) {
+  void finishWithCode(String code, {BarcodeFormat? format}) {
     if (scanned) return;
 
     scanned = true;
-    Navigator.pop(context, code);
+    final codeFormat = format == BarcodeFormat.qrCode || widget.mode == ScannerMode.qr
+        ? 'qr'
+        : 'barcode';
+    Navigator.pop(
+      context,
+      widget.detailedResult
+          ? ScannerResult(code: code, codeFormat: codeFormat)
+          : code,
+    );
   }
 
   Future<void> toggleTorch() async {
@@ -161,7 +251,7 @@ class _ScannerScreenState extends State<ScannerScreen>
         return;
       }
 
-      finishWithCode(value);
+      finishWithCode(value, format: barcode?.format);
     } catch (_) {
       if (!mounted) return;
 

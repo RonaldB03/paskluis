@@ -32,6 +32,7 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
   String customImage = '';
   DateTime? expiryDate;
   bool expiryNotificationsEnabled = true;
+  String codeFormat = 'barcode';
 
   bool get hasPresetLogo => logoAsset.isNotEmpty;
 
@@ -65,6 +66,7 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
     expiryDate = DateTime.tryParse(widget.item['expiryDate']?.toString() ?? '');
     expiryNotificationsEnabled = widget.item['expiryNotificationsEnabled'] == true ||
         widget.item['expiryNotificationsEnabled']?.toString() == 'true';
+    codeFormat = widget.item['codeFormat']?.toString() ?? 'barcode';
   }
 
   @override
@@ -105,20 +107,24 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
   }
 
   Future<void> scanCode() async {
-    final result = await Navigator.push<String>(
+    final mode = await showCodeTypeDialog(context);
+    if (!mounted || mode == null) return;
+    final result = await Navigator.push<ScannerResult>(
       context,
       MaterialPageRoute(
-        builder: (_) => const ScannerScreen(
-          mode: ScannerMode.barcode,
+        builder: (_) => ScannerScreen(
+          mode: mode,
           showManualAfterDelay: true,
+          detailedResult: true,
         ),
       ),
     );
 
-    if (result == null || result.isEmpty) return;
+    if (result == null || result.code.isEmpty) return;
 
     setState(() {
-      codeController.text = result;
+      codeController.text = result.code;
+      codeFormat = result.codeFormat;
     });
   }
 
@@ -136,6 +142,7 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
     updated['type'] = 'Cadeaukaart';
     updated['name'] = nameController.text.trim();
     updated['code'] = codeController.text.trim();
+    updated['codeFormat'] = codeFormat;
     updated['note'] = noteController.text.trim();
 
     updated['cardNumber'] = cardNumberController.text.trim();

@@ -4,7 +4,7 @@ import '../../data/templates/card_templates.dart';
 import '../../data/services/brand_catalog_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import 'add_gift_card_screen.dart';
-import 'gift_card_scanner_screen.dart';
+import '../scanner/scanner_screen.dart';
 
 class ChooseGiftCardTemplateScreen extends StatefulWidget {
   const ChooseGiftCardTemplateScreen({super.key});
@@ -38,25 +38,33 @@ class _ChooseGiftCardTemplateScreenState
   }
 
   Future<void> scanForBrand(CardBrandTemplate brand) async {
-    final code = await Navigator.push<String>(
+    final mode = await showCodeTypeDialog(context);
+    if (!mounted || mode == null) return;
+
+    final scan = await Navigator.push<ScannerResult>(
       context,
       MaterialPageRoute(
-        builder: (_) => const GiftCardScannerScreen(showManualAfterDelay: true),
+        builder: (_) => ScannerScreen(
+          mode: mode,
+          showManualAfterDelay: true,
+          detailedResult: true,
+        ),
       ),
     );
 
-    if (!mounted || code == null || code.trim().isEmpty) return;
+    if (!mounted || scan == null || scan.code.trim().isEmpty) return;
 
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
         builder: (_) => AddGiftCardScreen(
           initialName: '${brand.name} cadeaukaart',
-          initialCode: code.trim(),
+          initialCode: scan.code.trim(),
+          initialCodeFormat: scan.codeFormat,
           initialBrandId: brand.id,
           initialLogoAsset: brand.logoAsset,
           initialBrandColor: brand.color.value.toString(),
-          initialCardNumber: code.trim(),
+          initialCardNumber: scan.code.trim(),
         ),
       ),
     );

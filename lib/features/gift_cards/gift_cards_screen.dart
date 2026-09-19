@@ -71,6 +71,7 @@ class GiftCardsScreen extends StatelessWidget {
       'type': result['type'] ?? forcedType,
       'name': result['name'] ?? '',
       'code': result['code'] ?? '',
+      'codeFormat': result['codeFormat'] ?? 'barcode',
       'note': result['note'] ?? '',
       'cardNumber': result['cardNumber'] ?? '',
       'pinCode': result['pinCode'] ?? '',
