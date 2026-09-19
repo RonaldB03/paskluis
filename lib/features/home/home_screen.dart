@@ -9,8 +9,10 @@ import '../../data/services/image_color_service.dart';
 import '../../data/services/brand_sync_service.dart';
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/notification_service.dart';
+import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/amount_format.dart';
+import '../../shared/utils/logo_layout.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
@@ -171,6 +173,12 @@ class _HomeScreenState extends State<HomeScreen> {
       'brandId': result['brandId'] ?? '',
       'logoAsset': result['logoAsset'] ?? '',
       'brandColor': result['brandColor'] ?? '',
+      for (final entry in result.entries)
+        if (entry.key.startsWith('logo') &&
+            (entry.key.endsWith('Scale') ||
+                entry.key.endsWith('X') ||
+                entry.key.endsWith('Y')))
+          entry.key: entry.value,
       'customImage': result['customImage'] ?? '',
       'isFavorite': result['isFavorite'] == 'true',
       'createdAt': result['createdAt'] ?? now,
@@ -321,6 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
             initialBrandId: brand?.id,
             initialLogoAsset: brand?.logoAsset,
             initialBrandColor: brand?.color.value.toString(),
+            initialLogoLayout: brand?.logoLayout ?? const {},
           ),
         ),
       );
@@ -349,6 +358,9 @@ class _HomeScreenState extends State<HomeScreen> {
             initialBrandId: brand?.id,
             initialLogoAsset: brand?.logoAsset,
             initialBrandColor: brand?.color.value.toString(),
+            initialLogoLayout: brand == null
+                ? const {}
+                : logoLayoutCardFields(brand),
           ),
         ),
       );
@@ -822,6 +834,7 @@ class _FavoritesSection extends StatelessWidget {
               return SizedBox(
                 width: 190,
                 child: _PreviewCard(
+                  item: item,
                   title: item['name']?.toString() ?? 'Kaart',
                   logoAsset: item['logoAsset']?.toString() ?? '',
                   customImage: item['customImage']?.toString() ?? '',
@@ -1001,6 +1014,7 @@ class _CategorySection extends StatelessWidget {
             final item = items[index];
 
             return _PreviewCard(
+              item: item,
               title: item['name']?.toString() ?? 'Kaart',
               logoAsset: item['logoAsset']?.toString() ?? '',
               customImage: item['customImage']?.toString() ?? '',
@@ -1018,6 +1032,7 @@ class _CategorySection extends StatelessWidget {
 }
 
 class _PreviewCard extends StatefulWidget {
+  final Map<String, dynamic> item;
   final String title;
   final String logoAsset;
   final String customImage;
@@ -1028,6 +1043,7 @@ class _PreviewCard extends StatefulWidget {
   final VoidCallback onLongPress;
 
   const _PreviewCard({
+    required this.item,
     required this.title,
     required this.logoAsset,
     required this.customImage,
@@ -1057,16 +1073,6 @@ class _PreviewCardState extends State<_PreviewCard> {
       widget.customImage.isNotEmpty && File(widget.customImage).existsSync();
 
   bool get isGiftCard => widget.type == 'Cadeaukaart';
-
-  double? get giftLogoScale {
-    if (!isGiftCard) return null;
-    final brand = '${widget.title} ${widget.logoAsset}'
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '');
-    if (brand.contains('albertheijn')) return 2.05;
-    if (brand.contains('gallgall')) return 1.75;
-    return 1.45;
-  }
 
   void setPressed(bool value) {
     if (!mounted) return;
@@ -1123,7 +1129,24 @@ class _PreviewCardState extends State<_PreviewCard> {
                                   width: double.infinity,
                                   child: BrandLogo(
                                     source: widget.logoAsset,
-                                    scale: giftLogoScale,
+                                    scale: logoLayoutValue(
+                                      widget.item,
+                                      'home',
+                                      'scale',
+                                      1,
+                                    ),
+                                    offsetX: logoLayoutValue(
+                                      widget.item,
+                                      'home',
+                                      'x',
+                                      0,
+                                    ),
+                                    offsetY: logoLayoutValue(
+                                      widget.item,
+                                      'home',
+                                      'y',
+                                      0,
+                                    ),
                                   ),
                                 ),
                         ),

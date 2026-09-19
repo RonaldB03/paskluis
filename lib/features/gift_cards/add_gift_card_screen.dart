@@ -31,6 +31,7 @@ class AddGiftCardScreen extends StatefulWidget {
   final String? initialExpiryDate;
   final bool initialExpiryNotificationsEnabled;
   final String? initialCodeFormat;
+  final Map<String, double> initialLogoLayout;
 
   const AddGiftCardScreen({
     super.key,
@@ -49,6 +50,7 @@ class AddGiftCardScreen extends StatefulWidget {
     this.initialExpiryDate,
     this.initialExpiryNotificationsEnabled = true,
     this.initialCodeFormat,
+    this.initialLogoLayout = const {},
   });
 
   @override
@@ -65,6 +67,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   String brandId = '';
   String logoAsset = '';
   String brandColor = '';
+  Map<String, double> logoLayout = {};
   String customImage = '';
   DateTime? expiryDate;
   late bool expiryNotificationsEnabled;
@@ -115,6 +118,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     brandId = widget.initialBrandId ?? '';
     logoAsset = widget.initialLogoAsset ?? '';
     brandColor = widget.initialBrandColor ?? '';
+    logoLayout = Map<String, double>.from(widget.initialLogoLayout);
     customImage = widget.initialCustomImage ?? '';
     expiryDate = DateTime.tryParse(widget.initialExpiryDate ?? '');
     expiryNotificationsEnabled = widget.initialExpiryNotificationsEnabled;
@@ -200,6 +204,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
           brandId = result.brand!.id;
           logoAsset = result.brand!.logoAsset;
           brandColor = result.brand!.color.value.toString();
+          logoLayout = result.brand!.logoLayout;
           customBrandSelected = false;
         }
         selectedCodeMode = result.codeFormat == 'qr'
@@ -314,7 +319,12 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                       ),
                       leading: SizedBox(
                         width: 62,
-                        child: BrandLogo(source: brand.logoAsset),
+                        child: BrandLogo(
+                          source: brand.logoAsset,
+                          scale: brand.logoLayout['pickerScale'] ?? 1,
+                          offsetX: brand.logoLayout['pickerX'] ?? 0,
+                          offsetY: brand.logoLayout['pickerY'] ?? 0,
+                        ),
                       ),
                       title: Text(
                         brand.name,
@@ -338,6 +348,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       brandId = selected.id;
       logoAsset = selected.logoAsset;
       brandColor = selected.color.value.toString();
+      logoLayout = selected.logoLayout;
       customImage = '';
       customBrandSelected = false;
       nameController.text = '${selected.name} cadeaukaart';
@@ -350,6 +361,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       customImage = '';
       logoAsset = '';
       brandColor = '';
+      logoLayout = {};
       brandId = '';
     });
   }
@@ -409,6 +421,9 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       'brandId': brandId,
       'logoAsset': logoAsset,
       'brandColor': brandColor,
+      for (final entry in logoLayout.entries)
+        'logo${entry.key[0].toUpperCase()}${entry.key.substring(1)}':
+            entry.value.toString(),
       'customImage': customImage,
       'isFavorite': 'false',
       'createdAt': now,
@@ -532,6 +547,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
             cardColor: cardColor,
             logoAsset: logoAsset,
             customImage: customImage,
+            logoLayout: logoLayout,
             isQr: selectedCodeMode == ScannerMode.qr,
           ),
 
@@ -748,6 +764,7 @@ class _GiftCardLivePreview extends StatelessWidget {
   final String logoAsset;
   final String customImage;
   final bool isQr;
+  final Map<String, double> logoLayout;
 
   const _GiftCardLivePreview({
     required this.name,
@@ -759,6 +776,7 @@ class _GiftCardLivePreview extends StatelessWidget {
     required this.logoAsset,
     required this.customImage,
     required this.isQr,
+    required this.logoLayout,
   });
 
   bool get hasAssetLogo => logoAsset.isNotEmpty;
@@ -798,7 +816,12 @@ class _GiftCardLivePreview extends StatelessWidget {
                     child: hasCustomLogo
                         ? Image.file(File(customImage), fit: BoxFit.contain)
                         : hasAssetLogo
-                        ? BrandLogo(source: logoAsset, scale: 1.5)
+                        ? BrandLogo(
+                            source: logoAsset,
+                            scale: logoLayout['detailScale'] ?? 1,
+                            offsetX: logoLayout['detailX'] ?? 0,
+                            offsetY: logoLayout['detailY'] ?? 0,
+                          )
                         : const Icon(
                             Icons.card_giftcard_rounded,
                             color: Colors.white,

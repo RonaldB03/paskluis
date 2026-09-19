@@ -8,6 +8,7 @@ import '../../data/services/storage_service.dart';
 import '../../data/services/settings_service.dart';
 import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
+import '../../shared/utils/logo_layout.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
@@ -73,6 +74,12 @@ class CardsScreen extends StatelessWidget {
       'brandId': result['brandId'] ?? '',
       'logoAsset': result['logoAsset'] ?? '',
       'brandColor': result['brandColor'] ?? '',
+      for (final entry in result.entries)
+        if (entry.key.startsWith('logo') &&
+            (entry.key.endsWith('Scale') ||
+                entry.key.endsWith('X') ||
+                entry.key.endsWith('Y')))
+          entry.key: entry.value,
       'customImage': result['customImage'] ?? '',
       'isFavorite': result['isFavorite'] == 'true',
       'createdAt': result['createdAt'] ?? now,
@@ -481,16 +488,6 @@ class _StoredCardTileState extends State<_StoredCardTile> {
     return path.isNotEmpty && File(path).existsSync();
   }
 
-  double get gridLogoScale {
-    final value = '${widget.item['brandId']} ${widget.item['name']} '
-            '${widget.item['logoAsset']}'
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '');
-    if (value.contains('gallgall')) return 1.72;
-    if (value.contains('albertheijn')) return 1.05;
-    return 1.35;
-  }
-
   void setPressed(bool value) {
     if (!mounted) return;
     setState(() => isPressed = value);
@@ -556,7 +553,24 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                                   width: double.infinity,
                                   child: BrandLogo(
                                     source: logoAsset,
-                                    scale: gridLogoScale,
+                                    scale: logoLayoutValue(
+                                      widget.item,
+                                      'loyalty',
+                                      'scale',
+                                      1,
+                                    ),
+                                    offsetX: logoLayoutValue(
+                                      widget.item,
+                                      'loyalty',
+                                      'x',
+                                      0,
+                                    ),
+                                    offsetY: logoLayoutValue(
+                                      widget.item,
+                                      'loyalty',
+                                      'y',
+                                      0,
+                                    ),
                                   ),
                                 ),
                         )

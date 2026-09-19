@@ -62,6 +62,7 @@ class _ChooseGiftCardTemplateScreenState
           initialBrandId: brand?.id,
           initialLogoAsset: brand?.logoAsset,
           initialBrandColor: brand?.color.value.toString(),
+          initialLogoLayout: brand?.logoLayout ?? const {},
         ),
       ),
     );

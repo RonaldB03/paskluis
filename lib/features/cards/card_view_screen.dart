@@ -9,6 +9,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../shared/widgets/brand_logo.dart';
+import '../../shared/utils/logo_layout.dart';
 import '../gift_cards/gift_card_view_screen.dart';
 import 'edit_card_screen.dart';
 
@@ -657,13 +658,6 @@ class _BarcodeCard extends StatelessWidget {
   bool get hasAssetLogo => (item['logoAsset']?.toString() ?? '').isNotEmpty;
   bool get isQr => item['codeFormat']?.toString() == 'qr';
 
-  bool get isWideGallLogo {
-    final value = '${item['brandId']} ${item['name']} $logoSource'
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '');
-    return value.contains('gallgall');
-  }
-
   String get logoSource => item['logoAsset']?.toString() ?? '';
 
   bool get hasCustomLogo {
@@ -726,13 +720,24 @@ class _BarcodeCard extends StatelessWidget {
                                     )
                                   : BrandLogo(
                                       source: logoAsset,
-                                      // A wide crop removes empty space around
-                                      // supplied logos while keeping the full
-                                      // wordmark visible.
-                                      fit: isWideGallLogo
-                                          ? BoxFit.cover
-                                          : BoxFit.contain,
-                                      scale: isWideGallLogo ? 1.0 : null,
+                                      scale: logoLayoutValue(
+                                        item,
+                                        'detail',
+                                        'scale',
+                                        1,
+                                      ),
+                                      offsetX: logoLayoutValue(
+                                        item,
+                                        'detail',
+                                        'x',
+                                        0,
+                                      ),
+                                      offsetY: logoLayoutValue(
+                                        item,
+                                        'detail',
+                                        'y',
+                                        0,
+                                      ),
                                     ),
                             )
                           : const Icon(

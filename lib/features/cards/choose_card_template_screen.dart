@@ -49,6 +49,9 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
           initialBrandId: brand?.id,
           initialLogoAsset: brand?.logoAsset,
           initialBrandColor: brand?.color.value.toString(),
+          initialLogoLayout: brand == null
+              ? const {}
+              : logoLayoutCardFields(brand),
         ),
       ),
     );
@@ -91,6 +94,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       'brandId': brand.id,
       'logoAsset': brand.logoAsset,
       'brandColor': brand.color.value.toString(),
+      ...logoLayoutCardFields(brand),
       'customImage': '',
       'isFavorite': 'false',
       'createdAt': now,
@@ -190,13 +194,6 @@ class _BrandListTile extends StatelessWidget {
 
   const _BrandListTile({required this.brand, required this.onTap});
 
-  double get logoScale {
-    final name = brand.name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-    if (name.contains('gallgall')) return 1.75;
-    if (name.contains('albertheijn')) return 1.15;
-    return 1.25;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -222,7 +219,9 @@ class _BrandListTile extends StatelessWidget {
                 ),
                 child: BrandLogo(
                   source: brand.logoAsset,
-                  scale: logoScale,
+                  scale: brand.logoLayout['pickerScale'] ?? 1,
+                  offsetX: brand.logoLayout['pickerX'] ?? 0,
+                  offsetY: brand.logoLayout['pickerY'] ?? 0,
                 ),
               ),
               const SizedBox(width: 14),

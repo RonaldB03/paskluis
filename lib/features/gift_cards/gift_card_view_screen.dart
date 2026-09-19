@@ -17,6 +17,7 @@ import '../../data/services/account_service.dart';
 import '../account/account_screen.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/amount_format.dart';
+import '../../shared/utils/logo_layout.dart';
 import 'edit_gift_card_screen.dart';
 
 class GiftCardViewScreen extends StatefulWidget {
@@ -1333,18 +1334,6 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final logoAsset = widget.item['logoAsset']?.toString() ?? '';
     final customImage = widget.item['customImage']?.toString() ?? '';
-    final normalizedBrand =
-        '${widget.item['brandId']} $name $logoAsset'.toLowerCase().replaceAll(
-          RegExp(r'[^a-z0-9]'),
-          '',
-        );
-    final isWideGallLogo = normalizedBrand.contains('gallgall');
-    final detailLogoScale = isWideGallLogo
-        ? 1.0
-        : normalizedBrand.contains('albertheijn')
-        ? 1.35
-        : 1.5;
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 30, 2, 18),
       child: AnimatedContainer(
@@ -1386,10 +1375,24 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
                             : hasAssetLogo
                             ? BrandLogo(
                                 source: logoAsset,
-                                fit: isWideGallLogo
-                                    ? BoxFit.cover
-                                    : BoxFit.contain,
-                                scale: detailLogoScale,
+                                scale: logoLayoutValue(
+                                  widget.item,
+                                  'detail',
+                                  'scale',
+                                  1,
+                                ),
+                                offsetX: logoLayoutValue(
+                                  widget.item,
+                                  'detail',
+                                  'x',
+                                  0,
+                                ),
+                                offsetY: logoLayoutValue(
+                                  widget.item,
+                                  'detail',
+                                  'y',
+                                  0,
+                                ),
                               )
                             : Icon(
                                 Icons.card_giftcard,

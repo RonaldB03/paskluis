@@ -5,6 +5,7 @@ class CardBrandTemplate {
   final String name;
   final String logoAsset;
   final Color color;
+  final Map<String, double> logoLayout;
 
   /// 👇 NIEUW
   final List<String> supportedTypes;
@@ -14,6 +15,7 @@ class CardBrandTemplate {
     required this.name,
     required this.logoAsset,
     required this.color,
+    this.logoLayout = const {},
     this.supportedTypes = const ['Pasje'], // 👈 backward compatible
   });
 }
@@ -32,9 +34,26 @@ CardBrandTemplate cardBrandTemplateFromJson(Map<String, dynamic> json) {
     name: json['name']?.toString() ?? '',
     logoAsset: json['logo_path']?.toString() ?? '',
     color: Color(colorValue),
+    logoLayout: {
+      for (final context in const ['home', 'loyalty', 'gift', 'detail', 'picker'])
+        ...{
+          '${context}Scale': _layoutValue(json['logo_${context}_scale'], 1),
+          '${context}X': _layoutValue(json['logo_${context}_x'], 0),
+          '${context}Y': _layoutValue(json['logo_${context}_y'], 0),
+        },
+    },
     supportedTypes: supportedTypes,
   );
 }
+
+double _layoutValue(Object? value, double fallback) =>
+    double.tryParse(value?.toString() ?? '') ?? fallback;
+
+Map<String, String> logoLayoutCardFields(CardBrandTemplate brand) => {
+  for (final entry in brand.logoLayout.entries)
+    'logo${entry.key[0].toUpperCase()}${entry.key.substring(1)}':
+        entry.value.toString(),
+};
 
 /// 🔥 ALLE MERKEN (CENTRAAL)
 const List<CardBrandTemplate> cardBrandTemplates = [

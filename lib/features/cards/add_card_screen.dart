@@ -14,6 +14,7 @@ class AddCardScreen extends StatefulWidget {
   final String? initialBrandId;
   final String? initialLogoAsset;
   final String? initialBrandColor;
+  final Map<String, String> initialLogoLayout;
   final String? initialCodeFormat;
 
   const AddCardScreen({
@@ -24,6 +25,7 @@ class AddCardScreen extends StatefulWidget {
     this.initialBrandId,
     this.initialLogoAsset,
     this.initialBrandColor,
+    this.initialLogoLayout = const {},
     this.initialCodeFormat,
   });
 
@@ -147,6 +149,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
       'brandColor': customImage != null
           ? customBrandColor
           : widget.initialBrandColor ?? '',
+      ...widget.initialLogoLayout,
       'customImage': customImage?.path ?? '',
     });
   }

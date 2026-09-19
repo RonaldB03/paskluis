@@ -7,18 +7,22 @@ import 'package:flutter/material.dart';
 ///
 /// Empty transparent or single-colour margins are detected automatically.
 /// The remaining logo is always fitted inside the available box without
-/// stretching or clipping. [fit] and [scale] remain in the API for older
-/// call sites, but sizing is intentionally handled here for every brand.
+/// stretching. Per-brand scale and position can then be applied by the
+/// centrally managed logo-layout settings.
 class BrandLogo extends StatefulWidget {
   final String source;
   final BoxFit fit;
   final double? scale;
+  final double offsetX;
+  final double offsetY;
 
   const BrandLogo({
     super.key,
     required this.source,
     this.fit = BoxFit.contain,
     this.scale,
+    this.offsetX = 0,
+    this.offsetY = 0,
   });
 
   @override
@@ -44,11 +48,14 @@ class _BrandLogoState extends State<BrandLogo> {
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ClipRect(
-              child: Transform.scale(
-                scale: widget.scale ?? 1.0,
-                child: CustomPaint(
-                  painter: _LogoPainter(snapshot.data!),
-                  size: Size.infinite,
+              child: FractionalTranslation(
+                translation: Offset(widget.offsetX / 100, widget.offsetY / 100),
+                child: Transform.scale(
+                  scale: widget.scale ?? 1.0,
+                  child: CustomPaint(
+                    painter: _LogoPainter(snapshot.data!),
+                    size: Size.infinite,
+                  ),
                 ),
               ),
             );

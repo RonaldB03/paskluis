@@ -10,6 +10,7 @@ import '../../data/services/notification_service.dart';
 import '../../data/services/gift_card_share_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/amount_format.dart';
+import '../../shared/utils/logo_layout.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
@@ -81,6 +82,12 @@ class GiftCardsScreen extends StatelessWidget {
       'brandId': result['brandId'] ?? '',
       'logoAsset': result['logoAsset'] ?? '',
       'brandColor': result['brandColor'] ?? '',
+      for (final entry in result.entries)
+        if (entry.key.startsWith('logo') &&
+            (entry.key.endsWith('Scale') ||
+                entry.key.endsWith('X') ||
+                entry.key.endsWith('Y')))
+          entry.key: entry.value,
       'customImage': result['customImage'] ?? '',
       'isFavorite': result['isFavorite'] == 'true',
       'createdAt': result['createdAt'] ?? now,
@@ -592,17 +599,6 @@ class _GiftCardTileState extends State<_GiftCardTile> {
         hasLogo && (widget.item['brandColor']?.toString() ?? '').isNotEmpty;
     final hasDarkBrandBackground =
         usesBrandBackground && cardColor.computeLuminance() < 0.55;
-    final normalizedBrand =
-        '${widget.item['brandId']} $title $logoAsset'.toLowerCase().replaceAll(
-          RegExp(r'[^a-z0-9]'),
-          '',
-        );
-    final logoScale = normalizedBrand.contains('albertheijn')
-        ? 2.65
-        : normalizedBrand.contains('gallgall')
-        ? 2.15
-        : 1.75;
-
     return Semantics(
       button: true,
       label:
@@ -655,7 +651,24 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                                 width: double.infinity,
                                 child: BrandLogo(
                                   source: logoAsset,
-                                  scale: logoScale,
+                                  scale: logoLayoutValue(
+                                    widget.item,
+                                    'gift',
+                                    'scale',
+                                    1,
+                                  ),
+                                  offsetX: logoLayoutValue(
+                                    widget.item,
+                                    'gift',
+                                    'x',
+                                    0,
+                                  ),
+                                  offsetY: logoLayoutValue(
+                                    widget.item,
+                                    'gift',
+                                    'y',
+                                    0,
+                                  ),
                                 ),
                               )
                         : Text(
