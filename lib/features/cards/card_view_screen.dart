@@ -4,10 +4,12 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:screen_brightness/screen_brightness.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../shared/widgets/brand_logo.dart';
+import '../../shared/utils/logo_layout.dart';
 import '../gift_cards/gift_card_view_screen.dart';
 import 'edit_card_screen.dart';
 
@@ -25,7 +27,8 @@ class CardViewScreen extends StatefulWidget {
   State<CardViewScreen> createState() => _CardViewScreenState();
 }
 
-class _CardViewScreenState extends State<CardViewScreen> {
+class _CardViewScreenState extends State<CardViewScreen>
+    with WidgetsBindingObserver {
   late final PageController pageController;
   late List<Map<String, dynamic>> items;
   late int currentIndex;
@@ -35,6 +38,7 @@ class _CardViewScreenState extends State<CardViewScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     items = widget.items
         .map((item) => Map<String, dynamic>.from(item))
@@ -55,9 +59,19 @@ class _CardViewScreenState extends State<CardViewScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     pageController.dispose();
     restoreScreen();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {});
+      if (pageController.hasClients) pageController.jumpToPage(currentIndex);
+    });
   }
 
   Future<void> setupScreen() async {
@@ -427,6 +441,42 @@ class _CardViewScreenState extends State<CardViewScreen> {
 
     final currentItem = items[currentIndex];
     final isFavorite = currentItem['isFavorite'] == true;
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+
+    if (isLandscape) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: pageController,
+                itemCount: items.length,
+                onPageChanged: (index) {
+                  HapticFeedback.selectionClick();
+                  setState(() => currentIndex = index);
+                  markCurrentCardAsUsed();
+                },
+                itemBuilder: (context, index) => _LandscapeBarcodeCard(
+                  item: items[index],
+                  barcode: getBarcodeType(items[index]),
+                ),
+              ),
+              Positioned(
+                left: 8,
+                top: 4,
+                child: IconButton.filledTonal(
+                  tooltip: 'Terug',
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
@@ -526,6 +576,64 @@ class _CardViewScreenState extends State<CardViewScreen> {
   }
 }
 
+class _LandscapeBarcodeCard extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final Barcode barcode;
+
+  const _LandscapeBarcodeCard({required this.item, required this.barcode});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = item['name']?.toString() ?? 'Klantenkaart';
+    final code = item['code']?.toString() ?? '';
+    final isQr = item['codeFormat']?.toString() == 'qr';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(76, 12, 32, 16),
+      child: Column(
+        children: [
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: Center(
+              child: code.isEmpty
+                  ? const Text('Geen barcode beschikbaar')
+                  : isQr
+                  ? QrImageView(data: code, padding: const EdgeInsets.all(8))
+                  : BarcodeWidget(
+                      barcode: barcode,
+                      data: code,
+                      width: double.infinity,
+                      height: double.infinity,
+                      drawText: false,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 10,
+                      ),
+                    ),
+            ),
+          ),
+          if (!isQr)
+            Text(
+              code,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 16,
+                letterSpacing: 2,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _BarcodeCard extends StatelessWidget {
   final Map<String, dynamic> item;
   final Barcode barcode;
@@ -548,6 +656,9 @@ class _BarcodeCard extends StatelessWidget {
   }
 
   bool get hasAssetLogo => (item['logoAsset']?.toString() ?? '').isNotEmpty;
+  bool get isQr => item['codeFormat']?.toString() == 'qr';
+
+  String get logoSource => item['logoAsset']?.toString() ?? '';
 
   bool get hasCustomLogo {
     final path = item['customImage']?.toString() ?? '';
@@ -599,10 +710,36 @@ class _BarcodeCard extends StatelessWidget {
                 child: Column(
                   children: [
                     Expanded(
-                      child: hasCustomLogo
-                          ? Image.file(File(customImage), fit: BoxFit.contain)
-                          : hasAssetLogo
-                          ? BrandLogo(source: logoAsset)
+                      child: hasCustomLogo || hasAssetLogo
+                          ? Transform.scale(
+                              scale: hasCustomLogo ? 1.7 : 1.0,
+                              child: hasCustomLogo
+                                  ? Image.file(
+                                      File(customImage),
+                                      fit: BoxFit.contain,
+                                    )
+                                  : BrandLogo(
+                                      source: logoAsset,
+                                      scale: logoLayoutValue(
+                                        item,
+                                        'detail',
+                                        'scale',
+                                        1,
+                                      ),
+                                      offsetX: logoLayoutValue(
+                                        item,
+                                        'detail',
+                                        'x',
+                                        0,
+                                      ),
+                                      offsetY: logoLayoutValue(
+                                        item,
+                                        'detail',
+                                        'y',
+                                        0,
+                                      ),
+                                    ),
+                            )
                           : const Icon(
                               Icons.card_membership_rounded,
                               color: Colors.white,
@@ -650,7 +787,15 @@ class _BarcodeCard extends StatelessWidget {
                                 color: Colors.black.withOpacity(0.04),
                               ),
                             ),
-                            child: BarcodeWidget(
+                            child: isQr
+                            ? Center(
+                                child: QrImageView(
+                                  data: code,
+                                  size: hasLinkedGiftCard ? 150 : 180,
+                                  padding: EdgeInsets.zero,
+                                ),
+                              )
+                            : BarcodeWidget(
                               barcode: barcode,
                               data: code,
                               width: double.infinity,
@@ -672,18 +817,20 @@ class _BarcodeCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 18),
-                      Text(
-                        formattedCode,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xFF111122),
-                          fontSize: 20,
-                          letterSpacing: 2,
-                          height: 1.25,
-                          fontWeight: FontWeight.w800,
+                      if (!isQr) ...[
+                        const SizedBox(height: 18),
+                        Text(
+                          formattedCode,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Color(0xFF111122),
+                            fontSize: 20,
+                            letterSpacing: 2,
+                            height: 1.25,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
+                      ],
                       if (hasLinkedGiftCard) ...[
                         const SizedBox(height: 14),
                         _LinkedGiftCardInline(

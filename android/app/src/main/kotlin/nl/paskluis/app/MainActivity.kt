@@ -1,12 +1,12 @@
 package nl.paskluis.app
 
 import android.os.Bundle
-import android.view.WindowManager
 import io.flutter.embedding.android.FlutterFragmentActivity
 
 class MainActivity : FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        // Screenshots are temporarily allowed during the test phase.
+        // Re-enable FLAG_SECURE before the production release.
     }
 }

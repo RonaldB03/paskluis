@@ -4,6 +4,9 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
+import '../../shared/widgets/main_tab_swipe_region.dart';
+import '../../shared/widgets/premium_app_title.dart';
+import '../../shared/widgets/main_tab_route.dart';
 
 import '../cards/cards_screen.dart';
 import '../gift_cards/gift_cards_screen.dart';
@@ -307,8 +310,17 @@ class QrCodesScreen extends StatelessWidget {
         return;
     }
 
-    Navigator.of(context)
-        .pushReplacement(MaterialPageRoute(builder: (_) => screen));
+    Navigator.of(context).pushAndRemoveUntil(
+      mainTabRoute(screen, forward: index > 2),
+      (_) => false,
+    );
+  }
+
+  void openHome(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      mainTabRoute(const HomeScreen(), forward: false),
+      (_) => false,
+    );
   }
 
   void openQrView(
@@ -391,7 +403,12 @@ class QrCodesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box>(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) openHome(context);
+      },
+      child: ValueListenableBuilder<Box>(
       valueListenable: StorageService.cardsBox.listenable(),
       builder: (context, box, _) {
         final items = getItems();
@@ -399,14 +416,8 @@ class QrCodesScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.home_rounded, color: Color(0xFFD51B46)),
-              onPressed: () => openTab(context, 0),
-            ),
-            title: const Text(
-              'QR-codes',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
+            automaticallyImplyLeading: false,
+            title: const PremiumAppTitle('QR-codes'),
             centerTitle: true,
             backgroundColor: Colors.white,
             foregroundColor: const Color(0xFF333333),
@@ -418,9 +429,12 @@ class QrCodesScreen extends StatelessWidget {
               ),
             ],
           ),
-          body: items.isEmpty
-              ? _EmptyQrState(onAdd: () => openAddQrCode(context))
-              : GridView.builder(
+          body: MainTabSwipeRegion(
+            currentIndex: 2,
+            onSwitch: (index) => openTab(context, index),
+            child: items.isEmpty
+                ? _EmptyQrState(onAdd: () => openAddQrCode(context))
+                : GridView.builder(
                   padding: const EdgeInsets.all(24),
                   itemCount: items.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -438,13 +452,15 @@ class QrCodesScreen extends StatelessWidget {
                       onLongPress: () => showQrOptions(context, item),
                     );
                   },
-                ),
+                  ),
+          ),
           bottomNavigationBar: MainBottomNav(
             currentIndex: 2,
             onTap: (index) => openTab(context, index),
           ),
         );
       },
+      ),
     );
   }
 }
@@ -463,7 +479,8 @@ class QrCodeViewScreen extends StatefulWidget {
   State<QrCodeViewScreen> createState() => _QrCodeViewScreenState();
 }
 
-class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
+class _QrCodeViewScreenState extends State<QrCodeViewScreen>
+    with WidgetsBindingObserver {
   late final PageController pageController;
   late int currentIndex;
   late int ticketIndex;
@@ -504,6 +521,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     currentIndex = widget.initialIndex;
     ticketIndex = 0;
     pageController = PageController(initialPage: widget.initialIndex);
@@ -511,8 +529,18 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     pageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {});
+      if (pageController.hasClients) pageController.jumpToPage(currentIndex);
+    });
   }
 
   dynamic findHiveKey(Map<String, dynamic> item) {
@@ -537,12 +565,13 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
     });
   }
 
-  Future<void> markCurrentTicketAsUsed() async {
+  Future<void> toggleCurrentTicketUsed() async {
     final codes = currentCodes;
     if (codes.isEmpty) return;
 
     final used = currentUsed;
-    used[ticketIndex] = true;
+    final willBeUsed = !used[ticketIndex];
+    used[ticketIndex] = willBeUsed;
 
     final updated = Map<String, dynamic>.from(item);
     updated['used'] = used.map((v) => v ? 'true' : 'false').join('|||');
@@ -556,9 +585,13 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          isSet
-              ? 'Ticket ${ticketIndex + 1} gemarkeerd als gebruikt.'
-              : 'QR-code gemarkeerd als gebruikt.',
+          willBeUsed
+              ? isSet
+                  ? 'Ticket ${ticketIndex + 1} gemarkeerd als gebruikt.'
+                  : 'QR-code gemarkeerd als gebruikt.'
+              : isSet
+                  ? 'Ticket ${ticketIndex + 1} is weer beschikbaar.'
+                  : 'QR-code is weer beschikbaar.',
         ),
       ),
     );
@@ -605,6 +638,57 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
   Widget build(BuildContext context) {
     final name = item['name']?.toString() ?? 'QR-code';
     final isFavorite = item['isFavorite'] == true;
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+
+    if (isLandscape) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: pageController,
+                itemCount: widget.items.length,
+                onPageChanged: (index) => setState(() {
+                  currentIndex = index;
+                  ticketIndex = 0;
+                }),
+                itemBuilder: (context, index) {
+                  final current = widget.items[index];
+                  final isSet = current['type']?.toString() == 'QR-set';
+                  final codes = isSet
+                      ? (current['codes']?.toString() ?? '')
+                            .split('|||')
+                            .where((code) => code.trim().isNotEmpty)
+                            .toList()
+                      : [current['code']?.toString() ?? '']
+                            .where((code) => code.trim().isNotEmpty)
+                            .toList();
+                  final safeIndex = ticketIndex >= codes.length ? 0 : ticketIndex;
+                  return _LandscapeQrPage(
+                    name: current['name']?.toString() ?? 'QR-code',
+                    code: codes.isEmpty ? '' : codes[safeIndex],
+                    position: isSet && codes.isNotEmpty
+                        ? 'Ticket ${safeIndex + 1} van ${codes.length}'
+                        : '',
+                  );
+                },
+              ),
+              Positioned(
+                left: 8,
+                top: 4,
+                child: IconButton.filledTonal(
+                  tooltip: 'Terug',
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
@@ -824,11 +908,15 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
               SizedBox(
                 height: 56,
                 child: FilledButton.icon(
-                  onPressed: currentUsed ? null : markCurrentTicketAsUsed,
-                  icon: const Icon(Icons.check_circle_rounded),
+                  onPressed: toggleCurrentTicketUsed,
+                  icon: Icon(
+                    currentUsed
+                        ? Icons.undo_rounded
+                        : Icons.check_circle_rounded,
+                  ),
                   label: Text(
                     currentUsed
-                        ? 'Al gebruikt'
+                        ? 'Markeer als niet gebruikt'
                         : isCurrentSet
                         ? 'Dit ticket gebruikt'
                         : 'QR-code gebruikt',
@@ -864,6 +952,64 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _LandscapeQrPage extends StatelessWidget {
+  final String name;
+  final String code;
+  final String position;
+
+  const _LandscapeQrPage({
+    required this.name,
+    required this.code,
+    required this.position,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(76, 8, 32, 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (position.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(position, style: const TextStyle(color: Colors.black54)),
+                ],
+              ],
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: code.isEmpty
+                  ? const Text('Geen QR-code beschikbaar')
+                  : QrImageView(
+                      data: code,
+                      version: QrVersions.auto,
+                      size: MediaQuery.sizeOf(context).height - 36,
+                      backgroundColor: Colors.white,
+                      errorCorrectionLevel: QrErrorCorrectLevel.M,
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }

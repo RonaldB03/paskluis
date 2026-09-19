@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/services/media_storage_service.dart';
+import '../../data/services/image_color_service.dart';
+import '../../shared/widgets/brand_logo.dart';
+import '../../shared/utils/amount_format.dart';
 import '../scanner/scanner_screen.dart';
 
 class EditGiftCardScreen extends StatefulWidget {
@@ -28,6 +31,9 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
   String logoAsset = '';
   String brandColor = '';
   String customImage = '';
+  DateTime? expiryDate;
+  bool expiryNotificationsEnabled = true;
+  String codeFormat = 'barcode';
 
   bool get hasPresetLogo => logoAsset.isNotEmpty;
 
@@ -50,14 +56,20 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
 
     cardNumberController.text = widget.item['cardNumber']?.toString() ?? '';
     pinCodeController.text = widget.item['pinCode']?.toString() ?? '';
-    initialBalanceController.text =
-        widget.item['initialBalance']?.toString() ?? '';
-    currentBalanceController.text =
-        widget.item['currentBalance']?.toString() ?? '';
+    initialBalanceController.text = normalizeAmountValue(
+      widget.item['initialBalance']?.toString() ?? '',
+    );
+    currentBalanceController.text = normalizeAmountValue(
+      widget.item['currentBalance']?.toString() ?? '',
+    );
 
     logoAsset = widget.item['logoAsset']?.toString() ?? '';
     brandColor = widget.item['brandColor']?.toString() ?? '';
     customImage = widget.item['customImage']?.toString() ?? '';
+    expiryDate = DateTime.tryParse(widget.item['expiryDate']?.toString() ?? '');
+    expiryNotificationsEnabled = widget.item['expiryNotificationsEnabled'] == true ||
+        widget.item['expiryNotificationsEnabled']?.toString() == 'true';
+    codeFormat = widget.item['codeFormat']?.toString() ?? 'barcode';
   }
 
   @override
@@ -80,11 +92,12 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
 
     try {
       final storedPath = await MediaStorageService.persistImage(image.path);
+      final detectedColor = await ImageColorService.dominantEdgeColor(storedPath);
       if (!mounted) return;
       setState(() {
         customImage = storedPath;
         logoAsset = '';
-        brandColor = '';
+        brandColor = detectedColor?.value.toString() ?? '';
       });
     } catch (_) {
       if (!mounted) return;
@@ -97,20 +110,24 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
   }
 
   Future<void> scanCode() async {
-    final result = await Navigator.push<String>(
+    final mode = await showCodeTypeDialog(context);
+    if (!mounted || mode == null) return;
+    final result = await Navigator.push<ScannerResult>(
       context,
       MaterialPageRoute(
-        builder: (_) => const ScannerScreen(
-          mode: ScannerMode.barcode,
+        builder: (_) => ScannerScreen(
+          mode: mode,
           showManualAfterDelay: true,
+          detailedResult: true,
         ),
       ),
     );
 
-    if (result == null || result.isEmpty) return;
+    if (result == null || result.code.isEmpty) return;
 
     setState(() {
-      codeController.text = result;
+      codeController.text = result.code;
+      codeFormat = result.codeFormat;
     });
   }
 
@@ -128,16 +145,21 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
     updated['type'] = 'Cadeaukaart';
     updated['name'] = nameController.text.trim();
     updated['code'] = codeController.text.trim();
+    updated['codeFormat'] = codeFormat;
     updated['note'] = noteController.text.trim();
 
     updated['cardNumber'] = cardNumberController.text.trim();
     updated['pinCode'] = pinCodeController.text.trim();
-    updated['initialBalance'] = initialBalanceController.text.trim();
-    updated['currentBalance'] = currentBalanceController.text.trim();
+    updated['initialBalance'] =
+        normalizeAmountValue(initialBalanceController.text);
+    updated['currentBalance'] =
+        normalizeAmountValue(currentBalanceController.text);
 
     updated['logoAsset'] = logoAsset;
     updated['brandColor'] = brandColor;
     updated['customImage'] = customImage;
+    updated['expiryDate'] = expiryDate?.toIso8601String() ?? '';
+    updated['expiryNotificationsEnabled'] = expiryNotificationsEnabled;
     updated['updatedAt'] = DateTime.now().toIso8601String();
 
     Navigator.pop(context, updated);
@@ -258,6 +280,36 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
               border: OutlineInputBorder(),
             ),
           ),
+          const SizedBox(height: 20),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.event_rounded, color: Color(0xFFD51B46)),
+            title: Text(
+              expiryDate == null
+                  ? 'Vervaldatum toevoegen'
+                  : '${expiryDate!.day.toString().padLeft(2, '0')}-${expiryDate!.month.toString().padLeft(2, '0')}-${expiryDate!.year}',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () async {
+              final now = DateTime.now();
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: expiryDate ?? now.add(const Duration(days: 365)),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(now.year + 20),
+              );
+              if (picked != null && mounted) setState(() => expiryDate = picked);
+            },
+          ),
+          if (expiryDate != null)
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: expiryNotificationsEnabled,
+              title: const Text('Vervaldatumherinneringen'),
+              subtitle: const Text('30 dagen, 7 dagen en op de dag zelf'),
+              onChanged: (value) => setState(() => expiryNotificationsEnabled = value),
+            ),
           const SizedBox(height: 28),
           FilledButton.icon(
             onPressed: save,
@@ -314,11 +366,10 @@ class _LogoPreview extends StatelessWidget {
                       width: double.infinity,
                     )
                   : hasPresetLogo
-                  ? Image.asset(
-                      logoAsset,
-                      fit: BoxFit.contain,
+                  ? SizedBox(
                       height: 90,
                       width: double.infinity,
+                      child: BrandLogo(source: logoAsset),
                     )
                   : const Icon(
                       Icons.image_outlined,

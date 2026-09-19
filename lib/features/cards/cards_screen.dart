@@ -5,8 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
+import '../../data/services/settings_service.dart';
 import '../../data/templates/card_templates.dart';
+import '../../shared/widgets/brand_logo.dart';
+import '../../shared/utils/logo_layout.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
+import '../../shared/widgets/main_tab_swipe_region.dart';
+import '../../shared/widgets/premium_app_title.dart';
+import '../../shared/widgets/main_tab_route.dart';
 
 import '../gift_cards/gift_cards_screen.dart';
 import '../home/home_screen.dart';
@@ -59,6 +65,7 @@ class CardsScreen extends StatelessWidget {
       'type': result['type'] ?? forcedType,
       'name': result['name'] ?? '',
       'code': result['code'] ?? '',
+      'codeFormat': result['codeFormat'] ?? 'barcode',
       'note': result['note'] ?? '',
       'cardNumber': result['cardNumber'] ?? '',
       'pinCode': result['pinCode'] ?? '',
@@ -67,6 +74,12 @@ class CardsScreen extends StatelessWidget {
       'brandId': result['brandId'] ?? '',
       'logoAsset': result['logoAsset'] ?? '',
       'brandColor': result['brandColor'] ?? '',
+      for (final entry in result.entries)
+        if (entry.key.startsWith('logo') &&
+            (entry.key.endsWith('Scale') ||
+                entry.key.endsWith('X') ||
+                entry.key.endsWith('Y')))
+          entry.key: entry.value,
       'customImage': result['customImage'] ?? '',
       'isFavorite': result['isFavorite'] == 'true',
       'createdAt': result['createdAt'] ?? now,
@@ -140,8 +153,17 @@ class CardsScreen extends StatelessWidget {
         return;
     }
 
-    Navigator.of(context)
-        .pushReplacement(MaterialPageRoute(builder: (_) => screen));
+    Navigator.of(context).pushAndRemoveUntil(
+      mainTabRoute(screen, forward: index > 1),
+      (_) => false,
+    );
+  }
+
+  void openHome(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      mainTabRoute(const HomeScreen(), forward: false),
+      (_) => false,
+    );
   }
 
   void openCard(
@@ -286,7 +308,12 @@ class CardsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Box>(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) openHome(context);
+      },
+      child: ValueListenableBuilder<Box>(
       valueListenable: StorageService.cardsBox.listenable(),
       builder: (context, box, _) {
         final items = getItems();
@@ -294,20 +321,11 @@ class CardsScreen extends StatelessWidget {
         return Scaffold(
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.home_rounded, color: Color(0xFFD51B46)),
-              onPressed: () => openTab(context, 0),
-            ),
+            automaticallyImplyLeading: false,
             backgroundColor: Colors.white,
             elevation: 0,
             centerTitle: true,
-            title: const Text(
-              'Klantenkaarten',
-              style: TextStyle(
-                color: Color(0xFF333333),
-                fontWeight: FontWeight.w800,
-              ),
-            ),
+            title: const PremiumAppTitle('Klantenkaarten'),
             actions: [
               IconButton(
                 icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
@@ -315,19 +333,23 @@ class CardsScreen extends StatelessWidget {
               ),
             ],
           ),
-          body: items.isEmpty
-              ? _EmptyCardsState(onAdd: () => openAddCard(context))
-              : GridView.builder(
+          body: MainTabSwipeRegion(
+            currentIndex: 1,
+            onSwitch: (index) => openTab(context, index),
+            child: items.isEmpty
+                ? _EmptyCardsState(onAdd: () => openAddCard(context))
+                : GridView.builder(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
                   ),
                   itemCount: items.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
                     mainAxisSpacing: 8,
                     crossAxisSpacing: 8,
-                    childAspectRatio: 1.45,
+                    childAspectRatio:
+                        SettingsService.extraClearEnabled ? 2.65 : 1.58,
                   ),
                   itemBuilder: (context, index) {
                     final item = items[index];
@@ -338,13 +360,15 @@ class CardsScreen extends StatelessWidget {
                       onLongPress: () => showCardOptions(context, item),
                     );
                   },
-                ),
+                  ),
+          ),
           bottomNavigationBar: MainBottomNav(
             currentIndex: 1,
             onTap: (index) => openTab(context, index),
           ),
         );
       },
+      ),
     );
   }
 }
@@ -401,7 +425,7 @@ class _EmptyCardsState extends StatelessWidget {
             crossAxisCount: 2,
             mainAxisSpacing: 8,
             crossAxisSpacing: 8,
-            childAspectRatio: 1.45,
+            childAspectRatio: 1.58,
           ),
           itemBuilder: (context, index) {
             final brand = previewBrands[index];
@@ -416,11 +440,10 @@ class _EmptyCardsState extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Center(
-                  child: Image.asset(
-                    brand.logoAsset,
-                    fit: BoxFit.contain,
+                  child: SizedBox(
                     height: 74,
                     width: double.infinity,
+                    child: BrandLogo(source: brand.logoAsset),
                   ),
                 ),
               ),
@@ -477,22 +500,30 @@ class _StoredCardTileState extends State<_StoredCardTile> {
     final title = widget.item['name']?.toString() ?? 'Kaart';
     final isFavorite = widget.item['isFavorite'] == true;
     final useImage = hasAssetLogo || hasCustomLogo;
+    final usesBrandBackground =
+        useImage && (widget.item['brandColor']?.toString() ?? '').isNotEmpty;
+    final hasDarkBrandBackground =
+        usesBrandBackground && cardColor.computeLuminance() < 0.55;
 
-    return GestureDetector(
-      onTapDown: (_) => setPressed(true),
-      onTapCancel: () => setPressed(false),
-      onTapUp: (_) => setPressed(false),
-      onTap: widget.onTap,
-      onLongPress: widget.onLongPress,
-      child: AnimatedScale(
+    return Semantics(
+      button: true,
+      label: '$title, klantenkaart${isFavorite ? ', favoriet' : ''}',
+      hint: 'Tik tweemaal om de kaart te openen',
+      child: GestureDetector(
+        onTapDown: (_) => setPressed(true),
+        onTapCancel: () => setPressed(false),
+        onTapUp: (_) => setPressed(false),
+        onTap: widget.onTap,
+        onLongPress: widget.onLongPress,
+        child: AnimatedScale(
         scale: isPressed ? 0.96 : 1.0,
         duration: const Duration(milliseconds: 110),
         curve: Curves.easeOut,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: hasAssetLogo ? cardColor : Colors.white,
+            color: usesBrandBackground ? cardColor : Colors.white,
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
@@ -502,32 +533,47 @@ class _StoredCardTileState extends State<_StoredCardTile> {
               ),
             ],
           ),
-          child: Column(
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: Icon(
-                  isFavorite ? Icons.star : Icons.card_membership,
-                  color: hasAssetLogo ? Colors.white : const Color(0xFFD51B46),
-                  size: 22,
-                ),
-              ),
-              Expanded(
+              ClipRect(
                 child: Center(
                   child: useImage
-                      ? hasCustomLogo
-                            ? Image.file(
-                                File(customImage),
-                                fit: BoxFit.contain,
-                                height: 74,
-                                width: double.infinity,
-                              )
-                            : Image.asset(
-                                logoAsset,
-                                fit: BoxFit.contain,
-                                height: 74,
-                                width: double.infinity,
-                              )
+                      ? Transform.scale(
+                          scale: hasCustomLogo ? 1.55 : 1.0,
+                          child: hasCustomLogo
+                              ? Image.file(
+                                  File(customImage),
+                                  fit: BoxFit.contain,
+                                  height: 92,
+                                  width: double.infinity,
+                                )
+                              : SizedBox(
+                                  height: 92,
+                                  width: double.infinity,
+                                  child: BrandLogo(
+                                    source: logoAsset,
+                                    scale: logoLayoutValue(
+                                      widget.item,
+                                      'loyalty',
+                                      'scale',
+                                      1,
+                                    ),
+                                    offsetX: logoLayoutValue(
+                                      widget.item,
+                                      'loyalty',
+                                      'x',
+                                      0,
+                                    ),
+                                    offsetY: logoLayoutValue(
+                                      widget.item,
+                                      'loyalty',
+                                      'y',
+                                      0,
+                                    ),
+                                  ),
+                                ),
+                        )
                       : Text(
                           title,
                           textAlign: TextAlign.center,
@@ -536,15 +582,28 @@ class _StoredCardTileState extends State<_StoredCardTile> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
-                            color: hasAssetLogo
+                            color: usesBrandBackground
                                 ? Colors.white
                                 : const Color(0xFF333333),
                           ),
                         ),
                 ),
               ),
+              if (isFavorite)
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: Icon(
+                    Icons.star,
+                    color: hasDarkBrandBackground
+                        ? Colors.white
+                        : const Color(0xFFD51B46),
+                    size: 24,
+                  ),
+                ),
             ],
           ),
+        ),
         ),
       ),
     );

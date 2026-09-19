@@ -49,6 +49,9 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
           initialBrandId: brand?.id,
           initialLogoAsset: brand?.logoAsset,
           initialBrandColor: brand?.color.value.toString(),
+          initialLogoLayout: brand == null
+              ? const {}
+              : logoLayoutCardFields(brand),
         ),
       ),
     );
@@ -59,22 +62,21 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
   }
 
   Future<void> scanForBrand(CardBrandTemplate brand) async {
-    final code = await Navigator.push<String>(
+    final mode = await showCodeTypeDialog(context);
+    if (!mounted || mode == null) return;
+
+    final result = await Navigator.push<ScannerResult>(
       context,
       MaterialPageRoute(
-        builder: (_) => const ScannerScreen(
-          mode: ScannerMode.barcode,
+        builder: (_) => ScannerScreen(
+          mode: mode,
           showManualAfterDelay: true,
+          detailedResult: true,
         ),
       ),
     );
 
-    if (!mounted || code == null || code.trim().isEmpty) return;
-
-    if (code == ScannerScreen.manualEntryResult) {
-      await openManualForm(brand: brand);
-      return;
-    }
+    if (!mounted || result == null || result.code.trim().isEmpty) return;
 
     final now = DateTime.now().toIso8601String();
 
@@ -82,7 +84,8 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
       'type': 'Pasje',
       'name': brand.name,
-      'code': code.trim(),
+      'code': result.code.trim(),
+      'codeFormat': result.codeFormat,
       'note': '',
       'cardNumber': '',
       'pinCode': '',
@@ -91,6 +94,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       'brandId': brand.id,
       'logoAsset': brand.logoAsset,
       'brandColor': brand.color.value.toString(),
+      ...logoLayoutCardFields(brand),
       'customImage': '',
       'isFavorite': 'false',
       'createdAt': now,
@@ -208,12 +212,17 @@ class _BrandListTile extends StatelessWidget {
               Container(
                 width: 82,
                 height: 44,
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(3),
                 decoration: BoxDecoration(
                   color: brand.color,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: BrandLogo(source: brand.logoAsset),
+                child: BrandLogo(
+                  source: brand.logoAsset,
+                  scale: brand.logoLayout['pickerScale'] ?? 1,
+                  offsetX: brand.logoLayout['pickerX'] ?? 0,
+                  offsetY: brand.logoLayout['pickerY'] ?? 0,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(

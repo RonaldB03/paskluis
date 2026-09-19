@@ -16,6 +16,22 @@ class PlusStatus {
   static const inactive = PlusStatus(isActive: false);
 }
 
+class ManagedAccount {
+  final String id;
+  final String name;
+  final String email;
+  final String role;
+  final bool plusActive;
+
+  const ManagedAccount({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.role,
+    required this.plusActive,
+  });
+}
+
 abstract final class AccountService {
   static SupabaseClient get _client {
     final client = SupabaseService.client;
@@ -56,6 +72,86 @@ abstract final class AccountService {
   }
 
   static Future<void> signOut() => _client.auth.signOut();
+
+  static Future<bool> isCurrentUserAdmin() async {
+    final user = currentUser;
+    if (user == null) return false;
+    final row = await _client
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+    return row?['role']?.toString() == 'admin';
+  }
+
+  static Future<List<ManagedAccount>> loadManagedAccounts() async {
+    if (!await isCurrentUserAdmin()) {
+      throw const AuthException('Alleen beheerders hebben toegang.');
+    }
+
+    final profiles = await _client
+        .from('profiles')
+        .select('id, display_name, email, role')
+        .order('created_at', ascending: false);
+    final entitlements = await _client
+        .from('entitlements')
+        .select('user_id, expires_at')
+        .eq('product_id', 'paskluis_plus')
+        .isFilter('revoked_at', null);
+
+    final now = DateTime.now();
+    final activeIds = entitlements.where((row) {
+      final expiresAt = DateTime.tryParse(row['expires_at']?.toString() ?? '');
+      return expiresAt == null || expiresAt.isAfter(now);
+    }).map((row) => row['user_id']?.toString()).toSet();
+
+    return profiles.map((row) {
+      final id = row['id']?.toString() ?? '';
+      return ManagedAccount(
+        id: id,
+        name: row['display_name']?.toString() ?? '',
+        email: row['email']?.toString() ?? '',
+        role: row['role']?.toString() ?? 'user',
+        plusActive: activeIds.contains(id),
+      );
+    }).where((account) => account.id.isNotEmpty).toList();
+  }
+
+  static Future<void> setComplimentaryPlus({
+    required String userId,
+    required bool active,
+  }) async {
+    if (!await isCurrentUserAdmin()) {
+      throw const AuthException('Alleen beheerders hebben toegang.');
+    }
+
+    if (active) {
+      final existing = await _client
+          .from('entitlements')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('product_id', 'paskluis_plus')
+          .isFilter('revoked_at', null)
+          .limit(1);
+      if (existing.isNotEmpty) return;
+
+      await _client.from('entitlements').insert({
+        'user_id': userId,
+        'product_id': 'paskluis_plus',
+        'source': 'complimentary',
+        'created_by': currentUser!.id,
+        'note': 'Handmatig geactiveerd via PasKluis beheer',
+      });
+      return;
+    }
+
+    await _client
+        .from('entitlements')
+        .update({'revoked_at': DateTime.now().toIso8601String()})
+        .eq('user_id', userId)
+        .eq('product_id', 'paskluis_plus')
+        .isFilter('revoked_at', null);
+  }
 
   static Future<PlusStatus> loadPlusStatus() async {
     final user = currentUser;

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:flutter/services.dart';
 
 import '../../shared/widgets/brand_logo.dart';
@@ -115,6 +116,7 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
     final logoAsset = item['logoAsset'] ?? '';
     final customImagePath = item['customImage'] ?? '';
     final customImage = customImagePath.isEmpty ? null : File(customImagePath);
+    final isQr = item['codeFormat'] == 'qr';
 
     return PopScope(
       canPop: false,
@@ -184,7 +186,13 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                             padding: const EdgeInsets.all(28),
                             child: customImage != null &&
                                     customImage.existsSync()
-                                ? Image.file(customImage, fit: BoxFit.contain)
+                                ? Transform.scale(
+                                    scale: 1.7,
+                                    child: Image.file(
+                                      customImage,
+                                      fit: BoxFit.contain,
+                                    ),
+                                  )
                                 : logoAsset.isNotEmpty
                                 ? BrandLogo(source: logoAsset)
                                 : const Icon(
@@ -214,7 +222,15 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                                     color: const Color(0xFFF7F7F8),
                                     borderRadius: BorderRadius.circular(22),
                                   ),
-                                  child: BarcodeWidget(
+                                  child: isQr
+                                  ? Center(
+                                      child: QrImageView(
+                                        data: code,
+                                        size: 150,
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                    )
+                                  : BarcodeWidget(
                                     barcode: barcodeType,
                                     data: code,
                                     width: double.infinity,
@@ -232,18 +248,20 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                                     },
                                   ),
                                 ),
-                                const SizedBox(height: 18),
-                                Text(
-                                  formattedCode,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    letterSpacing: 2,
-                                    height: 1.25,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1F1F24),
+                                if (!isQr) ...[
+                                  const SizedBox(height: 18),
+                                  Text(
+                                    formattedCode,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      letterSpacing: 2,
+                                      height: 1.25,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF1F1F24),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           ),

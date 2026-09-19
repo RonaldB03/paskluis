@@ -4,10 +4,16 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/media_storage_service.dart';
+import '../../data/services/image_color_service.dart';
+import '../../data/services/smart_card_import_service.dart';
+import '../../data/services/brand_catalog_service.dart';
+import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
-import 'gift_card_scanner_screen.dart';
+import '../../shared/utils/amount_format.dart';
+import '../scanner/scanner_screen.dart';
 
 class AddGiftCardScreen extends StatefulWidget {
   final bool isEditing;
@@ -22,6 +28,10 @@ class AddGiftCardScreen extends StatefulWidget {
   final String? initialLogoAsset;
   final String? initialBrandColor;
   final String? initialCustomImage;
+  final String? initialExpiryDate;
+  final bool initialExpiryNotificationsEnabled;
+  final String? initialCodeFormat;
+  final Map<String, double> initialLogoLayout;
 
   const AddGiftCardScreen({
     super.key,
@@ -37,6 +47,10 @@ class AddGiftCardScreen extends StatefulWidget {
     this.initialLogoAsset,
     this.initialBrandColor,
     this.initialCustomImage,
+    this.initialExpiryDate,
+    this.initialExpiryNotificationsEnabled = true,
+    this.initialCodeFormat,
+    this.initialLogoLayout = const {},
   });
 
   @override
@@ -53,7 +67,12 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   String brandId = '';
   String logoAsset = '';
   String brandColor = '';
+  Map<String, double> logoLayout = {};
   String customImage = '';
+  DateTime? expiryDate;
+  late bool expiryNotificationsEnabled;
+  late ScannerMode selectedCodeMode;
+  bool customBrandSelected = false;
 
   bool get hasAssetLogo => logoAsset.isNotEmpty;
 
@@ -90,14 +109,26 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
 
     nameController.text = widget.initialName ?? '';
     codeController.text = widget.initialCode ?? widget.initialCardNumber ?? '';
-    balanceController.text = widget.initialCurrentBalance ?? '';
+    balanceController.text = normalizeAmountValue(
+      widget.initialCurrentBalance ?? '',
+    );
     pinCodeController.text = widget.initialPinCode ?? '';
     noteController.text = widget.initialNote ?? '';
 
     brandId = widget.initialBrandId ?? '';
     logoAsset = widget.initialLogoAsset ?? '';
     brandColor = widget.initialBrandColor ?? '';
+    logoLayout = Map<String, double>.from(widget.initialLogoLayout);
     customImage = widget.initialCustomImage ?? '';
+    expiryDate = DateTime.tryParse(widget.initialExpiryDate ?? '');
+    expiryNotificationsEnabled = widget.initialExpiryNotificationsEnabled;
+    selectedCodeMode = switch (widget.initialCodeFormat) {
+      'qr' => ScannerMode.qr,
+      'barcode' => ScannerMode.barcode,
+      _ => ScannerMode.auto,
+    };
+    customBrandSelected = brandId.isEmpty &&
+        (widget.isEditing || nameController.text.trim().isNotEmpty);
 
     nameController.addListener(refresh);
     codeController.addListener(refresh);
@@ -121,18 +152,80 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   Future<void> scanCode() async {
     HapticFeedback.selectionClick();
 
-    final result = await Navigator.push<String>(
+    final result = await Navigator.push<ScannerResult>(
       context,
       MaterialPageRoute(
-        builder: (_) => const GiftCardScannerScreen(showManualAfterDelay: true),
+        builder: (_) => ScannerScreen(
+          mode: selectedCodeMode,
+          showManualAfterDelay: true,
+          detailedResult: true,
+        ),
       ),
     );
 
-    if (!mounted || result == null || result.trim().isEmpty) return;
+    if (!mounted || result == null || result.code.trim().isEmpty) return;
 
     setState(() {
-      codeController.text = result.trim();
+      codeController.text = result.code.trim();
+      selectedCodeMode = result.codeFormat == 'qr'
+          ? ScannerMode.qr
+          : ScannerMode.barcode;
     });
+  }
+
+  Future<void> importGiftCardPhoto(ImageSource source) async {
+    HapticFeedback.selectionClick();
+
+    try {
+      final result = await SmartCardImportService.pickAndAnalyze(source: source);
+      if (!mounted) return;
+      if (result == null) return;
+      if (result.code.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Geen barcode of QR-code gevonden in deze foto.'),
+          ),
+        );
+        return;
+      }
+      setState(() {
+        codeController.text = result.code;
+        if (result.pinCode.isNotEmpty) pinCodeController.text = result.pinCode;
+        if (result.balance.isNotEmpty) {
+          balanceController.text = normalizeAmountValue(result.balance);
+        }
+        if (result.expiryDate.isNotEmpty) {
+          expiryDate = DateTime.tryParse(result.expiryDate);
+        }
+        if (nameController.text.trim().isEmpty && result.name.isNotEmpty) {
+          nameController.text = result.name;
+        }
+        if (result.brand != null && brandId.isEmpty) {
+          brandId = result.brand!.id;
+          logoAsset = result.brand!.logoAsset;
+          brandColor = result.brand!.color.value.toString();
+          logoLayout = result.brand!.logoLayout;
+          customBrandSelected = false;
+        }
+        selectedCodeMode = result.codeFormat == 'qr'
+            ? ScannerMode.qr
+            : ScannerMode.barcode;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            result.pinCode.isEmpty
+                ? 'Code gevonden. Controleer de gegevens voor opslaan.'
+                : 'Code en pincode gevonden. Controleer ze voor opslaan.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('De afbeelding kon niet worden gelezen.')),
+      );
+    }
   }
 
   Future<void> pickImage() async {
@@ -143,13 +236,15 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
 
     try {
       final storedPath = await MediaStorageService.persistImage(image.path);
+      final detectedColor = await ImageColorService.dominantEdgeColor(storedPath);
       if (!mounted) return;
       HapticFeedback.selectionClick();
       setState(() {
         customImage = storedPath;
         logoAsset = '';
-        brandColor = '';
+        brandColor = detectedColor?.value.toString() ?? '';
         brandId = '';
+        customBrandSelected = true;
       });
     } catch (_) {
       if (!mounted) return;
@@ -161,18 +256,133 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     }
   }
 
+  Future<void> chooseBrand() async {
+    final catalog = await BrandCatalogService.load();
+    if (!mounted) return;
+    final brands = catalog
+        .where((brand) => brand.supportedTypes.contains('Cadeaukaart'))
+        .toList();
+    var searchQuery = '';
+    final selected = await showModalBottomSheet<CardBrandTemplate>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final filteredBrands = brands.where((brand) {
+            final query = searchQuery.trim().toLowerCase();
+            if (query.isEmpty) return true;
+            return brand.name.toLowerCase().contains(query) ||
+                brand.id.toLowerCase().contains(query);
+          }).toList();
+          return SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.68,
+          child: Column(
+            children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Text(
+                  'Kies de winkel',
+                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: TextField(
+                  autofocus: true,
+                  onChanged: (value) =>
+                      setSheetState(() => searchQuery = value),
+                  decoration: InputDecoration(
+                    hintText: 'Zoek winkel',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                  itemCount: filteredBrands.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                  itemBuilder: (context, index) {
+                    final brand = filteredBrands[index];
+                    return ListTile(
+                      tileColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      leading: SizedBox(
+                        width: 62,
+                        child: BrandLogo(
+                          source: brand.logoAsset,
+                          scale: brand.logoLayout['pickerScale'] ?? 1,
+                          offsetX: brand.logoLayout['pickerX'] ?? 0,
+                          offsetY: brand.logoLayout['pickerY'] ?? 0,
+                        ),
+                      ),
+                      title: Text(
+                        brand.name,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => Navigator.pop(context, brand),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+        },
+      ),
+    );
+    if (selected == null || !mounted) return;
+    setState(() {
+      brandId = selected.id;
+      logoAsset = selected.logoAsset;
+      brandColor = selected.color.value.toString();
+      logoLayout = selected.logoLayout;
+      customImage = '';
+      customBrandSelected = false;
+      nameController.text = '${selected.name} cadeaukaart';
+    });
+  }
+
   void removeLogo() {
     HapticFeedback.selectionClick();
     setState(() {
       customImage = '';
       logoAsset = '';
       brandColor = '';
+      logoLayout = {};
       brandId = '';
     });
   }
 
   String normalizeAmount(String value) {
-    return value.trim().replaceAll(',', '.');
+    return normalizeAmountValue(value);
+  }
+
+  String formatDate(DateTime date) =>
+      '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+
+  Future<void> pickExpiryDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: expiryDate ?? now.add(const Duration(days: 365)),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year + 20),
+      helpText: 'Kies de vervaldatum',
+    );
+    if (picked != null && mounted) setState(() => expiryDate = picked);
   }
 
   void saveGiftCard() {
@@ -202,6 +412,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       'type': 'Cadeaukaart',
       'name': name,
       'code': code,
+      'codeFormat': selectedCodeMode == ScannerMode.qr ? 'qr' : 'barcode',
       'cardNumber': code,
       'pinCode': pinCodeController.text.trim(),
       'initialBalance': balance,
@@ -210,12 +421,18 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       'brandId': brandId,
       'logoAsset': logoAsset,
       'brandColor': brandColor,
+      for (final entry in logoLayout.entries)
+        'logo${entry.key[0].toUpperCase()}${entry.key.substring(1)}':
+            entry.value.toString(),
       'customImage': customImage,
       'isFavorite': 'false',
       'createdAt': now,
       'updatedAt': now,
       'lastUsedAt': '',
       'balanceHistory': '[]',
+      'expiryDate': expiryDate?.toIso8601String() ?? '',
+      'expiryNotificationsEnabled': expiryNotificationsEnabled.toString(),
+      'isArchived': 'false',
     });
   }
 
@@ -252,6 +469,75 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
         children: [
+          if (brandId.isEmpty && logoAsset.isEmpty && !customBrandSelected) ...[
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3F6),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFD51B46).withOpacity(0.18)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Welke winkel hoort bij deze cadeaukaart?',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    codeController.text.trim().isEmpty
+                        ? 'Kies een bestaande winkel of maak een eigen cadeaukaart.'
+                        : 'De kaartcode is gevonden, maar de winkel nog niet.',
+                    style: const TextStyle(color: Colors.black54),
+                  ),
+                  const SizedBox(height: 14),
+                  FilledButton.icon(
+                    onPressed: chooseBrand,
+                    icon: const Icon(Icons.storefront_rounded),
+                    label: const Text('Kies een winkel'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => setState(() {
+                      customBrandSelected = true;
+                      if (nameController.text.trim().isEmpty) {
+                        nameController.text = 'Eigen cadeaukaart';
+                      }
+                    }),
+                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                    label: const Text('Eigen cadeaukaart'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ] else if (brandId.isNotEmpty || customBrandSelected) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Row(
+                children: [
+                  if (logoAsset.isNotEmpty)
+                    SizedBox(width: 58, height: 38, child: BrandLogo(source: logoAsset))
+                  else
+                    const Icon(Icons.card_giftcard_rounded, color: Color(0xFFD51B46)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      customBrandSelected ? 'Eigen cadeaukaart' : name,
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  TextButton(onPressed: chooseBrand, child: const Text('Wijzigen')),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           _GiftCardLivePreview(
             name: name,
             code: codeController.text.trim(),
@@ -261,6 +547,8 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
             cardColor: cardColor,
             logoAsset: logoAsset,
             customImage: customImage,
+            logoLayout: logoLayout,
+            isQr: selectedCodeMode == ScannerMode.qr,
           ),
 
           const SizedBox(height: 16),
@@ -290,6 +578,40 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
           const SizedBox(height: 14),
 
           _SectionCard(
+            title: 'Geldigheid',
+            subtitle: 'Optioneel. PasKluis kan je herinneren voordat de kaart verloopt.',
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.event_rounded, color: Color(0xFFD51B46)),
+                title: Text(
+                  expiryDate == null ? 'Vervaldatum toevoegen' : formatDate(expiryDate!),
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                trailing: expiryDate == null
+                    ? const Icon(Icons.chevron_right_rounded)
+                    : IconButton(
+                        tooltip: 'Vervaldatum verwijderen',
+                        onPressed: () => setState(() => expiryDate = null),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                onTap: pickExpiryDate,
+              ),
+              if (expiryDate != null)
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  value: expiryNotificationsEnabled,
+                  activeColor: const Color(0xFFD51B46),
+                  title: const Text('Herinneringen', style: TextStyle(fontWeight: FontWeight.w800)),
+                  subtitle: const Text('30 dagen, 7 dagen en op de vervaldatum'),
+                  onChanged: (value) => setState(() => expiryNotificationsEnabled = value),
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          _SectionCard(
             title: 'Kaart',
             children: [
               _InputField(
@@ -301,9 +623,9 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
               const SizedBox(height: 14),
               _InputField(
                 controller: codeController,
-                label: 'Barcode / kaartnummer',
+                label: 'Kaartcode / kaartnummer',
                 icon: Icons.qr_code_scanner_rounded,
-                keyboardType: TextInputType.number,
+                keyboardType: TextInputType.text,
                 suffix: IconButton(
                   onPressed: scanCode,
                   icon: const Icon(
@@ -326,6 +648,40 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                       color: Color(0xFFD51B46),
                       width: 1.2,
                     ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: () => importGiftCardPhoto(ImageSource.camera),
+                  icon: const Icon(Icons.camera_alt_rounded),
+                  label: const Text('Foto maken en gegevens uitlezen'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFD51B46),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: () => importGiftCardPhoto(ImageSource.gallery),
+                  icon: const Icon(Icons.add_photo_alternate_rounded),
+                  label: const Text('Foto of screenshot importeren'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFD51B46),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(22),
                     ),
@@ -407,6 +763,8 @@ class _GiftCardLivePreview extends StatelessWidget {
   final Color cardColor;
   final String logoAsset;
   final String customImage;
+  final bool isQr;
+  final Map<String, double> logoLayout;
 
   const _GiftCardLivePreview({
     required this.name,
@@ -417,6 +775,8 @@ class _GiftCardLivePreview extends StatelessWidget {
     required this.cardColor,
     required this.logoAsset,
     required this.customImage,
+    required this.isQr,
+    required this.logoLayout,
   });
 
   bool get hasAssetLogo => logoAsset.isNotEmpty;
@@ -456,7 +816,12 @@ class _GiftCardLivePreview extends StatelessWidget {
                     child: hasCustomLogo
                         ? Image.file(File(customImage), fit: BoxFit.contain)
                         : hasAssetLogo
-                        ? BrandLogo(source: logoAsset)
+                        ? BrandLogo(
+                            source: logoAsset,
+                            scale: logoLayout['detailScale'] ?? 1,
+                            offsetX: logoLayout['detailX'] ?? 0,
+                            offsetY: logoLayout['detailY'] ?? 0,
+                          )
                         : const Icon(
                             Icons.card_giftcard_rounded,
                             color: Colors.white,
@@ -511,6 +876,14 @@ class _GiftCardLivePreview extends StatelessWidget {
                               ),
                             ),
                           )
+                        : isQr
+                        ? Center(
+                            child: QrImageView(
+                              data: code,
+                              size: 118,
+                              padding: EdgeInsets.zero,
+                            ),
+                          )
                         : BarcodeWidget(
                             barcode: barcode,
                             data: code,
@@ -534,7 +907,7 @@ class _GiftCardLivePreview extends StatelessWidget {
                             },
                           ),
                   ),
-                  if (code.isNotEmpty) ...[
+                  if (code.isNotEmpty && !isQr) ...[
                     const SizedBox(height: 12),
                     Text(
                       formattedCode,
@@ -556,7 +929,9 @@ class _GiftCardLivePreview extends StatelessWidget {
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: Text(
-                      balance.trim().isEmpty ? 'Saldo onbekend' : '€ $balance',
+                      balance.trim().isEmpty
+                          ? 'Saldo onbekend'
+                          : '€ ${formatAmountValue(balance)}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Color(0xFFD51B46),

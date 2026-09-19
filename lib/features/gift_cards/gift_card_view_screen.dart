@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:barcode_widget/barcode_widget.dart';
@@ -5,9 +6,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/services/security_service.dart';
 import '../../data/services/storage_service.dart';
+import '../../data/services/notification_service.dart';
+import '../../data/services/gift_card_share_service.dart';
+import '../../data/services/account_service.dart';
+import '../account/account_screen.dart';
+import '../../shared/widgets/brand_logo.dart';
+import '../../shared/utils/amount_format.dart';
+import '../../shared/utils/logo_layout.dart';
 import 'edit_gift_card_screen.dart';
 
 class GiftCardViewScreen extends StatefulWidget {
@@ -24,7 +34,8 @@ class GiftCardViewScreen extends StatefulWidget {
   State<GiftCardViewScreen> createState() => _GiftCardViewScreenState();
 }
 
-class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
+class _GiftCardViewScreenState extends State<GiftCardViewScreen>
+    with WidgetsBindingObserver {
   late final PageController pageController;
   late List<Map<String, dynamic>> items;
   late int currentIndex;
@@ -35,6 +46,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     items = widget.items
         .map((item) => Map<String, dynamic>.from(item))
@@ -66,6 +78,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     pageController.dispose();
 
     if (previousBrightness != null) {
@@ -74,6 +87,15 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
     WakelockPlus.disable();
     super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {});
+      if (pageController.hasClients) pageController.jumpToPage(currentIndex);
+    });
   }
 
   dynamic _findKeyById(String id) {
@@ -129,6 +151,10 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
     };
 
     await StorageService.saveCard(key, newItem);
+    await NotificationService.syncGiftCard(newItem);
+    try {
+      await GiftCardShareService.syncOwnedCard(Map<String, dynamic>.from(newItem));
+    } catch (_) {}
 
     if (!mounted) return;
 
@@ -158,6 +184,10 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
     if (key == null) return;
 
+    await NotificationService.cancelGiftCard(id);
+    try {
+      await GiftCardShareService.revokeAllForCard(id);
+    } catch (_) {}
     await StorageService.deleteCard(key);
 
     if (!mounted) return;
@@ -191,9 +221,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Cadeaukaart verwijderen?'),
+          title: const Text('Definitief verwijderen?'),
           content: Text(
-            'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+            'Weet je zeker dat je "$name" definitief wilt verwijderen? De kaart verdwijnt ook bij iedereen met wie je hem hebt gedeeld. Dit kun je niet ongedaan maken.',
           ),
           actions: [
             TextButton(
@@ -203,7 +233,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Verwijderen'),
+              child: const Text('Definitief verwijderen'),
             ),
           ],
         );
@@ -226,6 +256,122 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
     if (updatedItem == null) return;
 
     await updateCurrentItem(updatedItem);
+  }
+
+  Future<void> openShareCard() async {
+    if (items.isEmpty) return;
+    if (AccountService.currentUser == null) {
+      final open = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Inloggen vereist'),
+          content: const Text('Log in met je PasKluis-account om kaarten veilig per e-mailadres te delen.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuleren')),
+            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Inloggen')),
+          ],
+        ),
+      );
+      if (open == true && mounted) {
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountScreen()));
+      }
+      if (AccountService.currentUser == null) return;
+    }
+    try {
+      final plus = await AccountService.loadPlusStatus();
+      if (!plus.isActive) throw const AuthException('Delen is alleen beschikbaar met PasKluis Plus.');
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('AuthException(message: ', '').replaceFirst(')', ''))));
+      return;
+    }
+
+    final controller = TextEditingController();
+    final email = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        icon: const Icon(Icons.person_add_alt_1_rounded, color: Color(0xFFD51B46), size: 38),
+        title: const Text('Cadeaukaart delen'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.emailAddress,
+          autocorrect: false,
+          decoration: const InputDecoration(
+            labelText: 'E-mailadres ontvanger',
+            hintText: 'naam@voorbeeld.nl',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuleren')),
+          FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Delen')),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (email == null || !email.contains('@')) return;
+    try {
+      await GiftCardShareService.shareWithEmail(items[currentIndex], email);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Cadeaukaart gedeeld met $email.')));
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('PostgrestException(message: ', '').split(', code:').first)));
+    }
+  }
+
+  Future<void> openSharedAccess() async {
+    if (items.isEmpty) return;
+    try {
+      final shares = await GiftCardShareService.outgoingForCard(
+        items[currentIndex]['id']?.toString() ?? '',
+      );
+      if (!mounted) return;
+      await showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.white,
+        showDragHandle: true,
+        builder: (sheetContext) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Gedeelde toegang', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 12),
+                if (shares.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text('Deze kaart is nog met niemand gedeeld.'),
+                  )
+                else
+                  ...shares.map((share) => ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.person_rounded)),
+                        title: Text(share['recipient_email']?.toString() ?? ''),
+                        subtitle: const Text('Kan de kaart bekijken en gebruiken'),
+                        trailing: TextButton(
+                          onPressed: () async {
+                            await GiftCardShareService.revokeShare(share['id']?.toString() ?? '');
+                            if (sheetContext.mounted) Navigator.pop(sheetContext);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Gedeelde toegang is gestopt.')),
+                              );
+                            }
+                          },
+                          child: const Text('Stoppen'),
+                        ),
+                      )),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gedeelde toegang ophalen lukte niet: $error')),
+        );
+      }
+    }
   }
 
   Future<void> revealPin() async {
@@ -263,7 +409,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                const Text(
+                Text(
                   'Beveiliging niet gelukt',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -332,6 +478,12 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
   void openUsedOptions() {
     if (items.isEmpty) return;
+    if (items[currentIndex]['isShared'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Alleen de eigenaar kan het saldo wijzigen.')),
+      );
+      return;
+    }
 
     HapticFeedback.selectionClick();
 
@@ -363,7 +515,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  balance.isEmpty ? name : '$name • huidig saldo € $balance',
+                  balance.isEmpty
+                      ? name
+                      : '$name • huidig saldo € ${formatAmountValue(balance)}',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -374,8 +528,17 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                 ),
                 const SizedBox(height: 22),
                 _ActionButton(
+                  icon: Icons.shopping_bag_rounded,
+                  label: 'Bedrag besteed',
+                  onTap: () {
+                    Navigator.pop(context);
+                    openBalanceEditor(spentMode: true);
+                  },
+                ),
+                const SizedBox(height: 10),
+                _ActionButton(
                   icon: Icons.account_balance_wallet_rounded,
-                  label: 'Saldo bijwerken',
+                  label: 'Nieuw saldo invoeren',
                   onTap: () {
                     Navigator.pop(context);
                     openBalanceEditor();
@@ -383,12 +546,12 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                 ),
                 const SizedBox(height: 10),
                 _ActionButton(
-                  icon: Icons.delete_outline,
-                  label: 'Cadeaukaart verwijderen',
-                  destructive: true,
-                  onTap: () {
+                  icon: Icons.check_circle_outline_rounded,
+                  label: 'Kaart volledig gebruikt',
+                  onTap: () async {
                     Navigator.pop(context);
-                    confirmDelete();
+                    await _saveBalance(0, kind: 'used');
+                    if (mounted) _offerArchive();
                   },
                 ),
               ],
@@ -399,14 +562,69 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
     );
   }
 
-  void openBalanceEditor() {
+  double _balanceOf(Map<String, dynamic> item) => double.tryParse(
+        (item['currentBalance']?.toString() ?? '').replaceAll(',', '.'),
+      ) ?? 0;
+
+  List<Map<String, dynamic>> _historyOf(Map<String, dynamic> item) {
+    try {
+      final decoded = jsonDecode(item['balanceHistory']?.toString() ?? '[]');
+      if (decoded is List) {
+        return decoded.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  String _money(double value) => normalizeAmountValue(value.toString());
+
+  Future<void> _saveBalance(double newBalance, {required String kind}) async {
+    if (items.isEmpty) return;
+    final updated = Map<String, dynamic>.from(items[currentIndex]);
+    final oldBalance = _balanceOf(updated);
+    final history = _historyOf(updated);
+    history.add({
+      'id': DateTime.now().microsecondsSinceEpoch.toString(),
+      'createdAt': DateTime.now().toIso8601String(),
+      'type': kind,
+      'oldBalance': _money(oldBalance),
+      'newBalance': _money(newBalance),
+      'amount': _money((oldBalance - newBalance).abs()),
+    });
+    updated['currentBalance'] = _money(newBalance);
+    updated['balanceHistory'] = jsonEncode(history);
+    await updateCurrentItem(updated);
+    HapticFeedback.mediumImpact();
+  }
+
+  Future<void> _offerArchive() async {
+    final archive = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Cadeaukaart is leeg'),
+        content: const Text('Wil je deze kaart archiveren? Je kunt hem later altijd terugzetten.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Bewaren')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Archiveren')),
+        ],
+      ),
+    );
+    if (archive != true || items.isEmpty) return;
+    final updated = Map<String, dynamic>.from(items[currentIndex]);
+    updated['isArchived'] = true;
+    updated['archivedAt'] = DateTime.now().toIso8601String();
+    await updateCurrentItem(updated);
+    if (mounted) Navigator.pop(context);
+  }
+
+  void openBalanceEditor({bool spentMode = false}) {
     if (items.isEmpty) return;
 
     HapticFeedback.selectionClick();
 
     final item = items[currentIndex];
     final controller = TextEditingController(
-      text: item['currentBalance']?.toString() ?? '',
+      text: spentMode ? '' : item['currentBalance']?.toString() ?? '',
     );
 
     showModalBottomSheet(
@@ -429,8 +647,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Saldo aanpassen',
+                Text(
+                  spentMode ? 'Bedrag besteed' : 'Nieuw saldo invoeren',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -445,7 +663,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                     decimal: true,
                   ),
                   decoration: InputDecoration(
-                    labelText: 'Nieuw saldo',
+                    labelText: spentMode ? 'Besteed bedrag' : 'Nieuw saldo',
                     prefixText: '€ ',
                     filled: true,
                     fillColor: const Color(0xFFF4F4F6),
@@ -468,33 +686,30 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                   height: 56,
                   child: FilledButton.icon(
                     onPressed: () async {
-                      final newBalance = controller.text.trim().replaceAll(
-                        ',',
-                        '.',
-                      );
-
-                      final updated = Map<String, dynamic>.from(
-                        items[currentIndex],
-                      );
-
-                      updated['currentBalance'] = newBalance;
-
-                      await updateCurrentItem(updated);
+                      final entered = double.tryParse(controller.text.trim().replaceAll(',', '.'));
+                      if (entered == null || entered < 0) return;
+                      final oldBalance = _balanceOf(items[currentIndex]);
+                      if (spentMode && entered > oldBalance) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Het bedrag is hoger dan het huidige saldo.')),
+                        );
+                        return;
+                      }
+                      final newBalance = spentMode ? oldBalance - entered : entered;
+                      await _saveBalance(newBalance, kind: spentMode ? 'spent' : 'adjusted');
 
                       if (!mounted) return;
 
                       Navigator.pop(context);
 
-                      if (newBalance == '0' ||
-                          newBalance == '0.00' ||
-                          newBalance == '0,00') {
+                      if (newBalance == 0) {
                         Future.delayed(const Duration(milliseconds: 250), () {
-                          if (mounted) confirmDelete();
+                          if (mounted) _offerArchive();
                         });
                       }
                     },
                     icon: const Icon(Icons.save_rounded),
-                    label: const Text('Saldo opslaan'),
+                    label: Text(spentMode ? 'Bedrag verwerken' : 'Saldo opslaan'),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFD51B46),
                       foregroundColor: Colors.white,
@@ -513,6 +728,88 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
           ),
         );
       },
+    );
+  }
+
+  void openBalanceHistory() {
+    if (items.isEmpty) return;
+    final history = _historyOf(items[currentIndex]).reversed.toList();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Saldohistorie', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 16),
+              if (history.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text('Nog geen saldowijzigingen.'),
+                )
+              else
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * .55),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: history.length,
+                    separatorBuilder: (_, __) => const Divider(),
+                    itemBuilder: (_, index) {
+                      final entry = history[index];
+                      final date = DateTime.tryParse(entry['createdAt']?.toString() ?? '');
+                      final type = entry['type']?.toString();
+                      final title = type == 'spent'
+                          ? '€ ${formatAmountValue(entry['amount'])} besteed'
+                          : type == 'used'
+                              ? 'Volledig gebruikt'
+                              : type == 'undo'
+                                  ? 'Wijziging ongedaan gemaakt'
+                                  : 'Saldo aangepast';
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const CircleAvatar(
+                          backgroundColor: Color(0xFFF8E3EA),
+                          child: Icon(Icons.receipt_long_rounded, color: Color(0xFFD51B46)),
+                        ),
+                        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                        subtitle: Text(
+                          '${date == null ? '' : '${date.day}-${date.month}-${date.year} • '}€ ${formatAmountValue(entry['oldBalance'])} → € ${formatAmountValue(entry['newBalance'])}',
+                        ),
+                        trailing: index == 0 && type != 'undo'
+                            ? TextButton(
+                                onPressed: () async {
+                                  final updated = Map<String, dynamic>.from(items[currentIndex]);
+                                  final all = _historyOf(updated);
+                                  final restored = double.tryParse(entry['oldBalance']?.toString() ?? '') ?? 0;
+                                  all.add({
+                                    'id': DateTime.now().microsecondsSinceEpoch.toString(),
+                                    'createdAt': DateTime.now().toIso8601String(),
+                                    'type': 'undo',
+                                    'oldBalance': _money(_balanceOf(updated)),
+                                    'newBalance': _money(restored),
+                                    'amount': '0',
+                                  });
+                                  updated['currentBalance'] = _money(restored);
+                                  updated['balanceHistory'] = jsonEncode(all);
+                                  await updateCurrentItem(updated);
+                                  if (context.mounted) Navigator.pop(context);
+                                },
+                                child: const Text('Ongedaan'),
+                              )
+                            : null,
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -540,7 +837,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
     final pinCode = item['pinCode']?.toString() ?? '';
     final initialBalance = item['initialBalance']?.toString() ?? '';
     final currentBalance = item['currentBalance']?.toString() ?? '';
+    final expiryDate = DateTime.tryParse(item['expiryDate']?.toString() ?? '');
     final isFavorite = item['isFavorite'] == true;
+    final isShared = item['isShared'] == true;
 
     bool sheetShowPin = false;
 
@@ -614,6 +913,13 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                       const SizedBox(height: 20),
 
                       _DetailRow(label: 'Naam', value: name),
+                      if (isShared) ...[
+                        const SizedBox(height: 12),
+                        const _DetailRow(
+                          label: 'Toegang',
+                          value: 'Met jou gedeeld • alleen bekijken',
+                        ),
+                      ],
                       const SizedBox(height: 16),
 
                       _DetailRow(label: 'Barcode', value: code, showCopy: true),
@@ -639,7 +945,15 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
                         const SizedBox(height: 16),
                         _DetailRow(
                           label: 'Huidig saldo',
-                          value: '€ $currentBalance',
+                          value: '€ ${formatAmountValue(currentBalance)}',
+                        ),
+                      ],
+
+                      if (expiryDate != null) ...[
+                        const SizedBox(height: 16),
+                        _DetailRow(
+                          label: 'Vervaldatum',
+                          value: '${expiryDate.day.toString().padLeft(2, '0')}-${expiryDate.month.toString().padLeft(2, '0')}-${expiryDate.year}',
                         ),
                       ],
 
@@ -685,12 +999,24 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
                       const SizedBox(height: 24),
 
+                      if (!isShared)
+                        _ActionButton(
+                          icon: Icons.euro,
+                          label: 'Saldo aanpassen',
+                          onTap: () {
+                            Navigator.pop(context);
+                            openBalanceEditor();
+                          },
+                        ),
+
+                      const SizedBox(height: 10),
+
                       _ActionButton(
-                        icon: Icons.euro,
-                        label: 'Saldo aanpassen',
+                        icon: Icons.history_rounded,
+                        label: 'Saldohistorie',
                         onTap: () {
                           Navigator.pop(context);
-                          openBalanceEditor();
+                          openBalanceHistory();
                         },
                       ),
 
@@ -709,26 +1035,47 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
 
                       const SizedBox(height: 10),
 
-                      _ActionButton(
-                        icon: Icons.edit_outlined,
-                        label: 'Bewerken',
-                        onTap: () {
-                          Navigator.pop(context);
-                          openEdit(items[currentIndex]);
-                        },
-                      ),
+                      if (!isShared) ...[
+                        _ActionButton(
+                          icon: Icons.share_rounded,
+                          label: 'Delen via e-mailadres',
+                          onTap: () {
+                            Navigator.pop(context);
+                            openShareCard();
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _ActionButton(
+                          icon: Icons.group_outlined,
+                          label: 'Gedeelde toegang beheren',
+                          onTap: () {
+                            Navigator.pop(context);
+                            openSharedAccess();
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        _ActionButton(
+                          icon: Icons.edit_outlined,
+                          label: 'Bewerken',
+                          onTap: () {
+                            Navigator.pop(context);
+                            openEdit(items[currentIndex]);
+                          },
+                        ),
+                      ],
 
                       const SizedBox(height: 10),
 
-                      _ActionButton(
-                        icon: Icons.delete_outline,
-                        label: 'Verwijderen',
-                        destructive: true,
-                        onTap: () {
-                          Navigator.pop(context);
-                          confirmDelete();
-                        },
-                      ),
+                      if (!isShared)
+                        _ActionButton(
+                          icon: Icons.delete_forever_rounded,
+                          label: 'Definitief verwijderen',
+                          destructive: true,
+                          onTap: () {
+                            Navigator.pop(context);
+                            confirmDelete();
+                          },
+                        ),
 
                       const SizedBox(height: 10),
                     ],
@@ -748,6 +1095,45 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
       return const Scaffold(
         backgroundColor: Color(0xFFF8F8FA),
         body: Center(child: Text('Geen cadeaukaarten')),
+      );
+    }
+
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+    if (isLandscape) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: pageController,
+                itemCount: items.length,
+                onPageChanged: (index) {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    currentIndex = index;
+                    showPin = false;
+                  });
+                  markCurrentGiftCardAsUsed();
+                },
+                itemBuilder: (context, index) => _GiftLandscapeBarcode(
+                  item: items[index],
+                  barcode: getBarcodeType(items[index]),
+                ),
+              ),
+              Positioned(
+                left: 8,
+                top: 4,
+                child: IconButton.filledTonal(
+                  tooltip: 'Terug',
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -827,6 +1213,62 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen> {
   }
 }
 
+class _GiftLandscapeBarcode extends StatelessWidget {
+  final Map<String, dynamic> item;
+  final Barcode barcode;
+
+  const _GiftLandscapeBarcode({required this.item, required this.barcode});
+
+  @override
+  Widget build(BuildContext context) {
+    final name = item['name']?.toString() ?? 'Cadeaukaart';
+    final code = item['code']?.toString() ?? '';
+    final isQr = item['codeFormat']?.toString() == 'qr';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(76, 12, 32, 16),
+      child: Column(
+        children: [
+          Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: code.isEmpty
+                ? const Center(child: Text('Geen barcode beschikbaar'))
+                : isQr
+                ? Center(child: QrImageView(data: code, padding: const EdgeInsets.all(8)))
+                : BarcodeWidget(
+                    barcode: barcode,
+                    data: code,
+                    width: double.infinity,
+                    height: double.infinity,
+                    drawText: false,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 10,
+                    ),
+                  ),
+          ),
+          if (!isQr)
+            Text(
+              code,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 16,
+                letterSpacing: 2,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _GiftBarcodeCard extends StatefulWidget {
   final Map<String, dynamic> item;
   final Barcode barcode;
@@ -848,6 +1290,8 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
     with SingleTickerProviderStateMixin {
   late final AnimationController pulseController;
   late final Animation<double> pulseAnimation;
+
+  bool get isQr => widget.item['codeFormat']?.toString() == 'qr';
 
   @override
   void initState() {
@@ -890,7 +1334,6 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final logoAsset = widget.item['logoAsset']?.toString() ?? '';
     final customImage = widget.item['customImage']?.toString() ?? '';
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 30, 2, 18),
       child: AnimatedContainer(
@@ -912,65 +1355,80 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
           child: Column(
             children: [
               Container(
-                height: 105,
-                padding: const EdgeInsets.symmetric(horizontal: 22),
+                height: 125,
+                padding: const EdgeInsets.symmetric(horizontal: 26),
                 color: headerColor,
-                child: Row(
+                child: Stack(
+                  alignment: Alignment.center,
                   children: [
-                    CircleAvatar(
-                      radius: 29,
-                      backgroundColor: Colors.white.withOpacity(0.20),
-                      child: hasCustomLogo
-                          ? ClipOval(
-                              child: Image.file(
-                                File(customImage),
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.contain,
-                              ),
-                            )
-                          : hasAssetLogo
-                          ? Padding(
-                              padding: const EdgeInsets.all(6),
-                              child: Image.asset(
-                                logoAsset,
-                                fit: BoxFit.contain,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.card_giftcard,
-                              color: Colors.white,
-                            ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: widget.onDetails,
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.16),
-                        foregroundColor: Colors.white,
+                    Positioned.fill(
+                      child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 10,
+                          horizontal: 34,
+                          vertical: 18,
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(22),
+                        child: hasCustomLogo
+                            ? Image.file(
+                                File(customImage),
+                                fit: BoxFit.contain,
+                              )
+                            : hasAssetLogo
+                            ? BrandLogo(
+                                source: logoAsset,
+                                scale: logoLayoutValue(
+                                  widget.item,
+                                  'detail',
+                                  'scale',
+                                  1,
+                                ),
+                                offsetX: logoLayoutValue(
+                                  widget.item,
+                                  'detail',
+                                  'x',
+                                  0,
+                                ),
+                                offsetY: logoLayoutValue(
+                                  widget.item,
+                                  'detail',
+                                  'y',
+                                  0,
+                                ),
+                              )
+                            : Icon(
+                                Icons.card_giftcard,
+                                color: headerColor.computeLuminance() > 0.55
+                                    ? const Color(0xFFD51B46)
+                                    : Colors.white,
+                                size: 62,
+                              ),
+                      ),
+                    ),
+                    if (!hasAssetLogo && !hasCustomLogo)
+                      Positioned(
+                        bottom: 10,
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: headerColor.computeLuminance() > 0.55
+                                ? const Color(0xFF303036)
+                                : Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
-                      child: const Text(
-                        'Details',
-                        style: TextStyle(fontWeight: FontWeight.w800),
+                    Positioned(
+                      top: 4,
+                      right: 0,
+                      child: IconButton(
+                        tooltip: 'Details en opties',
+                        onPressed: widget.onDetails,
+                        icon: const Icon(Icons.more_horiz_rounded),
+                        color: headerColor.computeLuminance() > 0.55
+                            ? const Color(0xFF303036)
+                            : Colors.white,
                       ),
                     ),
                   ],
@@ -979,14 +1437,14 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
               if (balance.isNotEmpty)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 7),
                   color: const Color(0xFFF8E3EA),
                   child: Text(
-                    'Saldo: € $balance',
+                    'Saldo: € ${formatAmountValue(balance)}',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Color(0xFFD51B46),
-                      fontSize: 26,
+                      fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -1029,7 +1487,15 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
                           color: Colors.black.withOpacity(0.05),
                         ),
                       ),
-                      child: BarcodeWidget(
+                      child: isQr
+                      ? Center(
+                          child: QrImageView(
+                            data: code,
+                            size: 150,
+                            padding: EdgeInsets.zero,
+                          ),
+                        )
+                      : BarcodeWidget(
                         barcode: widget.barcode,
                         data: code,
                         width: double.infinity,

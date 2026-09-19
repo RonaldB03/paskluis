@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/services/account_service.dart';
 import '../../data/services/supabase_service.dart';
+import '../../data/services/gift_card_share_service.dart';
+import 'account_management_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -25,6 +27,7 @@ class _AccountScreenState extends State<AccountScreen> {
   bool _busy = false;
   bool _loadingStatus = false;
   bool _hidePassword = true;
+  bool _isAdmin = false;
 
   User? get _user => AccountService.currentUser;
 
@@ -35,8 +38,10 @@ class _AccountScreenState extends State<AccountScreen> {
       if (!mounted) return;
       setState(() {});
       _loadPlusStatus();
+      _loadAdminStatus();
     });
     _loadPlusStatus();
+    _loadAdminStatus();
   }
 
   @override
@@ -62,6 +67,19 @@ class _AccountScreenState extends State<AccountScreen> {
       // Account access still works when the status cannot be refreshed.
     } finally {
       if (mounted) setState(() => _loadingStatus = false);
+    }
+  }
+
+  Future<void> _loadAdminStatus() async {
+    if (_user == null) {
+      if (mounted) setState(() => _isAdmin = false);
+      return;
+    }
+    try {
+      final isAdmin = await AccountService.isCurrentUserAdmin();
+      if (mounted) setState(() => _isAdmin = isAdmin);
+    } catch (_) {
+      if (mounted) setState(() => _isAdmin = false);
     }
   }
 
@@ -105,6 +123,11 @@ class _AccountScreenState extends State<AccountScreen> {
           email: _emailController.text,
           password: _passwordController.text,
         );
+        try {
+          await GiftCardShareService.syncIncomingToLocal();
+        } catch (_) {
+          // Inloggen blijft bruikbaar als delen tijdelijk niet beschikbaar is.
+        }
         if (mounted) _showMessage('Je bent ingelogd.');
       }
       _passwordController.clear();
@@ -335,6 +358,33 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 16),
           _StatusCard(status: _plusStatus, loading: _loadingStatus),
+          if (_isAdmin) ...[
+            const SizedBox(height: 16),
+            Card(
+              elevation: 0,
+              color: const Color(0xFFFFEDF2),
+              child: ListTile(
+                leading: const Icon(
+                  Icons.admin_panel_settings_rounded,
+                  color: Color(0xFFD51B46),
+                ),
+                title: const Text(
+                  'Accounts en Plus beheren',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+                subtitle: const Text(
+                  'Activeer of deactiveer PasKluis Plus voor gebruikers.',
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AccountManagementScreen(),
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           const Card(
             elevation: 0,
@@ -389,7 +439,7 @@ class _PlusHero extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Slimme cadeaukaarten, automatische winkelherkenning en persoonlijke hulp.',
+            'Bewaar onbeperkt cadeaukaarten voor eenmalig € 1,99. Geen abonnement en geen reclame.',
             style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],
@@ -409,17 +459,28 @@ class _StatusCard extends StatelessWidget {
     return Card(
       elevation: 0,
       color: status.isActive
-          ? const Color(0xFFFFEDF2)
+          ? const Color(0xFFFFF6D8)
           : const Color(0xFFFFFFFF),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: status.isActive
+              ? const Color(0xFFD5A021)
+              : Colors.transparent,
+          width: 1.4,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
             Icon(
               status.isActive
-                  ? Icons.verified_rounded
+                  ? Icons.workspace_premium_rounded
                   : Icons.workspace_premium_outlined,
-              color: const Color(0xFFD51B46),
+              color: status.isActive
+                  ? const Color(0xFFD5A021)
+                  : const Color(0xFFD51B46),
               size: 34,
             ),
             const SizedBox(width: 14),
@@ -433,18 +494,21 @@ class _StatusCard extends StatelessWidget {
                         : status.isActive
                         ? 'PasKluis Plus is actief'
                         : 'Gratis versie',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
+                      color: status.isActive
+                          ? const Color(0xFF8A6500)
+                          : const Color(0xFF26252C),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     status.isActive
                         ? status.expiresAt == null
-                              ? 'Je hebt onbeperkt toegang.'
+                              ? 'Je hebt onbeperkt toegang.${_source(status.source)}'
                               : 'Je toegang is actief tot ${_date(status.expiresAt!)}.'
-                        : 'Klantenkaarten en QR-codes blijven gratis. Plus-aankopen volgen later.',
+                        : 'Eén cadeaukaart is gratis. Klantenkaarten en QR-codes blijven onbeperkt gratis.',
                   ),
                 ],
               ),
@@ -457,6 +521,13 @@ class _StatusCard extends StatelessWidget {
 
   static String _date(DateTime value) =>
       '${value.day.toString().padLeft(2, '0')}-${value.month.toString().padLeft(2, '0')}-${value.year}';
+
+  static String _source(String? source) {
+    if (source == 'complimentary') return ' Handmatig geactiveerd via beheer.';
+    if (source == 'apple') return ' Geactiveerd via Apple.';
+    if (source == 'google') return ' Geactiveerd via Google Play.';
+    return '';
+  }
 }
 
 class _OfflineAccountCard extends StatelessWidget {

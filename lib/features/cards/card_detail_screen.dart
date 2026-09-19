@@ -69,7 +69,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
     final pinCode = widget.item['pinCode']?.toString() ?? '';
     final currentBalance = widget.item['currentBalance']?.toString() ?? '';
 
-    final isQrCode = type == 'QR-code';
+    final isQrCode = type == 'QR-code' ||
+        widget.item['codeFormat']?.toString() == 'qr';
     final isGiftCard = type == 'Cadeaukaart';
 
     return Scaffold(
@@ -120,17 +121,18 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
               ),
             ),
 
-            const SizedBox(height: 20),
-
-            SelectableText(
-              code,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 17,
-                letterSpacing: 1,
-                color: Colors.black54,
+            if (!isQrCode) ...[
+              const SizedBox(height: 20),
+              SelectableText(
+                code,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 17,
+                  letterSpacing: 1,
+                  color: Colors.black54,
+                ),
               ),
-            ),
+            ],
 
             if (isGiftCard) ...[
               const SizedBox(height: 28),

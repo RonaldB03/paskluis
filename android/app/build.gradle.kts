@@ -5,12 +5,18 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val codemagicKeystorePath = System.getenv("CM_KEYSTORE_PATH")
+val codemagicKeystorePassword = System.getenv("CM_KEYSTORE_PASSWORD")
+val codemagicKeyAlias = System.getenv("CM_KEY_ALIAS")
+val codemagicKeyPassword = System.getenv("CM_KEY_PASSWORD")
+
 android {
     namespace = "nl.paskluis.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -29,12 +35,32 @@ android {
         versionName = flutter.versionName
     }
 
-    buildTypes {
-        release {
-            // Signing is supplied by the release environment (for example Codemagic).
-            // Never sign a production artifact with the debug key.
+    signingConfigs {
+        if (!codemagicKeystorePath.isNullOrBlank()) {
+            create("release") {
+                storeFile = file(codemagicKeystorePath)
+                storePassword = codemagicKeystorePassword
+                keyAlias = codemagicKeyAlias
+                keyPassword = codemagicKeyPassword
+            }
         }
     }
+
+    buildTypes {
+        release {
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            if (!codemagicKeystorePath.isNullOrBlank()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
+    }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {

@@ -31,6 +31,22 @@ class MediaStorageService {
     return destination.path;
   }
 
+  /// iOS may assign the app container a new absolute path after an update.
+  /// Rebuild the path from the stable card_images folder and filename.
+  static Future<String?> resolveManagedImage(String storedPath) async {
+    if (storedPath.isEmpty) return null;
+    final original = File(storedPath);
+    if (await original.exists()) return original.path;
+
+    final marker = '${path.separator}$_directoryName${path.separator}';
+    if (!storedPath.contains(marker)) return null;
+    final documents = await getApplicationDocumentsDirectory();
+    final candidate = File(
+      path.join(documents.path, _directoryName, path.basename(storedPath)),
+    );
+    return await candidate.exists() ? candidate.path : null;
+  }
+
   static Future<void> deleteIfManaged(String? imagePath) async {
     if (imagePath == null || imagePath.isEmpty) return;
 
