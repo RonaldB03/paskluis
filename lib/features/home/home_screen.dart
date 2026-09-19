@@ -10,6 +10,7 @@ import '../../data/services/brand_sync_service.dart';
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../shared/widgets/brand_logo.dart';
+import '../../shared/utils/amount_format.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
@@ -1157,7 +1158,7 @@ class _PreviewCardState extends State<_PreviewCard> {
                   child: Text(
                     widget.balance.isEmpty
                         ? 'Saldo onbekend'
-                        : '€ ${widget.balance}',
+                        : '€ ${formatAmountValue(widget.balance)}',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15,

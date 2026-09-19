@@ -9,6 +9,7 @@ import '../../data/services/settings_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/gift_card_share_service.dart';
 import '../../shared/widgets/brand_logo.dart';
+import '../../shared/utils/amount_format.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
@@ -342,7 +343,9 @@ class GiftCardsScreen extends StatelessWidget {
                 ...archived.map((item) => ListTile(
                       leading: const CircleAvatar(child: Icon(Icons.card_giftcard_rounded)),
                       title: Text(item['name']?.toString() ?? 'Cadeaukaart'),
-                      subtitle: Text('Saldo € ${item['currentBalance'] ?? '0.00'}'),
+                      subtitle: Text(
+                        'Saldo € ${formatAmountValue(item['currentBalance'] ?? '0')}',
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -603,7 +606,7 @@ class _GiftCardTileState extends State<_GiftCardTile> {
     return Semantics(
       button: true,
       label:
-          '$title, cadeaukaart, ${balance.isEmpty ? 'saldo onbekend' : 'saldo € $balance'}${isFavorite ? ', favoriet' : ''}',
+          '$title, cadeaukaart, ${balance.isEmpty ? 'saldo onbekend' : 'saldo € ${formatAmountValue(balance)}'}${isFavorite ? ', favoriet' : ''}',
       hint: 'Tik tweemaal om de cadeaukaart te openen',
       child: GestureDetector(
         onTapDown: (_) => setPressed(true),
@@ -682,7 +685,9 @@ class _GiftCardTileState extends State<_GiftCardTile> {
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Text(
-                  balance.isEmpty ? 'Saldo onbekend' : '€ $balance',
+                  balance.isEmpty
+                      ? 'Saldo onbekend'
+                      : '€ ${formatAmountValue(balance)}',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,

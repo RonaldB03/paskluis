@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/image_color_service.dart';
 import '../../shared/widgets/brand_logo.dart';
+import '../../shared/utils/amount_format.dart';
 import '../scanner/scanner_screen.dart';
 
 class EditGiftCardScreen extends StatefulWidget {
@@ -55,10 +56,12 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
 
     cardNumberController.text = widget.item['cardNumber']?.toString() ?? '';
     pinCodeController.text = widget.item['pinCode']?.toString() ?? '';
-    initialBalanceController.text =
-        widget.item['initialBalance']?.toString() ?? '';
-    currentBalanceController.text =
-        widget.item['currentBalance']?.toString() ?? '';
+    initialBalanceController.text = normalizeAmountValue(
+      widget.item['initialBalance']?.toString() ?? '',
+    );
+    currentBalanceController.text = normalizeAmountValue(
+      widget.item['currentBalance']?.toString() ?? '',
+    );
 
     logoAsset = widget.item['logoAsset']?.toString() ?? '';
     brandColor = widget.item['brandColor']?.toString() ?? '';
@@ -147,8 +150,10 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
 
     updated['cardNumber'] = cardNumberController.text.trim();
     updated['pinCode'] = pinCodeController.text.trim();
-    updated['initialBalance'] = initialBalanceController.text.trim();
-    updated['currentBalance'] = currentBalanceController.text.trim();
+    updated['initialBalance'] =
+        normalizeAmountValue(initialBalanceController.text);
+    updated['currentBalance'] =
+        normalizeAmountValue(currentBalanceController.text);
 
     updated['logoAsset'] = logoAsset;
     updated['brandColor'] = brandColor;

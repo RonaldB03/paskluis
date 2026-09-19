@@ -43,9 +43,14 @@ class _BrandLogoState extends State<BrandLogo> {
         future: prepared,
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            return CustomPaint(
-              painter: _LogoPainter(snapshot.data!),
-              size: Size.infinite,
+            return ClipRect(
+              child: Transform.scale(
+                scale: widget.scale ?? 1.0,
+                child: CustomPaint(
+                  painter: _LogoPainter(snapshot.data!),
+                  size: Size.infinite,
+                ),
+              ),
             );
           }
 

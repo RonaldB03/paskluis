@@ -126,6 +126,13 @@ abstract final class SmartCardImportService {
         return const ['Jumbo Extra'];
       case 'kruidvat':
         return const ['Kruidvat Club'];
+      case 'vvv':
+        return const [
+          'VVV cadeaukaart',
+          'VV cadeaukaart',
+          'VVV giftcard',
+          'Nationale VVV cadeaukaart',
+        ];
       default:
         return const [];
     }

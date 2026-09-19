@@ -16,6 +16,7 @@ import '../../data/services/gift_card_share_service.dart';
 import '../../data/services/account_service.dart';
 import '../account/account_screen.dart';
 import '../../shared/widgets/brand_logo.dart';
+import '../../shared/utils/amount_format.dart';
 import 'edit_gift_card_screen.dart';
 
 class GiftCardViewScreen extends StatefulWidget {
@@ -513,7 +514,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  balance.isEmpty ? name : '$name • huidig saldo € $balance',
+                  balance.isEmpty
+                      ? name
+                      : '$name • huidig saldo € ${formatAmountValue(balance)}',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -572,7 +575,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     return [];
   }
 
-  String _money(double value) => value.toStringAsFixed(2);
+  String _money(double value) => normalizeAmountValue(value.toString());
 
   Future<void> _saveBalance(double newBalance, {required String kind}) async {
     if (items.isEmpty) return;
@@ -760,7 +763,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       final date = DateTime.tryParse(entry['createdAt']?.toString() ?? '');
                       final type = entry['type']?.toString();
                       final title = type == 'spent'
-                          ? '€ ${entry['amount']} besteed'
+                          ? '€ ${formatAmountValue(entry['amount'])} besteed'
                           : type == 'used'
                               ? 'Volledig gebruikt'
                               : type == 'undo'
@@ -774,7 +777,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                         ),
                         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
                         subtitle: Text(
-                          '${date == null ? '' : '${date.day}-${date.month}-${date.year} • '}€ ${entry['oldBalance']} → € ${entry['newBalance']}',
+                          '${date == null ? '' : '${date.day}-${date.month}-${date.year} • '}€ ${formatAmountValue(entry['oldBalance'])} → € ${formatAmountValue(entry['newBalance'])}',
                         ),
                         trailing: index == 0 && type != 'undo'
                             ? TextButton(
@@ -788,7 +791,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                                     'type': 'undo',
                                     'oldBalance': _money(_balanceOf(updated)),
                                     'newBalance': _money(restored),
-                                    'amount': '0.00',
+                                    'amount': '0',
                                   });
                                   updated['currentBalance'] = _money(restored);
                                   updated['balanceHistory'] = jsonEncode(all);
@@ -941,7 +944,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                         const SizedBox(height: 16),
                         _DetailRow(
                           label: 'Huidig saldo',
-                          value: '€ $currentBalance',
+                          value: '€ ${formatAmountValue(currentBalance)}',
                         ),
                       ],
 
@@ -1434,7 +1437,7 @@ class _GiftBarcodeCardState extends State<_GiftBarcodeCard>
                   padding: const EdgeInsets.symmetric(vertical: 7),
                   color: const Color(0xFFF8E3EA),
                   child: Text(
-                    'Saldo: € $balance',
+                    'Saldo: € ${formatAmountValue(balance)}',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Color(0xFFD51B46),

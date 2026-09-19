@@ -12,6 +12,7 @@ import '../../data/services/smart_card_import_service.dart';
 import '../../data/services/brand_catalog_service.dart';
 import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
+import '../../shared/utils/amount_format.dart';
 import '../scanner/scanner_screen.dart';
 
 class AddGiftCardScreen extends StatefulWidget {
@@ -105,7 +106,9 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
 
     nameController.text = widget.initialName ?? '';
     codeController.text = widget.initialCode ?? widget.initialCardNumber ?? '';
-    balanceController.text = widget.initialCurrentBalance ?? '';
+    balanceController.text = normalizeAmountValue(
+      widget.initialCurrentBalance ?? '',
+    );
     pinCodeController.text = widget.initialPinCode ?? '';
     noteController.text = widget.initialNote ?? '';
 
@@ -184,7 +187,9 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       setState(() {
         codeController.text = result.code;
         if (result.pinCode.isNotEmpty) pinCodeController.text = result.pinCode;
-        if (result.balance.isNotEmpty) balanceController.text = result.balance;
+        if (result.balance.isNotEmpty) {
+          balanceController.text = normalizeAmountValue(result.balance);
+        }
         if (result.expiryDate.isNotEmpty) {
           expiryDate = DateTime.tryParse(result.expiryDate);
         }
@@ -252,11 +257,20 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     final brands = catalog
         .where((brand) => brand.supportedTypes.contains('Cadeaukaart'))
         .toList();
+    var searchQuery = '';
     final selected = await showModalBottomSheet<CardBrandTemplate>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
-      builder: (context) => SafeArea(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final filteredBrands = brands.where((brand) {
+            final query = searchQuery.trim().toLowerCase();
+            if (query.isEmpty) return true;
+            return brand.name.toLowerCase().contains(query) ||
+                brand.id.toLowerCase().contains(query);
+          }).toList();
+          return SafeArea(
         child: SizedBox(
           height: MediaQuery.sizeOf(context).height * 0.68,
           child: Column(
@@ -268,13 +282,31 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                   style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: TextField(
+                  autofocus: true,
+                  onChanged: (value) =>
+                      setSheetState(() => searchQuery = value),
+                  decoration: InputDecoration(
+                    hintText: 'Zoek winkel',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ),
               Expanded(
                 child: ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                  itemCount: brands.length,
+                  itemCount: filteredBrands.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 6),
                   itemBuilder: (context, index) {
-                    final brand = brands[index];
+                    final brand = filteredBrands[index];
                     return ListTile(
                       tileColor: Colors.white,
                       shape: RoundedRectangleBorder(
@@ -297,6 +329,8 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
             ],
           ),
         ),
+      );
+        },
       ),
     );
     if (selected == null || !mounted) return;
@@ -321,7 +355,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   }
 
   String normalizeAmount(String value) {
-    return value.trim().replaceAll(',', '.');
+    return normalizeAmountValue(value);
   }
 
   String formatDate(DateTime date) =>
@@ -764,7 +798,7 @@ class _GiftCardLivePreview extends StatelessWidget {
                     child: hasCustomLogo
                         ? Image.file(File(customImage), fit: BoxFit.contain)
                         : hasAssetLogo
-                        ? BrandLogo(source: logoAsset)
+                        ? BrandLogo(source: logoAsset, scale: 1.5)
                         : const Icon(
                             Icons.card_giftcard_rounded,
                             color: Colors.white,
@@ -872,7 +906,9 @@ class _GiftCardLivePreview extends StatelessWidget {
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: Text(
-                      balance.trim().isEmpty ? 'Saldo onbekend' : '€ $balance',
+                      balance.trim().isEmpty
+                          ? 'Saldo onbekend'
+                          : '€ ${formatAmountValue(balance)}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Color(0xFFD51B46),
