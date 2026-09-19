@@ -95,6 +95,7 @@ dialog::backdrop { background:rgba(20,18,22,.5); }
 .mock-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .mock-tile { position:relative; height:113px; overflow:hidden; display:grid; place-items:center; border-radius:17px; background:white; box-shadow:0 5px 14px rgba(36,32,38,.06); }
 .logo-tile .live-brand-logo { width:76%; height:64%; object-fit:contain; transform-origin:center; }
+.loyalty-logo .live-brand-logo { width:100%; height:92px; }
 .pink-tile { align-content:space-between; justify-items:start; padding:17px; background:var(--red); color:white; font-size:20px; }
 .pink-tile b { font-size:14px; }
 .muted-tile { color:#aaa7af; background:#eeedf0; font-weight:800; }
@@ -122,11 +123,32 @@ dialog::backdrop { background:rgba(20,18,22,.5); }
 .mock-gift-callout b { color:#33313a; }
 .mock-options { color:var(--red); font-size:13px; }
 .mock-dots { text-align:center; color:#d3d1d6; font-size:15px; }
+.mock-loyalty-detail,.mock-gift-detail { margin:12px 22px 0; overflow:hidden; border-radius:28px; box-shadow:0 8px 22px rgba(35,30,40,.08); }
+.mock-loyalty-head { height:142px; padding:22px 24px 18px; display:grid; place-items:center; }
+.mock-loyalty-head .live-brand-logo { width:100%; height:100%; object-fit:contain; transform-origin:center; }
+.mock-detail-white { padding:18px; display:grid; gap:14px; place-items:center; background:white; }
+.mock-loyalty-detail .mock-detail-white { grid-template-rows:145px 62px 42px; }
+.mock-gift-detail-head { position:relative; height:108px; padding:18px 34px; display:grid; place-items:center; }
+.mock-gift-detail-head .live-brand-logo { width:100%; height:100%; object-fit:contain; transform-origin:center; }
+.mock-gift-detail-head span { position:absolute; top:6px; right:12px; font-size:20px; }
+.mock-balance { padding:7px; text-align:center; color:var(--red); background:#f8e3ea; font-size:17px; font-weight:900; }
+.mock-gift-detail .mock-detail-white { grid-template-rows:135px 38px 35px; }
+.mock-detail-white button { width:100%; border:0; border-radius:22px; padding:10px; background:var(--red); color:white; font-weight:900; }
+.mock-selected-brand { height:78px; margin:12px 16px; padding:12px 18px; display:grid; grid-template-columns:72px 1fr auto; gap:12px; align-items:center; border-radius:20px; background:white; font-size:14px; }
+.mock-selected-brand .live-brand-logo { width:64px; height:38px; object-fit:contain; transform-origin:center; }
+.mock-selected-brand span { color:#596ca2; }
+.mock-review-card { margin:0 16px; overflow:hidden; border-radius:28px; box-shadow:0 8px 22px rgba(35,30,40,.08); }
+.mock-review-head { height:108px; padding:18px 24px 14px; display:grid; grid-template-rows:1fr auto; place-items:center; color:white; }
+.mock-review-head .live-brand-logo { width:100%; height:62px; object-fit:contain; transform-origin:center; }
+.mock-review-head b { font-size:16px; }
+.mock-review-card .mock-detail-white { grid-template-rows:135px 45px; }
+.mock-balance-box { width:100%; padding:10px; border-radius:18px; background:#f8e3ea; color:var(--red); text-align:center; font-size:20px; font-weight:900; }
 .picker-phone { display:block; padding-bottom:20px; }
 .mock-picker-underlay { position:absolute; inset:0; opacity:.45; filter:blur(.2px); }
 .mock-underlay-card { height:110px; margin:18px 14px; border-radius:18px; background:white; }
 .mock-sheet { position:absolute; left:0; right:0; bottom:0; height:86%; padding:8px 14px 18px; border-radius:28px 28px 0 0; background:#f7f6fc; box-shadow:0 -12px 28px rgba(33,30,38,.16); }
 .mock-sheet-handle { width:40px; height:5px; margin:0 auto 7px; border-radius:5px; background:#51505a; }
+.mock-sheet h3 { margin:14px 0 16px; text-align:center; font-size:21px; }
 .mock-sheet .mock-detail-header { margin:0 -14px 8px; padding-left:18px; padding-right:18px; background:transparent; }
 .mock-sheet .mock-search { margin:0 0 12px; }
 .mock-sheet h4 { margin:0 2px 9px; font-size:17px; }
@@ -134,6 +156,12 @@ dialog::backdrop { background:rgba(20,18,22,.5); }
 .mock-picker-row { height:68px; padding:8px 12px; display:grid; grid-template-columns:92px 1fr 20px; align-items:center; gap:10px; border-radius:16px; background:white; font-size:15px; }
 .mock-picker-logo { width:90px; height:52px; overflow:hidden; display:grid; place-items:center; border-radius:12px; }
 .mock-picker-logo .live-brand-logo { width:78%; height:70%; object-fit:contain; transform-origin:center; }
+.full-picker { height:62px; grid-template-columns:82px 1fr 20px; }
+.full-picker .mock-picker-logo { width:82px; height:44px; padding:3px; border-radius:10px; }
+.full-picker .mock-picker-logo .live-brand-logo { width:100%; height:100%; }
+.sheet-picker { height:62px; grid-template-columns:62px 1fr 20px; }
+.sheet-picker .mock-picker-logo { width:62px; height:46px; border-radius:0; }
+.sheet-picker .mock-picker-logo .live-brand-logo { width:100%; height:100%; }
 .mock-picker-row>span { color:#99969f; font-size:26px; }
 .muted-row>div { width:74px; height:40px; border-radius:9px; background:#eeedf0; }
 .muted-row { color:#aaa7af; }
@@ -153,4 +181,3 @@ dialog::backdrop { background:rgba(20,18,22,.5); }
 @media (max-width:900px) { .app-shell { display:block; } .sidebar { display:none; } .main-content { padding:18px; } .mobile-header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:24px; } .stats-grid { grid-template-columns:repeat(2,1fr); } .support-layout { grid-template-columns:1fr; } .thread-list { max-height:260px; border-right:0; border-bottom:1px solid var(--line); } .conversation { min-height:500px; } }
 @media (max-width:560px) { .page-heading { align-items:stretch; flex-direction:column; } .stats-grid { grid-template-columns:1fr 1fr; } th,td { padding:12px; } .main-content { padding:14px; } }
 @media (max-width:650px) { .layout-workspace { grid-template-columns:1fr; } .layout-card-preview { height:530px; } }
-
