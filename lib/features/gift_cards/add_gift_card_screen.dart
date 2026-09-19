@@ -267,6 +267,9 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
+      // Open the picker without focusing the search field. The keyboard should
+      // only appear after the user explicitly starts searching.
+      requestFocus: false,
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) {
           final filteredBrands = brands.where((brand) {
@@ -277,7 +280,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
           }).toList();
           return SafeArea(
         child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.68,
+          height: MediaQuery.sizeOf(context).height * 0.86,
           child: Column(
             children: [
               const Padding(
@@ -290,9 +293,10 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: TextField(
-                  autofocus: true,
                   onChanged: (value) =>
                       setSheetState(() => searchQuery = value),
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: (_) => FocusScope.of(context).unfocus(),
                   decoration: InputDecoration(
                     hintText: 'Zoek winkel',
                     prefixIcon: const Icon(Icons.search_rounded),
@@ -331,7 +335,10 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
                       trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () => Navigator.pop(context, brand),
+                      onTap: () {
+                        FocusScope.of(context).unfocus();
+                        Navigator.pop(context, brand);
+                      },
                     );
                   },
                 ),
@@ -1141,3 +1148,4 @@ class _LogoEditor extends StatelessWidget {
     );
   }
 }
+
