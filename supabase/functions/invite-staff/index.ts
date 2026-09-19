@@ -27,11 +27,14 @@ Deno.serve(async (request) => {
     const { data: { user }, error: userError } = await callerClient.auth.getUser();
     if (userError || !user) throw new Error('Sessie is verlopen.');
 
-    const { data: caller } = await adminClient
+    const { data: caller, error: callerError } = await callerClient
       .from('profiles')
       .select('role')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
+    if (callerError) {
+      throw new Error(`Beheerrechten konden niet worden gecontroleerd: ${callerError.message}`);
+    }
     if (caller?.role !== 'admin') throw new Error('Alleen beheerders kunnen medewerkers uitnodigen.');
 
     const body = await request.json();
