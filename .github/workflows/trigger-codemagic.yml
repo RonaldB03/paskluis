@@ -12,6 +12,9 @@ on:
       - codex/search-and-premium-build-25
     paths-ignore:
       - .github/workflows/trigger-codemagic.yml
+      - .github/workflows/admin-pages.yml
+      - admin/**
+      - supabase/**
 
 permissions:
   contents: read
