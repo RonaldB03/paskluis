@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/services/account_service.dart';
 import '../../data/services/supabase_service.dart';
-import '../../data/services/gift_card_share_service.dart';
+import '../../data/services/card_share_service.dart';
 import '../admin/brand_logo_layout_screen.dart';
 import 'account_management_screen.dart';
 
@@ -125,7 +125,7 @@ class _AccountScreenState extends State<AccountScreen> {
           password: _passwordController.text,
         );
         try {
-          await GiftCardShareService.syncIncomingToLocal();
+          await CardShareService.syncAllToLocal();
         } catch (_) {
           // Inloggen blijft bruikbaar als delen tijdelijk niet beschikbaar is.
         }
