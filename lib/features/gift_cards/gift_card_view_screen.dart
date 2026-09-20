@@ -8,16 +8,14 @@ import 'package:flutter/services.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/services/security_service.dart';
 import '../../data/services/location_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/notification_service.dart';
-import '../../data/services/gift_card_share_service.dart';
-import '../../data/services/account_service.dart';
-import '../account/account_screen.dart';
+import '../../data/services/card_share_service.dart';
 import '../../shared/widgets/brand_logo.dart';
+import '../../shared/widgets/card_share_dialogs.dart';
 import '../../shared/utils/amount_format.dart';
 import '../../shared/utils/logo_layout.dart';
 import 'edit_gift_card_screen.dart';
@@ -153,16 +151,22 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
       'updatedAt': DateTime.now().toIso8601String(),
     };
 
-    await StorageService.saveCard(key, newItem);
-    await NotificationService.syncGiftCard(newItem);
-    try {
-      await GiftCardShareService.syncOwnedCard(Map<String, dynamic>.from(newItem));
-    } catch (_) {}
+    var savedItem = Map<String, dynamic>.from(newItem);
+    final isReadOnlyShare = savedItem['isShared'] == true &&
+        savedItem['canEditShared'] != true;
+    if (!isReadOnlyShare &&
+        (savedItem['isShared'] == true ||
+            (savedItem['sharedCardId']?.toString() ?? '').isNotEmpty)) {
+      savedItem = await CardShareService.updateSharedCard(savedItem);
+    }
+
+    await StorageService.saveCard(key, savedItem);
+    await NotificationService.syncGiftCard(savedItem);
 
     if (!mounted) return;
 
     setState(() {
-      items[currentIndex] = Map<String, dynamic>.from(newItem);
+      items[currentIndex] = Map<String, dynamic>.from(savedItem);
     });
   }
 
@@ -189,8 +193,25 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
     await NotificationService.cancelGiftCard(id);
     try {
-      await GiftCardShareService.revokeAllForCard(id);
-    } catch (_) {}
+      if (item['isShared'] == true) {
+        await CardShareService.removeReceivedCard(
+          item['shareMembershipId']?.toString() ?? '',
+        );
+      } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
+        await CardShareService.revokeAllForCard(id);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     await StorageService.deleteCard(key);
 
     if (!mounted) return;
@@ -219,14 +240,19 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
     final item = items[currentIndex];
     final name = item['name']?.toString() ?? 'deze cadeaukaart';
+    final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Definitief verwijderen?'),
+          title: Text(
+            isShared ? 'Uit jouw PasKluis verwijderen?' : 'Definitief verwijderen?',
+          ),
           content: Text(
-            'Weet je zeker dat je "$name" definitief wilt verwijderen? De kaart verdwijnt ook bij iedereen met wie je hem hebt gedeeld. Dit kun je niet ongedaan maken.',
+            isShared
+                ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De kaart van de eigenaar blijft bestaan.'
+                : 'Weet je zeker dat je "$name" definitief wilt verwijderen? De kaart verdwijnt ook bij iedereen met wie je hem hebt gedeeld. Dit kun je niet ongedaan maken.',
           ),
           actions: [
             TextButton(
@@ -236,7 +262,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Definitief verwijderen'),
+              child: Text(isShared ? 'Verwijderen' : 'Definitief verwijderen'),
             ),
           ],
         );
@@ -263,118 +289,13 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
   Future<void> openShareCard() async {
     if (items.isEmpty) return;
-    if (AccountService.currentUser == null) {
-      final open = await showDialog<bool>(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Inloggen vereist'),
-          content: const Text('Log in met je PasKluis-account om kaarten veilig per e-mailadres te delen.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuleren')),
-            FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Inloggen')),
-          ],
-        ),
-      );
-      if (open == true && mounted) {
-        await Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountScreen()));
-      }
-      if (AccountService.currentUser == null) return;
-    }
-    try {
-      final plus = await AccountService.loadPlusStatus();
-      if (!plus.isActive) throw const AuthException('Delen is alleen beschikbaar met PasKluis Plus.');
-    } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('AuthException(message: ', '').replaceFirst(')', ''))));
-      return;
-    }
-
-    final controller = TextEditingController();
-    final email = await showDialog<String>(
-      context: context,
-      builder: (_) => AlertDialog(
-        icon: const Icon(Icons.person_add_alt_1_rounded, color: Color(0xFFD51B46), size: 38),
-        title: const Text('Cadeaukaart delen'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: TextInputType.emailAddress,
-          autocorrect: false,
-          decoration: const InputDecoration(
-            labelText: 'E-mailadres ontvanger',
-            hintText: 'naam@voorbeeld.nl',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annuleren')),
-          FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Delen')),
-        ],
-      ),
-    );
-    controller.dispose();
-    if (email == null || !email.contains('@')) return;
-    try {
-      await GiftCardShareService.shareWithEmail(items[currentIndex], email);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Cadeaukaart gedeeld met $email.')));
-    } catch (error) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('PostgrestException(message: ', '').split(', code:').first)));
-    }
+    final updated = await CardShareDialogs.share(context, items[currentIndex]);
+    if (updated != null) await updateCurrentItem(updated);
   }
 
   Future<void> openSharedAccess() async {
     if (items.isEmpty) return;
-    try {
-      final shares = await GiftCardShareService.outgoingForCard(
-        items[currentIndex]['id']?.toString() ?? '',
-      );
-      if (!mounted) return;
-      await showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.white,
-        showDragHandle: true,
-        builder: (sheetContext) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Gedeelde toegang', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 12),
-                if (shares.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text('Deze kaart is nog met niemand gedeeld.'),
-                  )
-                else
-                  ...shares.map((share) => ListTile(
-                        leading: const CircleAvatar(child: Icon(Icons.person_rounded)),
-                        title: Text(share['recipient_email']?.toString() ?? ''),
-                        subtitle: const Text('Kan de kaart bekijken en gebruiken'),
-                        trailing: TextButton(
-                          onPressed: () async {
-                            await GiftCardShareService.revokeShare(share['id']?.toString() ?? '');
-                            if (sheetContext.mounted) Navigator.pop(sheetContext);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Gedeelde toegang is gestopt.')),
-                              );
-                            }
-                          },
-                          child: const Text('Stoppen'),
-                        ),
-                      )),
-              ],
-            ),
-          ),
-        ),
-      );
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gedeelde toegang ophalen lukte niet: $error')),
-        );
-      }
-    }
+    await CardShareDialogs.manage(context, items[currentIndex]);
   }
 
   Future<void> revealPin() async {
@@ -843,6 +764,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     final expiryDate = DateTime.tryParse(item['expiryDate']?.toString() ?? '');
     final isFavorite = item['isFavorite'] == true;
     final isShared = item['isShared'] == true;
+    final canEditShared = item['canEditShared'] == true;
 
     bool sheetShowPin = false;
 
@@ -918,9 +840,11 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       _DetailRow(label: 'Naam', value: name),
                       if (isShared) ...[
                         const SizedBox(height: 12),
-                        const _DetailRow(
+                        _DetailRow(
                           label: 'Toegang',
-                          value: 'Met jou gedeeld • alleen bekijken',
+                          value: canEditShared
+                              ? 'Met jou gedeeld • samen bewerken'
+                              : 'Met jou gedeeld • alleen bekijken',
                         ),
                       ],
                       const SizedBox(height: 16),
@@ -1002,7 +926,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
                       const SizedBox(height: 24),
 
-                      if (!isShared)
+                      if (!isShared || canEditShared)
                         _ActionButton(
                           icon: Icons.euro,
                           label: 'Saldo aanpassen',
@@ -1065,6 +989,15 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                             openEdit(items[currentIndex]);
                           },
                         ),
+                      ] else if (canEditShared) ...[
+                        _ActionButton(
+                          icon: Icons.edit_outlined,
+                          label: 'Bewerken',
+                          onTap: () {
+                            Navigator.pop(context);
+                            openEdit(items[currentIndex]);
+                          },
+                        ),
                       ],
 
                       const SizedBox(height: 10),
@@ -1073,6 +1006,16 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                         _ActionButton(
                           icon: Icons.delete_forever_rounded,
                           label: 'Definitief verwijderen',
+                          destructive: true,
+                          onTap: () {
+                            Navigator.pop(context);
+                            confirmDelete();
+                          },
+                        )
+                      else
+                        _ActionButton(
+                          icon: Icons.remove_circle_outline_rounded,
+                          label: 'Uit mijn PasKluis verwijderen',
                           destructive: true,
                           onTap: () {
                             Navigator.pop(context);

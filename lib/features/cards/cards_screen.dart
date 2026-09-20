@@ -6,6 +6,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../data/services/settings_service.dart';
+import '../../data/services/card_share_service.dart';
 import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/logo_layout.dart';
@@ -207,7 +208,13 @@ class CardsScreen extends StatelessWidget {
       'updatedAt': DateTime.now().toIso8601String(),
     };
 
-    await StorageService.saveCard(key, newCard);
+    var savedCard = Map<String, dynamic>.from(newCard);
+    if (savedCard['isShared'] == true ||
+        (savedCard['sharedCardId']?.toString() ?? '').isNotEmpty) {
+      savedCard = await CardShareService.updateSharedCard(savedCard);
+    }
+
+    await StorageService.saveCard(key, savedCard);
   }
 
   Future<void> deleteCard(
@@ -218,13 +225,18 @@ class CardsScreen extends StatelessWidget {
     if (key == null) return;
 
     final name = item['name']?.toString() ?? 'deze kaart';
+    final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Kaart verwijderen?'),
+        title: Text(
+          isShared ? 'Uit jouw PasKluis verwijderen?' : 'Kaart verwijderen?',
+        ),
         content: Text(
-          'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+          isShared
+              ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De kaart van de eigenaar blijft bestaan.'
+              : 'Weet je zeker dat je "$name" wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.',
         ),
         actions: [
           TextButton(
@@ -244,6 +256,28 @@ class CardsScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
+    try {
+      if (isShared) {
+        await CardShareService.removeReceivedCard(
+          item['shareMembershipId']?.toString() ?? '',
+        );
+      } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
+        await CardShareService.revokeAllForCard(
+          item['id']?.toString() ?? '',
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
@@ -254,6 +288,8 @@ class CardsScreen extends StatelessWidget {
 
   void showCardOptions(BuildContext context, Map<String, dynamic> item) {
     final name = item['name']?.toString() ?? 'Kaart';
+    final isShared = item['isShared'] == true;
+    final canEdit = !isShared || item['canEditShared'] == true;
 
     HapticFeedback.mediumImpact();
 
@@ -281,17 +317,20 @@ class CardsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _OptionTile(
-                  icon: Icons.edit_rounded,
-                  title: 'Bewerken',
-                  onTap: () {
-                    Navigator.pop(context);
-                    editCard(context, item);
-                  },
-                ),
+                if (canEdit)
+                  _OptionTile(
+                    icon: Icons.edit_rounded,
+                    title: 'Bewerken',
+                    onTap: () {
+                      Navigator.pop(context);
+                      editCard(context, item);
+                    },
+                  ),
                 _OptionTile(
                   icon: Icons.delete_rounded,
-                  title: 'Verwijderen',
+                  title: isShared
+                      ? 'Uit mijn PasKluis verwijderen'
+                      : 'Verwijderen',
                   isDestructive: true,
                   onTap: () {
                     Navigator.pop(context);

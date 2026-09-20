@@ -7,7 +7,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/settings_service.dart';
 import '../../data/services/notification_service.dart';
-import '../../data/services/gift_card_share_service.dart';
+import '../../data/services/card_share_service.dart';
 import '../../data/services/account_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/amount_format.dart';
@@ -235,13 +235,20 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
     if (key == null) return;
 
     final name = item['name']?.toString() ?? 'deze cadeaukaart';
+    final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Definitief verwijderen?'),
+        title: Text(
+          isShared
+              ? 'Uit jouw PasKluis verwijderen?'
+              : 'Definitief verwijderen?',
+        ),
         content: Text(
-          'Weet je zeker dat je "$name" definitief wilt verwijderen? Dit kun je niet ongedaan maken.',
+          isShared
+              ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De cadeaukaart van de eigenaar blijft bestaan.'
+              : 'Weet je zeker dat je "$name" definitief wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.',
         ),
         actions: [
           TextButton(
@@ -253,7 +260,9 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
               backgroundColor: const Color(0xFFD51B46),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Definitief verwijderen'),
+            child: Text(
+              isShared ? 'Verwijderen' : 'Definitief verwijderen',
+            ),
           ),
         ],
       ),
@@ -263,8 +272,27 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
 
     await NotificationService.cancelGiftCard(item['id']?.toString() ?? '');
     try {
-      await GiftCardShareService.revokeAllForCard(item['id']?.toString() ?? '');
-    } catch (_) {}
+      if (isShared) {
+        await CardShareService.removeReceivedCard(
+          item['shareMembershipId']?.toString() ?? '',
+        );
+      } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
+        await CardShareService.revokeAllForCard(
+          item['id']?.toString() ?? '',
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
@@ -274,13 +302,8 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
   }
 
   void showGiftCardOptions(BuildContext context, Map<String, dynamic> item) {
-    if (item['isShared'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Deze kaart is met jou gedeeld en kan alleen door de eigenaar worden beheerd.')),
-      );
-      return;
-    }
     final name = item['name']?.toString() ?? 'Cadeaukaart';
+    final isShared = item['isShared'] == true;
 
     HapticFeedback.mediumImpact();
 
@@ -310,7 +333,9 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
                 const SizedBox(height: 16),
                 _OptionTile(
                   icon: Icons.delete_rounded,
-                  title: 'Definitief verwijderen',
+                  title: isShared
+                      ? 'Uit mijn PasKluis verwijderen'
+                      : 'Definitief verwijderen',
                   isDestructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -482,7 +507,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
                 icon: const Icon(Icons.sync_rounded),
                 onPressed: () async {
                   try {
-                    await GiftCardShareService.syncIncomingToLocal();
+                    await CardShareService.syncAllToLocal();
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Gedeelde kaarten zijn bijgewerkt.')),

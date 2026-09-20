@@ -10,6 +10,7 @@ import '../../data/services/brand_sync_service.dart';
 import '../../data/services/location_service.dart';
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/notification_service.dart';
+import '../../data/services/card_share_service.dart';
 import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/amount_format.dart';
@@ -102,6 +103,74 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }(),
     ]);
+  }
+
+  Future<void> _showAddHelp() async {
+    HapticFeedback.selectionClick();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(
+                child: Text(
+                  'Een kaart toevoegen of importeren',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+                ),
+              ),
+              const SizedBox(height: 22),
+              const _AddHelpStep(
+                number: '1',
+                title: 'Tik op +',
+                description:
+                    'Kies Klantenkaart, QR-code of Cadeaukaart. PasKluis opent daarna de juiste invoer.',
+              ),
+              const _AddHelpStep(
+                number: '2',
+                title: 'Scan of vul handmatig in',
+                description:
+                    'Kies een winkel en scan de barcode of QR-code. Je kunt de code ook zelf invoeren.',
+              ),
+              const _AddHelpStep(
+                number: '3',
+                title: 'Importeer een foto of screenshot',
+                description:
+                    'PasKluis kan een klantenkaart, QR-code of cadeaukaart op je toestel herkennen. De afbeelding wordt niet geüpload.',
+              ),
+              const _AddHelpStep(
+                number: '4',
+                title: 'Controleer en bewaar',
+                description:
+                    'Controleer altijd de winkel en code voordat je de kaart opslaat.',
+                showConnector: false,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    showAddChoices();
+                  },
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Kaart toevoegen'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _repairMovedCustomImages() async {
@@ -450,7 +519,7 @@ class _HomeScreenState extends State<HomeScreen> {
       StorageService.cardsBox.get(key) as Map,
     );
 
-    await StorageService.saveCard(key, {
+    var saved = <String, dynamic>{
       ...oldItem,
       ...updated,
       'id': oldItem['id'],
@@ -458,7 +527,12 @@ class _HomeScreenState extends State<HomeScreen> {
       'createdAt': oldItem['createdAt'],
       'isFavorite': oldItem['isFavorite'] == true,
       'updatedAt': DateTime.now().toIso8601String(),
-    });
+    };
+    if (saved['isShared'] == true ||
+        (saved['sharedCardId']?.toString() ?? '').isNotEmpty) {
+      saved = await CardShareService.updateSharedCard(saved);
+    }
+    await StorageService.saveCard(key, saved);
   }
 
   Future<void> editGiftCard(
@@ -499,7 +573,7 @@ class _HomeScreenState extends State<HomeScreen> {
       StorageService.cardsBox.get(key) as Map,
     );
 
-    final saved = <String, dynamic>{
+    var saved = <String, dynamic>{
       ...oldItem,
       ...updated,
       'id': oldItem['id'],
@@ -514,6 +588,10 @@ class _HomeScreenState extends State<HomeScreen> {
       'isArchived': oldItem['isArchived'] ?? false,
       'updatedAt': DateTime.now().toIso8601String(),
     };
+    if (saved['isShared'] == true ||
+        (saved['sharedCardId']?.toString() ?? '').isNotEmpty) {
+      saved = await CardShareService.updateSharedCard(saved);
+    }
     await StorageService.saveCard(key, saved);
     await NotificationService.syncGiftCard(saved);
   }
@@ -526,13 +604,18 @@ class _HomeScreenState extends State<HomeScreen> {
     if (key == null) return;
 
     final name = item['name']?.toString() ?? 'deze kaart';
+    final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Verwijderen?'),
+        title: Text(
+          isShared ? 'Uit jouw PasKluis verwijderen?' : 'Verwijderen?',
+        ),
         content: Text(
-          'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+          isShared
+              ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De kaart van de eigenaar blijft bestaan.'
+              : 'Weet je zeker dat je "$name" wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.',
         ),
         actions: [
           TextButton(
@@ -552,6 +635,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (confirmed != true) return;
 
+    try {
+      if (isShared) {
+        await CardShareService.removeReceivedCard(
+          item['shareMembershipId']?.toString() ?? '',
+        );
+      } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
+        await CardShareService.revokeAllForCard(
+          item['id']?.toString() ?? '',
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
@@ -563,6 +668,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void showItemOptions(BuildContext context, Map<String, dynamic> item) {
     final name = item['name']?.toString() ?? 'Kaart';
     final type = item['type']?.toString() ?? '';
+    final isShared = item['isShared'] == true;
+    final canEdit = !isShared || item['canEditShared'] == true;
 
     HapticFeedback.mediumImpact();
 
@@ -590,28 +697,31 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _OptionTile(
-                  icon: Icons.edit_rounded,
-                  title: 'Bewerken',
-                  onTap: () {
-                    Navigator.pop(context);
+                if (canEdit)
+                  _OptionTile(
+                    icon: Icons.edit_rounded,
+                    title: 'Bewerken',
+                    onTap: () {
+                      Navigator.pop(context);
 
-                    if (type == 'Pasje') {
-                      editLoyaltyCard(context, item);
-                    } else if (type == 'Cadeaukaart') {
-                      editGiftCard(context, item);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('QR-code bewerken maken we straks.'),
-                        ),
-                      );
-                    }
-                  },
-                ),
+                      if (type == 'Pasje') {
+                        editLoyaltyCard(context, item);
+                      } else if (type == 'Cadeaukaart') {
+                        editGiftCard(context, item);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('QR-code bewerken maken we straks.'),
+                          ),
+                        );
+                      }
+                    },
+                  ),
                 _OptionTile(
                   icon: Icons.delete_rounded,
-                  title: 'Verwijderen',
+                  title: isShared
+                      ? 'Uit mijn PasKluis verwijderen'
+                      : 'Verwijderen',
                   isDestructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -759,6 +869,11 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             automaticallyImplyLeading: false,
+            leading: IconButton(
+              tooltip: 'Uitleg over kaarten toevoegen',
+              onPressed: _showAddHelp,
+              icon: const Icon(Icons.info_outline_rounded),
+            ),
             title: const PremiumAppTitle('PasKluis'),
             centerTitle: true,
             backgroundColor: Colors.white,
@@ -1564,6 +1679,82 @@ class _HomePreviewCardState extends State<HomePreviewCard> {
           ),
         );
       },
+    );
+  }
+}
+
+class _AddHelpStep extends StatelessWidget {
+  final String number;
+  final String title;
+  final String description;
+  final bool showConnector;
+
+  const _AddHelpStep({
+    required this.number,
+    required this.title,
+    required this.description,
+    this.showConnector = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 42,
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: const Color(0xFFD51B46),
+                  foregroundColor: Colors.white,
+                  child: Text(
+                    number,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+                if (showConnector)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      color: const Color(0xFFE4E4E8),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.35,
+                      color: Color(0xFF55555A),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
