@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'account_service.dart';
+import 'notification_service.dart';
 import 'storage_service.dart';
 import 'supabase_service.dart';
 
@@ -30,6 +31,9 @@ abstract final class CardShareService {
         'logoAsset': card['logoAsset']?.toString() ?? '',
         'brandColor': card['brandColor']?.toString() ?? '',
         'expiryDate': card['expiryDate']?.toString() ?? '',
+        'expiryNotificationsEnabled':
+            card['expiryNotificationsEnabled'] == true ||
+                card['expiryNotificationsEnabled']?.toString() == 'true',
         'balanceHistory': card['balanceHistory']?.toString() ?? '[]',
       };
 
@@ -189,8 +193,19 @@ abstract final class CardShareService {
       }
       if (existingKey == null) {
         await StorageService.addCard(local);
+        try {
+          await NotificationService.showSharedCardReceived(local);
+          await NotificationService.syncGiftCard(local);
+        } catch (_) {
+          // Receiving the shared card must also work without permission.
+        }
       } else {
         await StorageService.saveCard(existingKey, local);
+        try {
+          await NotificationService.syncGiftCard(local);
+        } catch (_) {
+          // Reminder scheduling is best effort.
+        }
       }
     }
 

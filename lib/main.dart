@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'features/home/home_screen.dart';
 import 'core/theme/app_theme.dart';
@@ -21,13 +22,41 @@ class PasKluisBootstrap extends StatefulWidget {
   State<PasKluisBootstrap> createState() => _PasKluisBootstrapState();
 }
 
-class _PasKluisBootstrapState extends State<PasKluisBootstrap> {
+class _PasKluisBootstrapState extends State<PasKluisBootstrap>
+    with WidgetsBindingObserver {
   late Future<void> _initialization;
+  bool _syncingSharedCards = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initialization = _initialize();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncSharedCards();
+    }
+  }
+
+  Future<void> _syncSharedCards() async {
+    if (_syncingSharedCards) return;
+    _syncingSharedCards = true;
+    try {
+      await CardShareService.syncAllToLocal();
+    } catch (_) {
+      // The local vault remains available while the account is offline.
+    } finally {
+      _syncingSharedCards = false;
+    }
   }
 
   Future<void> _initialize() async {
@@ -54,6 +83,13 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap> {
       builder: (context, extraClear, _) => MaterialApp(
         title: 'PasKluis',
         debugShowCheckedModeBanner: false,
+        locale: const Locale('nl', 'NL'),
+        supportedLocales: const [Locale('nl', 'NL')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         theme: AppTheme.lightTheme.copyWith(
           dividerTheme: extraClear
               ? const DividerThemeData(color: Color(0xFF303036), thickness: 1)

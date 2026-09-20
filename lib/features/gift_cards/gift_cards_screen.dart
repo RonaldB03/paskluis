@@ -579,45 +579,60 @@ class _GiftCardsOverview extends StatelessWidget {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Material(
-              color: const Color(0xFFFFF7D9),
-              borderRadius: BorderRadius.circular(18),
-              child: InkWell(
-                onTap: onOpenPlus,
+        if (!loadingPlus && !hasPlus)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Material(
+                color: const Color(0xFFFFF7D9),
                 borderRadius: BorderRadius.circular(18),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-                  child: Row(
-                    children: [
-                      Icon(Icons.workspace_premium_rounded,
-                          color: Color(0xFFA87800)),
-                      SizedBox(width: 11),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Extra informatie',
-                                style: TextStyle(
-                                    color: Color(0xFF6D5000),
-                                    fontWeight: FontWeight.w900)),
-                            Text('Ontdek alles wat je met PasKluis Plus krijgt',
-                                style: TextStyle(
-                                    color: Color(0xFF806719), fontSize: 12.5)),
-                          ],
+                child: InkWell(
+                  onTap: onOpenPlus,
+                  borderRadius: BorderRadius.circular(18),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 13,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.workspace_premium_rounded,
+                          color: Color(0xFFA87800),
                         ),
-                      ),
-                      Icon(Icons.chevron_right_rounded,
-                          color: Color(0xFFA87800)),
-                    ],
+                        SizedBox(width: 11),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Extra informatie',
+                                style: TextStyle(
+                                  color: Color(0xFF6D5000),
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              Text(
+                                'Ontdek alles wat je met PasKluis Plus krijgt',
+                                style: TextStyle(
+                                  color: Color(0xFF806719),
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFFA87800),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           sliver: SliverGrid(
@@ -867,9 +882,25 @@ class _GiftCardTileState extends State<GiftCardTile> {
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final isFavorite = widget.item['isFavorite'] == true;
     final expiryDate = DateTime.tryParse(widget.item['expiryDate']?.toString() ?? '');
-    final isExpired = expiryDate != null &&
-        DateTime(expiryDate.year, expiryDate.month, expiryDate.day)
-            .isBefore(DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day));
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    final expiryDay = expiryDate == null
+        ? null
+        : DateTime(expiryDate.year, expiryDate.month, expiryDate.day);
+    final daysUntilExpiry = expiryDay?.difference(today).inDays;
+    final isExpired = daysUntilExpiry != null && daysUntilExpiry < 0;
+    final expiryStatus = isExpired
+        ? 'Verlopen'
+        : daysUntilExpiry == 0
+            ? 'Verloopt vandaag'
+            : daysUntilExpiry == 1
+                ? 'Nog 1 dag'
+                : daysUntilExpiry != null && daysUntilExpiry <= 7
+                    ? 'Nog $daysUntilExpiry dagen'
+                    : null;
     final hasLogo = hasAssetLogo || hasCustomLogo;
     final usesBrandBackground =
         hasLogo && (widget.item['brandColor']?.toString() ?? '').isNotEmpty;
@@ -999,19 +1030,25 @@ class _GiftCardTileState extends State<GiftCardTile> {
                     size: 24,
                   ),
                 ),
-              if (isExpired)
+              if (expiryStatus != null)
                 Positioned(
                   top: 2,
                   left: 2,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade700,
+                      color: isExpired || daysUntilExpiry == 0
+                          ? Colors.red.shade700
+                          : const Color(0xFFC68400),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
-                      'Verlopen',
-                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
+                    child: Text(
+                      expiryStatus,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ),

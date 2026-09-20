@@ -48,6 +48,38 @@ class NotificationService {
     }
   }
 
+  static Future<void> showSharedCardReceived(
+    Map<dynamic, dynamic> card,
+  ) async {
+    final id = card['shareMembershipId']?.toString() ??
+        card['id']?.toString() ??
+        '';
+    if (id.isEmpty) return;
+    await requestPermission();
+
+    final name = card['name']?.toString().trim().isNotEmpty == true
+        ? card['name'].toString().trim()
+        : card['type']?.toString() == 'Cadeaukaart'
+            ? 'Een cadeaukaart'
+            : 'Een klantenkaart';
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'shared_cards',
+        'Gedeelde kaarten',
+        channelDescription: 'Meldingen wanneer iemand een kaart met je deelt',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+    await _plugin.show(
+      _baseId('shared:$id'),
+      'Nieuwe kaart in PasKluis',
+      '$name is met jou gedeeld.',
+      details,
+    );
+  }
+
   static Future<void> syncGiftCard(Map<dynamic, dynamic> card) async {
     if (card['type']?.toString() != 'Cadeaukaart') return;
     final id = card['id']?.toString() ?? '';
