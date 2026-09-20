@@ -765,11 +765,15 @@ class _GiftBrandPickerSheetState extends State<GiftBrandPickerSheet> {
     final filteredBrands = sortedBrands.where((brand) {
       if (query.isEmpty) return true;
       return brand.name.toLowerCase().contains(query) ||
-          brand.id.toLowerCase().contains(query);
+          brand.id.toLowerCase().contains(query) ||
+          brand.searchTerms.any((term) => term.contains(query));
     }).toList();
     final popularBrands = sortedBrands
         .where((brand) => brand.isFeatured)
         .toList();
+    final listedBrands = query.isEmpty
+        ? filteredBrands.where((brand) => !brand.isFeatured).toList()
+        : filteredBrands;
 
     return SafeArea(
       child: SizedBox(
@@ -829,8 +833,8 @@ class _GiftBrandPickerSheetState extends State<GiftBrandPickerSheet> {
                   _pickerSectionTitle(
                     query.isEmpty ? 'Alle winkels' : 'Zoekresultaten',
                   ),
-                  ...filteredBrands.map(_pickerBrandTile),
-                  if (filteredBrands.isEmpty)
+                  ...listedBrands.map(_pickerBrandTile),
+                  if (listedBrands.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 28),
                       child: Center(

@@ -7,6 +7,7 @@ class CardBrandTemplate {
   final Color color;
   final Map<String, double> logoLayout;
   final bool isFeatured;
+  final List<String> searchTerms;
 
   /// 👇 NIEUW
   final List<String> supportedTypes;
@@ -18,6 +19,7 @@ class CardBrandTemplate {
     required this.color,
     this.logoLayout = const {},
     this.isFeatured = false,
+    this.searchTerms = const [],
     this.supportedTypes = const ['Pasje'], // 👈 backward compatible
   });
 }
@@ -37,6 +39,9 @@ CardBrandTemplate cardBrandTemplateFromJson(Map<String, dynamic> json) {
     logoAsset: json['logo_path']?.toString() ?? '',
     color: Color(colorValue),
     isFeatured: json['is_featured'] == true,
+    searchTerms: (json['aliases'] as List<dynamic>? ?? const [])
+        .map((value) => value.toString().toLowerCase())
+        .toList(),
     logoLayout: {
       for (final context in const ['home', 'loyalty', 'gift', 'detail', 'picker'])
         ...{

@@ -1,6 +1,13 @@
 # PasKluis Beheer uitrollen
 
-1. Voer `supabase/migrations/006_admin_control_center.sql` uit in de Supabase SQL Editor.
+1. Voer de nog niet toegepaste migraties in volgorde uit in de Supabase SQL
+   Editor. Voor de volledige winkelcatalogus is dit in ieder geval:
+
+   - `supabase/migrations/006_admin_control_center.sql`
+   - `supabase/migrations/007_seed_full_brand_catalog.sql`
+
+   Migratie `007` is veilig opnieuw uit te voeren. Bestaande geüploade logo's en
+   handmatig ingestelde herkenningsregels worden daarbij behouden.
 2. Deploy de medewerkersuitnodiging:
 
    ```bash
