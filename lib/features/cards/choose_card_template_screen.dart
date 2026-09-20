@@ -106,10 +106,34 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredBrands = brands.where((brand) {
-      if (!brand.supportedTypes.contains(widget.type == 'Cadeaukaart' ? 'Cadeaukaart' : 'Pasje')) return false;
-      return brand.name.toLowerCase().contains(searchQuery.toLowerCase());
-    }).toList();
+    final query = searchQuery.trim().toLowerCase();
+    final availableBrands = brands
+        .where(
+          (brand) => brand.supportedTypes.contains(
+            widget.type == 'Cadeaukaart' ? 'Cadeaukaart' : 'Pasje',
+          ),
+        )
+        .toList()
+      ..sort(
+        (first, second) => first.name.toLowerCase().compareTo(
+          second.name.toLowerCase(),
+        ),
+      );
+    final filteredBrands = availableBrands
+        .where(
+          (brand) =>
+              query.isEmpty ||
+              brand.name.toLowerCase().contains(query) ||
+              brand.id.toLowerCase().contains(query) ||
+              brand.searchTerms.any((term) => term.contains(query)),
+        )
+        .toList();
+    final popularBrands = availableBrands
+        .where((brand) => brand.isFeatured)
+        .toList();
+    final listedBrands = query.isEmpty
+        ? filteredBrands.where((brand) => !brand.isFeatured).toList()
+        : filteredBrands;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
@@ -158,9 +182,31 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
           const SizedBox(height: 16),
 
-          const Text(
-            'Populaire kaarten',
-            style: TextStyle(
+          if (query.isEmpty && popularBrands.isNotEmpty) ...[
+            const Text(
+              'Populaire kaarten',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF303036),
+              ),
+            ),
+            const SizedBox(height: 9),
+            ...popularBrands.map((brand) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: BrandListTile(
+                  brand: brand,
+                  onTap: () => scanForBrand(brand),
+                ),
+              );
+            }),
+            const SizedBox(height: 14),
+          ],
+
+          Text(
+            query.isEmpty ? 'Alle winkels' : 'Zoekresultaten',
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,
               color: Color(0xFF303036),
@@ -169,7 +215,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
           const SizedBox(height: 9),
 
-          ...filteredBrands.map((brand) {
+          ...listedBrands.map((brand) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: BrandListTile(
@@ -178,6 +224,17 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
               ),
             );
           }),
+
+          if (listedBrands.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 22),
+              child: Center(
+                child: Text(
+                  'Geen winkels gevonden.',
+                  style: TextStyle(color: Colors.black54),
+                ),
+              ),
+            ),
 
           const SizedBox(height: 6),
 

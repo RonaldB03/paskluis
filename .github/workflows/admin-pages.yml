@@ -3,7 +3,7 @@ name: PasKluis Beheer publiceren
 on:
   push:
     branches:
-      - codex/paskluis-plus-foundation
+      - codex/admin-control-center
     paths:
       - 'admin/**'
       - '.github/workflows/admin-pages.yml'

@@ -131,6 +131,7 @@ class _BrandLogoLayoutScreenState extends State<BrandLogoLayoutScreen> {
         name: brand.name,
         logoAsset: brand.logoAsset,
         color: brand.color,
+        isFeatured: brand.isFeatured,
         logoLayout: Map<String, double>.from(_layout),
         supportedTypes: brand.supportedTypes,
       );
@@ -364,6 +365,7 @@ class _ExactAppPreview extends StatelessWidget {
     name: brand.name,
     logoAsset: brand.logoAsset,
     color: brand.color,
+    isFeatured: brand.isFeatured,
     logoLayout: {
       ...brand.logoLayout,
       'pickerScale': scale,

@@ -6,6 +6,8 @@ class CardBrandTemplate {
   final String logoAsset;
   final Color color;
   final Map<String, double> logoLayout;
+  final bool isFeatured;
+  final List<String> searchTerms;
 
   /// 👇 NIEUW
   final List<String> supportedTypes;
@@ -16,6 +18,8 @@ class CardBrandTemplate {
     required this.logoAsset,
     required this.color,
     this.logoLayout = const {},
+    this.isFeatured = false,
+    this.searchTerms = const [],
     this.supportedTypes = const ['Pasje'], // 👈 backward compatible
   });
 }
@@ -34,6 +38,10 @@ CardBrandTemplate cardBrandTemplateFromJson(Map<String, dynamic> json) {
     name: json['name']?.toString() ?? '',
     logoAsset: json['logo_path']?.toString() ?? '',
     color: Color(colorValue),
+    isFeatured: json['is_featured'] == true,
+    searchTerms: (json['aliases'] as List<dynamic>? ?? const [])
+        .map((value) => value.toString().toLowerCase())
+        .toList(),
     logoLayout: {
       for (final context in const ['home', 'loyalty', 'gift', 'detail', 'picker'])
         ...{
@@ -62,6 +70,7 @@ const List<CardBrandTemplate> cardBrandTemplates = [
     name: 'Albert Heijn',
     logoAsset: 'assets/logos/albert_heijn.png',
     color: Color(0xFF00A6D6),
+    isFeatured: true,
     supportedTypes: ['Pasje', 'Cadeaukaart'],
   ),
   CardBrandTemplate(
@@ -69,6 +78,7 @@ const List<CardBrandTemplate> cardBrandTemplates = [
     name: 'Kruidvat',
     logoAsset: 'assets/logos/kruidvat.png',
     color: Color(0xFFE30613),
+    isFeatured: true,
     supportedTypes: ['Pasje'],
   ),
   CardBrandTemplate(
@@ -76,6 +86,7 @@ const List<CardBrandTemplate> cardBrandTemplates = [
     name: 'Jumbo',
     logoAsset: 'assets/logos/jumbo.png',
     color: Color(0xFFFFC400),
+    isFeatured: true,
     supportedTypes: ['Pasje', 'Cadeaukaart'],
   ),
   CardBrandTemplate(
