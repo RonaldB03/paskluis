@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../data/templates/card_templates.dart';
 import '../../data/services/brand_catalog_service.dart';
+import '../../data/services/smart_card_import_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../scanner/scanner_screen.dart';
 import 'add_card_screen.dart';
@@ -19,6 +21,7 @@ class ChooseCardTemplateScreen extends StatefulWidget {
 class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
   String searchQuery = '';
   List<CardBrandTemplate> brands = cardBrandTemplates;
+  ScannerResult? pendingScan;
 
   @override
   void initState() {
@@ -39,13 +42,19 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     }
   }
 
-  Future<void> openManualForm({CardBrandTemplate? brand}) async {
+  Future<void> openManualForm({
+    CardBrandTemplate? brand,
+    ScannerResult? scan,
+    String? suggestedName,
+  }) async {
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
         builder: (_) => AddCardScreen(
           initialType: widget.type,
-          initialName: brand?.name,
+          initialName: brand?.name ?? suggestedName,
+          initialCode: scan?.code,
+          initialCodeFormat: scan?.codeFormat,
           initialBrandId: brand?.id,
           initialLogoAsset: brand?.logoAsset,
           initialBrandColor: brand?.color.value.toString(),
@@ -62,6 +71,12 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
   }
 
   Future<void> scanForBrand(CardBrandTemplate brand) async {
+    final readyScan = pendingScan;
+    if (readyScan != null) {
+      await _saveScannedBrand(brand, readyScan);
+      return;
+    }
+
     final mode = await showCodeTypeDialog(context);
     if (!mounted || mode == null) return;
 
@@ -77,6 +92,15 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     );
 
     if (!mounted || result == null || result.code.trim().isEmpty) return;
+
+    await _saveScannedBrand(brand, result);
+  }
+
+  Future<void> _saveScannedBrand(
+    CardBrandTemplate brand,
+    ScannerResult result,
+  ) async {
+    if (!mounted || result.code.trim().isEmpty) return;
 
     final now = DateTime.now().toIso8601String();
 
@@ -102,6 +126,64 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       'lastUsedAt': '',
       'openPreviewAfterSave': 'true',
     });
+  }
+
+  Future<void> scanQuickCard() async {
+    final result = await Navigator.push<ScannerResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ScannerScreen(
+          mode: ScannerMode.auto,
+          showManualAfterDelay: true,
+          detailedResult: true,
+        ),
+      ),
+    );
+    if (!mounted || result == null || result.code.trim().isEmpty) return;
+    setState(() => pendingScan = result);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Code herkend. Kies nu de winkel.')),
+    );
+  }
+
+  Future<void> importCardImage() async {
+    SmartCardImportResult? imported;
+    try {
+      imported = await SmartCardImportService.pickAndAnalyze(
+        source: ImageSource.gallery,
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('De afbeelding kon niet worden gelezen.')),
+        );
+      }
+      return;
+    }
+    if (!mounted || imported == null) return;
+    if (imported.code.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Geen kaartcode gevonden in de afbeelding.')),
+      );
+      return;
+    }
+
+    final scan = ScannerResult(
+      code: imported.code.trim(),
+      codeFormat: imported.codeFormat,
+    );
+    final brand = imported.brand;
+    if (brand != null && brand.supportedTypes.contains('Pasje')) {
+      await openManualForm(brand: brand, scan: scan);
+      return;
+    }
+
+    setState(() => pendingScan = scan);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Code herkend. Kies de bijbehorende winkel.'),
+      ),
+    );
   }
 
   @override
@@ -142,9 +224,13 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
         elevation: 0,
         foregroundColor: const Color(0xFF303036),
         centerTitle: true,
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            title,
+            maxLines: 1,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+          ),
         ),
         actions: [
           TextButton(
@@ -163,6 +249,67 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
         children: [
+          if (widget.type == 'Pasje') ...[
+            if (pendingScan != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFE7ED),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0x33D51B46)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle_rounded,
+                        color: Color(0xFFD51B46)),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Code herkend. Kies hieronder de winkel.',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Annuleren',
+                      onPressed: () => setState(() => pendingScan = null),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              )
+            else ...[
+              const Text(
+                'Snel toevoegen',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF303036),
+                ),
+              ),
+              const SizedBox(height: 9),
+              Row(
+                children: [
+                  Expanded(
+                    child: _QuickImportTile(
+                      icon: Icons.qr_code_scanner_rounded,
+                      title: 'Kaart scannen',
+                      onTap: scanQuickCard,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _QuickImportTile(
+                      icon: Icons.photo_library_rounded,
+                      title: 'Foto importeren',
+                      onTap: importCardImage,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ],
           TextField(
             onChanged: (value) => setState(() => searchQuery = value),
             style: const TextStyle(fontSize: 15),
@@ -238,8 +385,55 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
           const SizedBox(height: 6),
 
-          _CustomCardTile(onTap: () => openManualForm()),
+          _CustomCardTile(
+            onTap: () => openManualForm(
+              scan: pendingScan,
+              suggestedName: pendingScan == null ? null : 'Klantenkaart',
+            ),
+          ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuickImportTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const _QuickImportTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(17),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(17),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+          child: Column(
+            children: [
+              CircleAvatar(
+                backgroundColor: const Color(0xFFFFE7ED),
+                child: Icon(icon, color: const Color(0xFFD51B46)),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

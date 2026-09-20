@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/account_service.dart';
 import '../../data/services/supabase_service.dart';
 import '../../data/services/card_share_service.dart';
+import '../../data/services/device_session_service.dart';
 import '../premium/plus_information_screen.dart';
 import 'shared_cards_management_screen.dart';
 
@@ -121,6 +122,7 @@ class _AccountScreenState extends State<AccountScreen> {
             'Je account is aangemaakt. Controleer je e-mail om je account te bevestigen.',
           );
         } else {
+          if (!await _activateDeviceSession()) return;
           _showMessage('Welkom bij PasKluis!');
         }
       } else {
@@ -128,6 +130,7 @@ class _AccountScreenState extends State<AccountScreen> {
           email: _emailController.text,
           password: _passwordController.text,
         );
+        if (!await _activateDeviceSession()) return;
         try {
           await CardShareService.syncAllToLocal();
         } catch (_) {
@@ -145,6 +148,43 @@ class _AccountScreenState extends State<AccountScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<bool> _activateDeviceSession() async {
+    final status = await DeviceSessionService.inspect();
+    if (!status.hasActiveDevice || status.isCurrentDevice) {
+      return DeviceSessionService.claim();
+    }
+    if (!mounted) return false;
+
+    final replace = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.devices_rounded, size: 42),
+        title: const Text('Al ingelogd op een ander apparaat'),
+        content: Text(
+          'Dit account is actief op ${status.activeDeviceName.isEmpty ? 'een ander apparaat' : status.activeDeviceName}. '
+          'Als je hier doorgaat, wordt dat apparaat automatisch uitgelogd.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Hier inloggen'),
+          ),
+        ],
+      ),
+    );
+
+    if (replace != true) {
+      await AccountService.signOut(releaseDevice: false);
+      return false;
+    }
+    return DeviceSessionService.claim(replace: true);
   }
 
   Future<void> _signOut() async {
@@ -227,9 +267,25 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _buildSignedOut() {
+    final sessionNotice = DeviceSessionService.sessionNotice.value;
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
+        if (sessionNotice != null) ...[
+          Card(
+            color: const Color(0xFFFFF3CD),
+            elevation: 0,
+            child: ListTile(
+              leading: const Icon(Icons.logout_rounded),
+              title: const Text(
+                'Uitgelogd op dit apparaat',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+              subtitle: Text(sessionNotice),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         const _PlusHero(),
         const SizedBox(height: 18),
         Card(

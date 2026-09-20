@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -8,6 +10,8 @@ import 'data/services/settings_service.dart';
 import 'data/services/supabase_service.dart';
 import 'data/services/notification_service.dart';
 import 'data/services/card_share_service.dart';
+import 'data/services/account_service.dart';
+import 'data/services/device_session_service.dart';
 import 'features/security/app_lock_gate.dart';
 
 void main() async {
@@ -26,6 +30,8 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     with WidgetsBindingObserver {
   late Future<void> _initialization;
   bool _syncingSharedCards = false;
+  bool _checkingDeviceSession = false;
+  Timer? _deviceSessionTimer;
 
   @override
   void initState() {
@@ -37,13 +43,32 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _deviceSessionTimer?.cancel();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      _checkDeviceSession();
       _syncSharedCards();
+    }
+  }
+
+  Future<void> _checkDeviceSession() async {
+    if (_checkingDeviceSession || AccountService.currentUser == null) return;
+    _checkingDeviceSession = true;
+    try {
+      final isCurrent = await DeviceSessionService.ensureCurrentSession();
+      if (!isCurrent && AccountService.currentUser != null) {
+        DeviceSessionService.sessionNotice.value =
+            'Je account is op een ander apparaat geopend. Log opnieuw in als je dit apparaat weer wilt gebruiken.';
+        await AccountService.signOut(releaseDevice: false);
+      }
+    } catch (_) {
+      // A temporary connection problem must not lock the local vault.
+    } finally {
+      _checkingDeviceSession = false;
     }
   }
 
@@ -64,6 +89,11 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     await StorageService.init();
     await NotificationService.init();
     await SupabaseService.init();
+    await _checkDeviceSession();
+    _deviceSessionTimer ??= Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _checkDeviceSession(),
+    );
     await SettingsService.refreshRemoteConfig();
     for (final item in StorageService.cardsBox.values.whereType<Map>()) {
       await NotificationService.syncGiftCard(item);

@@ -19,6 +19,7 @@ import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/card_share_dialogs.dart';
 import '../../shared/utils/amount_format.dart';
 import '../../shared/utils/logo_layout.dart';
+import '../premium/plus_information_screen.dart';
 import 'edit_gift_card_screen.dart';
 
 class GiftCardViewScreen extends StatefulWidget {
@@ -422,10 +423,10 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
   void openUsedOptions() {
     if (items.isEmpty) return;
-    if (items[currentIndex]['isShared'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Alleen de eigenaar kan het saldo wijzigen.')),
-      );
+    final currentItem = items[currentIndex];
+    if (currentItem['isShared'] == true &&
+        currentItem['canEditShared'] != true) {
+      _showSharedBalancePlusDialog();
       return;
     }
 
@@ -525,6 +526,10 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
   Future<void> _saveBalance(double newBalance, {required String kind}) async {
     if (items.isEmpty) return;
     final updated = Map<String, dynamic>.from(items[currentIndex]);
+    if (updated['isShared'] == true && updated['canEditShared'] != true) {
+      await _showSharedBalancePlusDialog();
+      return;
+    }
     final oldBalance = _balanceOf(updated);
     final history = _historyOf(updated);
     history.add({
@@ -539,6 +544,46 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     updated['balanceHistory'] = jsonEncode(history);
     await updateCurrentItem(updated);
     HapticFeedback.mediumImpact();
+  }
+
+  Future<void> _showSharedBalancePlusDialog() async {
+    final openPlus = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(
+          Icons.workspace_premium_rounded,
+          color: Color(0xFFD5A021),
+          size: 42,
+        ),
+        title: const Text(
+          'Samen beheren met Plus',
+          textAlign: TextAlign.center,
+        ),
+        content: const Text(
+          'Je kunt deze gedeelde cadeaukaart bekijken. Met PasKluis Plus kun je samen ook het saldo en de kaartgegevens aanpassen.',
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Niet nu'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.workspace_premium_rounded),
+            label: const Text('Neem Plus • € 2 eenmalig'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted || openPlus != true) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const PlusInformationScreen(),
+      ),
+    );
   }
 
   Future<void> _offerArchive() async {
@@ -953,6 +998,15 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                           onTap: () {
                             Navigator.pop(context);
                             openBalanceEditor();
+                          },
+                        )
+                      else
+                        _ActionButton(
+                          icon: Icons.workspace_premium_rounded,
+                          label: 'Saldo aanpassen met Plus',
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showSharedBalancePlusDialog();
                           },
                         ),
 

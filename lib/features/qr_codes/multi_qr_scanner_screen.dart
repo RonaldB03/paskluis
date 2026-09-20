@@ -16,6 +16,7 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
   final MobileScannerController controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
     facing: CameraFacing.back,
+    formats: const [BarcodeFormat.qrCode],
   );
 
   final List<String> scannedCodes = [];

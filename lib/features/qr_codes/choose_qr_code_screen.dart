@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'add_qr_code_screen.dart';
 import 'multi_qr_scanner_screen.dart';
@@ -18,14 +20,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
     Navigator.pop(context, result);
   }
 
-  Future<void> openScanner(BuildContext context) async {
-    final code = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-    );
-
-    if (!context.mounted || code == null || code.trim().isEmpty) return;
-
+  Future<void> _openCodeEditor(BuildContext context, String code) async {
     final result = await Navigator.push<Map<String, String>>(
       context,
       MaterialPageRoute(
@@ -34,8 +29,17 @@ class ChooseQrCodeScreen extends StatelessWidget {
     );
 
     if (!context.mounted || result == null) return;
-
     Navigator.pop(context, result);
+  }
+
+  Future<void> openScanner(BuildContext context) async {
+    final code = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+
+    if (!context.mounted || code == null || code.trim().isEmpty) return;
+    await _openCodeEditor(context, code);
   }
 
   Future<void> openMultiScanner(BuildContext context) async {
@@ -45,6 +49,49 @@ class ChooseQrCodeScreen extends StatelessWidget {
     );
 
     if (!context.mounted || codes == null || codes.isEmpty) return;
+    await _finishCodes(context, codes);
+  }
+
+  Future<void> importImages(BuildContext context) async {
+    final images = await ImagePicker().pickMultiImage(imageQuality: 100);
+    if (!context.mounted || images.isEmpty) return;
+
+    final scanner = MobileScannerController(
+      formats: const [BarcodeFormat.qrCode],
+    );
+    final codes = <String>{};
+    try {
+      for (final image in images) {
+        final capture = await scanner.analyzeImage(image.path);
+        for (final barcode in capture?.barcodes ?? const <Barcode>[]) {
+          final value = barcode.rawValue?.trim() ?? '';
+          if (value.isNotEmpty) codes.add(value);
+        }
+      }
+    } finally {
+      await scanner.dispose();
+    }
+
+    if (!context.mounted) return;
+    if (codes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Geen QR-code gevonden in de gekozen afbeelding(en).'),
+        ),
+      );
+      return;
+    }
+    if (codes.length == 1) {
+      await _openCodeEditor(context, codes.first);
+      return;
+    }
+    await _finishCodes(context, codes.toList());
+  }
+
+  Future<void> _finishCodes(
+    BuildContext context,
+    List<String> codes,
+  ) async {
 
     final nameController = TextEditingController(
       text: 'QR-codes (${codes.length})',
@@ -107,14 +154,6 @@ class ChooseQrCodeScreen extends StatelessWidget {
       'updatedAt': now,
       'lastUsedAt': '',
     });
-  }
-
-  void showImageImportComingSoon(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Importeren uit afbeelding voegen we later toe.'),
-      ),
-    );
   }
 
   @override
@@ -190,10 +229,9 @@ class ChooseQrCodeScreen extends StatelessWidget {
           const SizedBox(height: 10),
           _QrChoiceTile(
             icon: Icons.image_rounded,
-            title: 'Uit afbeelding importeren',
-            subtitle: 'Deze optie bouwen we later uit',
-            isDisabled: true,
-            onTap: () => showImageImportComingSoon(context),
+            title: 'Foto of screenshot importeren',
+            subtitle: 'Lees één of meerdere QR-codes uit afbeeldingen',
+            onTap: () => importImages(context),
           ),
         ],
       ),
