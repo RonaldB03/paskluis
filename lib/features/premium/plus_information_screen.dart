@@ -87,9 +87,9 @@ class PlusInformationScreen extends StatelessWidget {
             subtitle: 'Heeft de ontvanger ook Plus, dan kunnen jullie dezelfde gedeelde kaart allebei bijwerken.',
           ),
           const _Benefit(
-            icon: Icons.notifications_active_outlined,
-            title: 'Slimme cadeaukaartherinneringen',
-            subtitle: 'Ontvang lokaal een melding voordat een ingestelde vervaldatum wordt bereikt.',
+            icon: Icons.manage_history_rounded,
+            title: 'Gedeelde toegang beheren',
+            subtitle: 'Bekijk met wie je kaarten deelt en stop toegang wanneer je wilt.',
           ),
           const SizedBox(height: 10),
           Container(
