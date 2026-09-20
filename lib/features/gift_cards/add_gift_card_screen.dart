@@ -755,12 +755,21 @@ class _GiftBrandPickerSheetState extends State<GiftBrandPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredBrands = widget.brands.where((brand) {
-      final query = searchQuery.trim().toLowerCase();
+    final query = searchQuery.trim().toLowerCase();
+    final sortedBrands = [...widget.brands]
+      ..sort(
+        (first, second) => first.name.toLowerCase().compareTo(
+          second.name.toLowerCase(),
+        ),
+      );
+    final filteredBrands = sortedBrands.where((brand) {
       if (query.isEmpty) return true;
       return brand.name.toLowerCase().contains(query) ||
           brand.id.toLowerCase().contains(query);
     }).toList();
+    final popularBrands = sortedBrands
+        .where((brand) => brand.isFeatured)
+        .toList();
 
     return SafeArea(
       child: SizedBox(
@@ -807,41 +816,31 @@ class _GiftBrandPickerSheetState extends State<GiftBrandPickerSheet> {
               ),
             ),
             Expanded(
-              child: ListView.separated(
+              child: ListView(
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                itemCount: filteredBrands.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 6),
-                itemBuilder: (context, index) {
-                  final brand = filteredBrands[index];
-                  return ListTile(
-                    tileColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    leading: SizedBox(
-                      width: 62,
-                      child: BrandLogo(
-                        source: brand.logoAsset,
-                        scale: brand.logoLayout['pickerScale'] ?? 1,
-                        offsetX: brand.logoLayout['pickerX'] ?? 0,
-                        offsetY: brand.logoLayout['pickerY'] ?? 0,
+                children: [
+                  if (query.isEmpty && popularBrands.isNotEmpty) ...[
+                    _pickerSectionTitle('Populaire kaarten'),
+                    ...popularBrands.map(_pickerBrandTile),
+                    const SizedBox(height: 12),
+                  ],
+                  _pickerSectionTitle(
+                    query.isEmpty ? 'Alle winkels' : 'Zoekresultaten',
+                  ),
+                  ...filteredBrands.map(_pickerBrandTile),
+                  if (filteredBrands.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 28),
+                      child: Center(
+                        child: Text(
+                          'Geen winkels gevonden.',
+                          style: TextStyle(color: Colors.black54),
+                        ),
                       ),
                     ),
-                    title: Text(
-                      brand.name,
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: widget.previewOnly
-                        ? () {}
-                        : () {
-                            FocusScope.of(context).unfocus();
-                            Navigator.pop(context, brand);
-                          },
-                  );
-                },
+                ],
               ),
             ),
           ],
@@ -849,6 +848,46 @@ class _GiftBrandPickerSheetState extends State<GiftBrandPickerSheet> {
       ),
     );
   }
+
+  Widget _pickerSectionTitle(String title) => Padding(
+    padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
+    child: Text(
+      title,
+      style: const TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w900,
+        color: Color(0xFF303036),
+      ),
+    ),
+  );
+
+  Widget _pickerBrandTile(CardBrandTemplate brand) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: ListTile(
+      tileColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      leading: SizedBox(
+        width: 62,
+        child: BrandLogo(
+          source: brand.logoAsset,
+          scale: brand.logoLayout['pickerScale'] ?? 1,
+          offsetX: brand.logoLayout['pickerX'] ?? 0,
+          offsetY: brand.logoLayout['pickerY'] ?? 0,
+        ),
+      ),
+      title: Text(
+        brand.name,
+        style: const TextStyle(fontWeight: FontWeight.w800),
+      ),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: widget.previewOnly
+          ? () {}
+          : () {
+              FocusScope.of(context).unfocus();
+              Navigator.pop(context, brand);
+            },
+    ),
+  );
 }
 
 class GiftCardLivePreview extends StatelessWidget {
