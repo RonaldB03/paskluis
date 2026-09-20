@@ -18,7 +18,6 @@ import '../../shared/utils/amount_format.dart';
 import '../../shared/utils/logo_layout.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
-import '../../shared/widgets/premium_app_title.dart';
 import '../../shared/widgets/main_tab_route.dart';
 
 import '../cards/card_preview_screen.dart';
@@ -925,8 +924,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: const Icon(Icons.info_outline_rounded),
               ),
             ),
-            title: const PremiumAppTitle('PasKluis'),
-            centerTitle: true,
+            flexibleSpace: const SafeArea(
+              child: IgnorePointer(
+                child: Center(
+                  child: Text(
+                    'PasKluis',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 20,
+                      color: Color(0xFF333333),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             backgroundColor: Colors.white,
             elevation: 0,
             foregroundColor: const Color(0xFF333333),

@@ -16,9 +16,12 @@ class PlusInformationScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF2F2A20),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 34),
-        children: [
+      body: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 12),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 34),
+          children: [
           Container(
             padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
             decoration: BoxDecoration(
@@ -147,7 +150,8 @@ class PlusInformationScreen extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(color: Color(0xFF77717D), fontSize: 12.5),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

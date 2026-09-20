@@ -12,9 +12,12 @@ class PrivacyScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF27313D),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 36),
-        children: const [
+      body: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 12),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(18, 18, 18, 36),
+          children: const [
           _PrivacyHero(),
           SizedBox(height: 18),
           _PrivacySection(
@@ -80,7 +83,8 @@ class PrivacyScreen extends StatelessWidget {
               style: TextStyle(color: Color(0xFF5D6875), height: 1.45),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

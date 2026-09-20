@@ -780,7 +780,6 @@ class LoyaltyBarcodeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = item['name']?.toString() ?? 'Kaart';
     final code = item['code']?.toString() ?? '';
     final logoAsset = item['logoAsset']?.toString() ?? '';
     final customImage = item['customImage']?.toString() ?? '';
@@ -809,61 +808,44 @@ class LoyaltyBarcodeCard extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                height: 142,
+                height: 150,
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: hasCustomLogo || hasAssetLogo
-                          ? Transform.scale(
-                              scale: hasCustomLogo ? 1.7 : 1.0,
-                              child: hasCustomLogo
-                                  ? Image.file(
-                                      File(customImage),
-                                      fit: BoxFit.contain,
-                                    )
-                                  : BrandLogo(
-                                      source: logoAsset,
-                                      scale: logoLayoutValue(
-                                        item,
-                                        'detail',
-                                        'scale',
-                                        1,
-                                      ),
-                                      offsetX: logoLayoutValue(
-                                        item,
-                                        'detail',
-                                        'x',
-                                        0,
-                                      ),
-                                      offsetY: logoLayoutValue(
-                                        item,
-                                        'detail',
-                                        'y',
-                                        0,
-                                      ),
-                                    ),
-                            )
-                          : const Icon(
-                              Icons.card_membership_rounded,
-                              color: Colors.white,
-                              size: 70,
-                            ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+                child: hasCustomLogo || hasAssetLogo
+                    ? Transform.scale(
+                        scale: hasCustomLogo ? 1.8 : 1.12,
+                        child: hasCustomLogo
+                            ? Image.file(
+                                File(customImage),
+                                fit: BoxFit.contain,
+                              )
+                            : BrandLogo(
+                                source: logoAsset,
+                                scale: logoLayoutValue(
+                                  item,
+                                  'detail',
+                                  'scale',
+                                  1,
+                                ),
+                                offsetX: logoLayoutValue(
+                                  item,
+                                  'detail',
+                                  'x',
+                                  0,
+                                ),
+                                offsetY: logoLayoutValue(
+                                  item,
+                                  'detail',
+                                  'y',
+                                  0,
+                                ),
+                              ),
+                      )
+                    : const Icon(
+                        Icons.card_membership_rounded,
                         color: Colors.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w900,
+                        size: 78,
                       ),
-                    ),
-                  ],
-                ),
               ),
               Expanded(
                 child: Container(

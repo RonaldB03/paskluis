@@ -62,6 +62,23 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
     });
   }
 
+  Future<void> _refreshGiftCards() async {
+    if (AccountService.currentUser != null) {
+      try {
+        await CardShareService.syncAllToLocal();
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bijwerken lukte niet. Controleer je verbinding.'),
+            ),
+          );
+        }
+      }
+    }
+    await _loadPlusStatus();
+  }
+
   Future<void> _openPlus(BuildContext context) async {
     await Navigator.push(
       context,
@@ -490,7 +507,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             automaticallyImplyLeading: false,
-            leadingWidth: 132,
+            leadingWidth: 56,
             leading: const SizedBox.shrink(),
             title: const PremiumAppTitle('Cadeaukaarten'),
             centerTitle: true,
@@ -505,41 +522,6 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
                   height: 48,
                 ),
                 padding: EdgeInsets.zero,
-                tooltip: 'Gedeelde kaarten vernieuwen',
-                icon: const Icon(Icons.sync_rounded),
-                onPressed: () async {
-                  try {
-                    await CardShareService.syncAllToLocal();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Gedeelde kaarten zijn bijgewerkt.')),
-                      );
-                    }
-                  } catch (_) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Bijwerken lukte niet. Controleer of je bent ingelogd.')),
-                      );
-                    }
-                  }
-                },
-              ),
-              IconButton(
-                constraints: const BoxConstraints.tightFor(
-                  width: 44,
-                  height: 48,
-                ),
-                padding: EdgeInsets.zero,
-                tooltip: 'Archief',
-                icon: const Icon(Icons.archive_outlined),
-                onPressed: () => showArchivedCards(context),
-              ),
-              IconButton(
-                constraints: const BoxConstraints.tightFor(
-                  width: 44,
-                  height: 48,
-                ),
-                padding: EdgeInsets.zero,
                 icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
                 onPressed: () => openAddGiftCard(context),
               ),
@@ -548,14 +530,18 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
           body: MainTabSwipeRegion(
             currentIndex: 3,
             onSwitch: (index) => openTab(context, index),
-            child: _GiftCardsOverview(
-              items: items,
-              hasPlus: _hasPlus,
-              loadingPlus: _loadingPlus,
-              onAdd: () => openAddGiftCard(context),
-              onOpenPlus: () => _openPlus(context),
-              onOpenCard: (index) => openGiftCard(context, items, index),
-              onLongPress: (item) => showGiftCardOptions(context, item),
+            child: RefreshIndicator(
+              onRefresh: _refreshGiftCards,
+              color: const Color(0xFFD51B46),
+              child: _GiftCardsOverview(
+                items: items,
+                hasPlus: _hasPlus,
+                loadingPlus: _loadingPlus,
+                onAdd: () => openAddGiftCard(context),
+                onOpenPlus: () => _openPlus(context),
+                onOpenCard: (index) => openGiftCard(context, items, index),
+                onLongPress: (item) => showGiftCardOptions(context, item),
+              ),
             ),
           ),
           bottomNavigationBar: MainBottomNav(
