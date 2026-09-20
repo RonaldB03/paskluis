@@ -2,6 +2,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'settings_service.dart';
+
 class NotificationService {
   NotificationService._();
 
@@ -51,6 +53,8 @@ class NotificationService {
     final id = card['id']?.toString() ?? '';
     if (id.isEmpty) return;
     await cancelGiftCard(id);
+
+    if (!SettingsService.giftExpiryNotificationsEnabled) return;
 
     final expiry = DateTime.tryParse(card['expiryDate']?.toString() ?? '');
     final enabled = card['expiryNotificationsEnabled'] == true ||

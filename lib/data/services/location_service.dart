@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 
 import 'storage_service.dart';
+import 'settings_service.dart';
 
 enum LocationAccessState {
   checking,
@@ -26,7 +27,8 @@ class LocationSnapshot {
 }
 
 abstract final class LocationService {
-  static const double nearbyRadiusMeters = 1500;
+  static double get nearbyRadiusMeters =>
+      SettingsService.nearbyRadiusMeters.toDouble();
 
   static Future<LocationSnapshot> resolve({
     bool requestPermission = false,
@@ -76,7 +78,7 @@ abstract final class LocationService {
   }
 
   static Future<void> rememberCardUse(String cardId) async {
-    if (cardId.isEmpty) return;
+    if (cardId.isEmpty || !SettingsService.locationCardsEnabled) return;
     final snapshot = await resolve();
     final location = snapshot.location;
     if (snapshot.state != LocationAccessState.ready || location == null) return;

@@ -14,6 +14,7 @@ import '../../data/services/location_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/card_share_service.dart';
+import '../../data/services/settings_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/card_share_dialogs.dart';
 import '../../shared/utils/amount_format.dart';
@@ -41,11 +42,12 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
   late int currentIndex;
 
   double? previousBrightness;
-  bool showPin = false;
+  late bool showPin;
 
   @override
   void initState() {
     super.initState();
+    showPin = !SettingsService.hideSensitiveCodes;
     WidgetsBinding.instance.addObserver(this);
 
     items = widget.items
@@ -64,16 +66,20 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
   }
 
   Future<void> _setupScreen() async {
-    try {
-      previousBrightness = await ScreenBrightness().current;
+    if (SettingsService.autoBrightnessEnabled) {
+      try {
+        previousBrightness = await ScreenBrightness().current;
 
-      for (final value in [0.65, 0.8, 1.0]) {
-        await Future.delayed(const Duration(milliseconds: 90));
-        await ScreenBrightness().setScreenBrightness(value);
-      }
-    } catch (_) {}
+        for (final value in [0.65, 0.8, 1.0]) {
+          await Future.delayed(const Duration(milliseconds: 90));
+          await ScreenBrightness().setScreenBrightness(value);
+        }
+      } catch (_) {}
+    }
 
-    await WakelockPlus.enable();
+    if (SettingsService.keepScreenAwakeEnabled) {
+      await WakelockPlus.enable();
+    }
   }
 
   @override
@@ -85,7 +91,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
       ScreenBrightness().setScreenBrightness(previousBrightness!);
     }
 
-    WakelockPlus.disable();
+    if (SettingsService.keepScreenAwakeEnabled) {
+      WakelockPlus.disable();
+    }
     super.dispose();
   }
 
@@ -289,12 +297,24 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
   Future<void> openShareCard() async {
     if (items.isEmpty) return;
+    if (!SettingsService.cardSharingAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kaarten delen is tijdelijk niet beschikbaar.')),
+      );
+      return;
+    }
     final updated = await CardShareDialogs.share(context, items[currentIndex]);
     if (updated != null) await updateCurrentItem(updated);
   }
 
   Future<void> openSharedAccess() async {
     if (items.isEmpty) return;
+    if (!SettingsService.cardSharingAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kaarten delen is tijdelijk niet beschikbaar.')),
+      );
+      return;
+    }
     await CardShareDialogs.manage(context, items[currentIndex]);
   }
 
@@ -766,7 +786,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     final isShared = item['isShared'] == true;
     final canEditShared = item['canEditShared'] == true;
 
-    bool sheetShowPin = false;
+    bool sheetShowPin = !SettingsService.hideSensitiveCodes;
 
     showModalBottomSheet(
       context: context,

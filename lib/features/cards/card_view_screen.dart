@@ -11,6 +11,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/location_service.dart';
 import '../../data/services/card_share_service.dart';
+import '../../data/services/settings_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/widgets/card_share_dialogs.dart';
 import '../../shared/utils/logo_layout.dart';
@@ -79,12 +80,16 @@ class _CardViewScreenState extends State<CardViewScreen>
   }
 
   Future<void> setupScreen() async {
-    try {
-      previousBrightness = await ScreenBrightness().current;
-      await ScreenBrightness().setScreenBrightness(1.0);
-    } catch (_) {}
+    if (SettingsService.autoBrightnessEnabled) {
+      try {
+        previousBrightness = await ScreenBrightness().current;
+        await ScreenBrightness().setScreenBrightness(1.0);
+      } catch (_) {}
+    }
 
-    await WakelockPlus.enable();
+    if (SettingsService.keepScreenAwakeEnabled) {
+      await WakelockPlus.enable();
+    }
   }
 
   Future<void> restoreScreen() async {
@@ -94,7 +99,9 @@ class _CardViewScreenState extends State<CardViewScreen>
       }
     } catch (_) {}
 
-    await WakelockPlus.disable();
+    if (SettingsService.keepScreenAwakeEnabled) {
+      await WakelockPlus.disable();
+    }
   }
 
   dynamic findKeyById(String id) {
@@ -366,12 +373,24 @@ class _CardViewScreenState extends State<CardViewScreen>
 
   Future<void> openShareCard() async {
     if (items.isEmpty) return;
+    if (!SettingsService.cardSharingAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kaarten delen is tijdelijk niet beschikbaar.')),
+      );
+      return;
+    }
     final updated = await CardShareDialogs.share(context, items[currentIndex]);
     if (updated != null) await updateCurrentItem(updated);
   }
 
   Future<void> openSharedAccess() async {
     if (items.isEmpty) return;
+    if (!SettingsService.cardSharingAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kaarten delen is tijdelijk niet beschikbaar.')),
+      );
+      return;
+    }
     await CardShareDialogs.manage(context, items[currentIndex]);
   }
 

@@ -4,6 +4,7 @@ import 'package:screen_brightness/screen_brightness.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/security_service.dart';
+import '../../data/services/settings_service.dart';
 
 class CardDetailScreen extends StatefulWidget {
   final Map<String, dynamic> item;
@@ -15,27 +16,34 @@ class CardDetailScreen extends StatefulWidget {
 }
 
 class _CardDetailScreenState extends State<CardDetailScreen> {
-  bool showPin = false;
+  late bool showPin;
   double? oldBrightness;
 
   @override
   void initState() {
     super.initState();
+    showPin = !SettingsService.hideSensitiveCodes;
     _prepareScreen();
   }
 
   Future<void> _prepareScreen() async {
-    await WakelockPlus.enable();
+    if (SettingsService.keepScreenAwakeEnabled) {
+      await WakelockPlus.enable();
+    }
 
-    try {
-      oldBrightness = await ScreenBrightness().current;
-      await ScreenBrightness().setScreenBrightness(1.0);
-    } catch (_) {}
+    if (SettingsService.autoBrightnessEnabled) {
+      try {
+        oldBrightness = await ScreenBrightness().current;
+        await ScreenBrightness().setScreenBrightness(1.0);
+      } catch (_) {}
+    }
   }
 
   @override
   void dispose() {
-    WakelockPlus.disable();
+    if (SettingsService.keepScreenAwakeEnabled) {
+      WakelockPlus.disable();
+    }
 
     if (oldBrightness != null) {
       ScreenBrightness().setScreenBrightness(oldBrightness!);

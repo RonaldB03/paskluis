@@ -34,10 +34,11 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap> {
     await SettingsService.init();
     await StorageService.init();
     await NotificationService.init();
+    await SupabaseService.init();
+    await SettingsService.refreshRemoteConfig();
     for (final item in StorageService.cardsBox.values.whereType<Map>()) {
       await NotificationService.syncGiftCard(item);
     }
-    await SupabaseService.init();
     try {
       await CardShareService.syncAllToLocal();
     } catch (_) {

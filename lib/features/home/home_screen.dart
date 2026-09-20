@@ -11,6 +11,7 @@ import '../../data/services/location_service.dart';
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/card_share_service.dart';
+import '../../data/services/settings_service.dart';
 import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/amount_format.dart';
@@ -47,6 +48,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static bool _openedInitialTab = false;
   final _searchController = TextEditingController();
   String _searchQuery = '';
   LocationAccessState _locationState = LocationAccessState.checking;
@@ -56,10 +58,36 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _refreshVisualAssets();
-    _loadNearbyLocation();
+    if (SettingsService.locationCardsEnabled) {
+      _loadNearbyLocation();
+    } else {
+      _locationState = LocationAccessState.permissionNeeded;
+    }
+    if (!_openedInitialTab) {
+      _openedInitialTab = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final index = switch (SettingsService.defaultStartTab) {
+          'cards' => 1,
+          'qr' => 2,
+          'gift' => 3,
+          _ => 0,
+        };
+        if (index != 0) openTab(index);
+      });
+    }
   }
 
   Future<void> _loadNearbyLocation({bool requestPermission = false}) async {
+    if (!SettingsService.locationCardsEnabled) {
+      if (mounted) {
+        setState(() {
+          _locationState = LocationAccessState.permissionNeeded;
+          _currentLocation = null;
+        });
+      }
+      return;
+    }
     if (mounted) {
       setState(() => _locationState = LocationAccessState.checking);
     }
@@ -93,6 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _refreshHome() async {
     FocusManager.instance.primaryFocus?.unfocus();
+    await SettingsService.refreshRemoteConfig();
     await Future.wait<void>([
       _loadNearbyLocation(),
       () async {
@@ -230,7 +259,25 @@ class _HomeScreenState extends State<HomeScreen> {
       final aFavorite = a['isFavorite'] == true;
       final bFavorite = b['isFavorite'] == true;
 
-      if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
+      if (SettingsService.favoritesFirst && aFavorite != bFavorite) {
+        return aFavorite ? -1 : 1;
+      }
+
+      if (SettingsService.cardSortOrder == 'alphabetical') {
+        return (a['name']?.toString() ?? '').toLowerCase().compareTo(
+              (b['name']?.toString() ?? '').toLowerCase(),
+            );
+      }
+
+      if (SettingsService.cardSortOrder == 'added') {
+        final aCreated =
+            DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        final bCreated =
+            DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        return bCreated.compareTo(aCreated);
+      }
 
       final aLastUsed = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '');
       final bLastUsed = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '');
@@ -882,10 +929,15 @@ class _HomeScreenState extends State<HomeScreen> {
             actions: [
               IconButton(
                 tooltip: 'Instellingen',
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                ),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  );
+                  if (!mounted) return;
+                  setState(() {});
+                  await _loadNearbyLocation();
+                },
                 icon: const Icon(Icons.settings_outlined),
               ),
               IconButton(
@@ -938,20 +990,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: (item) => openCardView(categoryFor(item), item),
                   )
                 else ...[
-                  _FavoritesSection(
-                    items: favorites,
-                    onItemTap: (item) => openCardView(categoryFor(item), item),
-                    onItemLongPress: (item) => showItemOptions(context, item),
-                  ),
-                  const SizedBox(height: 26),
-                  _NearbySection(
-                    state: _locationState,
-                    items: nearbyItems,
-                    onAction: _handleNearbyAction,
-                    onItemTap: (item) => openCardView(categoryFor(item), item),
-                    onItemLongPress: (item) => showItemOptions(context, item),
-                  ),
-                  const SizedBox(height: 28),
+                  if (SettingsService.showFavoritesSection) ...[
+                    _FavoritesSection(
+                      items: favorites,
+                      onItemTap: (item) => openCardView(categoryFor(item), item),
+                      onItemLongPress: (item) => showItemOptions(context, item),
+                    ),
+                    const SizedBox(height: 26),
+                  ],
+                  if (SettingsService.locationCardsEnabled) ...[
+                    _NearbySection(
+                      state: _locationState,
+                      items: nearbyItems,
+                      onAction: _handleNearbyAction,
+                      onItemTap: (item) => openCardView(categoryFor(item), item),
+                      onItemLongPress: (item) => showItemOptions(context, item),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
                   _CategorySection(
                     title: 'Klantenkaarten',
                     icon: Icons.card_membership,
