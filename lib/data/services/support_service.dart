@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'account_service.dart';
@@ -59,6 +63,8 @@ class SupportMessage {
 }
 
 abstract final class SupportService {
+  static const _guestTokenKey = 'support_guest_token';
+
   static SupabaseClient get _client {
     final client = SupabaseService.client;
     if (client == null) {
@@ -70,6 +76,15 @@ abstract final class SupportService {
   }
 
   static Future<List<SupportThread>> loadThreads() async {
+    if (AccountService.currentUser == null) {
+      final rows = await _client.rpc(
+        'guest_support_threads',
+        params: {'p_token': await _guestToken()},
+      ) as List;
+      return rows
+          .map((row) => SupportThread.fromJson(Map<String, dynamic>.from(row)))
+          .toList();
+    }
     final rows = await _client
         .from('support_threads')
         .select('id, subject, status, created_at, updated_at')
@@ -80,9 +95,30 @@ abstract final class SupportService {
   static Future<SupportThread> createThread({
     required String subject,
     required String message,
+    String? guestName,
+    String? guestEmail,
   }) async {
     final user = AccountService.currentUser;
-    if (user == null) throw const AuthException('Log eerst in.');
+    if (user == null) {
+      final id = await _client.rpc('create_guest_support_thread', params: {
+        'p_token': await _guestToken(),
+        'p_name': guestName?.trim() ?? '',
+        'p_email': guestEmail?.trim() ?? '',
+        'p_subject': subject.trim(),
+        'p_message': message.trim(),
+      });
+      final threads = await loadThreads();
+      return threads.firstWhere(
+        (thread) => thread.id == id.toString(),
+        orElse: () => SupportThread(
+          id: id.toString(),
+          subject: subject.trim(),
+          status: 'open',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+    }
 
     final threadRow = await _client
         .from('support_threads')
@@ -96,6 +132,18 @@ abstract final class SupportService {
   }
 
   static Future<List<SupportMessage>> loadMessages(String threadId) async {
+    if (AccountService.currentUser == null) {
+      final rows = await _client.rpc(
+        'guest_support_messages',
+        params: {
+          'p_token': await _guestToken(),
+          'p_thread_id': threadId,
+        },
+      ) as List;
+      return rows
+          .map((row) => SupportMessage.fromJson(Map<String, dynamic>.from(row)))
+          .toList();
+    }
     final rows = await _client
         .from('support_messages')
         .select('id, sender_id, message, created_at')
@@ -106,12 +154,31 @@ abstract final class SupportService {
 
   static Future<void> sendMessage(String threadId, String message) async {
     final user = AccountService.currentUser;
-    if (user == null) throw const AuthException('Log eerst in.');
+    if (user == null) {
+      await _client.rpc('send_guest_support_message', params: {
+        'p_token': await _guestToken(),
+        'p_thread_id': threadId,
+        'p_message': message.trim(),
+      });
+      return;
+    }
 
     await _client.from('support_messages').insert({
       'thread_id': threadId,
       'sender_id': user.id,
       'message': message.trim(),
     });
+  }
+
+  static Future<String> _guestToken() async {
+    final preferences = await SharedPreferences.getInstance();
+    final existing = preferences.getString(_guestTokenKey);
+    if (existing != null && existing.length >= 32) return existing;
+    final random = Random.secure();
+    final token = base64UrlEncode(
+      List<int>.generate(36, (_) => random.nextInt(256)),
+    ).replaceAll('=', '');
+    await preferences.setString(_guestTokenKey, token);
+    return token;
   }
 }

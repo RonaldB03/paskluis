@@ -1435,18 +1435,15 @@ class _CategorySection extends StatelessWidget {
         _ResponsiveSectionHeader(
           title: title,
           icon: icon,
-          actionTitle: actionTitle,
+          actionTitle: hasItems ? actionTitle : '',
           onActionTap: onActionTap,
         ),
         const SizedBox(height: 12),
         if (!hasItems)
-          SizedBox(
-            height: 92,
-            child: _ActionCard(
-              title: actionTitle,
-              icon: Icons.add,
-              onTap: onActionTap,
-            ),
+          _EmptyCategoryCard(
+            title: actionTitle,
+            icon: icon,
+            onTap: onActionTap,
           )
         else
           _HomeCardStrip(
@@ -1507,6 +1504,23 @@ class _ResponsiveSectionHeader extends StatelessWidget {
       child: Text(actionTitle, maxLines: 1, style: actionStyle),
     );
 
+    final titleRow = Row(
+      children: [
+        Icon(icon, color: const Color(0xFFD51B46)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: titleStyle,
+          ),
+        ),
+      ],
+    );
+
+    if (actionTitle.isEmpty) return titleRow;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final requiredWidth =
@@ -1517,21 +1531,6 @@ class _ResponsiveSectionHeader extends StatelessWidget {
             textWidth(actionTitle, actionStyle) +
             12;
         final fitsOnOneLine = requiredWidth <= constraints.maxWidth;
-
-        final titleRow = Row(
-          children: [
-            Icon(icon, color: const Color(0xFFD51B46)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: titleStyle,
-              ),
-            ),
-          ],
-        );
 
         if (fitsOnOneLine) {
           return Row(
@@ -1554,6 +1553,96 @@ class _ResponsiveSectionHeader extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _EmptyCategoryCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _EmptyCategoryCard({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          width: double.infinity,
+          height: 112,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFF0D9E0)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0B000000),
+                blurRadius: 18,
+                offset: Offset(0, 7),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFEEF2), Color(0xFFF8DDE6)],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(icon, color: const Color(0xFFD51B46), size: 28),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF302D34),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Veilig opgeslagen op dit toestel',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF77717D),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const CircleAvatar(
+                radius: 20,
+                backgroundColor: Color(0xFFD51B46),
+                child: Icon(Icons.add_rounded, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

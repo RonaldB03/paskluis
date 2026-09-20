@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../data/services/account_service.dart';
 import '../../data/services/support_service.dart';
-import '../account/account_screen.dart';
 import 'support_thread_screen.dart';
 
 class SupportScreen extends StatefulWidget {
@@ -20,7 +19,7 @@ class _SupportScreenState extends State<SupportScreen> {
   @override
   void initState() {
     super.initState();
-    if (AccountService.currentUser != null) _loadThreads();
+    _loadThreads();
   }
 
   Future<void> _loadThreads() async {
@@ -45,7 +44,9 @@ class _SupportScreenState extends State<SupportScreen> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => const _NewQuestionSheet(),
+      builder: (_) => _NewQuestionSheet(
+        askContactDetails: AccountService.currentUser == null,
+      ),
     );
     if (!mounted || result == null) return;
 
@@ -54,6 +55,8 @@ class _SupportScreenState extends State<SupportScreen> {
       final thread = await SupportService.createThread(
         subject: result.subject,
         message: result.message,
+        guestName: result.name,
+        guestEmail: result.email,
       );
       if (!mounted) return;
       await Navigator.push(
@@ -74,76 +77,25 @@ class _SupportScreenState extends State<SupportScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final signedIn = AccountService.currentUser != null;
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F4F6),
+      backgroundColor: const Color(0xFFF5F3F6),
       appBar: AppBar(
         title: const Text('Klantenservice'),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF333333),
       ),
-      floatingActionButton: signedIn
-          ? FloatingActionButton.extended(
-              onPressed: _loading ? null : _newConversation,
-              icon: const Icon(Icons.add_comment_rounded),
-              label: const Text('Nieuwe vraag'),
-            )
-          : null,
-      body: signedIn ? _buildSignedIn() : _buildSignedOut(),
-    );
-  }
-
-  Widget _buildSignedOut() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Card(
-          elevation: 0,
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.support_agent_rounded,
-                  size: 54,
-                  color: Color(0xFFD51B46),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  'Log in voor persoonlijke hulp',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Met een gratis account kun je vragen stellen en onze antwoorden teruglezen.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                FilledButton.icon(
-                  onPressed: () async {
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AccountScreen()),
-                    );
-                    if (mounted) {
-                      setState(() {});
-                      if (AccountService.currentUser != null) _loadThreads();
-                    }
-                  },
-                  icon: const Icon(Icons.login_rounded),
-                  label: const Text('Naar inloggen'),
-                ),
-              ],
-            ),
-          ),
-        ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _loading ? null : _newConversation,
+        backgroundColor: const Color(0xFFD51B46),
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add_comment_rounded),
+        label: const Text('Nieuwe vraag'),
       ),
+      body: _buildSupport(),
     );
   }
 
-  Widget _buildSignedIn() {
+  Widget _buildSupport() {
     if (_loading && _threads.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -158,9 +110,11 @@ class _SupportScreenState extends State<SupportScreen> {
     }
     if (_threads.isEmpty) {
       return _SupportEmpty(
-        icon: Icons.forum_outlined,
-        title: 'Nog geen gesprekken',
-        subtitle: 'Stel gerust een vraag. We helpen je graag verder.',
+        icon: Icons.support_agent_rounded,
+        title: 'We staan voor je klaar',
+        subtitle: AccountService.currentUser == null
+            ? 'Je hoeft niet in te loggen. Laat je naam en e-mailadres achter en volg het gesprek gewoon in PasKluis.'
+            : 'Stel gerust een vraag. Je vindt onze antwoorden overzichtelijk in dit scherm terug.',
         buttonLabel: 'Nieuwe vraag',
         onPressed: _newConversation,
       );
@@ -171,12 +125,17 @@ class _SupportScreenState extends State<SupportScreen> {
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 100),
-        itemCount: _threads.length,
+        itemCount: _threads.length + 1,
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
-          final thread = _threads[index];
+          if (index == 0) return const _SupportHero();
+          final thread = _threads[index - 1];
           return Card(
             elevation: 0,
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 18,
@@ -226,19 +185,25 @@ class _SupportScreenState extends State<SupportScreen> {
 }
 
 class _NewQuestionSheet extends StatefulWidget {
-  const _NewQuestionSheet();
+  final bool askContactDetails;
+
+  const _NewQuestionSheet({required this.askContactDetails});
 
   @override
   State<_NewQuestionSheet> createState() => _NewQuestionSheetState();
 }
 
 class _NewQuestionSheetState extends State<_NewQuestionSheet> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
     _subjectController.dispose();
     _messageController.dispose();
     super.dispose();
@@ -253,9 +218,12 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
         20,
         MediaQuery.viewInsetsOf(context).bottom + 24,
       ),
-      child: Form(
-        key: _formKey,
-        child: Column(
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -264,6 +232,38 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 16),
+            if (widget.askContactDetails) ...[
+              TextFormField(
+                controller: _nameController,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  labelText: 'Naam',
+                  prefixIcon: Icon(Icons.person_outline_rounded),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => (value?.trim().length ?? 0) < 2
+                    ? 'Vul je naam in.'
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  labelText: 'E-mailadres',
+                  prefixIcon: Icon(Icons.mail_outline_rounded),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  final email = value?.trim() ?? '';
+                  return !email.contains('@') || !email.contains('.')
+                      ? 'Vul een geldig e-mailadres in.'
+                      : null;
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
             TextFormField(
               controller: _subjectController,
               textInputAction: TextInputAction.next,
@@ -301,13 +301,17 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
                   _NewSupportQuestion(
                     subject: _subjectController.text.trim(),
                     message: _messageController.text.trim(),
+                    name: _nameController.text.trim(),
+                    email: _emailController.text.trim(),
                   ),
                 );
               },
               icon: const Icon(Icons.send_rounded),
               label: const Text('Vraag versturen'),
             ),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -317,8 +321,58 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
 class _NewSupportQuestion {
   final String subject;
   final String message;
+  final String name;
+  final String email;
 
-  const _NewSupportQuestion({required this.subject, required this.message});
+  const _NewSupportQuestion({
+    required this.subject,
+    required this.message,
+    required this.name,
+    required this.email,
+  });
+}
+
+class _SupportHero extends StatelessWidget {
+  const _SupportHero();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF343B67), Color(0xFF5967A3)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: const Row(
+        children: [
+          CircleAvatar(
+            radius: 27,
+            backgroundColor: Color(0x33FFFFFF),
+            child: Icon(Icons.support_agent_rounded,
+                color: Colors.white, size: 31),
+          ),
+          SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Persoonlijke hulp',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900)),
+                SizedBox(height: 4),
+                Text('Bekijk je vragen en onze antwoorden op één plek.',
+                    style: TextStyle(color: Color(0xFFE8EBFF), height: 1.35)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SupportEmpty extends StatelessWidget {
@@ -341,21 +395,43 @@ class _SupportEmpty extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 54, color: const Color(0xFFD51B46)),
-            const SizedBox(height: 14),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 7),
-            Text(subtitle, textAlign: TextAlign.center),
-            const SizedBox(height: 18),
-            FilledButton(onPressed: onPressed, child: Text(buttonLabel)),
-          ],
+        child: Container(
+          padding: const EdgeInsets.all(25),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: const [
+              BoxShadow(color: Color(0x10000000), blurRadius: 25, offset: Offset(0, 10)),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 37,
+                backgroundColor: const Color(0xFFFFE7ED),
+                child: Icon(icon, size: 39, color: const Color(0xFFD51B46)),
+              ),
+              const SizedBox(height: 17),
+              Text(title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              Text(subtitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Color(0xFF6F6A74), height: 1.4)),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: FilledButton.icon(
+                  onPressed: onPressed,
+                  icon: const Icon(Icons.add_comment_rounded),
+                  label: Text(buttonLabel),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -7,13 +7,13 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/settings_service.dart';
 import '../../data/services/card_share_service.dart';
-import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/logo_layout.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
 import '../../shared/widgets/main_tab_route.dart';
+import '../../shared/widgets/luxury_empty_state.dart';
 
 import '../gift_cards/gift_cards_screen.dart';
 import '../home/home_screen.dart';
@@ -419,77 +419,27 @@ class _EmptyCardsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final previewBrands = cardBrandTemplates.take(4).toList();
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 34, 24, 28),
-      children: [
-        const Text(
-          'Nog geen klantenkaarten toegevoegd',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 32,
-            height: 1.12,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF444446),
+    return LuxuryEmptyState(
+      icon: Icons.card_membership_rounded,
+      eyebrow: 'Alles bij de hand',
+      title: 'Voeg je eerste klantenkaart toe',
+      subtitle:
+          'Kies een winkel, scan de barcode of importeer een foto. PasKluis bewaart je kaart veilig op dit toestel.',
+      buttonLabel: 'Klantenkaart toevoegen',
+      onPressed: onAdd,
+      footer: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.lock_outline_rounded, size: 17, color: Color(0xFF77717D)),
+          SizedBox(width: 7),
+          Flexible(
+            child: Text(
+              'Geen account nodig',
+              style: TextStyle(color: Color(0xFF77717D)),
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'Tik op + of kies een populaire winkel om je klantenkaart toe te voegen.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 17, height: 1.3, color: Color(0xFF555557)),
-        ),
-        const SizedBox(height: 30),
-        FilledButton.icon(
-          onPressed: onAdd,
-          icon: const Icon(Icons.add),
-          label: const Text('Klantenkaart toevoegen'),
-        ),
-        const SizedBox(height: 34),
-        const Text(
-          'Populaire winkels',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF333333),
-          ),
-        ),
-        const SizedBox(height: 14),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: previewBrands.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.58,
-          ),
-          itemBuilder: (context, index) {
-            final brand = previewBrands[index];
-
-            return InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: onAdd,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: brand.color,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Center(
-                  child: SizedBox(
-                    height: 74,
-                    width: double.infinity,
-                    child: BrandLogo(source: brand.logoAsset),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

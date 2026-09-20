@@ -5,8 +5,12 @@ import '../../data/services/notification_service.dart';
 import '../../data/services/security_service.dart';
 import '../../data/services/settings_service.dart';
 import '../../data/services/storage_service.dart';
+import '../../data/services/account_service.dart';
 import '../account/account_screen.dart';
+import '../admin/admin_tools_screen.dart';
 import '../support/support_screen.dart';
+import 'help_center_screen.dart';
+import 'privacy_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -29,6 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _hideSensitiveCodes;
   late bool _giftExpiryNotificationsEnabled;
   bool _savingLock = false;
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -38,6 +43,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       setState(_readSettings);
     });
+    _loadAdminStatus();
+  }
+
+  Future<void> _loadAdminStatus() async {
+    try {
+      final isAdmin = await AccountService.isCurrentUserAdmin();
+      if (mounted) setState(() => _isAdmin = isAdmin);
+    } catch (_) {
+      if (mounted) setState(() => _isAdmin = false);
+    }
   }
 
   void _readSettings() {
@@ -232,42 +247,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() => _defaultStartTab = selected);
   }
 
-  void _showInfo(String title, String text) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) => SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 4, 24, 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 12),
-              Text(text, style: const TextStyle(fontSize: 16, height: 1.45)),
-              const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Gereed'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   String get _radiusLabel =>
       _nearbyRadiusMeters == 1000 ? '1 km' : '$_nearbyRadiusMeters m';
 
@@ -446,7 +425,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 iconBackground: const Color(0xFFE7F0FF),
                 title: 'Privacy en gegevens',
                 subtitle: 'Bekijk wat PasKluis wel en niet bewaart',
-                onTap: () => _showInfo('Privacy en gegevens', SettingsService.privacyMessage),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PrivacyScreen()),
+                ),
               ),
             ],
           ),
@@ -480,9 +462,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 iconColor: const Color(0xFF7046B8),
                 iconBackground: const Color(0xFFEFE8FF),
                 title: 'Hulp en uitleg',
-                subtitle: 'Kaarten toevoegen, scannen en importeren',
-                onTap: () => _showInfo('Hulp en uitleg', SettingsService.helpText),
+                subtitle: 'Uitleg en veelgestelde vragen',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HelpCenterScreen()),
+                ),
               ),
+              if (_isAdmin)
+                _SettingsTile(
+                  icon: Icons.admin_panel_settings_rounded,
+                  iconColor: const Color(0xFFD51B46),
+                  iconBackground: const Color(0xFFFFE5E9),
+                  title: 'Beheerder',
+                  subtitle: 'Aparte beheerfuncties voor PasKluis',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminToolsScreen()),
+                  ),
+                ),
               _SettingsTile(
                 icon: Icons.phone_iphone_rounded,
                 iconColor: const Color(0xFF286DC8),
@@ -496,7 +493,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Padding(
               padding: EdgeInsets.only(top: 2),
               child: Text(
-                'PasKluis versie 1.4.0 (39)',
+                'PasKluis versie 1.4.1 (40)',
                 style: TextStyle(color: Color(0xFF77717D), fontSize: 12),
               ),
             ),

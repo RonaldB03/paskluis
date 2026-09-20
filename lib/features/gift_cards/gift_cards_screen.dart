@@ -24,7 +24,7 @@ import '../cards/choose_card_template_screen.dart';
 import '../home/home_screen.dart';
 import '../qr_codes/qr_codes_screen.dart';
 import '../premium/premium_gate.dart';
-import '../account/account_screen.dart';
+import '../premium/plus_information_screen.dart';
 
 import 'choose_gift_card_template_screen.dart';
 import 'gift_card_view_screen.dart';
@@ -65,7 +65,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
   Future<void> _openPlus(BuildContext context) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const AccountScreen()),
+      MaterialPageRoute(builder: (_) => const PlusInformationScreen()),
     );
     await _loadPlusStatus();
   }
@@ -591,8 +591,47 @@ class _GiftCardsOverview extends StatelessWidget {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Material(
+              color: const Color(0xFFFFF7D9),
+              borderRadius: BorderRadius.circular(18),
+              child: InkWell(
+                onTap: onOpenPlus,
+                borderRadius: BorderRadius.circular(18),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                  child: Row(
+                    children: [
+                      Icon(Icons.workspace_premium_rounded,
+                          color: Color(0xFFA87800)),
+                      SizedBox(width: 11),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Extra informatie',
+                                style: TextStyle(
+                                    color: Color(0xFF6D5000),
+                                    fontWeight: FontWeight.w900)),
+                            Text('Ontdek alles wat je met PasKluis Plus krijgt',
+                                style: TextStyle(
+                                    color: Color(0xFF806719), fontSize: 12.5)),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded,
+                          color: Color(0xFFA87800)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
@@ -665,7 +704,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           const Text(
-            '1 cadeaukaart gratis',
+            'Je eerste cadeaukaart is gratis',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 20,
@@ -675,7 +714,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Met de gratis versie bewaar je één cadeaukaart. Met PasKluis Plus bewaar je er onbeperkt, zonder abonnement.',
+            'Ga verder met Plus: bewaar onbeperkt cadeaukaarten en deel klanten- en cadeaukaarten veilig met anderen.',
             textAlign: TextAlign.center,
             style: TextStyle(height: 1.35, color: Color(0xFF6D5000)),
           ),
@@ -717,7 +756,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
               foregroundColor: Colors.white,
             ),
             icon: const Icon(Icons.workspace_premium_rounded),
-            label: const Text('Bekijk PasKluis Plus'),
+            label: const Text('Ontdek alle Plus-voordelen'),
           ),
         ],
       ),

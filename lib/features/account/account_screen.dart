@@ -6,8 +6,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/services/account_service.dart';
 import '../../data/services/supabase_service.dart';
 import '../../data/services/card_share_service.dart';
-import '../admin/brand_logo_layout_screen.dart';
-import 'account_management_screen.dart';
+import '../premium/plus_information_screen.dart';
+import 'shared_cards_management_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -28,7 +28,6 @@ class _AccountScreenState extends State<AccountScreen> {
   bool _busy = false;
   bool _loadingStatus = false;
   bool _hidePassword = true;
-  bool _isAdmin = false;
 
   User? get _user => AccountService.currentUser;
 
@@ -39,10 +38,8 @@ class _AccountScreenState extends State<AccountScreen> {
       if (!mounted) return;
       setState(() {});
       _loadPlusStatus();
-      _loadAdminStatus();
     });
     _loadPlusStatus();
-    _loadAdminStatus();
   }
 
   @override
@@ -71,16 +68,23 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
-  Future<void> _loadAdminStatus() async {
+  Future<void> _restorePurchases() async {
     if (_user == null) {
-      if (mounted) setState(() => _isAdmin = false);
+      _showMessage('Log eerst in om je aankoop te herstellen.');
       return;
     }
+    setState(() => _loadingStatus = true);
     try {
-      final isAdmin = await AccountService.isCurrentUserAdmin();
-      if (mounted) setState(() => _isAdmin = isAdmin);
+      final status = await AccountService.loadPlusStatus();
+      if (!mounted) return;
+      setState(() => _plusStatus = status);
+      _showMessage(status.isActive
+          ? 'Je PasKluis Plus-toegang is hersteld.'
+          : 'Er is nog geen Plus-aankoop aan dit account gekoppeld.');
     } catch (_) {
-      if (mounted) setState(() => _isAdmin = false);
+      if (mounted) _showMessage('Herstellen is nu niet gelukt.', error: true);
+    } finally {
+      if (mounted) setState(() => _loadingStatus = false);
     }
   }
 
@@ -389,6 +393,57 @@ class _AccountScreenState extends State<AccountScreen> {
           Card(
             elevation: 0,
             child: ListTile(
+              leading: const Icon(Icons.workspace_premium_rounded,
+                  color: Color(0xFFD5A021)),
+              title: const Text('Alles over PasKluis Plus',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+              subtitle: const Text('Bekijk alle voordelen en hoe delen werkt.'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PlusInformationScreen(
+                    showAccountButton: false,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            elevation: 0,
+            child: ListTile(
+              leading: const Icon(Icons.people_alt_outlined,
+                  color: Color(0xFF7046B8)),
+              title: const Text('Gedeelde kaarten beheren',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+              subtitle: const Text('Bekijk gedeelde toegang en stop deze wanneer je wilt.'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SharedCardsManagementScreen(),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            elevation: 0,
+            child: ListTile(
+              leading: const Icon(Icons.restore_rounded,
+                  color: Color(0xFF286DC8)),
+              title: const Text('Aankopen herstellen',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+              subtitle: const Text('Controleer opnieuw je gekoppelde Plus-toegang.'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: _loadingStatus ? null : _restorePurchases,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            elevation: 0,
+            child: ListTile(
               leading: const Icon(
                 Icons.password_rounded,
                 color: Color(0xFFD51B46),
@@ -404,58 +459,6 @@ class _AccountScreenState extends State<AccountScreen> {
               onTap: _busy ? null : _changePassword,
             ),
           ),
-          if (_isAdmin) ...[
-            const SizedBox(height: 16),
-            Card(
-              elevation: 0,
-              color: const Color(0xFFFFEDF2),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.admin_panel_settings_rounded,
-                  color: Color(0xFFD51B46),
-                ),
-                title: const Text(
-                  'Accounts en Plus beheren',
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
-                subtitle: const Text(
-                  'Activeer of deactiveer PasKluis Plus voor gebruikers.',
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AccountManagementScreen(),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Card(
-              elevation: 0,
-              color: const Color(0xFFFFEDF2),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.tune_rounded,
-                  color: Color(0xFFD51B46),
-                ),
-                title: const Text(
-                  'Winkellogo’s passend maken',
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
-                subtitle: const Text(
-                  'Stel logo’s af in de echte weergave van PasKluis.',
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const BrandLogoLayoutScreen(),
-                  ),
-                ),
-              ),
-            ),
-          ],
           const SizedBox(height: 16),
           const Card(
             elevation: 0,
@@ -602,7 +605,9 @@ class _PlusHero extends StatelessWidget {
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFD51B46), Color(0xFFFF5577)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF6B4A00), Color(0xFFD5A021)],
         ),
         borderRadius: BorderRadius.circular(24),
       ),
@@ -621,7 +626,7 @@ class _PlusHero extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Bewaar onbeperkt cadeaukaarten voor € 2 eenmalig. Levenslange toegang, geen abonnement en geen reclame.',
+            'Onbeperkt cadeaukaarten bewaren en kaarten veilig delen voor € 2 eenmalig. Geen abonnement.',
             style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],

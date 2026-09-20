@@ -10,6 +10,7 @@ import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
 import '../../shared/widgets/main_tab_route.dart';
+import '../../shared/widgets/luxury_empty_state.dart';
 
 import '../cards/cards_screen.dart';
 import '../gift_cards/gift_cards_screen.dart';
@@ -1043,51 +1044,15 @@ class _EmptyQrState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircleAvatar(
-              radius: 44,
-              backgroundColor: Color(0xFFF8E3EA),
-              child: Icon(
-                Icons.qr_code_2_rounded,
-                size: 48,
-                color: Color(0xFFD51B46),
-              ),
-            ),
-            const SizedBox(height: 22),
-            const Text(
-              'Nog geen QR-codes toegevoegd',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 26,
-                height: 1.15,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF333333),
-              ),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Voeg bijvoorbeeld een ticket, toegangscode, link of andere QR-code toe.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.35,
-                color: Color(0xFF555557),
-              ),
-            ),
-            const SizedBox(height: 26),
-            FilledButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add),
-              label: const Text('QR-code toevoegen'),
-            ),
-          ],
-        ),
-      ),
+    return LuxuryEmptyState(
+      icon: Icons.qr_code_2_rounded,
+      eyebrow: 'Snel tevoorschijn',
+      title: 'Bewaar je eerste QR-code',
+      subtitle:
+          'Tickets, toegangscodes, links of een hele set QR-codes: bewaar ze overzichtelijk en open ze in één tik.',
+      buttonLabel: 'QR-code toevoegen',
+      onPressed: onAdd,
+      accent: const Color(0xFF5B67A3),
     );
   }
 }

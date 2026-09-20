@@ -120,8 +120,10 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
                       itemCount: _messages.length,
                       itemBuilder: (context, index) {
                         final message = _messages[index];
-                        final mine =
-                            message.senderId == AccountService.currentUser?.id;
+                        final user = AccountService.currentUser;
+                        final mine = user == null
+                            ? message.senderId.isEmpty
+                            : message.senderId == user.id;
                         return _MessageBubble(message: message, mine: mine);
                       },
                     ),
@@ -139,8 +141,11 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
             SafeArea(
               top: false,
               child: Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Color(0xFFE9E6EC))),
+                ),
+                padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -153,7 +158,12 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
                         decoration: const InputDecoration(
                           hintText: 'Schrijf een bericht…',
                           counterText: '',
-                          border: OutlineInputBorder(),
+                          filled: true,
+                          fillColor: Color(0xFFF6F4F7),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(18)),
+                            borderSide: BorderSide.none,
+                          ),
                         ),
                       ),
                     ),
