@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/services/account_service.dart';
+import '../../data/services/help_service.dart';
 import '../../data/services/support_service.dart';
 import 'support_thread_screen.dart';
 
@@ -15,10 +16,12 @@ class _SupportScreenState extends State<SupportScreen> {
   bool _loading = false;
   String? _error;
   List<SupportThread> _threads = const [];
+  late final Future<List<HelpFaq>> _faqs;
 
   @override
   void initState() {
     super.initState();
+    _faqs = HelpService.loadFaqs();
     _loadThreads();
   }
 
@@ -109,14 +112,81 @@ class _SupportScreenState extends State<SupportScreen> {
       );
     }
     if (_threads.isEmpty) {
-      return _SupportEmpty(
-        icon: Icons.support_agent_rounded,
-        title: 'We staan voor je klaar',
-        subtitle: AccountService.currentUser == null
-            ? 'Je hoeft niet in te loggen. Laat je naam en e-mailadres achter en volg het gesprek gewoon in PasKluis.'
-            : 'Stel gerust een vraag. Je vindt onze antwoorden overzichtelijk in dit scherm terug.',
-        buttonLabel: 'Nieuwe vraag',
-        onPressed: _newConversation,
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(20, 22, 20, 110),
+        children: [
+          _SupportEmpty(
+            icon: Icons.support_agent_rounded,
+            title: 'We staan voor je klaar',
+            subtitle: AccountService.currentUser == null
+                ? 'Je hoeft niet in te loggen. Laat je naam en e-mailadres achter en volg het gesprek gewoon in PasKluis.'
+                : 'Stel gerust een vraag. Je vindt onze antwoorden overzichtelijk in dit scherm terug.',
+            showAction: false,
+            buttonLabel: '',
+            onPressed: _newConversation,
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Veelgestelde vragen',
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          FutureBuilder<List<HelpFaq>>(
+            future: _faqs,
+            builder: (context, snapshot) {
+              final faqs = snapshot.data ?? const <HelpFaq>[];
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+              return Column(
+                children: faqs
+                    .take(5)
+                    .map(
+                      (faq) => Card(
+                        elevation: 0,
+                        margin: const EdgeInsets.only(bottom: 9),
+                        color: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: ExpansionTile(
+                          shape: const Border(),
+                          collapsedShape: const Border(),
+                          title: Text(
+                            faq.question,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          childrenPadding: const EdgeInsets.fromLTRB(
+                            17,
+                            0,
+                            17,
+                            17,
+                          ),
+                          children: [
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                faq.answer,
+                                style: const TextStyle(
+                                  color: Color(0xFF625E67),
+                                  height: 1.45,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
+              );
+            },
+          ),
+        ],
       );
     }
 
@@ -381,6 +451,7 @@ class _SupportEmpty extends StatelessWidget {
   final String subtitle;
   final String buttonLabel;
   final VoidCallback onPressed;
+  final bool showAction;
 
   const _SupportEmpty({
     required this.icon,
@@ -388,6 +459,7 @@ class _SupportEmpty extends StatelessWidget {
     required this.subtitle,
     required this.buttonLabel,
     required this.onPressed,
+    this.showAction = true,
   });
 
   @override
@@ -420,16 +492,18 @@ class _SupportEmpty extends StatelessWidget {
               Text(subtitle,
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Color(0xFF6F6A74), height: 1.4)),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: FilledButton.icon(
-                  onPressed: onPressed,
-                  icon: const Icon(Icons.add_comment_rounded),
-                  label: Text(buttonLabel),
+              if (showAction) ...[
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: FilledButton.icon(
+                    onPressed: onPressed,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: Text(buttonLabel),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

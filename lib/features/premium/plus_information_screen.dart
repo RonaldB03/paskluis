@@ -74,7 +74,7 @@ class PlusInformationScreen extends StatelessWidget {
           const _Benefit(
             icon: Icons.all_inclusive_rounded,
             title: 'Onbeperkt cadeaukaarten',
-            subtitle: 'Bewaar zoveel cadeaukaarten als je wilt. De gratis versie bevat één cadeaukaart.',
+            subtitle: 'Bewaar zoveel cadeaukaarten als je wilt. Zonder Plus kun je één cadeaukaart bewaren.',
           ),
           const _Benefit(
             icon: Icons.ios_share_rounded,
@@ -106,7 +106,7 @@ class PlusInformationScreen extends StatelessWidget {
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Geen abonnement. Eén keer betalen en PasKluis Plus blijft actief.',
+                    'Eén keer betalen en geniet voor altijd van PasKluis Plus.',
                     style: TextStyle(
                       color: Color(0xFF6D5000),
                       fontWeight: FontWeight.w800,

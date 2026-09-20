@@ -361,6 +361,8 @@ class CardsScreen extends StatelessWidget {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             automaticallyImplyLeading: false,
+            leadingWidth: 56,
+            leading: const SizedBox.shrink(),
             backgroundColor: Colors.white,
             elevation: 0,
             centerTitle: true,

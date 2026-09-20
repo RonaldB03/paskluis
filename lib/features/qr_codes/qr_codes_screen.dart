@@ -421,6 +421,8 @@ class QrCodesScreen extends StatelessWidget {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             automaticallyImplyLeading: false,
+            leadingWidth: 56,
+            leading: const SizedBox.shrink(),
             title: const PremiumAppTitle('QR-codes'),
             centerTitle: true,
             backgroundColor: Colors.white,

@@ -490,6 +490,8 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             automaticallyImplyLeading: false,
+            leadingWidth: 132,
+            leading: const SizedBox.shrink(),
             title: const PremiumAppTitle('Cadeaukaarten'),
             centerTitle: true,
             titleSpacing: 4,

@@ -916,10 +916,14 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             automaticallyImplyLeading: false,
-            leading: IconButton(
-              tooltip: 'Uitleg over kaarten toevoegen',
-              onPressed: _showAddHelp,
-              icon: const Icon(Icons.info_outline_rounded),
+            leadingWidth: 112,
+            leading: Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                tooltip: 'Uitleg over kaarten toevoegen',
+                onPressed: _showAddHelp,
+                icon: const Icon(Icons.info_outline_rounded),
+              ),
             ),
             title: const PremiumAppTitle('PasKluis'),
             centerTitle: true,

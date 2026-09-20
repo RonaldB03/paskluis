@@ -15,52 +15,44 @@ class PremiumAppTitle extends StatelessWidget {
         final plus = snapshot.data?.isActive == true;
         return SizedBox(
           width: double.infinity,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
+          height: kToolbarHeight,
+          child: Stack(
             alignment: Alignment.center,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  style: const TextStyle(fontWeight: FontWeight.w900),
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
                 ),
-                if (plus) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+              ),
+              if (plus)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    width: 25,
+                    height: 25,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [Color(0xFFFFE49A), Color(0xFFD5A021)],
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      shape: BoxShape.circle,
                       boxShadow: const [
                         BoxShadow(color: Color(0x33A26E00), blurRadius: 8),
                       ],
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.workspace_premium_rounded, size: 14),
-                        SizedBox(width: 3),
-                        Text(
-                          'PLUS',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                      ],
+                    child: const Icon(
+                      Icons.workspace_premium_rounded,
+                      size: 16,
+                      color: Color(0xFF6B4A00),
                     ),
                   ),
-                ],
-              ],
-            ),
+                ),
+            ],
           ),
         );
       },
