@@ -184,3 +184,45 @@ where slug not in (
   'vvv-cadeaukaart'
 )
 and is_featured = true;
+
+-- Merge the three legacy records that were created through the first admin
+-- version. Their uploaded logo and carefully tuned layout are more valuable
+-- than the generated defaults, so copy those settings before archiving them.
+with legacy_map (legacy_slug, canonical_slug) as (
+  values
+    ('Bol-com', 'bol-com'),
+    ('Jumbo', 'jumbo'),
+    ('vvv', 'vvv-cadeaukaart')
+)
+update public.brands as target
+set
+  logo_path = source.logo_path,
+  brand_color = source.brand_color,
+  logo_home_scale = source.logo_home_scale,
+  logo_home_x = source.logo_home_x,
+  logo_home_y = source.logo_home_y,
+  logo_loyalty_scale = source.logo_loyalty_scale,
+  logo_loyalty_x = source.logo_loyalty_x,
+  logo_loyalty_y = source.logo_loyalty_y,
+  logo_gift_scale = source.logo_gift_scale,
+  logo_gift_x = source.logo_gift_x,
+  logo_gift_y = source.logo_gift_y,
+  logo_detail_scale = source.logo_detail_scale,
+  logo_detail_x = source.logo_detail_x,
+  logo_detail_y = source.logo_detail_y,
+  logo_picker_scale = source.logo_picker_scale,
+  logo_picker_x = source.logo_picker_x,
+  logo_picker_y = source.logo_picker_y,
+  updated_at = now()
+from public.brands as source
+join legacy_map on source.slug = legacy_map.legacy_slug
+where target.slug = legacy_map.canonical_slug;
+
+update public.brands
+set
+  name = case when name like '% (oud)' then name else name || ' (oud)' end,
+  is_active = false,
+  is_featured = false,
+  sort_order = 10000,
+  updated_at = now()
+where slug in ('Bol-com', 'Jumbo', 'vvv');
