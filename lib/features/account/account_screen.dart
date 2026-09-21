@@ -464,7 +464,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     child: Text(
                       _registering
                           ? 'Ik heb al een account'
-                          : 'Nog geen account? Maak er Ã©Ã©n aan',
+                          : 'Nog geen account? Maak er één aan',
                     ),
                   ),
                 ],
@@ -760,7 +760,7 @@ class _PlusHero extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Onbeperkt cadeaukaarten bewaren en kaarten veilig delen voor â¬ 2 eenmalig. Geen abonnement.',
+            'Onbeperkt cadeaukaarten bewaren en kaarten veilig delen voor € 2 eenmalig. Geen abonnement.',
             style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],
@@ -811,7 +811,7 @@ class _StatusCard extends StatelessWidget {
                 children: [
                   Text(
                     loading
-                        ? 'Plus-status controlerenâ¦'
+                        ? 'Plus-status controleren…'
                         : status.isActive
                         ? 'PasKluis Plus is actief'
                         : 'Gratis versie',
@@ -829,7 +829,7 @@ class _StatusCard extends StatelessWidget {
                         ? status.expiresAt == null
                               ? 'Je hebt onbeperkt toegang.${_source(status.source)}'
                               : 'Je toegang is actief tot ${_date(status.expiresAt!)}.'
-                        : 'EÃ©n cadeaukaart is gratis. Klantenkaarten en QR-codes blijven onbeperkt gratis.',
+                        : 'Eén cadeaukaart is gratis. Klantenkaarten en QR-codes blijven onbeperkt gratis.',
                   ),
                 ],
               ),
