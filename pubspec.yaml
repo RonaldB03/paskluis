@@ -42,6 +42,10 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 flutter:
+  # ML Kit still uses CocoaPods. Keeping all iOS plugins on CocoaPods avoids
+  # duplicate Firebase/GoogleDataTransport symbols in release archives.
+  config:
+    enable-swift-package-manager: false
   uses-material-design: true
   assets:
     - assets/logos/
