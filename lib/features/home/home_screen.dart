@@ -8,6 +8,7 @@ import '../../data/services/storage_service.dart';
 import '../../data/services/image_color_service.dart';
 import '../../data/services/brand_sync_service.dart';
 import '../../data/services/location_service.dart';
+import '../../data/services/nearby_store_service.dart';
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/card_share_service.dart';
@@ -52,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _searchQuery = '';
   LocationAccessState _locationState = LocationAccessState.checking;
   DeviceLocation? _currentLocation;
+  Map<String, NearbyStoreMatch> _nearbyStoreMatches = const {};
 
   @override
   void initState() {
@@ -97,7 +99,17 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _locationState = snapshot.state;
       _currentLocation = snapshot.location;
+      if (snapshot.location == null) _nearbyStoreMatches = const {};
     });
+    final location = snapshot.location;
+    if (snapshot.state == LocationAccessState.ready && location != null) {
+      final cards = StorageService.cardsBox.values
+          .where((item) => item is Map && item['type'] == 'Pasje')
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+      final matches = await NearbyStoreService.resolveForCards(cards, location);
+      if (mounted) setState(() => _nearbyStoreMatches = matches);
+    }
   }
 
   Future<void> _handleNearbyAction() async {
@@ -879,15 +891,18 @@ class _HomeScreenState extends State<HomeScreen> {
         if (currentLocation != null) {
           nearbyItems.addAll(
             locationEligibleItems.where((item) {
-              final distance = LocationService.distanceTo(item, currentLocation);
+              final distance = _nearbyStoreMatches[item['id']?.toString()]
+                  ?.distanceMeters;
               return distance != null &&
                   distance <= LocationService.nearbyRadiusMeters;
             }),
           );
           nearbyItems.sort((a, b) {
-            final aDistance = LocationService.distanceTo(a, currentLocation) ??
+            final aDistance = _nearbyStoreMatches[a['id']?.toString()]
+                    ?.distanceMeters ??
                 double.infinity;
-            final bDistance = LocationService.distanceTo(b, currentLocation) ??
+            final bDistance = _nearbyStoreMatches[b['id']?.toString()]
+                    ?.distanceMeters ??
                 double.infinity;
             return aDistance.compareTo(bDistance);
           });
@@ -1252,9 +1267,8 @@ class _HomeCardStrip extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final item = items[index];
-              final distance = currentLocation == null
-                  ? null
-                  : LocationService.distanceTo(item, currentLocation!);
+              final distance = _nearbyStoreMatches[item['id']?.toString()]
+                  ?.distanceMeters;
               return SizedBox(
                 width: cardWidth,
                 child: Stack(
@@ -1275,7 +1289,7 @@ class _HomeCardStrip extends StatelessWidget {
                     if (distance != null)
                       Positioned(
                         right: 6,
-                        bottom: 6,
+                        top: 6,
                         child: IgnorePointer(
                           child: Container(
                             padding: const EdgeInsets.symmetric(
