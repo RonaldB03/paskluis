@@ -17,6 +17,7 @@ import 'data/services/account_service.dart';
 import 'data/services/device_session_service.dart';
 import 'data/services/push_notification_service.dart';
 import 'features/security/app_lock_gate.dart';
+import 'features/account/account_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,11 +36,13 @@ class PasKluisBootstrap extends StatefulWidget {
 
 class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     with WidgetsBindingObserver {
+  final _navigatorKey = GlobalKey<NavigatorState>();
   late Future<void> _initialization;
   bool _syncingSharedCards = false;
   bool _checkingDeviceSession = false;
   Timer? _deviceSessionTimer;
   StreamSubscription<AuthState>? _authSubscription;
+  bool _openingPasswordRecovery = false;
 
   @override
   void initState() {
@@ -71,15 +74,39 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     try {
       final isCurrent = await DeviceSessionService.ensureCurrentSession();
       if (!isCurrent && AccountService.currentUser != null) {
-        DeviceSessionService.sessionNotice.value =
-            'Je account is op een ander apparaat geopend. Log opnieuw in als je dit apparaat weer wilt gebruiken.';
+        const notice =
+            'Er is met jouw account ingelogd op een ander apparaat. Daarom ben je op dit apparaat uitgelogd.';
+        DeviceSessionService.sessionNotice.value = notice;
         await AccountService.signOut(releaseDevice: false);
+        _showDeviceLogoutNotice(notice);
       }
     } catch (_) {
       // A temporary connection problem must not lock the local vault.
     } finally {
       _checkingDeviceSession = false;
     }
+  }
+
+  void _showDeviceLogoutNotice(String notice) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _navigatorKey.currentContext;
+      if (!mounted || context == null) return;
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          icon: const Icon(Icons.devices_rounded, size: 44),
+          title: const Text('Je bent uitgelogd'),
+          content: Text(notice),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Begrepen'),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Future<void> _syncSharedCards() async {
@@ -113,6 +140,9 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
       // Firebase Messaging may be unavailable on an unsupported device.
     }
     _authSubscription ??= AccountService.authChanges?.listen((state) async {
+      if (state.event == AuthChangeEvent.passwordRecovery) {
+        _openPasswordRecovery();
+      }
       if (state.event == AuthChangeEvent.signedIn ||
           state.event == AuthChangeEvent.tokenRefreshed ||
           state.event == AuthChangeEvent.userUpdated) {
@@ -138,11 +168,27 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     }
   }
 
+  void _openPasswordRecovery() {
+    if (_openingPasswordRecovery) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final navigator = _navigatorKey.currentState;
+      if (!mounted || navigator == null || _openingPasswordRecovery) return;
+      _openingPasswordRecovery = true;
+      await navigator.push(
+        MaterialPageRoute<void>(
+          builder: (_) => const AccountScreen(startPasswordRecovery: true),
+        ),
+      );
+      _openingPasswordRecovery = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
       valueListenable: SettingsService.extraClearNotifier,
       builder: (context, extraClear, _) => MaterialApp(
+        navigatorKey: _navigatorKey,
         title: 'PasKluis',
         debugShowCheckedModeBanner: false,
         locale: const Locale('nl', 'NL'),
