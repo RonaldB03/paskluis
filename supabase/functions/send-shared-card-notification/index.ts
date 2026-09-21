@@ -89,15 +89,21 @@ Deno.serve(async (request) => {
 
     const { data: membership, error: membershipError } = await admin
       .from('card_share_members')
-      .select('id, recipient_id, revoked_at, removed_by_recipient_at, shared_cards!inner(id, owner_id, card_type, card_payload)')
+      .select('id, shared_card_id, recipient_id, revoked_at, removed_by_recipient_at')
       .eq('id', membershipId)
       .maybeSingle();
     if (membershipError || !membership) {
       throw membershipError || new Error('Gedeelde toegang niet gevonden.');
     }
 
-    const relation = membership.shared_cards;
-    const card = Array.isArray(relation) ? relation[0] : relation;
+    const { data: card, error: cardError } = await admin
+      .from('shared_cards')
+      .select('id, owner_id, card_type, card_payload')
+      .eq('id', membership.shared_card_id)
+      .maybeSingle();
+    if (cardError || !card) {
+      throw cardError || new Error('De gedeelde kaart is niet gevonden.');
+    }
     if (!card || card.owner_id !== userData.user.id) {
       throw new Error('Je mag deze melding niet versturen.');
     }
@@ -166,7 +172,11 @@ Deno.serve(async (request) => {
 
     return Response.json({ sent }, { headers: corsHeaders });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error
+      ? error.message
+      : typeof error === 'object'
+        ? JSON.stringify(error)
+        : String(error);
     console.error('[send-shared-card-notification]', message);
     return Response.json(
       { error: message || 'De melding kon niet worden verstuurd.' },
