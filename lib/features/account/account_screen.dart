@@ -7,11 +7,17 @@ import '../../data/services/account_service.dart';
 import '../../data/services/supabase_service.dart';
 import '../../data/services/card_share_service.dart';
 import '../../data/services/device_session_service.dart';
+import '../../data/services/push_notification_service.dart';
 import '../premium/plus_information_screen.dart';
 import 'shared_cards_management_screen.dart';
 
 class AccountScreen extends StatefulWidget {
-  const AccountScreen({super.key});
+  final bool startPasswordRecovery;
+
+  const AccountScreen({
+    super.key,
+    this.startPasswordRecovery = false,
+  });
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
@@ -29,6 +35,7 @@ class _AccountScreenState extends State<AccountScreen> {
   bool _busy = false;
   bool _loadingStatus = false;
   bool _hidePassword = true;
+  bool _handlingPasswordRecovery = false;
 
   User? get _user => AccountService.currentUser;
 
@@ -41,6 +48,11 @@ class _AccountScreenState extends State<AccountScreen> {
       _loadPlusStatus();
     });
     _loadPlusStatus();
+    if (widget.startPasswordRecovery) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _finishPasswordRecovery(),
+      );
+    }
   }
 
   @override
@@ -131,6 +143,7 @@ class _AccountScreenState extends State<AccountScreen> {
           password: _passwordController.text,
         );
         if (!await _activateDeviceSession()) return;
+        await PushNotificationService.registerForCurrentUser();
         try {
           await CardShareService.syncAllToLocal();
         } catch (_) {
@@ -147,6 +160,62 @@ class _AccountScreenState extends State<AccountScreen> {
       }
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _forgotPassword() async {
+    FocusScope.of(context).unfocus();
+    final emailError = _validateEmail(_emailController.text);
+    if (emailError != null) {
+      _showMessage(emailError, error: true);
+      return;
+    }
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await AccountService.resetPassword(_emailController.text);
+      if (mounted) {
+        _showMessage(
+          'Als dit e-mailadres bij PasKluis bekend is, ontvang je een e-mail waarmee je een nieuw wachtwoord kunt instellen.',
+        );
+      }
+    } on AuthException catch (error) {
+      if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
+    } catch (_) {
+      if (mounted) {
+        _showMessage('De herstelmail kon niet worden verstuurd.', error: true);
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _finishPasswordRecovery() async {
+    if (!mounted || _handlingPasswordRecovery) return;
+    _handlingPasswordRecovery = true;
+    try {
+      final password = await showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: false,
+        enableDrag: false,
+        backgroundColor: Colors.white,
+        showDragHandle: true,
+        builder: (_) => const _ChangePasswordSheet(),
+      );
+      if (password == null || !mounted) return;
+      await AccountService.updatePassword(password);
+      await _activateDeviceSession();
+      await PushNotificationService.registerForCurrentUser();
+      if (mounted) _showMessage('Je nieuwe wachtwoord is opgeslagen.');
+    } on AuthException catch (error) {
+      if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
+    } catch (_) {
+      if (mounted) {
+        _showMessage('Wachtwoord wijzigen is niet gelukt.', error: true);
+      }
+    } finally {
+      _handlingPasswordRecovery = false;
     }
   }
 
@@ -361,7 +430,16 @@ class _AccountScreenState extends State<AccountScreen> {
                     ),
                     validator: _validatePassword,
                   ),
-                  const SizedBox(height: 18),
+                  if (!_registering)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _busy ? null : _forgotPassword,
+                        child: const Text('Wachtwoord vergeten?'),
+                      ),
+                    )
+                  else
+                    const SizedBox(height: 18),
                   FilledButton.icon(
                     onPressed: _busy ? null : _submit,
                     icon: _busy
@@ -386,7 +464,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     child: Text(
                       _registering
                           ? 'Ik heb al een account'
-                          : 'Nog geen account? Maak er één aan',
+                          : 'Nog geen account? Maak er Ã©Ã©n aan',
                     ),
                   ),
                 ],
@@ -682,7 +760,7 @@ class _PlusHero extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Onbeperkt cadeaukaarten bewaren en kaarten veilig delen voor € 2 eenmalig. Geen abonnement.',
+            'Onbeperkt cadeaukaarten bewaren en kaarten veilig delen voor â¬ 2 eenmalig. Geen abonnement.',
             style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],
@@ -733,7 +811,7 @@ class _StatusCard extends StatelessWidget {
                 children: [
                   Text(
                     loading
-                        ? 'Plus-status controleren…'
+                        ? 'Plus-status controlerenâ¦'
                         : status.isActive
                         ? 'PasKluis Plus is actief'
                         : 'Gratis versie',
@@ -751,7 +829,7 @@ class _StatusCard extends StatelessWidget {
                         ? status.expiresAt == null
                               ? 'Je hebt onbeperkt toegang.${_source(status.source)}'
                               : 'Je toegang is actief tot ${_date(status.expiresAt!)}.'
-                        : 'Eén cadeaukaart is gratis. Klantenkaarten en QR-codes blijven onbeperkt gratis.',
+                        : 'EÃ©n cadeaukaart is gratis. Klantenkaarten en QR-codes blijven onbeperkt gratis.',
                   ),
                 ],
               ),
