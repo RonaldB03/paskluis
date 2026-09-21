@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'firebase_options.dart';
 import 'features/home/home_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'data/services/storage_service.dart';
@@ -12,10 +15,14 @@ import 'data/services/notification_service.dart';
 import 'data/services/card_share_service.dart';
 import 'data/services/account_service.dart';
 import 'data/services/device_session_service.dart';
+import 'data/services/push_notification_service.dart';
 import 'features/security/app_lock_gate.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const PasKluisBootstrap());
 }
 
@@ -32,6 +39,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   bool _syncingSharedCards = false;
   bool _checkingDeviceSession = false;
   Timer? _deviceSessionTimer;
+  StreamSubscription<AuthState>? _authSubscription;
 
   @override
   void initState() {
@@ -44,6 +52,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _deviceSessionTimer?.cancel();
+    _authSubscription?.cancel();
     super.dispose();
   }
 
@@ -52,6 +61,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     if (state == AppLifecycleState.resumed) {
       _checkDeviceSession();
       _syncSharedCards();
+      _registerPushToken();
     }
   }
 
@@ -84,17 +94,39 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     }
   }
 
+  Future<void> _registerPushToken() async {
+    try {
+      await PushNotificationService.registerForCurrentUser();
+    } catch (_) {
+      // Push is optional; cards remain available when messaging is offline.
+    }
+  }
+
   Future<void> _initialize() async {
     await SettingsService.init();
     await StorageService.init();
     await NotificationService.init();
     await SupabaseService.init();
+    try {
+      await PushNotificationService.init(onSharedCardChanged: _syncSharedCards);
+    } catch (_) {
+      // Firebase Messaging may be unavailable on an unsupported device.
+    }
+    _authSubscription ??= AccountService.authChanges?.listen((state) async {
+      if (state.event == AuthChangeEvent.signedIn ||
+          state.event == AuthChangeEvent.tokenRefreshed ||
+          state.event == AuthChangeEvent.userUpdated) {
+        await _registerPushToken();
+        await _syncSharedCards();
+      }
+    });
     await _checkDeviceSession();
     _deviceSessionTimer ??= Timer.periodic(
       const Duration(seconds: 30),
       (_) => _checkDeviceSession(),
     );
     await SettingsService.refreshRemoteConfig();
+    await _registerPushToken();
     for (final item in StorageService.cardsBox.values.whereType<Map>()) {
       await NotificationService.syncGiftCard(item);
     }

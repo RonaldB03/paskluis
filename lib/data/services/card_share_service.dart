@@ -60,7 +60,20 @@ abstract final class CardShareService {
         'p_card_payload': safePayload(card),
       },
     );
-    return Map<String, dynamic>.from(result as Map);
+    final share = Map<String, dynamic>.from(result as Map);
+    final membershipId = share['membership_id']?.toString() ?? '';
+    if (membershipId.isNotEmpty) {
+      try {
+        await _client.functions.invoke(
+          'send-shared-card-notification',
+          body: {'membership_id': membershipId},
+        );
+      } catch (_) {
+        // The card is already shared. A temporary push failure must not turn
+        // a successful share into an error for the sender.
+      }
+    }
+    return share;
   }
 
   static Future<Map<String, dynamic>> updateSharedCard(
