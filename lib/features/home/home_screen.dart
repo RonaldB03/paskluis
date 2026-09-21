@@ -1033,7 +1033,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _NearbySection(
                       state: _locationState,
                       items: nearbyItems,
-                      currentLocation: currentLocation,
+                      nearbyStoreMatches: _nearbyStoreMatches,
                       onAction: _handleNearbyAction,
                       onItemTap: (item) => openCardView(categoryFor(item), item),
                       onItemLongPress: (item) => showItemOptions(context, item),
@@ -1144,7 +1144,7 @@ class _FavoritesSection extends StatelessWidget {
 class _NearbySection extends StatelessWidget {
   final LocationAccessState state;
   final List<Map<String, dynamic>> items;
-  final DeviceLocation? currentLocation;
+  final Map<String, NearbyStoreMatch> nearbyStoreMatches;
   final VoidCallback onAction;
   final ValueChanged<Map<String, dynamic>> onItemTap;
   final ValueChanged<Map<String, dynamic>> onItemLongPress;
@@ -1152,7 +1152,7 @@ class _NearbySection extends StatelessWidget {
   const _NearbySection({
     required this.state,
     required this.items,
-    required this.currentLocation,
+    required this.nearbyStoreMatches,
     required this.onAction,
     required this.onItemTap,
     required this.onItemLongPress,
@@ -1169,7 +1169,7 @@ class _NearbySection extends StatelessWidget {
     } else if (state == LocationAccessState.ready && items.isNotEmpty) {
       content = _HomeCardStrip(
         items: items,
-        currentLocation: currentLocation,
+        nearbyStoreMatches: nearbyStoreMatches,
         onItemTap: onItemTap,
         onItemLongPress: onItemLongPress,
       );
@@ -1240,13 +1240,13 @@ class _NearbySection extends StatelessWidget {
 
 class _HomeCardStrip extends StatelessWidget {
   final List<Map<String, dynamic>> items;
-  final DeviceLocation? currentLocation;
+  final Map<String, NearbyStoreMatch> nearbyStoreMatches;
   final ValueChanged<Map<String, dynamic>> onItemTap;
   final ValueChanged<Map<String, dynamic>> onItemLongPress;
 
   const _HomeCardStrip({
     required this.items,
-    this.currentLocation,
+    this.nearbyStoreMatches = const {},
     required this.onItemTap,
     required this.onItemLongPress,
   });
@@ -1267,7 +1267,7 @@ class _HomeCardStrip extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final item = items[index];
-              final distance = _nearbyStoreMatches[item['id']?.toString()]
+              final distance = nearbyStoreMatches[item['id']?.toString()]
                   ?.distanceMeters;
               return SizedBox(
                 width: cardWidth,
