@@ -73,6 +73,13 @@ abstract final class AccountService {
     );
   }
 
+  static Future<void> resetPassword(String email) {
+    return _client.auth.resetPasswordForEmail(
+      email.trim(),
+      redirectTo: 'nl.paskluis.app://login-callback/',
+    );
+  }
+
   static Future<void> signOut({bool releaseDevice = true}) async {
     await PushNotificationService.unregisterCurrentToken();
     if (releaseDevice) {
