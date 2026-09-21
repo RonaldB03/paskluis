@@ -5,9 +5,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/services/account_service.dart';
 import '../../data/services/supabase_service.dart';
-import '../../data/services/gift_card_share_service.dart';
-import '../admin/brand_logo_layout_screen.dart';
-import 'account_management_screen.dart';
+import '../../data/services/card_share_service.dart';
+import '../../data/services/device_session_service.dart';
+import '../premium/plus_information_screen.dart';
+import 'shared_cards_management_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -28,7 +29,6 @@ class _AccountScreenState extends State<AccountScreen> {
   bool _busy = false;
   bool _loadingStatus = false;
   bool _hidePassword = true;
-  bool _isAdmin = false;
 
   User? get _user => AccountService.currentUser;
 
@@ -39,10 +39,8 @@ class _AccountScreenState extends State<AccountScreen> {
       if (!mounted) return;
       setState(() {});
       _loadPlusStatus();
-      _loadAdminStatus();
     });
     _loadPlusStatus();
-    _loadAdminStatus();
   }
 
   @override
@@ -71,16 +69,23 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
-  Future<void> _loadAdminStatus() async {
+  Future<void> _restorePurchases() async {
     if (_user == null) {
-      if (mounted) setState(() => _isAdmin = false);
+      _showMessage('Log eerst in om je aankoop te herstellen.');
       return;
     }
+    setState(() => _loadingStatus = true);
     try {
-      final isAdmin = await AccountService.isCurrentUserAdmin();
-      if (mounted) setState(() => _isAdmin = isAdmin);
+      final status = await AccountService.loadPlusStatus();
+      if (!mounted) return;
+      setState(() => _plusStatus = status);
+      _showMessage(status.isActive
+          ? 'Je PasKluis Plus-toegang is hersteld.'
+          : 'Er is nog geen Plus-aankoop aan dit account gekoppeld.');
     } catch (_) {
-      if (mounted) setState(() => _isAdmin = false);
+      if (mounted) _showMessage('Herstellen is nu niet gelukt.', error: true);
+    } finally {
+      if (mounted) setState(() => _loadingStatus = false);
     }
   }
 
@@ -117,6 +122,7 @@ class _AccountScreenState extends State<AccountScreen> {
             'Je account is aangemaakt. Controleer je e-mail om je account te bevestigen.',
           );
         } else {
+          if (!await _activateDeviceSession()) return;
           _showMessage('Welkom bij PasKluis!');
         }
       } else {
@@ -124,8 +130,9 @@ class _AccountScreenState extends State<AccountScreen> {
           email: _emailController.text,
           password: _passwordController.text,
         );
+        if (!await _activateDeviceSession()) return;
         try {
-          await GiftCardShareService.syncIncomingToLocal();
+          await CardShareService.syncAllToLocal();
         } catch (_) {
           // Inloggen blijft bruikbaar als delen tijdelijk niet beschikbaar is.
         }
@@ -141,6 +148,43 @@ class _AccountScreenState extends State<AccountScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  Future<bool> _activateDeviceSession() async {
+    final status = await DeviceSessionService.inspect();
+    if (!status.hasActiveDevice || status.isCurrentDevice) {
+      return DeviceSessionService.claim();
+    }
+    if (!mounted) return false;
+
+    final replace = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.devices_rounded, size: 42),
+        title: const Text('Al ingelogd op een ander apparaat'),
+        content: Text(
+          'Dit account is actief op ${status.activeDeviceName.isEmpty ? 'een ander apparaat' : status.activeDeviceName}. '
+          'Als je hier doorgaat, wordt dat apparaat automatisch uitgelogd.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Annuleren'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Hier inloggen'),
+          ),
+        ],
+      ),
+    );
+
+    if (replace != true) {
+      await AccountService.signOut(releaseDevice: false);
+      return false;
+    }
+    return DeviceSessionService.claim(replace: true);
   }
 
   Future<void> _signOut() async {
@@ -223,9 +267,25 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _buildSignedOut() {
+    final sessionNotice = DeviceSessionService.sessionNotice.value;
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
+        if (sessionNotice != null) ...[
+          Card(
+            color: const Color(0xFFFFF3CD),
+            elevation: 0,
+            child: ListTile(
+              leading: const Icon(Icons.logout_rounded),
+              title: const Text(
+                'Uitgelogd op dit apparaat',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+              subtitle: Text(sessionNotice),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         const _PlusHero(),
         const SizedBox(height: 18),
         Card(
@@ -389,6 +449,57 @@ class _AccountScreenState extends State<AccountScreen> {
           Card(
             elevation: 0,
             child: ListTile(
+              leading: const Icon(Icons.workspace_premium_rounded,
+                  color: Color(0xFFD5A021)),
+              title: const Text('Alles over PasKluis Plus',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+              subtitle: const Text('Bekijk alle voordelen en hoe delen werkt.'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const PlusInformationScreen(
+                    showAccountButton: false,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            elevation: 0,
+            child: ListTile(
+              leading: const Icon(Icons.people_alt_outlined,
+                  color: Color(0xFF7046B8)),
+              title: const Text('Gedeelde kaarten beheren',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+              subtitle: const Text('Bekijk gedeelde toegang en stop deze wanneer je wilt.'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SharedCardsManagementScreen(),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            elevation: 0,
+            child: ListTile(
+              leading: const Icon(Icons.restore_rounded,
+                  color: Color(0xFF286DC8)),
+              title: const Text('Aankopen herstellen',
+                  style: TextStyle(fontWeight: FontWeight.w900)),
+              subtitle: const Text('Controleer opnieuw je gekoppelde Plus-toegang.'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: _loadingStatus ? null : _restorePurchases,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            elevation: 0,
+            child: ListTile(
               leading: const Icon(
                 Icons.password_rounded,
                 color: Color(0xFFD51B46),
@@ -404,58 +515,6 @@ class _AccountScreenState extends State<AccountScreen> {
               onTap: _busy ? null : _changePassword,
             ),
           ),
-          if (_isAdmin) ...[
-            const SizedBox(height: 16),
-            Card(
-              elevation: 0,
-              color: const Color(0xFFFFEDF2),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.admin_panel_settings_rounded,
-                  color: Color(0xFFD51B46),
-                ),
-                title: const Text(
-                  'Accounts en Plus beheren',
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
-                subtitle: const Text(
-                  'Activeer of deactiveer PasKluis Plus voor gebruikers.',
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const AccountManagementScreen(),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Card(
-              elevation: 0,
-              color: const Color(0xFFFFEDF2),
-              child: ListTile(
-                leading: const Icon(
-                  Icons.tune_rounded,
-                  color: Color(0xFFD51B46),
-                ),
-                title: const Text(
-                  'Winkellogo’s passend maken',
-                  style: TextStyle(fontWeight: FontWeight.w900),
-                ),
-                subtitle: const Text(
-                  'Stel logo’s af in de echte weergave van PasKluis.',
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const BrandLogoLayoutScreen(),
-                  ),
-                ),
-              ),
-            ),
-          ],
           const SizedBox(height: 16),
           const Card(
             elevation: 0,
@@ -602,7 +661,9 @@ class _PlusHero extends StatelessWidget {
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFD51B46), Color(0xFFFF5577)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF6B4A00), Color(0xFFD5A021)],
         ),
         borderRadius: BorderRadius.circular(24),
       ),
@@ -621,7 +682,7 @@ class _PlusHero extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Bewaar onbeperkt cadeaukaarten voor € 2 eenmalig. Levenslange toegang, geen abonnement en geen reclame.',
+            'Onbeperkt cadeaukaarten bewaren en kaarten veilig delen voor € 2 eenmalig. Geen abonnement.',
             style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],

@@ -16,6 +16,7 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
   final MobileScannerController controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
     facing: CameraFacing.back,
+    formats: const [BarcodeFormat.qrCode],
   );
 
   final List<String> scannedCodes = [];
@@ -43,7 +44,9 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
   }
 
   void handleDetect(BarcodeCapture capture) {
-    final barcode = capture.barcodes.firstOrNull;
+    final barcode = capture.barcodes
+        .where((candidate) => candidate.format == BarcodeFormat.qrCode)
+        .firstOrNull;
     final value = barcode?.rawValue?.trim();
 
     if (value == null || value.isEmpty) return;

@@ -10,7 +10,10 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../data/services/location_service.dart';
+import '../../data/services/card_share_service.dart';
+import '../../data/services/settings_service.dart';
 import '../../shared/widgets/brand_logo.dart';
+import '../../shared/widgets/card_share_dialogs.dart';
 import '../../shared/utils/logo_layout.dart';
 import '../gift_cards/gift_card_view_screen.dart';
 import 'edit_card_screen.dart';
@@ -77,12 +80,16 @@ class _CardViewScreenState extends State<CardViewScreen>
   }
 
   Future<void> setupScreen() async {
-    try {
-      previousBrightness = await ScreenBrightness().current;
-      await ScreenBrightness().setScreenBrightness(1.0);
-    } catch (_) {}
+    if (SettingsService.autoBrightnessEnabled) {
+      try {
+        previousBrightness = await ScreenBrightness().current;
+        await ScreenBrightness().setScreenBrightness(1.0);
+      } catch (_) {}
+    }
 
-    await WakelockPlus.enable();
+    if (SettingsService.keepScreenAwakeEnabled) {
+      await WakelockPlus.enable();
+    }
   }
 
   Future<void> restoreScreen() async {
@@ -92,7 +99,9 @@ class _CardViewScreenState extends State<CardViewScreen>
       }
     } catch (_) {}
 
-    await WakelockPlus.disable();
+    if (SettingsService.keepScreenAwakeEnabled) {
+      await WakelockPlus.disable();
+    }
   }
 
   dynamic findKeyById(String id) {
@@ -204,12 +213,21 @@ class _CardViewScreenState extends State<CardViewScreen>
       'updatedAt': DateTime.now().toIso8601String(),
     };
 
-    await StorageService.saveCard(key, newItem);
+    var savedItem = Map<String, dynamic>.from(newItem);
+    final isReadOnlyShare = savedItem['isShared'] == true &&
+        savedItem['canEditShared'] != true;
+    if (!isReadOnlyShare &&
+        (savedItem['isShared'] == true ||
+            (savedItem['sharedCardId']?.toString() ?? '').isNotEmpty)) {
+      savedItem = await CardShareService.updateSharedCard(savedItem);
+    }
+
+    await StorageService.saveCard(key, savedItem);
 
     if (!mounted) return;
 
     setState(() {
-      items[currentIndex] = Map<String, dynamic>.from(newItem);
+      items[currentIndex] = Map<String, dynamic>.from(savedItem);
     });
   }
 
@@ -245,14 +263,19 @@ class _CardViewScreenState extends State<CardViewScreen>
 
     final item = items[currentIndex];
     final name = item['name']?.toString() ?? 'deze kaart';
+    final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) {
         return AlertDialog(
-          title: const Text('Kaart verwijderen?'),
+          title: Text(
+            isShared ? 'Uit jouw PasKluis verwijderen?' : 'Kaart verwijderen?',
+          ),
           content: Text(
-            'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+            isShared
+                ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De kaart van de eigenaar blijft bestaan.'
+                : 'Weet je zeker dat je "$name" wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.',
           ),
           actions: [
             TextButton(
@@ -283,6 +306,26 @@ class _CardViewScreenState extends State<CardViewScreen>
 
     if (key == null) return;
 
+    try {
+      if (item['isShared'] == true) {
+        await CardShareService.removeReceivedCard(
+          item['shareMembershipId']?.toString() ?? '',
+        );
+      } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
+        await CardShareService.revokeAllForCard(id);
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     await StorageService.deleteCard(key);
 
     if (!mounted) return;
@@ -328,6 +371,29 @@ class _CardViewScreenState extends State<CardViewScreen>
         .showSnackBar(const SnackBar(content: Text('Code gekopieerd')));
   }
 
+  Future<void> openShareCard() async {
+    if (items.isEmpty) return;
+    if (!SettingsService.cardSharingAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kaarten delen is tijdelijk niet beschikbaar.')),
+      );
+      return;
+    }
+    final updated = await CardShareDialogs.share(context, items[currentIndex]);
+    if (updated != null) await updateCurrentItem(updated);
+  }
+
+  Future<void> openSharedAccess() async {
+    if (items.isEmpty) return;
+    if (!SettingsService.cardSharingAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kaarten delen is tijdelijk niet beschikbaar.')),
+      );
+      return;
+    }
+    await CardShareDialogs.manage(context, items[currentIndex]);
+  }
+
   void openDetails() {
     if (items.isEmpty) return;
 
@@ -337,6 +403,8 @@ class _CardViewScreenState extends State<CardViewScreen>
     final note = item['note']?.toString() ?? '';
     final brandId = item['brandId']?.toString() ?? '';
     final isFavorite = item['isFavorite'] == true;
+    final isShared = item['isShared'] == true;
+    final canEditShared = item['canEditShared'] == true;
     final linkedGiftCards = getLinkedGiftCards(item);
 
     HapticFeedback.selectionClick();
@@ -376,6 +444,15 @@ class _CardViewScreenState extends State<CardViewScreen>
                   const SizedBox(height: 16),
                   _DetailRow(label: 'Notitie', value: note),
                 ],
+                if (isShared) ...[
+                  const SizedBox(height: 16),
+                  _DetailRow(
+                    label: 'Toegang',
+                    value: canEditShared
+                        ? 'Met jou gedeeld • samen bewerken'
+                        : 'Met jou gedeeld • alleen bekijken',
+                  ),
+                ],
                 if (linkedGiftCards.isNotEmpty) ...[
                   const SizedBox(height: 22),
                   _LinkedGiftCardAction(
@@ -398,15 +475,37 @@ class _CardViewScreenState extends State<CardViewScreen>
                   },
                 ),
                 const SizedBox(height: 10),
-                _ActionButton(
-                  icon: Icons.edit_outlined,
-                  label: 'Bewerken',
-                  onTap: () {
-                    Navigator.pop(context);
-                    openEdit();
-                  },
-                ),
-                const SizedBox(height: 10),
+                if (!isShared || canEditShared) ...[
+                  _ActionButton(
+                    icon: Icons.edit_outlined,
+                    label: 'Bewerken',
+                    onTap: () {
+                      Navigator.pop(context);
+                      openEdit();
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if (!isShared) ...[
+                  _ActionButton(
+                    icon: Icons.share_rounded,
+                    label: 'Delen via e-mailadres',
+                    onTap: () {
+                      Navigator.pop(context);
+                      openShareCard();
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _ActionButton(
+                    icon: Icons.group_outlined,
+                    label: 'Gedeelde toegang beheren',
+                    onTap: () {
+                      Navigator.pop(context);
+                      openSharedAccess();
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                ],
                 _ActionButton(
                   icon: Icons.copy_rounded,
                   label: 'Code kopiëren',
@@ -418,7 +517,9 @@ class _CardViewScreenState extends State<CardViewScreen>
                 const SizedBox(height: 10),
                 _ActionButton(
                   icon: Icons.delete_outline,
-                  label: 'Verwijderen',
+                  label: isShared
+                      ? 'Uit mijn PasKluis verwijderen'
+                      : 'Verwijderen',
                   destructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -679,7 +780,6 @@ class LoyaltyBarcodeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = item['name']?.toString() ?? 'Kaart';
     final code = item['code']?.toString() ?? '';
     final logoAsset = item['logoAsset']?.toString() ?? '';
     final customImage = item['customImage']?.toString() ?? '';
@@ -708,61 +808,44 @@ class LoyaltyBarcodeCard extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                height: 142,
+                height: 150,
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: hasCustomLogo || hasAssetLogo
-                          ? Transform.scale(
-                              scale: hasCustomLogo ? 1.7 : 1.0,
-                              child: hasCustomLogo
-                                  ? Image.file(
-                                      File(customImage),
-                                      fit: BoxFit.contain,
-                                    )
-                                  : BrandLogo(
-                                      source: logoAsset,
-                                      scale: logoLayoutValue(
-                                        item,
-                                        'detail',
-                                        'scale',
-                                        1,
-                                      ),
-                                      offsetX: logoLayoutValue(
-                                        item,
-                                        'detail',
-                                        'x',
-                                        0,
-                                      ),
-                                      offsetY: logoLayoutValue(
-                                        item,
-                                        'detail',
-                                        'y',
-                                        0,
-                                      ),
-                                    ),
-                            )
-                          : const Icon(
-                              Icons.card_membership_rounded,
-                              color: Colors.white,
-                              size: 70,
-                            ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                padding: const EdgeInsets.fromLTRB(22, 18, 22, 18),
+                child: hasCustomLogo || hasAssetLogo
+                    ? Transform.scale(
+                        scale: hasCustomLogo ? 1.8 : 1.12,
+                        child: hasCustomLogo
+                            ? Image.file(
+                                File(customImage),
+                                fit: BoxFit.contain,
+                              )
+                            : BrandLogo(
+                                source: logoAsset,
+                                scale: logoLayoutValue(
+                                  item,
+                                  'detail',
+                                  'scale',
+                                  1,
+                                ),
+                                offsetX: logoLayoutValue(
+                                  item,
+                                  'detail',
+                                  'x',
+                                  0,
+                                ),
+                                offsetY: logoLayoutValue(
+                                  item,
+                                  'detail',
+                                  'y',
+                                  0,
+                                ),
+                              ),
+                      )
+                    : const Icon(
+                        Icons.card_membership_rounded,
                         color: Colors.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w900,
+                        size: 78,
                       ),
-                    ),
-                  ],
-                ),
               ),
               Expanded(
                 child: Container(

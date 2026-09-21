@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "485203469686",
+    "project_id": "paskluis-db53c",
+    "storage_bucket": "paskluis-db53c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:485203469686:android:20bf873beb673862810657",
+        "android_client_info": {
+          "package_name": "nl.paskluis.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIBlMHVfYoNhHoR2WsTWmSfcAsEGH8Y5o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

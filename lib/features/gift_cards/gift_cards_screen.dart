@@ -7,7 +7,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/settings_service.dart';
 import '../../data/services/notification_service.dart';
-import '../../data/services/gift_card_share_service.dart';
+import '../../data/services/card_share_service.dart';
 import '../../data/services/account_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/amount_format.dart';
@@ -24,7 +24,7 @@ import '../cards/choose_card_template_screen.dart';
 import '../home/home_screen.dart';
 import '../qr_codes/qr_codes_screen.dart';
 import '../premium/premium_gate.dart';
-import '../account/account_screen.dart';
+import '../premium/plus_information_screen.dart';
 
 import 'choose_gift_card_template_screen.dart';
 import 'gift_card_view_screen.dart';
@@ -62,10 +62,27 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
     });
   }
 
+  Future<void> _refreshGiftCards() async {
+    if (AccountService.currentUser != null) {
+      try {
+        await CardShareService.syncAllToLocal();
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bijwerken lukte niet. Controleer je verbinding.'),
+            ),
+          );
+        }
+      }
+    }
+    await _loadPlusStatus();
+  }
+
   Future<void> _openPlus(BuildContext context) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const AccountScreen()),
+      MaterialPageRoute(builder: (_) => const PlusInformationScreen()),
     );
     await _loadPlusStatus();
   }
@@ -235,13 +252,20 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
     if (key == null) return;
 
     final name = item['name']?.toString() ?? 'deze cadeaukaart';
+    final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Definitief verwijderen?'),
+        title: Text(
+          isShared
+              ? 'Uit jouw PasKluis verwijderen?'
+              : 'Definitief verwijderen?',
+        ),
         content: Text(
-          'Weet je zeker dat je "$name" definitief wilt verwijderen? Dit kun je niet ongedaan maken.',
+          isShared
+              ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De cadeaukaart van de eigenaar blijft bestaan.'
+              : 'Weet je zeker dat je "$name" definitief wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.',
         ),
         actions: [
           TextButton(
@@ -253,7 +277,9 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
               backgroundColor: const Color(0xFFD51B46),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Definitief verwijderen'),
+            child: Text(
+              isShared ? 'Verwijderen' : 'Definitief verwijderen',
+            ),
           ),
         ],
       ),
@@ -263,8 +289,27 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
 
     await NotificationService.cancelGiftCard(item['id']?.toString() ?? '');
     try {
-      await GiftCardShareService.revokeAllForCard(item['id']?.toString() ?? '');
-    } catch (_) {}
+      if (isShared) {
+        await CardShareService.removeReceivedCard(
+          item['shareMembershipId']?.toString() ?? '',
+        );
+      } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
+        await CardShareService.revokeAllForCard(
+          item['id']?.toString() ?? '',
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
@@ -274,13 +319,8 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
   }
 
   void showGiftCardOptions(BuildContext context, Map<String, dynamic> item) {
-    if (item['isShared'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Deze kaart is met jou gedeeld en kan alleen door de eigenaar worden beheerd.')),
-      );
-      return;
-    }
     final name = item['name']?.toString() ?? 'Cadeaukaart';
+    final isShared = item['isShared'] == true;
 
     HapticFeedback.mediumImpact();
 
@@ -310,7 +350,9 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
                 const SizedBox(height: 16),
                 _OptionTile(
                   icon: Icons.delete_rounded,
-                  title: 'Definitief verwijderen',
+                  title: isShared
+                      ? 'Uit mijn PasKluis verwijderen'
+                      : 'Definitief verwijderen',
                   isDestructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -465,6 +507,8 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             automaticallyImplyLeading: false,
+            leadingWidth: 56,
+            leading: const SizedBox.shrink(),
             title: const PremiumAppTitle('Cadeaukaarten'),
             centerTitle: true,
             titleSpacing: 4,
@@ -472,41 +516,6 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
             foregroundColor: const Color(0xFF333333),
             elevation: 0,
             actions: [
-              IconButton(
-                constraints: const BoxConstraints.tightFor(
-                  width: 44,
-                  height: 48,
-                ),
-                padding: EdgeInsets.zero,
-                tooltip: 'Gedeelde kaarten vernieuwen',
-                icon: const Icon(Icons.sync_rounded),
-                onPressed: () async {
-                  try {
-                    await GiftCardShareService.syncIncomingToLocal();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Gedeelde kaarten zijn bijgewerkt.')),
-                      );
-                    }
-                  } catch (_) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Bijwerken lukte niet. Controleer of je bent ingelogd.')),
-                      );
-                    }
-                  }
-                },
-              ),
-              IconButton(
-                constraints: const BoxConstraints.tightFor(
-                  width: 44,
-                  height: 48,
-                ),
-                padding: EdgeInsets.zero,
-                tooltip: 'Archief',
-                icon: const Icon(Icons.archive_outlined),
-                onPressed: () => showArchivedCards(context),
-              ),
               IconButton(
                 constraints: const BoxConstraints.tightFor(
                   width: 44,
@@ -521,14 +530,18 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
           body: MainTabSwipeRegion(
             currentIndex: 3,
             onSwitch: (index) => openTab(context, index),
-            child: _GiftCardsOverview(
-              items: items,
-              hasPlus: _hasPlus,
-              loadingPlus: _loadingPlus,
-              onAdd: () => openAddGiftCard(context),
-              onOpenPlus: () => _openPlus(context),
-              onOpenCard: (index) => openGiftCard(context, items, index),
-              onLongPress: (item) => showGiftCardOptions(context, item),
+            child: RefreshIndicator(
+              onRefresh: _refreshGiftCards,
+              color: const Color(0xFFD51B46),
+              child: _GiftCardsOverview(
+                items: items,
+                hasPlus: _hasPlus,
+                loadingPlus: _loadingPlus,
+                onAdd: () => openAddGiftCard(context),
+                onOpenPlus: () => _openPlus(context),
+                onOpenCard: (index) => openGiftCard(context, items, index),
+                onLongPress: (item) => showGiftCardOptions(context, item),
+              ),
             ),
           ),
           bottomNavigationBar: MainBottomNav(
@@ -566,8 +579,62 @@ class _GiftCardsOverview extends StatelessWidget {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
+        if (!loadingPlus && !hasPlus)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Material(
+                color: const Color(0xFFFFF7D9),
+                borderRadius: BorderRadius.circular(18),
+                child: InkWell(
+                  onTap: onOpenPlus,
+                  borderRadius: BorderRadius.circular(18),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 13,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.workspace_premium_rounded,
+                          color: Color(0xFFA87800),
+                        ),
+                        SizedBox(width: 11),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Extra informatie',
+                                style: TextStyle(
+                                  color: Color(0xFF6D5000),
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              Text(
+                                'Ontdek alles wat je met PasKluis Plus krijgt',
+                                style: TextStyle(
+                                  color: Color(0xFF806719),
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFFA87800),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           sliver: SliverGrid(
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
@@ -640,7 +707,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           const Text(
-            '1 cadeaukaart gratis',
+            'Je eerste cadeaukaart is gratis',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 20,
@@ -650,7 +717,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Met de gratis versie bewaar je één cadeaukaart. Met PasKluis Plus bewaar je er onbeperkt, zonder abonnement.',
+            'Ga verder met Plus: bewaar onbeperkt cadeaukaarten en deel klanten- en cadeaukaarten veilig met anderen.',
             textAlign: TextAlign.center,
             style: TextStyle(height: 1.35, color: Color(0xFF6D5000)),
           ),
@@ -692,7 +759,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
               foregroundColor: Colors.white,
             ),
             icon: const Icon(Icons.workspace_premium_rounded),
-            label: const Text('Bekijk PasKluis Plus'),
+            label: const Text('Ontdek alle Plus-voordelen'),
           ),
         ],
       ),
@@ -815,9 +882,25 @@ class _GiftCardTileState extends State<GiftCardTile> {
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final isFavorite = widget.item['isFavorite'] == true;
     final expiryDate = DateTime.tryParse(widget.item['expiryDate']?.toString() ?? '');
-    final isExpired = expiryDate != null &&
-        DateTime(expiryDate.year, expiryDate.month, expiryDate.day)
-            .isBefore(DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day));
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+    final expiryDay = expiryDate == null
+        ? null
+        : DateTime(expiryDate.year, expiryDate.month, expiryDate.day);
+    final daysUntilExpiry = expiryDay?.difference(today).inDays;
+    final isExpired = daysUntilExpiry != null && daysUntilExpiry < 0;
+    final expiryStatus = isExpired
+        ? 'Verlopen'
+        : daysUntilExpiry == 0
+            ? 'Verloopt vandaag'
+            : daysUntilExpiry == 1
+                ? 'Nog 1 dag'
+                : daysUntilExpiry != null && daysUntilExpiry <= 7
+                    ? 'Nog $daysUntilExpiry dagen'
+                    : null;
     final hasLogo = hasAssetLogo || hasCustomLogo;
     final usesBrandBackground =
         hasLogo && (widget.item['brandColor']?.toString() ?? '').isNotEmpty;
@@ -947,19 +1030,25 @@ class _GiftCardTileState extends State<GiftCardTile> {
                     size: 24,
                   ),
                 ),
-              if (isExpired)
+              if (expiryStatus != null)
                 Positioned(
                   top: 2,
                   left: 2,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade700,
+                      color: isExpired || daysUntilExpiry == 0
+                          ? Colors.red.shade700
+                          : const Color(0xFFC68400),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
-                      'Verlopen',
-                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w900),
+                    child: Text(
+                      expiryStatus,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
                 ),

@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'supabase_service.dart';
+import 'device_session_service.dart';
+import 'push_notification_service.dart';
 
 class PlusStatus {
   final bool isActive;
@@ -71,7 +73,17 @@ abstract final class AccountService {
     );
   }
 
-  static Future<void> signOut() => _client.auth.signOut();
+  static Future<void> signOut({bool releaseDevice = true}) async {
+    await PushNotificationService.unregisterCurrentToken();
+    if (releaseDevice) {
+      try {
+        await DeviceSessionService.release();
+      } catch (_) {
+        // Signing out must remain possible while the backend is unavailable.
+      }
+    }
+    await _client.auth.signOut();
+  }
 
   static Future<UserResponse> updatePassword(String password) {
     return _client.auth.updateUser(UserAttributes(password: password));

@@ -6,13 +6,14 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../data/services/settings_service.dart';
-import '../../data/templates/card_templates.dart';
+import '../../data/services/card_share_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/logo_layout.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
 import '../../shared/widgets/premium_app_title.dart';
 import '../../shared/widgets/main_tab_route.dart';
+import '../../shared/widgets/luxury_empty_state.dart';
 
 import '../gift_cards/gift_cards_screen.dart';
 import '../home/home_screen.dart';
@@ -207,7 +208,13 @@ class CardsScreen extends StatelessWidget {
       'updatedAt': DateTime.now().toIso8601String(),
     };
 
-    await StorageService.saveCard(key, newCard);
+    var savedCard = Map<String, dynamic>.from(newCard);
+    if (savedCard['isShared'] == true ||
+        (savedCard['sharedCardId']?.toString() ?? '').isNotEmpty) {
+      savedCard = await CardShareService.updateSharedCard(savedCard);
+    }
+
+    await StorageService.saveCard(key, savedCard);
   }
 
   Future<void> deleteCard(
@@ -218,13 +225,18 @@ class CardsScreen extends StatelessWidget {
     if (key == null) return;
 
     final name = item['name']?.toString() ?? 'deze kaart';
+    final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Kaart verwijderen?'),
+        title: Text(
+          isShared ? 'Uit jouw PasKluis verwijderen?' : 'Kaart verwijderen?',
+        ),
         content: Text(
-          'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+          isShared
+              ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De kaart van de eigenaar blijft bestaan.'
+              : 'Weet je zeker dat je "$name" wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.',
         ),
         actions: [
           TextButton(
@@ -244,6 +256,28 @@ class CardsScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
+    try {
+      if (isShared) {
+        await CardShareService.removeReceivedCard(
+          item['shareMembershipId']?.toString() ?? '',
+        );
+      } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
+        await CardShareService.revokeAllForCard(
+          item['id']?.toString() ?? '',
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
@@ -254,6 +288,8 @@ class CardsScreen extends StatelessWidget {
 
   void showCardOptions(BuildContext context, Map<String, dynamic> item) {
     final name = item['name']?.toString() ?? 'Kaart';
+    final isShared = item['isShared'] == true;
+    final canEdit = !isShared || item['canEditShared'] == true;
 
     HapticFeedback.mediumImpact();
 
@@ -281,17 +317,20 @@ class CardsScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _OptionTile(
-                  icon: Icons.edit_rounded,
-                  title: 'Bewerken',
-                  onTap: () {
-                    Navigator.pop(context);
-                    editCard(context, item);
-                  },
-                ),
+                if (canEdit)
+                  _OptionTile(
+                    icon: Icons.edit_rounded,
+                    title: 'Bewerken',
+                    onTap: () {
+                      Navigator.pop(context);
+                      editCard(context, item);
+                    },
+                  ),
                 _OptionTile(
                   icon: Icons.delete_rounded,
-                  title: 'Verwijderen',
+                  title: isShared
+                      ? 'Uit mijn PasKluis verwijderen'
+                      : 'Verwijderen',
                   isDestructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -322,6 +361,8 @@ class CardsScreen extends StatelessWidget {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             automaticallyImplyLeading: false,
+            leadingWidth: 56,
+            leading: const SizedBox.shrink(),
             backgroundColor: Colors.white,
             elevation: 0,
             centerTitle: true,
@@ -380,77 +421,27 @@ class _EmptyCardsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final previewBrands = cardBrandTemplates.take(4).toList();
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 34, 24, 28),
-      children: [
-        const Text(
-          'Nog geen klantenkaarten toegevoegd',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 32,
-            height: 1.12,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF444446),
+    return LuxuryEmptyState(
+      icon: Icons.card_membership_rounded,
+      eyebrow: 'Alles bij de hand',
+      title: 'Voeg je eerste klantenkaart toe',
+      subtitle:
+          'Kies een winkel, scan de barcode of importeer een foto. PasKluis bewaart je kaart veilig op dit toestel.',
+      buttonLabel: 'Klantenkaart toevoegen',
+      onPressed: onAdd,
+      footer: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.lock_outline_rounded, size: 17, color: Color(0xFF77717D)),
+          SizedBox(width: 7),
+          Flexible(
+            child: Text(
+              'Geen account nodig',
+              style: TextStyle(color: Color(0xFF77717D)),
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        const Text(
-          'Tik op + of kies een populaire winkel om je klantenkaart toe te voegen.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 17, height: 1.3, color: Color(0xFF555557)),
-        ),
-        const SizedBox(height: 30),
-        FilledButton.icon(
-          onPressed: onAdd,
-          icon: const Icon(Icons.add),
-          label: const Text('Klantenkaart toevoegen'),
-        ),
-        const SizedBox(height: 34),
-        const Text(
-          'Populaire winkels',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF333333),
-          ),
-        ),
-        const SizedBox(height: 14),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: previewBrands.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.58,
-          ),
-          itemBuilder: (context, index) {
-            final brand = previewBrands[index];
-
-            return InkWell(
-              borderRadius: BorderRadius.circular(18),
-              onTap: onAdd,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: brand.color,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Center(
-                  child: SizedBox(
-                    height: 74,
-                    width: double.infinity,
-                    child: BrandLogo(source: brand.logoAsset),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

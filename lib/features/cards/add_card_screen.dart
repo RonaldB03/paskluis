@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/image_color_service.dart';
+import '../../shared/widgets/brand_logo.dart';
 import '../scanner/scanner_screen.dart';
 
 class AddCardScreen extends StatefulWidget {
@@ -181,13 +182,37 @@ class _AddCardScreenState extends State<AddCardScreen> {
                 color: brandColor,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Center(
-                child: Image.asset(
-                  widget.initialLogoAsset!,
-                  height: 80,
-                  width: double.infinity,
-                  fit: BoxFit.contain,
-                ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: BrandLogo(
+                      source: widget.initialLogoAsset!,
+                      scale: double.tryParse(
+                            widget.initialLogoLayout['logoPickerScale'] ?? '',
+                          ) ??
+                          1,
+                      offsetX: double.tryParse(
+                            widget.initialLogoLayout['logoPickerX'] ?? '',
+                          ) ??
+                          0,
+                      offsetY: double.tryParse(
+                            widget.initialLogoLayout['logoPickerY'] ?? '',
+                          ) ??
+                          0,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    nameController.text,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
               ),
             ),
           ] else ...[

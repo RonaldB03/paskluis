@@ -42,7 +42,7 @@ abstract final class PremiumGate {
         content: const Text(
           'Je eerste cadeaukaart is gratis. Met PasKluis Plus bewaar je '
           'onbeperkt cadeaukaarten voor € 2 eenmalig. Je krijgt levenslange '
-          'toegang, zonder abonnement, en PasKluis blijft reclamevrij.\n\n'
+          'toegang, zonder abonnement. Je kunt met Plus ook klanten- en cadeaukaarten delen.\n\n'
           'Tijdens deze test kan Plus via beheer op je account worden geactiveerd.',
           textAlign: TextAlign.center,
         ),

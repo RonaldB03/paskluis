@@ -1,16 +1,28 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'firebase_options.dart';
 import 'features/home/home_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'data/services/storage_service.dart';
 import 'data/services/settings_service.dart';
 import 'data/services/supabase_service.dart';
 import 'data/services/notification_service.dart';
-import 'data/services/gift_card_share_service.dart';
+import 'data/services/card_share_service.dart';
+import 'data/services/account_service.dart';
+import 'data/services/device_session_service.dart';
+import 'data/services/push_notification_service.dart';
 import 'features/security/app_lock_gate.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const PasKluisBootstrap());
 }
 
@@ -21,25 +33,105 @@ class PasKluisBootstrap extends StatefulWidget {
   State<PasKluisBootstrap> createState() => _PasKluisBootstrapState();
 }
 
-class _PasKluisBootstrapState extends State<PasKluisBootstrap> {
+class _PasKluisBootstrapState extends State<PasKluisBootstrap>
+    with WidgetsBindingObserver {
   late Future<void> _initialization;
+  bool _syncingSharedCards = false;
+  bool _checkingDeviceSession = false;
+  Timer? _deviceSessionTimer;
+  StreamSubscription<AuthState>? _authSubscription;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initialization = _initialize();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _deviceSessionTimer?.cancel();
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkDeviceSession();
+      _syncSharedCards();
+      _registerPushToken();
+    }
+  }
+
+  Future<void> _checkDeviceSession() async {
+    if (_checkingDeviceSession || AccountService.currentUser == null) return;
+    _checkingDeviceSession = true;
+    try {
+      final isCurrent = await DeviceSessionService.ensureCurrentSession();
+      if (!isCurrent && AccountService.currentUser != null) {
+        DeviceSessionService.sessionNotice.value =
+            'Je account is op een ander apparaat geopend. Log opnieuw in als je dit apparaat weer wilt gebruiken.';
+        await AccountService.signOut(releaseDevice: false);
+      }
+    } catch (_) {
+      // A temporary connection problem must not lock the local vault.
+    } finally {
+      _checkingDeviceSession = false;
+    }
+  }
+
+  Future<void> _syncSharedCards() async {
+    if (_syncingSharedCards) return;
+    _syncingSharedCards = true;
+    try {
+      await CardShareService.syncAllToLocal();
+    } catch (_) {
+      // The local vault remains available while the account is offline.
+    } finally {
+      _syncingSharedCards = false;
+    }
+  }
+
+  Future<void> _registerPushToken() async {
+    try {
+      await PushNotificationService.registerForCurrentUser();
+    } catch (_) {
+      // Push is optional; cards remain available when messaging is offline.
+    }
   }
 
   Future<void> _initialize() async {
     await SettingsService.init();
     await StorageService.init();
     await NotificationService.init();
+    await SupabaseService.init();
+    try {
+      await PushNotificationService.init(onSharedCardChanged: _syncSharedCards);
+    } catch (_) {
+      // Firebase Messaging may be unavailable on an unsupported device.
+    }
+    _authSubscription ??= AccountService.authChanges?.listen((state) async {
+      if (state.event == AuthChangeEvent.signedIn ||
+          state.event == AuthChangeEvent.tokenRefreshed ||
+          state.event == AuthChangeEvent.userUpdated) {
+        await _registerPushToken();
+        await _syncSharedCards();
+      }
+    });
+    await _checkDeviceSession();
+    _deviceSessionTimer ??= Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _checkDeviceSession(),
+    );
+    await SettingsService.refreshRemoteConfig();
+    await _registerPushToken();
     for (final item in StorageService.cardsBox.values.whereType<Map>()) {
       await NotificationService.syncGiftCard(item);
     }
-    await SupabaseService.init();
     try {
-      await GiftCardShareService.syncIncomingToLocal();
+      await CardShareService.syncAllToLocal();
     } catch (_) {
       // Sharing is optional; offline or an unavailable backend may never
       // prevent access to cards stored on this device.
@@ -53,6 +145,13 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap> {
       builder: (context, extraClear, _) => MaterialApp(
         title: 'PasKluis',
         debugShowCheckedModeBanner: false,
+        locale: const Locale('nl', 'NL'),
+        supportedLocales: const [Locale('nl', 'NL')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         theme: AppTheme.lightTheme.copyWith(
           dividerTheme: extraClear
               ? const DividerThemeData(color: Color(0xFF303036), thickness: 1)

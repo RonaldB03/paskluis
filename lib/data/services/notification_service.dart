@@ -1,12 +1,16 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+
+import 'settings_service.dart';
 
 class NotificationService {
   NotificationService._();
 
   static final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
+  static final Set<String> _sharedCardPushes = <String>{};
 
   static Future<void> init() async {
     tz_data.initializeTimeZones();
@@ -46,11 +50,76 @@ class NotificationService {
     }
   }
 
+  static Future<void> showSharedCardReceived(
+    Map<dynamic, dynamic> card,
+  ) async {
+    final id = card['shareMembershipId']?.toString() ??
+        card['id']?.toString() ??
+        '';
+    if (id.isEmpty) return;
+    if (_sharedCardPushes.remove(id)) return;
+    await requestPermission();
+
+    final name = card['name']?.toString().trim().isNotEmpty == true
+        ? card['name'].toString().trim()
+        : card['type']?.toString() == 'Cadeaukaart'
+            ? 'Een cadeaukaart'
+            : 'Een klantenkaart';
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'shared_cards',
+        'Gedeelde kaarten',
+        channelDescription: 'Meldingen wanneer iemand een kaart met je deelt',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+    await _plugin.show(
+      _baseId('shared:$id'),
+      'Nieuwe kaart in PasKluis',
+      '$name is met jou gedeeld.',
+      details,
+    );
+  }
+
+  static void markSharedCardPushReceived(String membershipId) {
+    if (membershipId.isNotEmpty) _sharedCardPushes.add(membershipId);
+  }
+
+  static Future<void> showRemoteMessage(RemoteMessage message) async {
+    final title = message.notification?.title ?? 'Nieuwe kaart in PasKluis';
+    final body = message.notification?.body ??
+        'Er is een kaart met je gedeeld. Open PasKluis om hem te bekijken.';
+    final membershipId = message.data['membership_id']?.toString() ??
+        message.messageId ??
+        DateTime.now().millisecondsSinceEpoch.toString();
+    const details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'shared_cards',
+        'Gedeelde kaarten',
+        channelDescription: 'Meldingen wanneer iemand een kaart met je deelt',
+        importance: Importance.high,
+        priority: Priority.high,
+      ),
+      iOS: DarwinNotificationDetails(),
+    );
+    await _plugin.show(
+      _baseId('push:$membershipId'),
+      title,
+      body,
+      details,
+      payload: 'shared_card:$membershipId',
+    );
+  }
+
   static Future<void> syncGiftCard(Map<dynamic, dynamic> card) async {
     if (card['type']?.toString() != 'Cadeaukaart') return;
     final id = card['id']?.toString() ?? '';
     if (id.isEmpty) return;
     await cancelGiftCard(id);
+
+    if (!SettingsService.giftExpiryNotificationsEnabled) return;
 
     final expiry = DateTime.tryParse(card['expiryDate']?.toString() ?? '');
     final enabled = card['expiryNotificationsEnabled'] == true ||

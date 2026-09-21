@@ -32,6 +32,9 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+supabase/.temp/
+AuthKey_*.p8
+*firebase-adminsdk*.json
 
 # Symbolication related
 app.*.symbols

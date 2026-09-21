@@ -62,7 +62,9 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   void handleDetect(BarcodeCapture capture) {
     if (scanned) return;
 
-    final barcode = capture.barcodes.firstOrNull;
+    final barcode = capture.barcodes
+        .where((candidate) => candidate.format == BarcodeFormat.qrCode)
+        .firstOrNull;
     final value = barcode?.rawValue?.trim();
 
     if (value == null || value.isEmpty) return;
@@ -126,7 +128,9 @@ class _QrScannerScreenState extends State<QrScannerScreen>
       }
 
       final result = await controller.analyzeImage(image.path);
-      final barcode = result?.barcodes.firstOrNull;
+      final barcode = result?.barcodes
+          .where((candidate) => candidate.format == BarcodeFormat.qrCode)
+          .firstOrNull;
       final value = barcode?.rawValue?.trim();
 
       if (value == null || value.isEmpty) {

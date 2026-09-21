@@ -10,13 +10,14 @@ import '../../data/services/brand_sync_service.dart';
 import '../../data/services/location_service.dart';
 import '../../data/services/media_storage_service.dart';
 import '../../data/services/notification_service.dart';
+import '../../data/services/card_share_service.dart';
+import '../../data/services/settings_service.dart';
 import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/amount_format.dart';
 import '../../shared/utils/logo_layout.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
 import '../../shared/widgets/main_tab_swipe_region.dart';
-import '../../shared/widgets/premium_app_title.dart';
 import '../../shared/widgets/main_tab_route.dart';
 
 import '../cards/card_preview_screen.dart';
@@ -46,6 +47,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static bool _openedInitialTab = false;
   final _searchController = TextEditingController();
   String _searchQuery = '';
   LocationAccessState _locationState = LocationAccessState.checking;
@@ -55,10 +57,36 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _refreshVisualAssets();
-    _loadNearbyLocation();
+    if (SettingsService.locationCardsEnabled) {
+      _loadNearbyLocation();
+    } else {
+      _locationState = LocationAccessState.permissionNeeded;
+    }
+    if (!_openedInitialTab) {
+      _openedInitialTab = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final index = switch (SettingsService.defaultStartTab) {
+          'cards' => 1,
+          'qr' => 2,
+          'gift' => 3,
+          _ => 0,
+        };
+        if (index != 0) openTab(index);
+      });
+    }
   }
 
   Future<void> _loadNearbyLocation({bool requestPermission = false}) async {
+    if (!SettingsService.locationCardsEnabled) {
+      if (mounted) {
+        setState(() {
+          _locationState = LocationAccessState.permissionNeeded;
+          _currentLocation = null;
+        });
+      }
+      return;
+    }
     if (mounted) {
       setState(() => _locationState = LocationAccessState.checking);
     }
@@ -92,6 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _refreshHome() async {
     FocusManager.instance.primaryFocus?.unfocus();
+    await SettingsService.refreshRemoteConfig();
     await Future.wait<void>([
       _loadNearbyLocation(),
       () async {
@@ -102,6 +131,74 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }(),
     ]);
+  }
+
+  Future<void> _showAddHelp() async {
+    HapticFeedback.selectionClick();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Center(
+                child: Text(
+                  'Een kaart toevoegen of importeren',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+                ),
+              ),
+              const SizedBox(height: 22),
+              const _AddHelpStep(
+                number: '1',
+                title: 'Tik op +',
+                description:
+                    'Kies Klantenkaart, QR-code of Cadeaukaart. PasKluis opent daarna de juiste invoer.',
+              ),
+              const _AddHelpStep(
+                number: '2',
+                title: 'Scan of vul handmatig in',
+                description:
+                    'Kies een winkel en scan de barcode of QR-code. Je kunt de code ook zelf invoeren.',
+              ),
+              const _AddHelpStep(
+                number: '3',
+                title: 'Importeer een foto of screenshot',
+                description:
+                    'PasKluis kan een klantenkaart, QR-code of cadeaukaart op je toestel herkennen. De afbeelding wordt niet geüpload.',
+              ),
+              const _AddHelpStep(
+                number: '4',
+                title: 'Controleer en bewaar',
+                description:
+                    'Controleer altijd de winkel en code voordat je de kaart opslaat.',
+                showConnector: false,
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(sheetContext);
+                    showAddChoices();
+                  },
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Kaart toevoegen'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _repairMovedCustomImages() async {
@@ -161,7 +258,25 @@ class _HomeScreenState extends State<HomeScreen> {
       final aFavorite = a['isFavorite'] == true;
       final bFavorite = b['isFavorite'] == true;
 
-      if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
+      if (SettingsService.favoritesFirst && aFavorite != bFavorite) {
+        return aFavorite ? -1 : 1;
+      }
+
+      if (SettingsService.cardSortOrder == 'alphabetical') {
+        return (a['name']?.toString() ?? '').toLowerCase().compareTo(
+              (b['name']?.toString() ?? '').toLowerCase(),
+            );
+      }
+
+      if (SettingsService.cardSortOrder == 'added') {
+        final aCreated =
+            DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        final bCreated =
+            DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        return bCreated.compareTo(aCreated);
+      }
 
       final aLastUsed = DateTime.tryParse(a['lastUsedAt']?.toString() ?? '');
       final bLastUsed = DateTime.tryParse(b['lastUsedAt']?.toString() ?? '');
@@ -450,7 +565,7 @@ class _HomeScreenState extends State<HomeScreen> {
       StorageService.cardsBox.get(key) as Map,
     );
 
-    await StorageService.saveCard(key, {
+    var saved = <String, dynamic>{
       ...oldItem,
       ...updated,
       'id': oldItem['id'],
@@ -458,7 +573,12 @@ class _HomeScreenState extends State<HomeScreen> {
       'createdAt': oldItem['createdAt'],
       'isFavorite': oldItem['isFavorite'] == true,
       'updatedAt': DateTime.now().toIso8601String(),
-    });
+    };
+    if (saved['isShared'] == true ||
+        (saved['sharedCardId']?.toString() ?? '').isNotEmpty) {
+      saved = await CardShareService.updateSharedCard(saved);
+    }
+    await StorageService.saveCard(key, saved);
   }
 
   Future<void> editGiftCard(
@@ -499,7 +619,7 @@ class _HomeScreenState extends State<HomeScreen> {
       StorageService.cardsBox.get(key) as Map,
     );
 
-    final saved = <String, dynamic>{
+    var saved = <String, dynamic>{
       ...oldItem,
       ...updated,
       'id': oldItem['id'],
@@ -514,6 +634,10 @@ class _HomeScreenState extends State<HomeScreen> {
       'isArchived': oldItem['isArchived'] ?? false,
       'updatedAt': DateTime.now().toIso8601String(),
     };
+    if (saved['isShared'] == true ||
+        (saved['sharedCardId']?.toString() ?? '').isNotEmpty) {
+      saved = await CardShareService.updateSharedCard(saved);
+    }
     await StorageService.saveCard(key, saved);
     await NotificationService.syncGiftCard(saved);
   }
@@ -526,13 +650,18 @@ class _HomeScreenState extends State<HomeScreen> {
     if (key == null) return;
 
     final name = item['name']?.toString() ?? 'deze kaart';
+    final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Verwijderen?'),
+        title: Text(
+          isShared ? 'Uit jouw PasKluis verwijderen?' : 'Verwijderen?',
+        ),
         content: Text(
-          'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+          isShared
+              ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De kaart van de eigenaar blijft bestaan.'
+              : 'Weet je zeker dat je "$name" wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.',
         ),
         actions: [
           TextButton(
@@ -552,6 +681,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (confirmed != true) return;
 
+    try {
+      if (isShared) {
+        await CardShareService.removeReceivedCard(
+          item['shareMembershipId']?.toString() ?? '',
+        );
+      } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
+        await CardShareService.revokeAllForCard(
+          item['id']?.toString() ?? '',
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
@@ -563,6 +714,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void showItemOptions(BuildContext context, Map<String, dynamic> item) {
     final name = item['name']?.toString() ?? 'Kaart';
     final type = item['type']?.toString() ?? '';
+    final isShared = item['isShared'] == true;
+    final canEdit = !isShared || item['canEditShared'] == true;
 
     HapticFeedback.mediumImpact();
 
@@ -590,28 +743,31 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                _OptionTile(
-                  icon: Icons.edit_rounded,
-                  title: 'Bewerken',
-                  onTap: () {
-                    Navigator.pop(context);
+                if (canEdit)
+                  _OptionTile(
+                    icon: Icons.edit_rounded,
+                    title: 'Bewerken',
+                    onTap: () {
+                      Navigator.pop(context);
 
-                    if (type == 'Pasje') {
-                      editLoyaltyCard(context, item);
-                    } else if (type == 'Cadeaukaart') {
-                      editGiftCard(context, item);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('QR-code bewerken maken we straks.'),
-                        ),
-                      );
-                    }
-                  },
-                ),
+                      if (type == 'Pasje') {
+                        editLoyaltyCard(context, item);
+                      } else if (type == 'Cadeaukaart') {
+                        editGiftCard(context, item);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('QR-code bewerken maken we straks.'),
+                          ),
+                        );
+                      }
+                    },
+                  ),
                 _OptionTile(
                   icon: Icons.delete_rounded,
-                  title: 'Verwijderen',
+                  title: isShared
+                      ? 'Uit mijn PasKluis verwijderen'
+                      : 'Verwijderen',
                   isDestructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -759,18 +915,44 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             automaticallyImplyLeading: false,
-            title: const PremiumAppTitle('PasKluis'),
-            centerTitle: true,
+            leadingWidth: 112,
+            leading: Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                tooltip: 'Uitleg over kaarten toevoegen',
+                onPressed: _showAddHelp,
+                icon: const Icon(Icons.info_outline_rounded),
+              ),
+            ),
+            flexibleSpace: const SafeArea(
+              child: IgnorePointer(
+                child: Center(
+                  child: Text(
+                    'PasKluis',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 20,
+                      color: Color(0xFF333333),
+                    ),
+                  ),
+                ),
+              ),
+            ),
             backgroundColor: Colors.white,
             elevation: 0,
             foregroundColor: const Color(0xFF333333),
             actions: [
               IconButton(
                 tooltip: 'Instellingen',
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                ),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                  );
+                  if (!mounted) return;
+                  setState(() {});
+                  await _loadNearbyLocation();
+                },
                 icon: const Icon(Icons.settings_outlined),
               ),
               IconButton(
@@ -823,20 +1005,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: (item) => openCardView(categoryFor(item), item),
                   )
                 else ...[
-                  _FavoritesSection(
-                    items: favorites,
-                    onItemTap: (item) => openCardView(categoryFor(item), item),
-                    onItemLongPress: (item) => showItemOptions(context, item),
-                  ),
-                  const SizedBox(height: 26),
-                  _NearbySection(
-                    state: _locationState,
-                    items: nearbyItems,
-                    onAction: _handleNearbyAction,
-                    onItemTap: (item) => openCardView(categoryFor(item), item),
-                    onItemLongPress: (item) => showItemOptions(context, item),
-                  ),
-                  const SizedBox(height: 28),
+                  if (SettingsService.showFavoritesSection) ...[
+                    _FavoritesSection(
+                      items: favorites,
+                      onItemTap: (item) => openCardView(categoryFor(item), item),
+                      onItemLongPress: (item) => showItemOptions(context, item),
+                    ),
+                    const SizedBox(height: 26),
+                  ],
+                  if (SettingsService.locationCardsEnabled) ...[
+                    _NearbySection(
+                      state: _locationState,
+                      items: nearbyItems,
+                      onAction: _handleNearbyAction,
+                      onItemTap: (item) => openCardView(categoryFor(item), item),
+                      onItemLongPress: (item) => showItemOptions(context, item),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
                   _CategorySection(
                     title: 'Klantenkaarten',
                     icon: Icons.card_membership,
@@ -1264,18 +1450,15 @@ class _CategorySection extends StatelessWidget {
         _ResponsiveSectionHeader(
           title: title,
           icon: icon,
-          actionTitle: actionTitle,
+          actionTitle: hasItems ? actionTitle : '',
           onActionTap: onActionTap,
         ),
         const SizedBox(height: 12),
         if (!hasItems)
-          SizedBox(
-            height: 92,
-            child: _ActionCard(
-              title: actionTitle,
-              icon: Icons.add,
-              onTap: onActionTap,
-            ),
+          _EmptyCategoryCard(
+            title: actionTitle,
+            icon: icon,
+            onTap: onActionTap,
           )
         else
           _HomeCardStrip(
@@ -1336,6 +1519,23 @@ class _ResponsiveSectionHeader extends StatelessWidget {
       child: Text(actionTitle, maxLines: 1, style: actionStyle),
     );
 
+    final titleRow = Row(
+      children: [
+        Icon(icon, color: const Color(0xFFD51B46)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: titleStyle,
+          ),
+        ),
+      ],
+    );
+
+    if (actionTitle.isEmpty) return titleRow;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final requiredWidth =
@@ -1346,21 +1546,6 @@ class _ResponsiveSectionHeader extends StatelessWidget {
             textWidth(actionTitle, actionStyle) +
             12;
         final fitsOnOneLine = requiredWidth <= constraints.maxWidth;
-
-        final titleRow = Row(
-          children: [
-            Icon(icon, color: const Color(0xFFD51B46)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: titleStyle,
-              ),
-            ),
-          ],
-        );
 
         if (fitsOnOneLine) {
           return Row(
@@ -1383,6 +1568,96 @@ class _ResponsiveSectionHeader extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _EmptyCategoryCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _EmptyCategoryCard({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          width: double.infinity,
+          height: 112,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFFF0D9E0)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0B000000),
+                blurRadius: 18,
+                offset: Offset(0, 7),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFEEF2), Color(0xFFF8DDE6)],
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(icon, color: const Color(0xFFD51B46), size: 28),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF302D34),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Veilig opgeslagen op dit toestel',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF77717D),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const CircleAvatar(
+                radius: 20,
+                backgroundColor: Color(0xFFD51B46),
+                child: Icon(Icons.add_rounded, color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1564,6 +1839,82 @@ class _HomePreviewCardState extends State<HomePreviewCard> {
           ),
         );
       },
+    );
+  }
+}
+
+class _AddHelpStep extends StatelessWidget {
+  final String number;
+  final String title;
+  final String description;
+  final bool showConnector;
+
+  const _AddHelpStep({
+    required this.number,
+    required this.title,
+    required this.description,
+    this.showConnector = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 42,
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: const Color(0xFFD51B46),
+                  foregroundColor: Colors.white,
+                  child: Text(
+                    number,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+                if (showConnector)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      color: const Color(0xFFE4E4E8),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.35,
+                      color: Color(0xFF55555A),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
