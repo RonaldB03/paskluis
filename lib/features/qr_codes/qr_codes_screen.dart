@@ -864,17 +864,6 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    SelectableText(
-                      currentCode,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 14.5,
-                        height: 1.35,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF555557),
-                      ),
-                    ),
                   ],
                 ),
               ),

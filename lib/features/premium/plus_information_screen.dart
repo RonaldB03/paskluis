@@ -170,7 +170,7 @@ class _PricePill extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: .28)),
       ),
       child: const Text(
-        '€ 2 eenmalig  •  levenslange toegang',
+        '€ 1,99 eenmalig  •  levenslange toegang',
         style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
       ),
     );

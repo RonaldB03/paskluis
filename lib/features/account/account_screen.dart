@@ -760,7 +760,7 @@ class _PlusHero extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Onbeperkt cadeaukaarten bewaren en kaarten veilig delen voor € 2 eenmalig. Geen abonnement.',
+            'Onbeperkt cadeaukaarten bewaren en kaarten veilig delen voor € 1,99 eenmalig. Geen abonnement.',
             style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],

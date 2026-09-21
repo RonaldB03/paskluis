@@ -114,6 +114,19 @@ abstract final class LocationService {
     );
   }
 
+  static String formatDistance(double meters) {
+    if (meters < 1000) {
+      final roundedMeters = meters < 100
+          ? (meters / 10).round() * 10
+          : (meters / 50).round() * 50;
+      return '$roundedMeters m';
+    }
+    final kilometers = meters / 1000;
+    return kilometers < 10
+        ? '${kilometers.toStringAsFixed(1).replaceAll('.', ',')} km'
+        : '${kilometers.round()} km';
+  }
+
   static Future<bool> openAppSettings() => Geolocator.openAppSettings();
 
   static Future<bool> openLocationSettings() =>

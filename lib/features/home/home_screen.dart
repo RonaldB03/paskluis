@@ -870,6 +870,7 @@ class _HomeScreenState extends State<HomeScreen> {
             .toList();
         final giftCards = getItemsByType('Cadeaukaart');
         final allItems = [...cards, ...qrCodes, ...giftCards];
+        final locationEligibleItems = [...cards, ...qrCodes];
         final favorites = getPreviewItems(
           allItems.where((item) => item['isFavorite'] == true).toList(),
         );
@@ -877,7 +878,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final currentLocation = _currentLocation;
         if (currentLocation != null) {
           nearbyItems.addAll(
-            allItems.where((item) {
+            locationEligibleItems.where((item) {
               final distance = LocationService.distanceTo(item, currentLocation);
               return distance != null &&
                   distance <= LocationService.nearbyRadiusMeters;
@@ -1017,6 +1018,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _NearbySection(
                       state: _locationState,
                       items: nearbyItems,
+                      currentLocation: currentLocation,
                       onAction: _handleNearbyAction,
                       onItemTap: (item) => openCardView(categoryFor(item), item),
                       onItemLongPress: (item) => showItemOptions(context, item),
@@ -1127,6 +1129,7 @@ class _FavoritesSection extends StatelessWidget {
 class _NearbySection extends StatelessWidget {
   final LocationAccessState state;
   final List<Map<String, dynamic>> items;
+  final DeviceLocation? currentLocation;
   final VoidCallback onAction;
   final ValueChanged<Map<String, dynamic>> onItemTap;
   final ValueChanged<Map<String, dynamic>> onItemLongPress;
@@ -1134,6 +1137,7 @@ class _NearbySection extends StatelessWidget {
   const _NearbySection({
     required this.state,
     required this.items,
+    required this.currentLocation,
     required this.onAction,
     required this.onItemTap,
     required this.onItemLongPress,
@@ -1150,6 +1154,7 @@ class _NearbySection extends StatelessWidget {
     } else if (state == LocationAccessState.ready && items.isNotEmpty) {
       content = _HomeCardStrip(
         items: items,
+        currentLocation: currentLocation,
         onItemTap: onItemTap,
         onItemLongPress: onItemLongPress,
       );
@@ -1220,11 +1225,13 @@ class _NearbySection extends StatelessWidget {
 
 class _HomeCardStrip extends StatelessWidget {
   final List<Map<String, dynamic>> items;
+  final DeviceLocation? currentLocation;
   final ValueChanged<Map<String, dynamic>> onItemTap;
   final ValueChanged<Map<String, dynamic>> onItemLongPress;
 
   const _HomeCardStrip({
     required this.items,
+    this.currentLocation,
     required this.onItemTap,
     required this.onItemLongPress,
   });
@@ -1245,18 +1252,52 @@ class _HomeCardStrip extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final item = items[index];
+              final distance = currentLocation == null
+                  ? null
+                  : LocationService.distanceTo(item, currentLocation!);
               return SizedBox(
                 width: cardWidth,
-                child: HomePreviewCard(
-                  item: item,
-                  title: item['name']?.toString() ?? 'Kaart',
-                  logoAsset: item['logoAsset']?.toString() ?? '',
-                  customImage: item['customImage']?.toString() ?? '',
-                  brandColor: item['brandColor']?.toString() ?? '',
-                  balance: item['currentBalance']?.toString() ?? '',
-                  type: item['type']?.toString() ?? '',
-                  onTap: () => onItemTap(item),
-                  onLongPress: () => onItemLongPress(item),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: HomePreviewCard(
+                        item: item,
+                        title: item['name']?.toString() ?? 'Kaart',
+                        logoAsset: item['logoAsset']?.toString() ?? '',
+                        customImage: item['customImage']?.toString() ?? '',
+                        brandColor: item['brandColor']?.toString() ?? '',
+                        balance: item['currentBalance']?.toString() ?? '',
+                        type: item['type']?.toString() ?? '',
+                        onTap: () => onItemTap(item),
+                        onLongPress: () => onItemLongPress(item),
+                      ),
+                    ),
+                    if (distance != null)
+                      Positioned(
+                        right: 6,
+                        bottom: 6,
+                        child: IgnorePointer(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.72),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              LocationService.formatDistance(distance),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               );
             },

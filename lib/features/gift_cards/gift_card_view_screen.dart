@@ -572,7 +572,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
           FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
             icon: const Icon(Icons.workspace_premium_rounded),
-            label: const Text('Neem Plus • € 2 eenmalig'),
+            label: const Text('Neem Plus • € 1,99 eenmalig'),
           ),
         ],
       ),
@@ -1273,14 +1273,19 @@ class _GiftLandscapeBarcode extends StatelessWidget {
                   ),
           ),
           if (!isQr)
-            Text(
-              code,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 16,
-                letterSpacing: 2,
-                fontWeight: FontWeight.w800,
+            SizedBox(
+              height: 24,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  code,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ),
         ],
@@ -1516,18 +1521,35 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
                             padding: EdgeInsets.zero,
                           ),
                         )
-                      : BarcodeWidget(
-                        barcode: widget.barcode,
-                        data: code,
-                        width: double.infinity,
-                        height: 125,
-                        drawText: true,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          letterSpacing: 2,
-                          fontWeight: FontWeight.w500,
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            BarcodeWidget(
+                              barcode: widget.barcode,
+                              data: code,
+                              width: double.infinity,
+                              height: 112,
+                              drawText: false,
+                            ),
+                            const SizedBox(height: 6),
+                            SizedBox(
+                              height: 27,
+                              width: double.infinity,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  code,
+                                  maxLines: 1,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    letterSpacing: 2,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
                     ),
                   ),
                 ),

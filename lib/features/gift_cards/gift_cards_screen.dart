@@ -740,7 +740,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
                   ),
                   SizedBox(width: 7),
                   Text(
-                    '€ 2 eenmalig • levenslange toegang',
+                    '€ 1,99 eenmalig • levenslange toegang',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
