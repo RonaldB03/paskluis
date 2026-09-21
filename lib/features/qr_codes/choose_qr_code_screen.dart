@@ -64,6 +64,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
       for (final image in images) {
         final capture = await scanner.analyzeImage(image.path);
         for (final barcode in capture?.barcodes ?? const <Barcode>[]) {
+          if (barcode.format != BarcodeFormat.qrCode) continue;
           final value = barcode.rawValue?.trim() ?? '';
           if (value.isNotEmpty) codes.add(value);
         }

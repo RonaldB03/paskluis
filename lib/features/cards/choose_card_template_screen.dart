@@ -22,6 +22,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
   String searchQuery = '';
   List<CardBrandTemplate> brands = cardBrandTemplates;
   ScannerResult? pendingScan;
+  String? pendingSuggestedName;
 
   @override
   void initState() {
@@ -140,7 +141,10 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       ),
     );
     if (!mounted || result == null || result.code.trim().isEmpty) return;
-    setState(() => pendingScan = result);
+    setState(() {
+      pendingScan = result;
+      pendingSuggestedName = null;
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Code herkend. Kies nu de winkel.')),
     );
@@ -174,16 +178,88 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     );
     final brand = imported.brand;
     if (brand != null && brand.supportedTypes.contains('Pasje')) {
-      await openManualForm(brand: brand, scan: scan);
+      final useDetectedBrand = await _confirmDetectedBrand(brand);
+      if (!mounted || useDetectedBrand == null) return;
+      if (useDetectedBrand) {
+        await openManualForm(brand: brand, scan: scan);
+        return;
+      }
+      setState(() {
+        pendingScan = scan;
+        pendingSuggestedName = imported?.name;
+        searchQuery = '';
+      });
       return;
     }
 
-    setState(() => pendingScan = scan);
+    setState(() {
+      pendingScan = scan;
+      pendingSuggestedName = imported?.name;
+      searchQuery = '';
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Code herkend. Kies de bijbehorende winkel.'),
+        content: Text(
+          'Winkel niet automatisch herkend. Kies een winkel of voeg hem handmatig toe.',
+        ),
       ),
     );
+  }
+
+  Future<bool?> _confirmDetectedBrand(CardBrandTemplate brand) {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Winkel herkend', textAlign: TextAlign.center),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: double.infinity,
+              height: 92,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: brand.color,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: BrandLogo(
+                source: brand.logoAsset,
+                scale: brand.logoLayout['pickerScale'] ?? 1,
+                offsetX: brand.logoLayout['pickerX'] ?? 0,
+                offsetY: brand.logoLayout['pickerY'] ?? 0,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'We herkennen deze klantenkaart als ${brand.name}. Klopt dat?',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, height: 1.35),
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Andere winkel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('${brand.name} gebruiken'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _usableSuggestedName(String? value) {
+    final name = value?.trim() ?? '';
+    if (name.isEmpty ||
+        name.toLowerCase() == 'klantenkaart' ||
+        name.toLowerCase() == 'pasje') {
+      return 'Mijn klantenkaart';
+    }
+    return name;
   }
 
   @override
@@ -272,7 +348,10 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
                     ),
                     IconButton(
                       tooltip: 'Annuleren',
-                      onPressed: () => setState(() => pendingScan = null),
+                      onPressed: () => setState(() {
+                        pendingScan = null;
+                        pendingSuggestedName = null;
+                      }),
                       icon: const Icon(Icons.close_rounded),
                     ),
                   ],
@@ -386,9 +465,14 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
           const SizedBox(height: 6),
 
           _CustomCardTile(
+            title: pendingScan == null
+                ? 'Aangepaste kaart'
+                : 'Andere winkel handmatig toevoegen',
             onTap: () => openManualForm(
               scan: pendingScan,
-              suggestedName: pendingScan == null ? null : 'Klantenkaart',
+              suggestedName: pendingScan == null
+                  ? null
+                  : _usableSuggestedName(pendingSuggestedName),
             ),
           ),
         ],
@@ -503,8 +587,9 @@ class BrandListTile extends StatelessWidget {
 
 class _CustomCardTile extends StatelessWidget {
   final VoidCallback onTap;
+  final String title;
 
-  const _CustomCardTile({required this.onTap});
+  const _CustomCardTile({required this.onTap, required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -535,10 +620,12 @@ class _CustomCardTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Aangepaste kaart',
-                  style: TextStyle(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF303036),
