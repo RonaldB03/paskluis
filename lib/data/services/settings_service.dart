@@ -10,6 +10,8 @@ abstract final class SettingsService {
   static const _nearbyRadiusKey = 'nearby_radius_meters';
   static const _favoritesFirstKey = 'favorites_first';
   static const _showFavoritesKey = 'show_favorites_section';
+  static const _showNearbyKey = 'show_nearby_section';
+  static const _nearbyCardsFirstKey = 'nearby_loyalty_cards_first';
   static const _cardSortKey = 'card_sort_order';
   static const _startTabKey = 'default_start_tab';
   static const _autoBrightnessKey = 'auto_brightness';
@@ -127,6 +129,24 @@ abstract final class SettingsService {
   static String get cardSortOrder =>
       _preferences.getString(_cardSortKey) ??
       _remoteString('default_card_sort_order', 'recent');
+
+  static bool get showNearbySection =>
+      _preferences.getBool(_showNearbyKey) ??
+      _remoteBool('default_show_nearby_section', true);
+
+  static Future<void> setShowNearbySection(bool enabled) async {
+    await _preferences.setBool(_showNearbyKey, enabled);
+    _notify();
+  }
+
+  static bool get nearbyLoyaltyCardsFirst =>
+      _preferences.getBool(_nearbyCardsFirstKey) ??
+      _remoteBool('default_nearby_loyalty_cards_first', false);
+
+  static Future<void> setNearbyLoyaltyCardsFirst(bool enabled) async {
+    await _preferences.setBool(_nearbyCardsFirstKey, enabled);
+    _notify();
+  }
 
   static Future<void> setCardSortOrder(String value) async {
     await _preferences.setString(_cardSortKey, value);

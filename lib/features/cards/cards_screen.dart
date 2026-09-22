@@ -7,6 +7,10 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/settings_service.dart';
 import '../../data/services/card_share_service.dart';
+import '../../data/services/brand_sync_service.dart';
+import '../../data/services/location_service.dart';
+import '../../data/services/nearby_store_service.dart';
+import '../../shared/utils/card_sorting.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/logo_layout.dart';
 import '../../shared/widgets/main_bottom_nav.dart';
@@ -24,35 +28,114 @@ import 'card_view_screen.dart';
 import 'choose_card_template_screen.dart';
 import 'edit_card_screen.dart';
 
-class CardsScreen extends StatelessWidget {
+class CardsScreen extends StatefulWidget {
   const CardsScreen({super.key});
 
+  @override
+  State<CardsScreen> createState() => _CardsScreenState();
+}
+
+class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
+  Map<String, NearbyStoreMatch> _nearbyStoreMatches = const {};
+  int _nearbyRequest = 0;
+  bool _refreshing = false;
+
+  bool get _nearbyEnabled => SettingsService.locationCardsEnabled &&
+      SettingsService.nearbyLoyaltyCardsFirst;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    SettingsService.settingsRevision.addListener(_onSettingsChanged);
+    _loadNearbyLocation();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    SettingsService.settingsRevision.removeListener(_onSettingsChanged);
+    _nearbyRequest++;
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && !_refreshing) {
+      _loadNearbyLocation();
+    }
+  }
+
+  void _onSettingsChanged() {
+    if (!mounted) return;
+    setState(() {});
+    if (!_refreshing) _loadNearbyLocation();
+  }
+
+  Future<void> _loadNearbyLocation() async {
+    final request = ++_nearbyRequest;
+    if (!mounted) return;
+    setState(() => _nearbyStoreMatches = const {});
+    if (!_nearbyEnabled) return;
+    final cards = _storedCards();
+    if (cards.isEmpty) return;
+    final snapshot = await LocationService.resolve();
+    if (!mounted || request != _nearbyRequest || !_nearbyEnabled) return;
+    final location = snapshot.location;
+    if (snapshot.state != LocationAccessState.ready || location == null) return;
+    final matches = await NearbyStoreService.resolveForCards(cards, location);
+    if (!mounted || request != _nearbyRequest || !_nearbyEnabled) return;
+    setState(() => _nearbyStoreMatches = matches);
+  }
+
+  Future<void> _refreshCards() async {
+    if (_refreshing) return;
+    _refreshing = true;
+    FocusManager.instance.primaryFocus?.unfocus();
+    try {
+      await SettingsService.refreshRemoteConfig();
+      try {
+        await CardShareService.syncAllToLocal();
+      } catch (_) {
+        // Local cards and location refreshing remain usable while offline.
+      }
+      try {
+        await BrandSyncService.refreshSavedCards();
+      } catch (_) {
+        // A failed logo sync must not prevent refreshing nearby stores.
+      }
+      await _loadNearbyLocation();
+    } finally {
+      _refreshing = false;
+      if (mounted) setState(() {});
+    }
+  }
+
+  List<Map<String, dynamic>> _storedCards() => StorageService.cardsBox.values
+      .where((item) => item is Map && item['type'] == 'Pasje')
+      .map((item) => Map<String, dynamic>.from(item as Map))
+      .toList();
+
+  double? _nearbyDistance(Map<String, dynamic> item) {
+    if (!_nearbyEnabled) return null;
+    final distance = _nearbyStoreMatches[item['id']?.toString()]?.distanceMeters;
+    return distance != null && distance.isFinite && distance >= 0 &&
+            distance <= LocationService.nearbyRadiusMeters
+        ? distance
+        : null;
+  }
+
   List<Map<String, dynamic>> getItems() {
-    final items = StorageService.cardsBox.values
-        .where((item) => item is Map && item['type'] == 'Pasje')
-        .map((item) => Map<String, dynamic>.from(item as Map))
-        .toList();
-
-    items.sort((a, b) {
-      final aFavorite = a['isFavorite'] == true;
-      final bFavorite = b['isFavorite'] == true;
-
-      if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
-
-      final aDate =
-          DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
-          DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-
-      final bDate =
-          DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
-          DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-
-      return bDate.compareTo(aDate);
-    });
-
-    return items;
+    return sortLoyaltyCards(
+      _storedCards(),
+      favoritesFirst: SettingsService.favoritesFirst,
+      sortOrder: SettingsService.cardSortOrder,
+      nearbyFirst: _nearbyEnabled,
+      nearbyRadiusMeters: LocationService.nearbyRadiusMeters,
+      distances: _nearbyStoreMatches.map(
+        (id, match) => MapEntry(id, match.distanceMeters),
+      ),
+    );
   }
 
   Future<Map<String, dynamic>> saveNewCard(
@@ -104,6 +187,7 @@ class CardsScreen extends StatelessWidget {
     if (!context.mounted || result == null) return;
 
     final savedCard = await saveNewCard(result, forcedType: 'Pasje');
+    _loadNearbyLocation();
 
     if (!context.mounted) return;
 
@@ -215,6 +299,7 @@ class CardsScreen extends StatelessWidget {
     }
 
     await StorageService.saveCard(key, savedCard);
+    _loadNearbyLocation();
   }
 
   Future<void> deleteCard(
@@ -377,9 +462,21 @@ class CardsScreen extends StatelessWidget {
           body: MainTabSwipeRegion(
             currentIndex: 1,
             onSwitch: (index) => openTab(context, index),
-            child: items.isEmpty
-                ? _EmptyCardsState(onAdd: () => openAddCard(context))
+            child: RefreshIndicator(
+              onRefresh: _refreshCards,
+              color: const Color(0xFFD51B46),
+              child: items.isEmpty
+                ? LayoutBuilder(
+                    builder: (context, constraints) => SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                        child: _EmptyCardsState(onAdd: () => openAddCard(context)),
+                      ),
+                    ),
+                  )
                 : GridView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
@@ -396,12 +493,15 @@ class CardsScreen extends StatelessWidget {
                     final item = items[index];
 
                     return StoredCardTile(
+                      key: ValueKey(item['id']),
                       item: item,
+                      distanceMeters: _nearbyDistance(item),
                       onTap: () => openCard(context, items, index),
                       onLongPress: () => showCardOptions(context, item),
                     );
                   },
                   ),
+            ),
           ),
           bottomNavigationBar: MainBottomNav(
             currentIndex: 1,
@@ -422,6 +522,7 @@ class _EmptyCardsState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return LuxuryEmptyState(
+      scrollable: false,
       icon: Icons.card_membership_rounded,
       eyebrow: 'Alles bij de hand',
       title: 'Voeg je eerste klantenkaart toe',
@@ -450,12 +551,14 @@ class StoredCardTile extends StatefulWidget {
   final Map<String, dynamic> item;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
+  final double? distanceMeters;
 
   const StoredCardTile({
     super.key,
     required this.item,
     required this.onTap,
     required this.onLongPress,
+    this.distanceMeters,
   });
 
   @override
@@ -499,7 +602,8 @@ class _StoredCardTileState extends State<StoredCardTile> {
 
     return Semantics(
       button: true,
-      label: '$title, klantenkaart${isFavorite ? ', favoriet' : ''}',
+      label: '$title, klantenkaart${isFavorite ? ', favoriet' : ''}'
+          '${widget.distanceMeters == null ? '' : ', ${LocationService.formatDistance(widget.distanceMeters!)} afstand'}',
       hint: 'Tik tweemaal om de kaart te openen',
       child: GestureDetector(
         onTapDown: (_) => setPressed(true),
@@ -584,13 +688,36 @@ class _StoredCardTileState extends State<StoredCardTile> {
               if (isFavorite)
                 Positioned(
                   top: 2,
-                  right: 2,
+                  right: widget.distanceMeters == null ? 2 : null,
+                  left: widget.distanceMeters == null ? null : 2,
                   child: Icon(
                     Icons.star,
                     color: hasDarkBrandBackground
                         ? Colors.white
                         : const Color(0xFFD51B46),
                     size: 24,
+                  ),
+                ),
+              if (widget.distanceMeters != null)
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: IgnorePointer(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        LocationService.formatDistance(widget.distanceMeters!),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
             ],

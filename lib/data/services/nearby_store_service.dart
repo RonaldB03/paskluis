@@ -34,38 +34,43 @@ abstract final class NearbyStoreService {
     }
     if (brandNames.isEmpty) return const {};
 
-    try {
-      final response = await client.functions.invoke(
-        'nearest-brand-stores',
-        body: {
-          'latitude': location.latitude,
-          'longitude': location.longitude,
-          'brands': brandNames.take(20).toList(),
-        },
-      );
-      final data = response.data;
-      if (data is! Map || data['matches'] is! Map) return const {};
-      final rawMatches = Map<String, dynamic>.from(data['matches'] as Map);
-      final byBrand = <String, NearbyStoreMatch>{};
-      for (final entry in rawMatches.entries) {
-        if (entry.value is! Map) continue;
-        final value = Map<String, dynamic>.from(entry.value as Map);
-        final distance = double.tryParse(value['distance_meters']?.toString() ?? '');
-        if (distance == null) continue;
-        byBrand[entry.key] = NearbyStoreMatch(
-          distanceMeters: distance,
-          storeName: value['store_name']?.toString() ?? entry.key,
-          address: value['address']?.toString() ?? '',
+    final byBrand = <String, NearbyStoreMatch>{};
+    final brands = brandNames.toList();
+    // The endpoint accepts up to 20 brands per request. Resolve every card,
+    // including collections larger than a single request.
+    for (var offset = 0; offset < brands.length; offset += 20) {
+      try {
+        final response = await client.functions.invoke(
+          'nearest-brand-stores',
+          body: {
+            'latitude': location.latitude,
+            'longitude': location.longitude,
+            'brands': brands.skip(offset).take(20).toList(),
+          },
         );
+        final data = response.data;
+        if (data is! Map || data['matches'] is! Map) continue;
+        final rawMatches = Map<String, dynamic>.from(data['matches'] as Map);
+        for (final entry in rawMatches.entries) {
+          if (entry.value is! Map) continue;
+          final value = Map<String, dynamic>.from(entry.value as Map);
+          final distance = double.tryParse(value['distance_meters']?.toString() ?? '');
+          if (distance == null || !distance.isFinite || distance < 0) continue;
+          byBrand[entry.key] = NearbyStoreMatch(
+            distanceMeters: distance,
+            storeName: value['store_name']?.toString() ?? entry.key,
+            address: value['address']?.toString() ?? '',
+          );
+        }
+      } on FunctionException {
+        // Keep valid matches from other batches; unavailable brands stay unsorted.
+      } catch (_) {
+        // Offline or malformed responses must not hide local cards.
       }
-      return {
-        for (final entry in cardBrands.entries)
-          if (byBrand[entry.value] != null) entry.key: byBrand[entry.value]!,
-      };
-    } on FunctionException {
-      return const {};
-    } catch (_) {
-      return const {};
     }
+    return {
+      for (final entry in cardBrands.entries)
+        if (byBrand[entry.value] != null) entry.key: byBrand[entry.value]!,
+    };
   }
 }

@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _refreshVisualAssets();
-    if (SettingsService.locationCardsEnabled) {
+    if (SettingsService.locationCardsEnabled && SettingsService.showNearbySection) {
       _loadNearbyLocation();
     } else {
       _locationState = LocationAccessState.permissionNeeded;
@@ -80,11 +80,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadNearbyLocation({bool requestPermission = false}) async {
-    if (!SettingsService.locationCardsEnabled) {
+    if (!SettingsService.locationCardsEnabled || !SettingsService.showNearbySection) {
       if (mounted) {
         setState(() {
           _locationState = LocationAccessState.permissionNeeded;
           _currentLocation = null;
+          _nearbyStoreMatches = const {};
         });
       }
       return;
@@ -1029,7 +1030,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 26),
                   ],
-                  if (SettingsService.locationCardsEnabled) ...[
+                  if (SettingsService.locationCardsEnabled &&
+                      SettingsService.showNearbySection) ...[
                     _NearbySection(
                       state: _locationState,
                       items: nearbyItems,

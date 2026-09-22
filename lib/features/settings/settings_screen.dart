@@ -26,6 +26,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late int _nearbyRadiusMeters;
   late bool _favoritesFirst;
   late bool _showFavoritesSection;
+  late bool _showNearbySection;
+  late bool _nearbyLoyaltyCardsFirst;
   late String _cardSortOrder;
   late String _defaultStartTab;
   late bool _autoBrightnessEnabled;
@@ -62,6 +64,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _nearbyRadiusMeters = SettingsService.nearbyRadiusMeters;
     _favoritesFirst = SettingsService.favoritesFirst;
     _showFavoritesSection = SettingsService.showFavoritesSection;
+    _showNearbySection = SettingsService.showNearbySection;
+    _nearbyLoyaltyCardsFirst = SettingsService.nearbyLoyaltyCardsFirst;
     _cardSortOrder = SettingsService.cardSortOrder;
     _defaultStartTab = SettingsService.defaultStartTab;
     _autoBrightnessEnabled = SettingsService.autoBrightnessEnabled;
@@ -298,6 +302,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     value: _radiusLabel,
                     onTap: _chooseRadius,
                   ),
+                _SettingsSwitchTile(
+                  icon: Icons.near_me_outlined,
+                  iconColor: const Color(0xFF286DC8),
+                  iconBackground: const Color(0xFFE7F0FF),
+                  title: 'Dichtstbijzijnde klantenkaarten bovenaan',
+                  subtitle: _locationCardsEnabled
+                      ? 'Binnen de gekozen afstand: eerst dichtbij, daarna je favorieten en normale sortering'
+                      : 'Zet kaarten op basis van locatie aan om deze optie te gebruiken',
+                  value: _nearbyLoyaltyCardsFirst,
+                  onChanged: !_locationCardsEnabled ? null : (value) async {
+                    await SettingsService.setNearbyLoyaltyCardsFirst(value);
+                    if (mounted) {
+                      setState(() => _nearbyLoyaltyCardsFirst = value);
+                    }
+                  },
+                ),
               ],
             ),
           _SettingsSection(
@@ -308,7 +328,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 iconColor: const Color(0xFFA26D00),
                 iconBackground: const Color(0xFFFFF2CC),
                 title: 'Favorieten bovenaan',
-                subtitle: 'Je belangrijkste kaarten altijd als eerste',
+                subtitle: _locationCardsEnabled && _nearbyLoyaltyCardsFirst
+                    ? 'Favorieten volgen na klantenkaarten in de buurt'
+                    : 'Je belangrijkste kaarten als eerste',
                 value: _favoritesFirst,
                 onChanged: (value) async {
                   await SettingsService.setFavoritesFirst(value);
@@ -327,6 +349,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (mounted) setState(() => _showFavoritesSection = value);
                 },
               ),
+              if (SettingsService.locationCardsAvailable)
+                _SettingsSwitchTile(
+                  icon: Icons.near_me_outlined,
+                  iconColor: const Color(0xFF286DC8),
+                  iconBackground: const Color(0xFFE7F0FF),
+                  title: 'In de buurt op Home',
+                  subtitle: _locationCardsEnabled
+                      ? 'Toon een apart overzicht met klantenkaarten in de buurt'
+                      : 'Het blok verschijnt zodra kaarten op basis van locatie aanstaat',
+                  value: _showNearbySection,
+                  onChanged: (value) async {
+                    await SettingsService.setShowNearbySection(value);
+                    if (mounted) setState(() => _showNearbySection = value);
+                  },
+                ),
               _SettingsTile(
                 icon: Icons.swap_vert_rounded,
                 iconColor: const Color(0xFF23814A),

@@ -9,6 +9,7 @@ class LuxuryEmptyState extends StatelessWidget {
   final VoidCallback onPressed;
   final Color accent;
   final Widget? footer;
+  final bool scrollable;
 
   const LuxuryEmptyState({
     super.key,
@@ -20,12 +21,12 @@ class LuxuryEmptyState extends StatelessWidget {
     required this.onPressed,
     this.accent = const Color(0xFFD51B46),
     this.footer,
+    this.scrollable = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
+    final content = Padding(
         padding: const EdgeInsets.fromLTRB(22, 28, 22, 32),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
@@ -123,7 +124,9 @@ class LuxuryEmptyState extends StatelessWidget {
             ),
           ),
         ),
-      ),
+    );
+    return Center(
+      child: scrollable ? SingleChildScrollView(child: content) : content,
     );
   }
 }
