@@ -915,7 +915,7 @@ class _GiftCardTileState extends State<GiftCardTile> {
     return Semantics(
       button: true,
       label:
-          L10n.current.giftCard453((title).toString(), (balance.isEmpty ? L10n.current.balanceUnknown454 : 'saldo € ${formatAmountValue(balance)}').toString(), (isFavorite ? L10n.current.favourite : '').toString()),
+          L10n.current.giftCard453((title).toString(), (balance.isEmpty ? L10n.current.balanceUnknown454 : L10n.current.balance455(formatAmountValue(balance))).toString(), (isFavorite ? L10n.current.favourite : '').toString()),
       hint: L10n.current.doubleTapToOpenTheGiftCard,
       child: GestureDetector(
         onTapDown: (_) => setPressed(true),

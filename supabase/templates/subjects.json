@@ -1,0 +1,8 @@
+{
+  "confirm-sign-up": "{{ if eq .Data.locale \"en\" }}Confirm your PasKluis account{{ else }}Bevestig je PasKluis-account{{ end }}",
+  "invite-user": "{{ if eq .Data.locale \"en\" }}You are invited to PasKluis{{ else }}Je bent uitgenodigd voor PasKluis{{ end }}",
+  "magic-link-or-otp": "{{ if eq .Data.locale \"en\" }}Your secure PasKluis sign-in link{{ else }}Jouw veilige inloglink voor PasKluis{{ end }}",
+  "change-email-address": "{{ if eq .Data.locale \"en\" }}Confirm your new PasKluis email address{{ else }}Bevestig je nieuwe e-mailadres voor PasKluis{{ end }}",
+  "reset-password": "{{ if eq .Data.locale \"en\" }}Reset your PasKluis password{{ else }}Stel een nieuw PasKluis-wachtwoord in{{ end }}",
+  "reauthentication": "{{ if eq .Data.locale \"en\" }}Your PasKluis security code{{ else }}Jouw PasKluis-beveiligingscode{{ end }}"
+}

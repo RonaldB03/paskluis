@@ -606,7 +606,7 @@ class _StoredCardTileState extends State<StoredCardTile> {
 
     return Semantics(
       button: true,
-      label: L10n.current.loyaltyCard((title).toString(), (isFavorite ? L10n.current.favourite : '').toString(), (widget.distanceMeters == null ? '' : ', ${LocationService.formatDistance(widget.distanceMeters!)} afstand').toString()),
+      label: L10n.current.loyaltyCard((title).toString(), (isFavorite ? L10n.current.favourite : '').toString(), (widget.distanceMeters == null ? '' : L10n.current.away(LocationService.formatDistance(widget.distanceMeters!))).toString()),
       hint: L10n.current.doubleTapToOpenTheCard,
       child: GestureDetector(
         onTapDown: (_) => setPressed(true),
