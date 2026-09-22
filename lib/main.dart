@@ -67,10 +67,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _checkDeviceSession();
-      _syncSharedCards();
-      _registerPushToken();
-      _syncLanguage();
+      unawaited(_refreshOnline());
     }
   }
 
@@ -95,7 +92,8 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   }
 
   Future<void> _checkDeviceSession() async {
-    if (_checkingDeviceSession || AccountService.currentUser == null) return;
+    if (_checkingDeviceSession || DeviceSessionService.awaitingClaim ||
+        AccountService.currentUser == null) return;
     _checkingDeviceSession = true;
     try {
       final isCurrent = await DeviceSessionService.ensureCurrentSession();
@@ -161,39 +159,49 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     await SettingsService.init();
     await NotificationService.init();
     await SupabaseService.init();
+    await StorageService.reconcileAccount(AccountService.currentUser?.id);
     try {
       await PushNotificationService.init(onSharedCardChanged: _syncSharedCards);
     } catch (_) {
       // Firebase Messaging may be unavailable on an unsupported device.
     }
     _authSubscription ??= AccountService.authChanges?.listen((state) async {
+      final accountId = state.session?.user.id;
+      final previousId = StorageService.accountId;
+      final changed = previousId != null && previousId != accountId;
+      await StorageService.reconcileAccount(accountId);
+      if (changed && mounted) {
+        _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+      }
       if (state.event == AuthChangeEvent.passwordRecovery) {
         _openPasswordRecovery();
       }
       if (state.event == AuthChangeEvent.signedIn ||
-          state.event == AuthChangeEvent.tokenRefreshed ||
-          state.event == AuthChangeEvent.userUpdated) {
-        await _registerPushToken();
-        await _syncLanguage();
-        await _syncSharedCards();
+          state.event == AuthChangeEvent.tokenRefreshed) {
+        if (!DeviceSessionService.awaitingClaim) unawaited(_refreshOnline());
       }
     });
-    await _checkDeviceSession();
     _deviceSessionTimer ??= Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => _checkDeviceSession(),
+      const Duration(seconds: 30), (_) => _checkDeviceSession(),
     );
-    await SettingsService.refreshRemoteConfig();
-    await _registerPushToken();
-    await _syncLanguage();
-    for (final item in StorageService.cardsBox.values.whereType<Map>()) {
-      await NotificationService.syncGiftCard(item);
-    }
+    // Opening an offline vault must not wait for remote APIs.
+    unawaited(_refreshOnline());
+  }
+
+  bool _refreshingOnline = false;
+  Future<void> _refreshOnline() async {
+    if (_refreshingOnline) return;
+    _refreshingOnline = true;
     try {
-      await CardShareService.syncAllToLocal();
+      await _checkDeviceSession();
+      await SettingsService.refreshRemoteConfig();
+      await _registerPushToken();
+      await _syncLanguage();
+      await _syncSharedCards();
     } catch (_) {
-      // Sharing is optional; offline or an unavailable backend may never
-      // prevent access to cards stored on this device.
+      // A retry follows on resume; local cards remain usable.
+    } finally {
+      _refreshingOnline = false;
     }
   }
 

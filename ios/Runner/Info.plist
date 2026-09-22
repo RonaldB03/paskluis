@@ -58,7 +58,7 @@
     <string>PasKluis gebruikt Face ID om beveiligde gegevens zoals pincodes te bekijken.</string>
 
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>PasKluis gebruikt je locatie alleen tijdens gebruik om lokaal te tonen welke kaarten je eerder in de buurt hebt gebruikt.</string>
+    <string>PasKluis gebruikt je locatie tijdens gebruik en verwerkt die via Supabase en Google Places om winkels in de buurt te vinden.</string>
 
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>

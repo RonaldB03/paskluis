@@ -293,21 +293,6 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                   const SizedBox(height: 10),
 
                   _PreviewAction(
-                    icon: Icons.photo_camera_outlined,
-                    title: L10n.current.cardPhotos,
-                    subtitle: L10n.current.addAPhotoOfYourCardLater,
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                         SnackBar(
-                          content: Text(L10n.current.cardPhotosAreComingLater),
-                        ),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  _PreviewAction(
                     icon: Icons.notes_rounded,
                     title: L10n.current.notes,
                     subtitle: L10n.current.keepExtraInformationWithThisCard,

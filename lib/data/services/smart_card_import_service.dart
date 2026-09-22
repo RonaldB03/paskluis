@@ -5,6 +5,7 @@ import 'package:mobile_scanner/mobile_scanner.dart' as mobile;
 
 import '../templates/card_templates.dart';
 import 'brand_catalog_service.dart';
+import 'brand_recognition.dart';
 
 class SmartCardImportResult {
   final String type;
@@ -66,12 +67,11 @@ abstract final class SmartCardImportService {
         InputImage.fromFilePath(imagePath),
       );
       final text = recognized.text.trim();
-      final normalized = _normalize(text);
       final brands = await BrandCatalogService.load();
-      final brand = _findBrand(brands, normalized);
       final code = scanned?.rawValue?.trim().isNotEmpty == true
           ? scanned!.rawValue!.trim()
           : _findCardNumber(text);
+      final brand = BrandRecognition.match(brands, text: text, code: code);
       final isQr = scanned?.format == mobile.BarcodeFormat.qrCode;
       final giftWords = RegExp(
         r'cadeau|gift\s?card|tegoed|saldo|balance|pin\s?code|krascode',
@@ -98,44 +98,6 @@ abstract final class SmartCardImportService {
     } finally {
       recognizer.close();
       await scanner.dispose();
-    }
-  }
-
-  static CardBrandTemplate? _findBrand(
-    List<CardBrandTemplate> brands,
-    String text,
-  ) {
-    for (final brand in brands) {
-      final candidates = [brand.name, brand.id, ..._brandAliases(brand.id)]
-          .map(_normalize)
-          .where((value) => value.length >= 3);
-      if (candidates.any(text.contains)) return brand;
-    }
-    return null;
-  }
-
-  static List<String> _brandAliases(String brandId) {
-    switch (_normalize(brandId)) {
-      case 'albertheijn':
-        return const ['AH', 'Bonuskaart'];
-      case 'gallengall':
-      case 'gallgall':
-        return const ['Gall & Gall', 'Gall en Gall'];
-      case 'hema':
-        return const ['HEMA pas', 'HEMA cadeaukaart'];
-      case 'jumbo':
-        return const ['Jumbo Extra'];
-      case 'kruidvat':
-        return const ['Kruidvat Club'];
-      case 'vvv':
-        return const [
-          'VVV cadeaukaart',
-          'VV cadeaukaart',
-          'VVV giftcard',
-          'Nationale VVV cadeaukaart',
-        ];
-      default:
-        return const [];
     }
   }
 

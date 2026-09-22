@@ -11,6 +11,7 @@ import '../../data/services/device_session_service.dart';
 import '../../data/services/push_notification_service.dart';
 import '../premium/plus_information_screen.dart';
 import 'shared_cards_management_screen.dart';
+import 'delete_account_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   final bool startPasswordRecovery;
@@ -122,6 +123,7 @@ class _AccountScreenState extends State<AccountScreen> {
     if (!_formKey.currentState!.validate() || _busy) return;
 
     setState(() => _busy = true);
+    DeviceSessionService.awaitingClaim = true;
     try {
       if (_registering) {
         final response = await AccountService.signUp(
@@ -152,6 +154,7 @@ class _AccountScreenState extends State<AccountScreen> {
         }
         if (mounted) _showMessage(L10n.current.youAreSignedIn);
       }
+      await _loadPlusStatus();
       _passwordController.clear();
     } on AuthException catch (error) {
       if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
@@ -160,6 +163,7 @@ class _AccountScreenState extends State<AccountScreen> {
         _showMessage(L10n.current.somethingWentWrongPleaseTryAgainLater, error: true);
       }
     } finally {
+      DeviceSessionService.awaitingClaim = false;
       if (mounted) setState(() => _busy = false);
     }
   }
@@ -609,6 +613,9 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          ListTile(leading: const Icon(Icons.person_remove_outlined, color: Color(0xFFD51B46)),
+            title: Text(L10n.current.deleteAccount), trailing: const Icon(Icons.chevron_right),
+            onTap: _busy ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DeleteAccountScreen()))),
           OutlinedButton.icon(
             onPressed: _busy ? null : _signOut,
             icon: const Icon(Icons.logout_rounded),

@@ -1,10 +1,13 @@
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'locale_service.dart';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'supabase_service.dart';
 import 'device_session_service.dart';
 import 'push_notification_service.dart';
+import 'storage_service.dart';
 
 class PlusStatus {
   final bool isActive;
@@ -37,6 +40,7 @@ class ManagedAccount {
 }
 
 abstract final class AccountService {
+  static const _secure = FlutterSecureStorage();
   static SupabaseClient get _client {
     final client = SupabaseService.client;
     if (client == null) {
@@ -89,6 +93,9 @@ abstract final class AccountService {
   }
 
   static Future<void> signOut({bool releaseDevice = true}) async {
+    final previousUserId = currentUser?.id;
+    await StorageService.reconcileAccount(null);
+    if (previousUserId != null) await _secure.delete(key: 'plus_status_$previousUserId');
     await PushNotificationService.unregisterCurrentToken();
     if (releaseDevice) {
       try {
@@ -97,7 +104,7 @@ abstract final class AccountService {
         // Signing out must remain possible while the backend is unavailable.
       }
     }
-    await _client.auth.signOut();
+    await _client.auth.signOut(scope: SignOutScope.local);
   }
 
   static Future<UserResponse> updatePassword(String password) {
@@ -185,6 +192,31 @@ abstract final class AccountService {
   }
 
   static Future<PlusStatus> loadPlusStatus() async {
+    final userId=currentUser?.id;
+    if(userId==null)return PlusStatus.inactive;
+    final key='plus_status_$userId';
+    try {
+      final result=await _loadPlusStatusOnline();
+      if(currentUser?.id!=userId)return PlusStatus.inactive;
+      await _secure.write(key:key,value:jsonEncode({'active':result.isActive,'verifiedAt':DateTime.now().toUtc().toIso8601String(),'expiresAt':result.expiresAt?.toUtc().toIso8601String(),'source':result.source}));
+      return result;
+    } catch (_) {
+      if(currentUser?.id!=userId)return PlusStatus.inactive;
+      final raw=await _secure.read(key:key);
+      if(raw!=null){
+        final row=jsonDecode(raw) as Map;
+        final verified=DateTime.tryParse(row['verifiedAt']?.toString()??'');
+        final expires=DateTime.tryParse(row['expiresAt']?.toString()??'');
+        final now=DateTime.now().toUtc();
+        if(row['active']==true&&verified!=null&&!verified.isAfter(now)&&now.difference(verified)<const Duration(days:7)&&(expires==null||expires.isAfter(now))) {
+          return PlusStatus(isActive:true,expiresAt:expires,source:row['source']?.toString());
+        }
+      }
+      rethrow;
+    }
+  }
+
+  static Future<PlusStatus> _loadPlusStatusOnline() async {
     final user = currentUser;
     if (user == null) return PlusStatus.inactive;
 

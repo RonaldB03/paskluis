@@ -23,6 +23,8 @@ abstract final class DeviceSessionService {
   static const _storage = FlutterSecureStorage();
   static const _deviceIdKey = 'paskluis_device_id_v1';
 
+  static bool awaitingClaim = false;
+
   static final ValueNotifier<String?> sessionNotice = ValueNotifier(null);
 
   static Future<String> get deviceId async {

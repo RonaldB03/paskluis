@@ -157,6 +157,10 @@ abstract final class CardShareService {
   static Future<void> _syncIncomingToLocal() async {
     final user = AccountService.currentUser;
     if (user == null) return;
+    final revision = StorageService.accountRevision;
+    bool current() => AccountService.currentUser?.id == user.id &&
+        StorageService.accountId == user.id &&
+        StorageService.accountRevision == revision;
     final plus = await AccountService.loadPlusStatus();
     final rows = await _client
         .from('card_share_members')
@@ -168,7 +172,9 @@ abstract final class CardShareService {
         .isFilter('removed_by_recipient_at', null);
 
     final activeMembershipIds = <String>{};
+    if (!current()) return;
     for (final rawRow in rows) {
+      if (!current()) return;
       final row = Map<String, dynamic>.from(rawRow);
       final membershipId = row['id']?.toString() ?? '';
       final shared = row['shared_cards'];
@@ -184,6 +190,7 @@ abstract final class CardShareService {
         'shareMembershipId': membershipId,
         'sharedCardId': sharedCard['id']?.toString() ?? '',
         'shareOwnerId': sharedCard['owner_id']?.toString() ?? '',
+        'shareRecipientId': user.id,
         'sharedVersion': sharedCard['version'] ?? 1,
         'canEditShared': plus.isActive,
         'isShared': true,
@@ -224,6 +231,7 @@ abstract final class CardShareService {
     }
 
     for (final key in StorageService.cardsBox.keys.toList()) {
+      if (!current()) return;
       final card = StorageService.cardsBox.get(key);
       if (card is Map &&
           card['isShared'] == true &&
@@ -238,12 +246,16 @@ abstract final class CardShareService {
   static Future<void> _syncOwnedToLocal() async {
     final user = AccountService.currentUser;
     if (user == null) return;
+    final revision = StorageService.accountRevision;
     final rows = await _client
         .from('shared_cards')
         .select('id, card_external_id, card_type, card_payload, version, updated_at')
         .eq('owner_id', user.id)
         .isFilter('deleted_at', null);
     for (final rawRow in rows) {
+      if (AccountService.currentUser?.id != user.id ||
+          StorageService.accountId != user.id ||
+          StorageService.accountRevision != revision) return;
       final row = Map<String, dynamic>.from(rawRow);
       final externalId = row['card_external_id']?.toString() ?? '';
       final payload = row['card_payload'];

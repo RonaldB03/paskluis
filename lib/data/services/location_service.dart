@@ -1,6 +1,7 @@
 import 'package:geolocator/geolocator.dart';
 
 import 'storage_service.dart';
+import 'locale_service.dart';
 import 'settings_service.dart';
 
 enum LocationAccessState {
@@ -55,14 +56,15 @@ abstract final class LocationService {
       try {
         position = await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.medium,
+            accuracy: LocationAccuracy.high,
             timeLimit: Duration(seconds: 8),
           ),
         );
       } catch (_) {
         position = await Geolocator.getLastKnownPosition();
       }
-      if (position == null) {
+      if (position == null || DateTime.now().difference(position.timestamp).abs() > const Duration(minutes: 2) ||
+          !position.accuracy.isFinite || position.accuracy > 100) {
         return const LocationSnapshot(LocationAccessState.unavailable);
       }
       return LocationSnapshot(
@@ -123,7 +125,7 @@ abstract final class LocationService {
     }
     final kilometers = meters / 1000;
     return kilometers < 10
-        ? '${kilometers.toStringAsFixed(1).replaceAll('.', ',')} km'
+        ? '${kilometers.toStringAsFixed(1).replaceAll('.', LocaleService.languageCode == 'nl' ? ',' : '.')} km'
         : '${kilometers.round()} km';
   }
 

@@ -77,6 +77,12 @@ class PrivacyScreen extends StatelessWidget {
               L10n.current.signingOutDoesNotRemoveYourLocal,
             ],
           ),
+          _PrivacySection(icon: Icons.location_on_outlined,
+            title: L10n.current.locationProcessingTitle, color: Color(0xFF286DC8),
+            points: [L10n.current.locationProcessingDetail]),
+          _PrivacySection(icon: Icons.save_outlined,
+            title: L10n.current.staysOnYourPhone, color: Color(0xFF23814A),
+            points: [L10n.current.localStorageWarning]),
           Padding(
             padding: EdgeInsets.fromLTRB(8, 8, 8, 0),
             child: Text(

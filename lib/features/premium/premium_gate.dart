@@ -3,19 +3,16 @@ import 'package:flutter/material.dart';
 
 import '../../data/services/account_service.dart';
 import '../../data/services/storage_service.dart';
+import '../../data/services/card_access_policy.dart';
+import '../../data/services/settings_service.dart';
 import '../account/account_screen.dart';
 
 abstract final class PremiumGate {
-  static int get giftCardCount => StorageService.cardsBox.values.where((item) {
-        return item is Map &&
-            item['type'] == 'Cadeaukaart' &&
-            item['isArchived'] != true &&
-            item['isArchived']?.toString() != 'true';
-      }).length;
+  static int get giftCardCount => CardAccessPolicy.ownGiftCards(StorageService.cardsBox.values);
 
   static Future<bool> canAddGiftCard(BuildContext context) async {
     // Everyone can actively use one gift card for free.
-    if (giftCardCount < 1) return true;
+    if (giftCardCount < SettingsService.freeGiftCardLimit) return true;
 
     var status = PlusStatus.inactive;
     if (AccountService.currentUser != null) {
@@ -41,7 +38,7 @@ abstract final class PremiumGate {
           textAlign: TextAlign.center,
         ),
         content:  Text(
-          L10n.current.storeOneGiftCardForFreeWith,
+          L10n.current.freeCardLimitReached,
           textAlign: TextAlign.center,
         ),
         actions: [

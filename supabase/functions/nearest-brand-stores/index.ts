@@ -4,7 +4,6 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-const monthlyLimit = 4500;
 const cacheHours = 24;
 
 function normalize(value: string) {
@@ -32,7 +31,7 @@ Deno.serve(async (request) => {
     const longitude = Number(body.longitude);
     const brands = [...new Set((Array.isArray(body.brands) ? body.brands : [])
       .map((value) => String(value).trim()).filter(Boolean))].slice(0, 20);
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || brands.length === 0) {
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude)>90 || Math.abs(longitude)>180 || brands.length === 0 || brands.some(b=>b.length>100)) {
       throw new Error('Ongeldige locatie of winkels.');
     }
 
@@ -43,6 +42,9 @@ Deno.serve(async (request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
       { auth: { autoRefreshToken: false, persistSession: false } },
     );
+    const {data:catalog,error:catalogError}=await admin.from('brands').select('name,aliases').eq('is_active',true);
+    if(catalogError)throw new Error('Store catalog unavailable');
+    const allowedNames=new Set((catalog||[]).flatMap(b=>[b.name,...(b.aliases||[])]).map(normalize));
     // Roughly 1.1 km cells: accurate enough for cache reuse while preventing
     // every small GPS movement from causing a billable lookup.
     const gridLat = latitude.toFixed(2);
@@ -51,10 +53,14 @@ Deno.serve(async (request) => {
     const matches: Record<string, unknown> = {};
 
     for (const brand of brands) {
+      if(!allowedNames.has(normalize(brand)))continue;
       const cacheKey = `${normalize(brand)}:${gridLat}:${gridLon}`;
       const { data: cached } = await admin.from('nearby_store_cache').select('*')
         .eq('cache_key', cacheKey).gt('expires_at', now.toISOString()).maybeSingle();
-      if (cached) {
+      if (cached && Array.isArray(cached.candidates) && cached.candidates.length) {
+        const nearest=[...cached.candidates].sort((a,b)=>distanceMeters(latitude,longitude,a.latitude,a.longitude)-distanceMeters(latitude,longitude,b.latitude,b.longitude))[0];
+        cached.store_latitude=nearest.latitude;cached.store_longitude=nearest.longitude;
+        cached.store_name=nearest.name;cached.store_address=nearest.address;
         const actualDistance = distanceMeters(
           latitude, longitude, cached.store_latitude, cached.store_longitude,
         );
@@ -67,17 +73,8 @@ Deno.serve(async (request) => {
         continue;
       }
 
-      const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
-        .toISOString().slice(0, 10);
-      const { data: usage } = await admin.from('places_api_monthly_usage')
-        .select('request_count').eq('month_start', monthStart).maybeSingle();
-      const count = Number(usage?.request_count || 0);
-      if (count >= monthlyLimit) continue;
-      await admin.from('places_api_monthly_usage').upsert({
-        month_start: monthStart,
-        request_count: count + 1,
-        updated_at: now.toISOString(),
-      });
+      const budget=await admin.rpc('reserve_places_request');
+      if(budget.error||budget.data!==true)continue;
 
       const placesResponse = await fetch('https://places.googleapis.com/v1/places:searchText', {
         method: 'POST',
@@ -90,7 +87,7 @@ Deno.serve(async (request) => {
           textQuery: `${brand} winkel`,
           languageCode: 'nl',
           regionCode: 'NL',
-          maxResultCount: 1,
+          pageSize: 10,
           rankPreference: 'DISTANCE',
           locationBias: {
             circle: { center: { latitude, longitude }, radius: 50000 },
@@ -98,17 +95,21 @@ Deno.serve(async (request) => {
         }),
       });
       if (!placesResponse.ok) {
-        console.error('[places]', placesResponse.status, await placesResponse.text());
+        console.error('[places]', placesResponse.status);
         continue;
       }
       const result = await placesResponse.json();
-      const place = result.places?.[0];
+      const candidates=(result.places||[]).filter(p=>Number.isFinite(p.location?.latitude)&&Number.isFinite(p.location?.longitude)).map(p=>({latitude:p.location.latitude,longitude:p.location.longitude,name:String(p.displayName?.text||brand),address:String(p.formattedAddress||'')}));
+      candidates.sort((a,b)=>distanceMeters(latitude,longitude,a.latitude,a.longitude)-distanceMeters(latitude,longitude,b.latitude,b.longitude));
+      const nearest=candidates[0];
+      const place=nearest?{location:{latitude:nearest.latitude,longitude:nearest.longitude},displayName:{text:nearest.name},formattedAddress:nearest.address}:null;
       const storeLat = Number(place?.location?.latitude);
       const storeLon = Number(place?.location?.longitude);
       if (!Number.isFinite(storeLat) || !Number.isFinite(storeLon)) continue;
       const distance = distanceMeters(latitude, longitude, storeLat, storeLon);
       const row = {
         cache_key: cacheKey,
+        candidates,
         brand_name: brand,
         origin_latitude: Number(gridLat),
         origin_longitude: Number(gridLon),

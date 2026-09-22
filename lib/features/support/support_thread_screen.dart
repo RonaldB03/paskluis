@@ -22,6 +22,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
   List<SupportMessage> _messages = const [];
   bool _loading = true;
   bool _sending = false;
+  late String _status = widget.thread.status;
 
   @override
   void initState() {
@@ -44,10 +45,13 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
   Future<void> _loadMessages({bool scroll = false}) async {
     try {
       final messages = await SupportService.loadMessages(widget.thread.id);
+      final threads = await SupportService.loadThreads();
+      final latest = threads.where((t) => t.id == widget.thread.id).firstOrNull;
       if (!mounted) return;
       final changed = messages.length != _messages.length;
       setState(() {
         _messages = messages;
+        _status = latest?.status ?? _status;
         _loading = false;
       });
       if (scroll || changed) _scrollToBottom();
@@ -58,7 +62,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
 
   Future<void> _send() async {
     final text = _messageController.text.trim();
-    if (text.isEmpty || _sending || widget.thread.status == 'closed') return;
+    if (text.isEmpty || _sending || _status == 'closed') return;
 
     FocusScope.of(context).unfocus();
     setState(() => _sending = true);
@@ -91,7 +95,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
   @override
   Widget build(BuildContext context) {
     L10n.watch(context);
-    final closed = widget.thread.status == 'closed';
+    final closed = _status == 'closed';
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
@@ -123,9 +127,8 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
                       itemBuilder: (context, index) {
                         final message = _messages[index];
                         final user = AccountService.currentUser;
-                        final mine = user == null
-                            ? message.senderId.isEmpty
-                            : message.senderId == user.id;
+                        final mine = message.senderKind == 'guest' ||
+                            (message.senderKind == 'user' && message.senderId == user?.id);
                         return _MessageBubble(message: message, mine: mine);
                       },
                     ),
@@ -217,6 +220,9 @@ class _MessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            if (message.senderKind == 'automatic')
+              Padding(padding: const EdgeInsets.only(bottom: 6),
+                child: Text(L10n.current.automaticAcknowledgement, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
             Text(
               message.message,
               style: TextStyle(color: mine ? Colors.white : Colors.black87),

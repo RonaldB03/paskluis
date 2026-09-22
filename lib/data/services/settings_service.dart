@@ -207,6 +207,8 @@ abstract final class SettingsService {
   static bool get cardSharingAvailable =>
       _remoteBool('feature_card_sharing', true);
 
+  static int get freeGiftCardLimit => _remoteInt('free_gift_card_limit', 1).clamp(1, 100);
+
   static String get privacyMessage => _remoteString(
         LocaleService.languageCode == 'en' ? 'privacy_message_en' : 'privacy_message',
         L10n.current.yourCardsCodesAndPinsStayOn,

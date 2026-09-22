@@ -72,6 +72,7 @@ class _SupportScreenState extends State<SupportScreen> {
         message: result.message,
         guestName: result.name,
         guestEmail: result.email,
+        category: result.category,
       );
       if (!mounted) return;
       await Navigator.push(
@@ -277,6 +278,7 @@ class _NewQuestionSheet extends StatefulWidget {
 }
 
 class _NewQuestionSheetState extends State<_NewQuestionSheet> {
+  String _category = 'overig';
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _subjectController = TextEditingController();
@@ -348,6 +350,22 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
               ),
               const SizedBox(height: 12),
             ],
+            DropdownButtonFormField<String>(
+              initialValue: _category,
+              decoration: InputDecoration(labelText: L10n.current.supportCategory, border: const OutlineInputBorder()),
+              items: [
+                for (final entry in <String,String>{
+                  'overig': L10n.current.supportOther, 'account': L10n.current.account,
+                  'plus': 'PasKluis Plus', 'kaarten': L10n.current.cards,
+                  'delen': L10n.current.supportSharing, 'meldingen': L10n.current.supportNotifications,
+                  'import': L10n.current.supportImport, 'privacy': L10n.current.privacyAndData,
+                }.entries) DropdownMenuItem(value: entry.key, child: Text(entry.value)),
+              ],
+              onChanged: (value) => setState(() => _category = value ?? 'overig'),
+            ),
+            const SizedBox(height: 12),
+            Text(L10n.current.supportSafeDetails, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            const SizedBox(height: 12),
             TextFormField(
               controller: _subjectController,
               textInputAction: TextInputAction.next,
@@ -387,6 +405,7 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
                     message: _messageController.text.trim(),
                     name: _nameController.text.trim(),
                     email: _emailController.text.trim(),
+                    category: _category,
                   ),
                 );
               },
@@ -407,12 +426,14 @@ class _NewSupportQuestion {
   final String message;
   final String name;
   final String email;
+  final String category;
 
   const _NewSupportQuestion({
     required this.subject,
     required this.message,
     required this.name,
     required this.email,
+    required this.category,
   });
 }
 

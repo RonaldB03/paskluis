@@ -1,4 +1,4 @@
 "NSCameraUsageDescription" = "PasKluis gebruikt de camera om barcodes en QR-codes te scannen.";
 "NSPhotoLibraryUsageDescription" = "PasKluis leest een foto of screenshot om een kaart te importeren.";
 "NSFaceIDUsageDescription" = "PasKluis gebruikt Face ID om je kluis en gevoelige codes te beschermen.";
-"NSLocationWhenInUseUsageDescription" = "PasKluis gebruikt je locatie tijdens gebruik om winkels in de buurt te vinden.";
+"NSLocationWhenInUseUsageDescription" = "PasKluis verwerkt je locatie tijdens gebruik via Supabase en Google Places om winkels in de buurt te vinden.";
