@@ -1,0 +1,108 @@
+name: Support chat internal test release
+
+# A dedicated release branch prevents ordinary app pushes from distributing.
+# Backend migration 029 and worker v8 were verified before creating this branch.
+on:
+  push:
+    branches: [codex/support-chat-internal-test]
+    paths: [.github/workflows/support-chat-internal-test.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: support-chat-internal-test-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/codex/support-chat-internal-test'
+    name: Publish ${{ matrix.platform }} internal test
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: iOS
+            workflow: ios-release
+            candidate: 6ab298fb08d49cdfa6141caf
+          - platform: Android
+            workflow: android-test
+            candidate: 6ab298fb63b018b798b210ae
+    steps:
+      - name: Check candidate, start internal release and await result
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          RELEASE_WORKFLOW: ${{ matrix.workflow }}
+          CANDIDATE_BUILD: ${{ matrix.candidate }}
+          RELEASE_BRANCH: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          python -u - <<'PY'
+          import json, os, time, urllib.request, urllib.error
+
+          token = os.environ['CODEMAGIC_API_TOKEN']
+          if not token:
+              raise SystemExit('CODEMAGIC_API_TOKEN is missing')
+          app_id = '69f36f732d8b59f24897933a'
+          workflow = os.environ['RELEASE_WORKFLOW']
+          if workflow not in {'ios-release', 'android-test'}:
+              raise SystemExit('Only existing internal test workflows are allowed')
+
+          def api(path, payload=None):
+              request = urllib.request.Request(
+                  'https://api.codemagic.io/' + path,
+                  data=None if payload is None else json.dumps(payload).encode(),
+                  headers={'Content-Type': 'application/json', 'x-auth-token': token})
+              try:
+                  with urllib.request.urlopen(request, timeout=45) as response:
+                      return json.load(response)
+              except urllib.error.HTTPError as error:
+                  raise RuntimeError(f'Codemagic API HTTP {error.code}') from None
+
+          def build_info(build_id):
+              response = api('builds/' + build_id)
+              return response.get('build', response)
+
+          candidate = build_info(os.environ['CANDIDATE_BUILD'])
+          candidate_status = candidate.get('status', 'unknown')
+          print('Candidate status:', candidate_status)
+          if candidate_status not in {'finished', 'success'}:
+              raise SystemExit('Candidate has not passed; release was not started')
+
+          response = api('builds', {'appId': app_id, 'workflowId': workflow,
+                                    'branch': os.environ['RELEASE_BRANCH']})
+          build_id = response.get('buildId')
+          if not build_id:
+              raise SystemExit('No build ID returned; do not retry without checking Codemagic')
+          url = f'https://codemagic.io/app/{app_id}/build/{build_id}'
+          print('Internal release started:', build_id, url)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f'[{workflow}: {build_id}]({url})\n\n')
+
+          deadline = time.monotonic() + 65 * 60
+          previous = None
+          while time.monotonic() < deadline:
+              try:
+                  build = build_info(build_id)
+              except (RuntimeError, urllib.error.URLError, TimeoutError):
+                  print('Temporary status check failure; build is not restarted')
+                  time.sleep(45)
+                  continue
+              status = build.get('status', 'unknown')
+              if status != previous:
+                  print('Build status:', status, flush=True)
+                  previous = status
+              if status in {'finished', 'success', 'failed', 'canceled', 'cancelled', 'timeout'}:
+                  with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+                      summary.write(f'Final status: **{status}**\n')
+                  if status not in {'finished', 'success'}:
+                      raise SystemExit('Internal release did not succeed; inspect the build link')
+                  print('Build and configured internal publishing completed successfully')
+                  break
+              time.sleep(45)
+          else:
+              raise SystemExit('Status monitoring timed out; inspect the existing build link')
+          PY
