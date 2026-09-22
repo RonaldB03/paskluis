@@ -1,6 +1,6 @@
 # PasKluis 1.5.0 — overdracht voor live testen
 
-Status 22 september 2026: code voor de testkandidaat staat klaar; nog geen vrijgave voor externe testers of openbare lancering. Serveruitrol is geblokkeerd door een verlopen Supabase-beheersessie.
+Status 22 september 2026: appkandidaten voor iOS en Android geslaagd. Vernieuwd beheer, database en serverfuncties zijn gepubliceerd. Nog geen vrijgave voor de officiële externe test of openbare lancering: SMTP, storekoppelingen, privacygegevens en toesteltests moeten worden afgerond.
 
 ## In deze update
 
@@ -9,8 +9,8 @@ Status 22 september 2026: code voor de testkandidaat staat klaar; nog geen vrijg
 - Interne supportnotities naar een aparte, afgeschermde tabel.
 - Automatische ontvangstbevestiging per nieuw gesprek, in NL/EN; doeltermijn 12 uur begint bij de eerste onbeantwoorde klantreactie. Een automatisch bericht telt niet als persoonlijk antwoord.
 - Supportcategorieën, minimale appcontext, gastgesprekken ook na inloggen, medewerkers toewijzen, standaardantwoorden, zoekfilters, achterstallige gesprekken en bekende storingen. Screenshotbijlagen met een voorbeeld vóór verzenden en privéopslag; tijdelijke links voor bevoegde lezers.
-- Databasewachtrij voor deel- en supportmeldingen, aparte push- en mailstatus, herhaalpogingen, generieke melding zonder kaartcode/PIN/gesprekstekst. Worker en SMTP moeten nog geconfigureerd en samen getest worden.
-- Native aankoop-/herstelcode en serververificatie voor het eenmalige product `paskluis_plus`; verkoop staat standaard uit. Toegang wordt uit alle geverifieerde aankopen afgeleid, zodat terugbetalingen op twee platforms geen oude Plus-toegang achterlaten. Automatisch ophalen van store-terugbetalingen is nog een afzonderlijk open punt.
+- Databasewachtrij voor deel- en supportmeldingen, aparte push- en mailstatus, herhaalpogingen, generieke melding zonder kaartcode/PIN/gesprekstekst. Worker en automatische herhaalpogingen zijn actief. De aparte support-SMTP moet nog worden geconfigureerd en echte push-/mailbezorging moet nog worden getest.
+- Native aankoop-/herstelcode en serververificatie voor het eenmalige product `paskluis_plus`; verkoop staat standaard uit. Toegang wordt uit alle geverifieerde aankopen afgeleid, zodat terugbetalingen op twee platforms geen oude Plus-toegang achterlaten. Een aparte servercontrole verwerkt Apple-terugbetalingen en Google-voided purchases. Die is gepubliceerd maar blijft uit totdat de storesleutels zijn ingesteld en de keten getest is.
 - Account verwijderen via app en voorbereide openbare webpagina. Extra wachtwoordcontrole, geen verwijdering van medewerkersaccounts zonder eerst hun rol te wijzigen.
 - Beheerde winkelherkenning, unieke barcodeprefixen, geen willekeurige gok bij meerdere matches.
 - Eerlijke uitleg van locatieverwerking en lokale opslag. GPS-metingen ouder dan twee minuten of met meer dan 100 m onnauwkeurigheid worden niet als actuele afstand gebruikt.
@@ -21,34 +21,32 @@ Status 22 september 2026: code voor de testkandidaat staat klaar; nog geen vrijg
 
 ## Wat werkelijk gecontroleerd is
 
-- JavaScript en alle zeven Edge Function-bronbestanden: syntaxiscontrole geslaagd.
-- Vier tests van de echte meldingshandler met gesimuleerde aanbieders geslaagd: pushstoring blokkeert e-mail niet, mailstoring verstuurt push niet opnieuw, ingetrokken deelrechten geven geen oude melding, onbevoegde verzoeken kunnen geen werk starten. Dit is geen bewijs van daadwerkelijke mail- of pushbezorging.
-- Dart-bronnen: syntaxiscontrole en NL/EN-sleutelcontrole geslaagd (692 berichten); dit vervangt geen Flutter-analyse.
-- Eerste databaseproef (020–024 in een teruggedraaide transactie): sessieovername, oude sessie geweigerd, interne notities onleesbaar voor klant, één ontvangstbevestiging, termijn wordt niet opnieuw gestart. Latere aanvullingen aan 021 en migraties 025–026 zijn nog niet live uitgevoerd.
-- Appkandidaat `f6ee355`: [iOS Candidate Build #1](https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ab26e8f9dae708f39d82606) geslaagd, inclusief analyse en alle 23 Fluttertests. [Android Candidate Build #1](https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ab26e90952c592617281d6d) is gestart op dezelfde appbron. De status wordt vóór overdracht bijgewerkt. Latere wijzigingen betreffen beheer, servercode, tests en documentatie.
-- Tussenversie `e166ae4` is eerder via de bestaande releaseworkflows verspreid (iOS #64 / Android #62). Die tussenversie is geen vrijgave voor de officiële test: de nieuwe servermigraties ontbreken nog. De definitieve kandidaat wordt niet automatisch verspreid.
-- Supabase sessie verloopt opnieuw. Migraties, nieuwe Edge Functions en vernieuwd beheer zijn nog niet live geactiveerd.
-- Camera, biometrie, betalingen, mailboxbezorging en push op twee echte telefoons zijn nog niet getest.
+- Beide definitieve appkandidaten op `f6ee355` geslaagd: [iOS Candidate Build #1](https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ab26e8f9dae708f39d82606) en [Android Candidate Build #1](https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ab26e90952c592617281d6d). Flutteranalyse en alle 23 Fluttertests geslaagd. Latere commits wijzigen alleen beheer, backend, tests en documentatie.
+- Elf tests van de echte serverhandlers met gesimuleerde aanbieders geslaagd: onafhankelijke push/mailkanalen, herhaalpogingen, ingetrokken deelrechten, geverifieerde terugbetalingen, paginering, accountcontrole en storingsgedrag. Dit bewijst geen echte mailbox-, push- of storebezorging.
+- Dart-syntaxis en 692 NL/EN-berichten gecontroleerd; JavaScript en Edge-bronnen zonder syntaxisfouten.
+- Alle migraties 020–026 met SQL-regressies in een rollback-transactie beproefd, daarna atomair gepubliceerd. Sessieovername, oude sessie geweigerd, interne notities onleesbaar voor klanten, één automatische ontvangstbevestiging en een niet-herstartende antwoordtermijn: geslaagd. Twee storeaankopen achtereen terugbetalen laat geen oude Plus-toegang achter; onafhankelijke medewerkerstoegang blijft behouden.
+- Migratie 027 en de aanvullende planning eerst in een rollback-transactie gecontroleerd, daarna gepubliceerd. Alleen de server kan storecontrolewerk claimen en twee gelijktijdige workers kunnen hetzelfde werk niet claimen.
+- Gepubliceerd: dispatch-notifications, support-attachments, delete-account, verify-purchase, reconcile-purchases en updates aan send-shared-card-notification en nearest-brand-stores. Drie onderhouds-/meldingsjobs actief. De vierde job voor storecontrole is voorbereid maar wordt door een uitgeschakelde instelling tegengehouden.
+- Live smokecontrole: meldingsworker antwoordt HTTP 200 met lege wachtrij; onbevoegde account-/aankoop-/deelverzoeken worden geweigerd. De locatiefunctie accepteert de publieke app-sleutel en valideert de invoer. Geen echte klantberichten verstuurd tijdens deze controles.
+- Vernieuwd beheer online; publieke [hulppagina](https://ronaldb03.github.io/paskluis/support.html) en [verwijderpagina](https://ronaldb03.github.io/paskluis/delete-account.html) laden correct. Ingelogd beheer is nog niet visueel end-to-end getest.
+- Tussenversie `e166ae4` is eerder verspreid (iOS #64 / Android #62). De definitieve kandidaat is nog niet via de stores verspreid; de vrijgavestatus wordt hieronder bijgehouden.
+- Camera, biometrie, betalingen, mailboxbezorging, screenshots en push op twee echte telefoons zijn nog niet end-to-end getest.
 
-## Uitrolvolgorde
+## Wat nog nodig is voor vrijgave
 
-1. Herstel de Supabase-beheersessie. Gebruik de beveiligde aanmeldroute; geen wachtwoorden of sleutels in chat of Git.
-2. Voer de bijgewerkte migraties 020–026 met de regressies eerst in een geïsoleerde testomgeving uit. Leg een herstelpunt vast. `supabase/tests/release_security.sql` draait in een rollback-transactie. Versie 020 verplaatst en verwijdert de oude notitiekolom; oud beheer moet daarmee gecoördineerd worden vervangen.
-3. Configureer alleen voor PasKluis:
-   - `SUPPORT_SMTP_JSON`: `{host,port,user,password,from}` van het gekozen mailaccount; bestaande Auth-SMTP is geen automatisch gedeelde Edge-secret.
-   - `SUPPORT_INBOX_EMAIL`: `info@paskluis.nl`.
-   - `NOTIFICATION_WORKER_SECRET`: willekeurige geheime waarde van minimaal 32 tekens, identiek in Vault onder `paskluis_notification_worker_secret`.
-   - Bestaande `FIREBASE_SERVICE_ACCOUNT_JSON` en `GOOGLE_PLACES_API_KEY` behouden.
-   - `APPLE_IAP_KEY_JSON`: `{privateKey,keyId,issuerId}`, met het juiste recht op PasKluis.
-   - `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`: afzonderlijke serviceaccount met uitsluitend benodigde Play-rechten voor PasKluis.
-   - `ALLOW_SANDBOX_PURCHASES=true` uitsluitend waar bewust met storetesters getest wordt.
-4. Deploy migraties en alle gewijzigde functies gezamenlijk; activeer daarna `supabase/operations/enable_notification_worker.sql`. De worker valideert zijn eigen secret; gebruikerfuncties valideren JWT via Auth. Controleer eigen Supabase CLI projectkoppeling vóór deploy.
-5. Werk de beheerbranch `codex/admin-control-center` bij met `admin/`; publiceer app.js, index.html en styles.css samen. Bewaar bestaande gebruikers/rollen/logo's.
-6. Configureer de twee storeproducten als eenmalig, niet-verbruikbaar `paskluis_plus`, europrijs € 1,99, geen abonnement. Zet `store_purchase_enabled` pas aan nadat beide aankoopflows, herstel en accountbinding zijn gecontroleerd.
-7. **Nog uit te bouwen vóór betaalde lancering:** automatische terugbetalings-/intrekkingsverwerking via store-events of periodieke servercontrole. De huidige verificatie verwerkt een terugbetaling bij opnieuw verifiëren, maar ontvangt nog geen automatische store-events.
-8. **Screenshotbijlagen zijn voorbereid** met voorbeeld vóór verzending, privéopslag, kort geldige links, maximaal 5 MB en 6 bijlagen per gesprek per dag. Toegangsrechten en verwijderen moeten nog end-to-end worden getest. **Nog open:** herstel van een kwijtgeraakt gastgesprek via e-mail. Rechtstreeks per e-mail antwoorden met terugkoppeling naar het gesprek is bewust geen onderdeel van de eerste versie.
-9. Controleer en publiceer openbare support-, privacy- en verwijderpagina's. Bevestig verantwoordelijke bedrijfsnaam/contactgegevens, providerbewaartermijnen en de definitieve privacytekst. De voorbereide pagina's beschrijven 1.5.0 en mogen niet voortijdig als huidige werking worden gepresenteerd.
-10. Wacht op groene builds van exact de uiteindelijke commit; voer de toesteltests hieronder uit. Automatische pushes starten nu kandidaatbuilds zonder distributie. De bestaande `ios-release` en `android-test` workflows blijven beschikbaar voor vrijgave nadat de backend gereed is.
+1. **Supportmail:** configureer in Supabase Edge Secrets `SUPPORT_SMTP_JSON` met `{host,port,user,password,from}` voor PasKluis. De bestaande Auth-SMTP is geen automatisch gedeelde Edge-secret. Standaard ontvangt `info@paskluis.nl` medewerkersmeldingen; `SUPPORT_INBOX_EMAIL` kan dit wijzigen. Voer wachtwoorden en sleutels uitsluitend in de beveiligde beheeromgeving in.
+2. **Storeaankopen:** configureer `APPLE_IAP_KEY_JSON` (`{privateKey,keyId,issuerId}`) en `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` met de benodigde PasKluis-rechten. Richt in beide stores het eenmalige, niet-verbruikbare product `paskluis_plus` in op € 1,99. `ALLOW_SANDBOX_PURCHASES=true` alleen bewust voor storetesters. `store_purchase_enabled` blijft uit totdat kopen, annuleren, herstellen en accountbinding zijn gecontroleerd.
+3. **Terugbetalingen:** `reconcile-purchases` gebruikt dezelfde bestaande workersecret. Apple-productieaankopen worden dagelijks gecontroleerd in kleine batches; Google wordt elke zes uur gepagineerd over zijn beschikbare 30-dagenvenster gecontroleerd. Alleen een geverifieerde terugbetaling wijzigt toegang; providerfouten behouden bestaande toegang. Controleer `purchase_reconciliation_state.last_success_at/last_error` en backlog. Activeer `store_reconciliation_enabled` pas na echte storeproeven. Een storing langer dan Googles 30-dagenvenster vereist handmatig onderzoek; Apple-sandboxtests gebruiken de aankoop-/herstelverificatie.
+4. **Privacy en storegegevens:** bevestig juridische exploitant/contactgegevens, bewaartermijnen, doelgroepen/regio’s en classificatie. `admin/privacy.html` is een concept en is bewust nog niet gepubliceerd. Vul daarna App Privacy / Data Safety en de openbare privacy-URL in.
+5. **Toesteltests:** voer onderstaande checklist uit op iPhone en Android, als gast en met twee aparte accounts. Supportbijlagen zijn privé en kort geldig, maximaal 5 MB en 6 per gesprek per dag; toegang door een ander account en verwijderen moeten expliciet meegetest worden.
+6. **Gastgesprek herstellen:** bij verlies van de lokale toegangssleutel ontbreekt nog zelfstandig herstel via e-mail. Voor de eerste test blijft contact via `info@paskluis.nl` de uitwijkmogelijkheid. Rechtstreeks per e-mail antwoorden met automatische terugkoppeling naar het appgesprek is bewust uitgesteld.
+7. **Externe testers:** pas na aftekenen van de blokkades de officiële test openen. Interne TestFlight-/Playdistributie is geen openbare lancering. Geen testeruitnodigingen zonder concrete lijst en akkoord.
+
+## Uitrol en herstel
+
+De actieve Supabase-projectkoppeling is `ajldblvvlbvmgejrmhyj`. De uitgevoerde bestanden staan in `supabase/migrations/020*` t/m `027*`; bestaande bestanden niet opnieuw blind uitvoeren. Operaties: `enable_notification_worker.sql` en `enable_purchase_reconciliation.sql`. Workersecret staat zowel in Edge Secrets als in Vault onder `paskluis_notification_worker_secret`; de waarde staat nergens in Git. Firebase/Places-instellingen zijn behouden.
+
+Bij problemen: zet nieuwe storefuncties uit via de twee instellingen; pauzeer uitsluitend de bijbehorende cronjob. Migreer gegevens niet terug door tabellen te verwijderen. Migratie 020 verplaatste interne notities naar een aparte tabel: herstel niet alleen het oude beheer zonder passend databaseschema. Bewaar gebruikers, rollen, kaarten, logo’s en supportgegevens. Gebruik een gerichte voorwaartse herstelmigratie.
 
 ## Toesteltest (beide platforms, NL en EN)
 
@@ -67,7 +65,7 @@ Status 22 september 2026: code voor de testkandidaat staat klaar; nog geen vrijg
 | Screenshotbijlage, ander account/gasttoken, verwijderen | Alleen bevoegde lezer krijgt tijdelijke link; bestand wordt mee verwijderd | Nog testen |
 | Appslot op kaart-/gespreksscherm | Geen omzeiling via navigatie of melding | Nog testen |
 | Plus kopen/annuleren/herstellen/verkeerd account | Alleen geverifieerde aankoop geeft toegang | Nog testen |
-| Terugbetaling | Plus op server ingetrokken zonder afhankelijkheid van appherstel | Implementatie open |
+| Terugbetaling | Plus op server ingetrokken zonder afhankelijkheid van appherstel | Code/isolatietests geslaagd; storeproef nog nodig |
 | Account verwijderen app en web | Werkelijk verwijderd; ontvangen toegang vervalt; lokale keuze klopt | Nog testen |
 | Locatie, meerdere filialen, geen toestemming | Plausibele hemelsbrede afstanden; geen cadeaukaarten in de buurt | Nog testen |
 | Groot lettertype, klein scherm, Android-navigatie | Geen afgesneden bediening of nummers | Nog testen |

@@ -1,5 +1,5 @@
-# Each function performs its own caller validation. The worker uses a separate
-# server-only secret; user actions validate the JWT through Supabase Auth.
+# Workers use a server-only secret; user actions validate JWTs through Auth.
+# Guest location lookups retain the gateway's public app-key check.
 [functions.dispatch-notifications]
 verify_jwt = false
 [functions.delete-account]
@@ -9,6 +9,8 @@ verify_jwt = false
 [functions.send-shared-card-notification]
 verify_jwt = false
 [functions.nearest-brand-stores]
-verify_jwt = false
+verify_jwt = true
 [functions.support-attachments]
+verify_jwt = false
+[functions.reconcile-purchases]
 verify_jwt = false

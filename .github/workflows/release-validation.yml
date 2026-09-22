@@ -17,8 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Verify independent delivery channels and retry behavior
-        run: node --test supabase/tests/notification_worker_test.mjs
+      - name: Verify notification delivery and purchase reconciliation
+        run: node --test supabase/tests/*_test.mjs
   flutter:
     runs-on: ubuntu-latest
     timeout-minutes: 25
