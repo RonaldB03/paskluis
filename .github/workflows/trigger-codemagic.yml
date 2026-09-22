@@ -13,8 +13,10 @@ on:
     paths-ignore:
       - .github/workflows/trigger-codemagic.yml
       - .github/workflows/admin-pages.yml
+      - .github/workflows/release-validation.yml
       - admin/**
       - supabase/**
+      - docs/**
 
 permissions:
   contents: read

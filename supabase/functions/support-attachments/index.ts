@@ -1,6 +1,19 @@
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info'};
 const MAX_BYTES=5*1024*1024;
+async function readBody(request:Request){
+ const limit=Math.ceil(MAX_BYTES/3)*4+4096;
+ if(Number(request.headers.get('content-length')||0)>limit||!request.body)throw new Error('TOO_LARGE');
+ const reader=request.body.getReader(),chunks:Uint8Array[]=[];let size=0;
+ try{
+  while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;
+   if(size>limit){await reader.cancel();throw new Error('TOO_LARGE');}chunks.push(value);
+  }
+ }finally{reader.releaseLock();}
+ const all=new Uint8Array(size);let offset=0;
+ for(const chunk of chunks){all.set(chunk,offset);offset+=chunk.byteLength;}
+ return JSON.parse(new TextDecoder().decode(all));
+}
 function imageType(b:Uint8Array){
  if(b.length>8&&b[0]===0xff&&b[1]===0xd8&&b[2]===0xff)return 'image/jpeg';
  if(b.length>8&&b[0]===0x89&&String.fromCharCode(...b.slice(1,8))==='PNG\r\n\x1a\n')return 'image/png';
@@ -11,8 +24,7 @@ Deno.serve(async request=>{
  if(request.method==='OPTIONS')return new Response('ok',{headers:cors});
  if(request.method!=='POST')return new Response('',{status:405,headers:cors});
  try{
-  if(Number(request.headers.get('content-length')||0)>MAX_BYTES*1.4+2048)throw new Error('TOO_LARGE');
-  const body=await request.json(),id=String(body.thread_id||'');
+  const body=await readBody(request),id=String(body.thread_id||'');
   if(!/^[0-9a-f-]{36}$/i.test(id))throw new Error('ACCESS_DENIED');
   const url=Deno.env.get('SUPABASE_URL')!;
   const caller=createClient(url,Deno.env.get('SUPABASE_ANON_KEY')!,{global:{headers:{Authorization:request.headers.get('Authorization')||''}},auth:{persistSession:false}});

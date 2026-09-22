@@ -1,6 +1,6 @@
 # PasKluis 1.5.0 — overdracht voor live testen
 
-Status 22 september 2026: implementatie in voorbereiding; nog geen vrijgave voor externe testers of openbare lancering.
+Status 22 september 2026: code voor de testkandidaat staat klaar; nog geen vrijgave voor externe testers of openbare lancering. Serveruitrol is geblokkeerd door een verlopen Supabase-beheersessie.
 
 ## In deze update
 
@@ -8,9 +8,9 @@ Status 22 september 2026: implementatie in voorbereiding; nog geen vrijgave voor
 - Actieve sessie ook in databasebeleid en deel-RPC's afgedwongen. Een overgenomen oude sessie krijgt geen nieuwe toegang.
 - Interne supportnotities naar een aparte, afgeschermde tabel.
 - Automatische ontvangstbevestiging per nieuw gesprek, in NL/EN; doeltermijn 12 uur begint bij de eerste onbeantwoorde klantreactie. Een automatisch bericht telt niet als persoonlijk antwoord.
-- Supportcategorieën, minimale appcontext, gastgesprekken ook na inloggen, medewerkers toewijzen, standaardantwoorden, zoekfilters, achterstallige gesprekken en bekende storingen.
+- Supportcategorieën, minimale appcontext, gastgesprekken ook na inloggen, medewerkers toewijzen, standaardantwoorden, zoekfilters, achterstallige gesprekken en bekende storingen. Screenshotbijlagen met een voorbeeld vóór verzenden en privéopslag; tijdelijke links voor bevoegde lezers.
 - Databasewachtrij voor deel- en supportmeldingen, aparte push- en mailstatus, herhaalpogingen, generieke melding zonder kaartcode/PIN/gesprekstekst. Worker en SMTP moeten nog geconfigureerd en samen getest worden.
-- Native aankoop-/herstelcode en serververificatie voor het eenmalige product `paskluis_plus`; verkoop staat standaard uit.
+- Native aankoop-/herstelcode en serververificatie voor het eenmalige product `paskluis_plus`; verkoop staat standaard uit. Toegang wordt uit alle geverifieerde aankopen afgeleid, zodat terugbetalingen op twee platforms geen oude Plus-toegang achterlaten. Automatisch ophalen van store-terugbetalingen is nog een afzonderlijk open punt.
 - Account verwijderen via app en voorbereide openbare webpagina. Extra wachtwoordcontrole, geen verwijdering van medewerkersaccounts zonder eerst hun rol te wijzigen.
 - Beheerde winkelherkenning, unieke barcodeprefixen, geen willekeurige gok bij meerdere matches.
 - Eerlijke uitleg van locatieverwerking en lokale opslag. GPS-metingen ouder dan twee minuten of met meer dan 100 m onnauwkeurigheid worden niet als actuele afstand gebruikt.
@@ -22,9 +22,11 @@ Status 22 september 2026: implementatie in voorbereiding; nog geen vrijgave voor
 ## Wat werkelijk gecontroleerd is
 
 - JavaScript en alle zeven Edge Function-bronbestanden: syntaxiscontrole geslaagd.
+- Vier tests van de echte meldingshandler met gesimuleerde aanbieders geslaagd: pushstoring blokkeert e-mail niet, mailstoring verstuurt push niet opnieuw, ingetrokken deelrechten geven geen oude melding, onbevoegde verzoeken kunnen geen werk starten. Dit is geen bewijs van daadwerkelijke mail- of pushbezorging.
 - Dart-bronnen: syntaxiscontrole en NL/EN-sleutelcontrole geslaagd (692 berichten); dit vervangt geen Flutter-analyse.
 - Eerste databaseproef (020–024 in een teruggedraaide transactie): sessieovername, oude sessie geweigerd, interne notities onleesbaar voor klant, één ontvangstbevestiging, termijn wordt niet opnieuw gestart. Latere aanvullingen aan 021 en migraties 025–026 zijn nog niet live uitgevoerd.
-- Tussenversie `e166ae4`: iOS Release Build #64 geslaagd, inclusief analyzer en tests. Dit is niet de definitieve versie met alle laatste aanvullingen.
+- Appkandidaat `f6ee355`: [iOS Candidate Build #1](https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ab26e8f9dae708f39d82606) geslaagd, inclusief analyse en alle 23 Fluttertests. [Android Candidate Build #1](https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ab26e90952c592617281d6d) is gestart op dezelfde appbron. De status wordt vóór overdracht bijgewerkt. Latere wijzigingen betreffen beheer, servercode, tests en documentatie.
+- Tussenversie `e166ae4` is eerder via de bestaande releaseworkflows verspreid (iOS #64 / Android #62). Die tussenversie is geen vrijgave voor de officiële test: de nieuwe servermigraties ontbreken nog. De definitieve kandidaat wordt niet automatisch verspreid.
 - Supabase sessie verloopt opnieuw. Migraties, nieuwe Edge Functions en vernieuwd beheer zijn nog niet live geactiveerd.
 - Camera, biometrie, betalingen, mailboxbezorging en push op twee echte telefoons zijn nog niet getest.
 
@@ -62,6 +64,7 @@ Status 22 september 2026: implementatie in voorbereiding; nog geen vrijgave voor
 | Vervaldatum en verwijderen/intrekken | Juiste lokale herinnering, oude herinnering geannuleerd | Nog testen |
 | Support gast/gebruiker/na login | Één ontvangstbevestiging, gesprek vindbaar, eigen rechten | Nog testen |
 | Support antwoord, mail, push, storingen | Correct gesprek opent; geen interne notities in klantdata | Nog testen |
+| Screenshotbijlage, ander account/gasttoken, verwijderen | Alleen bevoegde lezer krijgt tijdelijke link; bestand wordt mee verwijderd | Nog testen |
 | Appslot op kaart-/gespreksscherm | Geen omzeiling via navigatie of melding | Nog testen |
 | Plus kopen/annuleren/herstellen/verkeerd account | Alleen geverifieerde aankoop geeft toegang | Nog testen |
 | Terugbetaling | Plus op server ingetrokken zonder afhankelijkheid van appherstel | Implementatie open |

@@ -1,4 +1,4 @@
--- Run after migrations 020–025 in a test database. Everything rolls back.
+-- Run after migrations 020–026 in a test database. Everything rolls back.
 begin;
 -- Temporary identities are rolled back; these tests send no email or push.
 insert into auth.users(id,email,raw_user_meta_data) values
@@ -41,5 +41,18 @@ do $$begin
 end$$;
 reset role;
 select 'PASS: single-device takeover, old-session denial, private notes, exactly one acknowledgement, 12-hour target' as security_verification;
+
+do $$declare u uuid:='ee220000-0000-4000-8000-000000000002';begin
+ perform public.record_verified_purchase(u,'apple','release-apple','production',false);
+ perform public.record_verified_purchase(u,'google','release-google','production',false);
+ perform public.record_verified_purchase(u,'apple','release-apple','production',true);
+ if not exists(select 1 from public.entitlements where user_id=u and revoked_at is null and source='google' and expires_at is null) then raise exception 'OTHER_STORE_ACCESS_LOST';end if;
+ perform public.record_verified_purchase(u,'google','release-google','production',true);
+ if exists(select 1 from public.entitlements where user_id=u and revoked_at is null) then raise exception 'REFUNDED_ACCESS_REMAINS';end if;
+ insert into public.entitlements(user_id,product_id,source) values(u,'paskluis_plus','complimentary');
+ perform public.record_verified_purchase(u,'google','release-google','production',true);
+ if not exists(select 1 from public.entitlements where user_id=u and revoked_at is null and source='complimentary') then raise exception 'STAFF_GRANTED_ACCESS_LOST';end if;
+end$$;
+select 'PASS: multi-store refund reconciliation and independent staff-granted access' as purchase_verification;
 
 rollback;

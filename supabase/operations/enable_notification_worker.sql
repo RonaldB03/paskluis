@@ -17,7 +17,7 @@ begin
  select decrypted_secret into worker_secret from vault.decrypted_secrets where name='paskluis_notification_worker_secret';
  if length(coalesce(worker_secret,''))<32 then return; end if;
  perform net.http_post(url:='https://ajldblvvlbvmgejrmhyj.supabase.co/functions/v1/dispatch-notifications',
-  headers:=jsonb_build_object('Content-Type','application/json','x-job-secret',worker_secret),body:='{}'::jsonb,timeout_milliseconds:=10000);
+  headers:=jsonb_build_object('Content-Type','application/json','x-job-secret',worker_secret),body:='{}'::jsonb,timeout_milliseconds:=90000);
 end$$;
 revoke all on function public.run_notification_worker() from public,anon,authenticated;
 select cron.schedule('paskluis-notification-outbox','* * * * *','select public.run_notification_worker();');

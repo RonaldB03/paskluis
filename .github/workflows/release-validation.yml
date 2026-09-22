@@ -9,6 +9,16 @@ concurrency:
   group: release-validation-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  notifications:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify independent delivery channels and retry behavior
+        run: node --test supabase/tests/notification_worker_test.mjs
   flutter:
     runs-on: ubuntu-latest
     timeout-minutes: 25

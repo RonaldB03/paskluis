@@ -41,6 +41,7 @@ async function createGoogleAccessToken(serviceAccount: Record<string, string>) {
   );
   const assertion = `${unsigned}.${base64Url(new Uint8Array(signature))}`;
   const response = await fetch(tokenUri, {
+    signal: AbortSignal.timeout(10000),
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -95,7 +96,8 @@ Deno.serve(async request=>{
    if(staff){title='Nieuwe klantvraag in PasKluis';copy='Er staat een nieuwe vraag of reactie klaar. We streven naar een persoonlijk antwoord binnen 12 uur. Open het beheer om te antwoorden.';email=Deno.env.get('SUPPORT_INBOX_EMAIL')||'info@paskluis.nl';pushDone=true;}
    else if(job.event_type==='card_shared'){title=en?'New card in PasKluis':'Nieuwe kaart in PasKluis';copy=en?'A card has been shared with you. Open PasKluis to view it.':'Er is een kaart met je gedeeld. Open PasKluis om de kaart te bekijken.';emailDone=true;}
    else {title=en?'A reply from PasKluis':'Antwoord van PasKluis';copy=en?'We have replied to your question. Read and reply in Customer support in the app.':'We hebben je vraag beantwoord. Lees en beantwoord het bericht bij Klantenservice in de app.';}
-   if(!pushDone){
+   let pushError:unknown=null;
+   try{if(!pushDone){
     if(!job.recipient_id&&!guestHash){pushDone=true;}
     else{
      const active=job.recipient_id?await admin.from('account_device_sessions').select('device_id').eq('user_id',job.recipient_id).maybeSingle():{data:null};
@@ -109,17 +111,19 @@ Deno.serve(async request=>{
        const deviceEn=device.locale==='en';
        const shared=job.event_type==='card_shared';
        const notification=shared?{title:deviceEn?'New card in PasKluis':'Nieuwe kaart in PasKluis',body:deviceEn?'A card has been shared with you.':'Er is een kaart met je gedeeld.'}:{title:deviceEn?'A reply from PasKluis':'Antwoord van PasKluis',body:deviceEn?'Your reply is ready in Customer support.':'Je antwoord staat klaar bij Klantenservice.'};
-       const result=await fetch(`https://fcm.googleapis.com/v1/projects/${firebase.project_id}/messages:send`,{method:'POST',headers:{Authorization:`Bearer ${googleAccess}`,'Content-Type':'application/json'},body:JSON.stringify({message:{token:device.token,notification,data:{event:shared?'shared_card':'support_reply',...(shared?{membership_id:job.membership_id}:{thread_id:job.thread_id})},android:{priority:'high',notification:{channel_id:shared?'shared_cards':'support_replies',tag:`paskluis-${job.id}`,sound:'default'}},apns:{headers:{'apns-collapse-id':`paskluis-${job.id}`},payload:{aps:{sound:'default'}}}}})});
+       const result=await fetch(`https://fcm.googleapis.com/v1/projects/${firebase.project_id}/messages:send`,{method:'POST',signal:AbortSignal.timeout(10000),headers:{Authorization:`Bearer ${googleAccess}`,'Content-Type':'application/json'},body:JSON.stringify({message:{token:device.token,notification,data:{event:shared?'shared_card':'support_reply',...(shared?{membership_id:job.membership_id}:{thread_id:job.thread_id})},android:{priority:'high',notification:{channel_id:shared?'shared_cards':'support_replies',tag:`paskluis-${job.id}`,sound:'default'}},apns:{headers:{'apns-collapse-id':`paskluis-${job.id}`},payload:{aps:{sound:'default'}}}}})});
        if(!result.ok){const error=await result.text();if(error.includes('UNREGISTERED')){if(device.id==='guest'){await admin.from('guest_support_push_tokens').delete().eq('guest_token_hash',guestHash);}else{await admin.from('push_device_tokens').delete().eq('id',device.id);}}else throw new Error(`PUSH_${result.status}`);}else accepted++;
       }
       if(accepted===0&&job.event_type==='card_shared')throw new Error('NO_REGISTERED_DEVICE');
       pushDone=true;
      }
     }
-   }
+   }}catch(error){pushError=error;}
    // Persist channel completion before a potentially unavailable mail provider.
    await admin.from('notification_outbox').update({push_done:pushDone}).eq('id',job.id);
    if(!emailDone){if(email)await sendMail(email,title,copy,staff,String(job.id),en);emailDone=true;}
+   // A push-provider failure must not suppress an otherwise deliverable email.
+   if(pushError)throw pushError;
    await admin.from('notification_outbox').update({push_done:pushDone,email_done:emailDone,delivered_at:new Date().toISOString(),locked_until:null,last_error:null}).eq('id',job.id);
    completed++;
   }catch(error){const reason=error instanceof Error&&/^(MAIL_NOT_CONFIGURED|NO_REGISTERED_DEVICE|PUSH_\d+)$/.test(error.message)?error.message:'DELIVERY_FAILED';await admin.from('notification_outbox').update({push_done:pushDone,email_done:emailDone,locked_until:null,last_error:reason,available_at:new Date(Date.now()+Math.min(3600,30*2**job.attempts)*1000).toISOString()}).eq('id',job.id);}
