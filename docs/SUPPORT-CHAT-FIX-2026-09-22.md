@@ -31,3 +31,11 @@
 - De oorspronkelijke testvraag bleek als medewerkersbericht te zijn opgeslagen, doordat de eigenaar zelf beheerrechten heeft. Dat veroorzaakte direct een onterechte antwoordmelding en onderdrukte de automatische ontvangstbevestiging. Migratie 029 herstelt uitsluitend zulke eerste eigen berichten, met behoud van tekst en tijdstip; de eerste echte reactie blijft een medewerkersantwoord. Er wordt geen ontvangstbevestiging of push achteraf verstuurd.
 - Het bestaande gesprek is nu correct: klantvraag om 14:30 UTC, echt medewerkersantwoord om 14:33 UTC met opgeslagen afzendernaam.
 - Interne distributie volgt nu de geslaagde backend- en appcontroles. Controleer na installatie nog een echte push en het openen van het antwoord op beide telefoons, als gast en als ingelogde gebruiker. Geen nieuwe SMTP-inlog nodig.
+
+## Interne testuitrol na backendcorrectie
+
+- De nieuwe Edge-worker is ook via dezelfde serverauthenticatie aangeroepen met een lege wachtrij: HTTP 200, `processed: 0`, `completed: 0`. Geen testpush of testmail verzonden.
+- Geïsoleerde releasebranch: `codex/support-chat-internal-test`, commit `4b5d45c`. Deze bevat dezelfde geteste appcode plus de live toegepaste datacorrectie.
+- [Interne releaseworkflow](https://github.com/RonaldB03/paskluis/actions/runs/35747091683) controleert per platform eerst de geslaagde kandidaat en start vervolgens de bestaande `ios-release` / `android-test` workflows. Alleen TestFlight/App Store Connect en Google Play internal; geen openbare lancering.
+- De normale appbranch blijft kandidaten bouwen zonder publicatie. De releaseworkflow gebruikt het bestaande Codemagic-secret zonder dit uit te lezen of te loggen en volgt beide resultaten.
+- Status bij start: interne uitrol loopt. Noteer het definitieve resultaat en de buildlinks na voltooiing.
