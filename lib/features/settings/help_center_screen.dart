@@ -13,12 +13,17 @@ class HelpCenterScreen extends StatefulWidget {
 
 class _HelpCenterScreenState extends State<HelpCenterScreen> {
   late Future<List<HelpFaq>> _faqs;
+  Locale? _faqLocale;
   String _query = '';
 
   @override
-  void initState() {
-    super.initState();
-    _faqs = HelpService.loadFaqs();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
+    if (_faqLocale != locale) {
+      _faqLocale = locale;
+      _faqs = HelpService.loadFaqs();
+    }
   }
 
   @override

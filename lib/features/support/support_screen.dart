@@ -17,13 +17,24 @@ class _SupportScreenState extends State<SupportScreen> {
   bool _loading = false;
   String? _error;
   List<SupportThread> _threads = const [];
-  late final Future<List<HelpFaq>> _faqs;
+  late Future<List<HelpFaq>> _faqs;
+  Locale? _faqLocale;
 
   @override
   void initState() {
     super.initState();
-    _faqs = HelpService.loadFaqs();
     _loadThreads();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
+    if (_faqLocale != locale) {
+      _faqLocale = locale;
+      _faqs = HelpService.loadFaqs();
+      if (_error != null) _error = L10n.current.unableToLoadConversations;
+    }
   }
 
   Future<void> _loadThreads() async {

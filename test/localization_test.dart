@@ -10,6 +10,7 @@ import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:paskluis_v1/shared/widgets/language_picker.dart';
 import 'package:paskluis_v1/shared/utils/amount_format.dart';
 import 'package:paskluis_v1/features/premium/plus_information_screen.dart';
+import 'package:paskluis_v1/features/settings/help_center_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -88,6 +89,26 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(LocaleService.preference.value, 'en');
     expect(find.byTooltip('Choose your language'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('open help screen reloads FAQs when the locale changes', (tester) async {
+    await LocaleService.setLanguage('nl');
+    await tester.pumpWidget(ValueListenableBuilder<Locale>(
+      valueListenable: LocaleService.locale,
+      builder: (_, locale, child) => MaterialApp(
+        locale: locale,
+        supportedLocales: LocaleService.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: const HelpCenterScreen(),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('Hoe voeg ik een kaart toe?'), findsOneWidget);
+    await LocaleService.setLanguage('en');
+    await tester.pumpAndSettle();
+    expect(find.text('How do I add a card?'), findsOneWidget);
+    expect(find.text('Hoe voeg ik een kaart toe?'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
