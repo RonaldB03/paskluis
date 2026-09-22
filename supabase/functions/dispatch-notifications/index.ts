@@ -61,6 +61,9 @@ async function sendMail(to:string,title:string,copy:string,staff:boolean,eventId
  let config;
  try{config=JSON.parse(Deno.env.get('SUPPORT_SMTP_JSON')||'{}');}catch{throw new Error('MAIL_INVALID_CONFIG');}
  if(!config||typeof config!=='object')throw new Error('MAIL_INVALID_CONFIG');
+ // The mailbox identity can be corrected without exposing/re-entering its password.
+ const mailbox=Deno.env.get('SUPPORT_MAILBOX')?.trim();
+ if(mailbox)config={...config,user:mailbox,from:mailbox};
  if(!config.host||!config.user||!config.password||!config.from)throw new Error('MAIL_NOT_CONFIGURED');
  const transport=nodemailer.createTransport({host:config.host,port:Number(config.port||465),secure:Number(config.port||465)===465,requireTLS:true,disableFileAccess:true,disableUrlAccess:true,auth:{user:config.user,pass:config.password},tls:{rejectUnauthorized:true},connectionTimeout:10000,socketTimeout:15000});
  const link=staff?'https://ronaldb03.github.io/paskluis/':'https://ronaldb03.github.io/paskluis/support.html';
@@ -102,7 +105,7 @@ Deno.serve(async request=>{
    }
    if(job.recipient_id){const profile=await admin.from('profiles').select('email').eq('id',job.recipient_id).maybeSingle();if(profile.error)throw new Error('DATABASE_READ_FAILED');email=profile.data?.email||email;}
    const en=locale==='en';
-   if(staff){title='Nieuwe klantvraag in PasKluis';copy='Er staat een nieuwe vraag of reactie klaar. We streven naar een persoonlijk antwoord binnen 12 uur. Open het beheer om te antwoorden.';email=Deno.env.get('SUPPORT_INBOX_EMAIL')||'info@paskluis.nl';pushDone=true;}
+   if(staff){title='Nieuwe klantvraag in PasKluis';copy='Er staat een nieuwe vraag of reactie klaar. We streven naar een persoonlijk antwoord binnen 12 uur. Open het beheer om te antwoorden.';email=Deno.env.get('SUPPORT_INBOX_EMAIL')||Deno.env.get('SUPPORT_MAILBOX')?.trim()||'info@paskluis.com';pushDone=true;}
    else if(job.event_type==='card_shared'){title=en?'New card in PasKluis':'Nieuwe kaart in PasKluis';copy=en?'A card has been shared with you. Open PasKluis to view it.':'Er is een kaart met je gedeeld. Open PasKluis om de kaart te bekijken.';emailDone=true;}
    else {title=en?'A reply from PasKluis':'Antwoord van PasKluis';copy=en?'We have replied to your question. Read and reply in Customer support in the app.':'We hebben je vraag beantwoord. Lees en beantwoord het bericht bij Klantenservice in de app.';}
    let pushError:unknown=null;

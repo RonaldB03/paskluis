@@ -9,8 +9,8 @@ import {stripTypeScriptTypes} from 'node:module';
 const source = stripTypeScriptTypes((await readFile(new URL('../functions/dispatch-notifications/index.ts', import.meta.url),'utf8'))
   .replace(/^import .*;\n/gm,''));
 
-function setup({pushFails=false,mailFails=false,mailErrorCode=null,invalidMailConfig=false,jobPatch={},membershipRevoked=false,readFails=false}={}) {
-  const updates=[],mail=[],push=[];
+function setup({pushFails=false,mailFails=false,mailErrorCode=null,invalidMailConfig=false,mailbox=null,inbox=null,jobPatch={},membershipRevoked=false,readFails=false}={}) {
+  const updates=[],mail=[],push=[],transports=[];
   const job={id:'test-event',recipient_id:'test-user',thread_id:'test-thread',membership_id:'test-membership',
     event_type:'support_reply',attempts:1,push_done:false,email_done:false,...jobPatch};
   const rows={support_threads:{user_id:'test-user',guest_email:null,locale:'nl'},profiles:{email:'test@example.invalid'},
@@ -30,9 +30,11 @@ function setup({pushFails=false,mailFails=false,mailErrorCode=null,invalidMailCo
   const env={NOTIFICATION_WORKER_SECRET:'test-worker-secret',SUPABASE_URL:'https://example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fake',
     FIREBASE_SERVICE_ACCOUNT_JSON:JSON.stringify({private_key:'-----BEGIN PRIVATE KEY-----\nYQ==\n-----END PRIVATE KEY-----',client_email:'test@example.invalid',project_id:'test'}),
     SUPPORT_SMTP_JSON:invalidMailConfig?'invalid-json':JSON.stringify({host:'example.invalid',user:'test',password:'fake',from:'test@example.invalid'})};
+  if(mailbox)env.SUPPORT_MAILBOX=mailbox;
+  if(inbox)env.SUPPORT_INBOX_EMAIL=inbox;
   vm.runInNewContext(source,{
     Deno:{env:{get:key=>env[key]},serve:callback=>handler=callback},createClient:()=>client,
-    nodemailer:{createTransport:()=>({sendMail:async data=>{mail.push(data);if(mailFails)throw Object.assign(new Error('Do not expose credentials or provider response'),{code:mailErrorCode});},close:()=>{mailClosed++;}})},
+    nodemailer:{createTransport:config=>{transports.push(config);return {sendMail:async data=>{mail.push(data);if(mailFails)throw Object.assign(new Error('Do not expose credentials or provider response'),{code:mailErrorCode});},close:()=>{mailClosed++;}};}},
     crypto:{subtle:{importKey:async()=>({}),sign:async()=>new Uint8Array([1,2,3])}},
     fetch:async(url,options)=>{
       if(url==='https://oauth2.googleapis.com/token')return Response.json({access_token:'fake-access'});
@@ -41,7 +43,7 @@ function setup({pushFails=false,mailFails=false,mailErrorCode=null,invalidMailCo
       return Response.json(pushFails?{error:'Unavailable'}:{name:'accepted'},{status:pushFails?503:200});
     },Response,TextEncoder,URLSearchParams,Uint8Array,AbortSignal,btoa,atob,
   });
-  return {updates,mail,push,claims:()=>claims,mailClosed:()=>mailClosed,run:secret=>handler(new Request('https://example.invalid/worker',{
+  return {updates,mail,push,transports,claims:()=>claims,mailClosed:()=>mailClosed,run:secret=>handler(new Request('https://example.invalid/worker',{
     method:'POST',headers:{'x-job-secret':secret??env.NOTIFICATION_WORKER_SECRET},body:'{}'}))};
 }
 
@@ -91,4 +93,15 @@ test('SMTP diagnostics expose only bounded codes and close failed connections',a
   const malformed=setup({invalidMailConfig:true});await malformed.run();
   assert.equal(malformed.updates.at(-1).last_error,'MAIL_INVALID_CONFIG');
   assert.equal(malformed.mail.length,0);
+});
+
+test('a mailbox correction preserves the password and aligns login, sender and staff recipient',async()=>{
+  const ctx=setup({mailbox:' info@paskluis.com ',jobPatch:{event_type:'support_question'}});await ctx.run();
+  assert.equal(ctx.transports[0].auth.user,'info@paskluis.com');
+  assert.equal(ctx.transports[0].auth.pass,'fake');
+  assert.equal(ctx.mail[0].from.address,'info@paskluis.com');
+  assert.equal(ctx.mail[0].to,'info@paskluis.com');
+  assert.equal(ctx.updates.at(-1).email_done,true);
+  const override=setup({mailbox:'info@paskluis.com',inbox:'staff@example.invalid',jobPatch:{event_type:'support_question'}});await override.run();
+  assert.equal(override.mail[0].to,'staff@example.invalid');
 });
