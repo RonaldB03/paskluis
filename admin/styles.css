@@ -8,3 +8,11 @@
 #thread-context,#support-delivery-status{font-size:.85rem;color:#666;padding:0 16px}.reply-form{flex-wrap:wrap}#canned-reply{width:100%}.message strong{font-size:.75rem}details.panel{margin-top:20px;padding:20px}details.panel summary{cursor:pointer;font-weight:700}#thread-note{min-width:180px}@media(max-width:760px){.ticket-controls{display:grid;grid-template-columns:1fr}.support-layout{display:block}.thread-list{max-height:300px}.conversation{margin-top:16px}.toolbar{flex-wrap:wrap}.message{max-width:95%}}
 
 .support-attachment{display:block;max-width:100%;max-height:220px;margin-top:12px;border-radius:12px;object-fit:contain}
+
+/* Shared role styling: customer on the left, every staff member on the right. */
+.message{overflow-wrap:anywhere}
+.message.staff{align-self:flex-end;background:var(--blue-soft);border:1px solid #dce3f7;border-radius:16px 4px 16px 16px}
+.message.customer{align-self:flex-start;background:#f5f3f6;border:1px solid var(--line);border-radius:4px 16px 16px 16px}
+.message.automatic{align-self:center;background:#faf9fb;border:1px dashed #d6d1dd;border-radius:14px;color:var(--muted)}
+.message .message-sender{display:block;margin-bottom:7px;font-size:.78rem;line-height:1.4;color:var(--blue)}
+.message.customer .message-sender{color:var(--red-dark)}
