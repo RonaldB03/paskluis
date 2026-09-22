@@ -2,6 +2,25 @@ begin;
 
 -- Snapshot the public staff name when replying, never a login/email address.
 alter table public.support_messages add column if not exists sender_name text;
+-- Earlier staff-owned app questions were misclassified as replies. An opening
+-- message by the thread owner, created with that thread, is a customer question.
+-- Preserve the original text/time and never send a retrospective notification.
+with repaired as (
+ update public.support_messages m set sender_kind = 'user', sender_name = null
+ from public.support_threads t
+ where m.thread_id = t.id and m.sender_id = t.user_id
+  and m.sender_kind = 'staff' and m.created_at = t.created_at
+  and not exists (select 1 from public.support_messages earlier
+    where earlier.thread_id = t.id and earlier.created_at < m.created_at)
+ returning m.thread_id
+)
+update public.support_threads t set
+ first_responded_at = (select min(m.created_at) from public.support_messages m
+   where m.thread_id = t.id and m.sender_kind = 'staff'
+    and not (m.sender_id = t.user_id and m.created_at = t.created_at)),
+ last_customer_message_at = t.created_at
+where t.id in (select thread_id from repaired);
+
 update public.support_messages m
 set sender_name = coalesce(nullif(left(trim(p.display_name), 100), ''), 'Team PasKluis')
 from public.profiles p
