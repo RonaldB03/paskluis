@@ -25,7 +25,8 @@ begin
  where platform=p_platform and transaction_id=p_transaction_id;
  if p_revoked then
   update public.entitlements set revoked_at=now() where user_id=p_user_id and product_id='paskluis_plus' and source=source_value and revoked_at is null
-   and not exists(select 1 from public.store_purchases where user_id=p_user_id and revoked_at is null);
+   and not exists(select 1 from public.store_purchases where user_id=p_user_id and revoked_at is null
+    and (environment='production' or verified_at>now()-interval '7 days'));
   return false;
  end if;
  until_date:=case when p_environment='sandbox' then now()+interval '7 days' else null end;

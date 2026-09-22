@@ -991,6 +991,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
                 children: [
+                ValueListenableBuilder<int>(
+                  valueListenable:SettingsService.settingsRevision,
+                  builder:(context,_,__)=>Column(children:[
+                    if(SettingsService.maintenanceEnabled)
+                      Card(color:const Color(0xFFFFF3CB),child:ListTile(
+                        leading:const Icon(Icons.info_outline),title:Text(SettingsService.maintenanceMessage))),
+                    if(SettingsService.updateRecommended)
+                      Card(color:const Color(0xFFE7F1FF),child:ListTile(
+                        leading:const Icon(Icons.system_update),title:Text(L10n.current.updateNotice))),
+                  ]),
+                ),
                 TextField(
                   controller: _searchController,
                   onChanged: (value) => setState(() => _searchQuery = value),

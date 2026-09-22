@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -206,6 +207,25 @@ abstract final class SettingsService {
 
   static bool get cardSharingAvailable =>
       _remoteBool('feature_card_sharing', true);
+
+  static const appVersion = '1.5.0';
+  static bool get maintenanceEnabled => _remoteBool('maintenance_enabled', false);
+  static String get maintenanceMessage => _remoteString(
+    LocaleService.languageCode == 'en' ? 'maintenance_message_en' : 'maintenance_message',
+    L10n.current.maintenanceNotice,
+  );
+  static bool get updateRecommended {
+    final minimum = _remoteString(Platform.isIOS ? 'minimum_ios_version' : 'minimum_android_version', '1.0.0');
+    return versionIsOlder(appVersion, minimum);
+  }
+  static bool versionIsOlder(String current, String minimum) {
+    final pattern = RegExp(r'^\d+\.\d+\.\d+$');
+    if(!pattern.hasMatch(current) || !pattern.hasMatch(minimum)) return false;
+    final a=current.split('.').map(int.parse).toList();
+    final b=minimum.split('.').map(int.parse).toList();
+    for(var i=0;i<3;i++) { if(a[i]!=b[i])return a[i]<b[i]; }
+    return false;
+  }
 
   static bool get storePurchaseEnabled => _remoteBool('store_purchase_enabled', false);
 

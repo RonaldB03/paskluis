@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'settings_service.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:convert';
 import 'dart:math';
@@ -117,7 +119,7 @@ abstract final class SupportService {
       'p_email': guestEmail?.trim() ?? '', 'p_subject': subject.trim(),
       'p_message': message.trim(), 'p_category': category,
       'p_locale': LocaleService.languageCode,
-      'p_context': {'platform': Platform.operatingSystem, 'version': '1.5.0'},
+      'p_context': {'platform': Platform.operatingSystem, 'version': SettingsService.appVersion},
     });
     final threads = await loadThreads();
     try { await registerGuestNotifications(); } catch (_) {}
@@ -161,6 +163,22 @@ abstract final class SupportService {
       'sender_id': user.id,
       'message': message.trim(),
     });
+  }
+
+  static Future<List<Map<String,dynamic>>> loadAttachments(String threadId) async {
+    final response=await _client.functions.invoke('support-attachments',body:{
+      'action':'list','thread_id':threadId,'guest_token':await _guestToken(),
+    });
+    final rows=response.data is Map ? response.data['attachments'] as List? : null;
+    return rows?.map((row)=>Map<String,dynamic>.from(row)).toList() ?? [];
+  }
+
+  static Future<void> sendScreenshot(String threadId,Uint8List bytes) async {
+    if(bytes.length>5*1024*1024)throw StateError('IMAGE_TOO_LARGE');
+    final response=await _client.functions.invoke('support-attachments',body:{
+      'action':'upload','thread_id':threadId,'guest_token':await _guestToken(),'image':base64Encode(bytes),
+    });
+    if(response.data is! Map || response.data['uploaded']!=true)throw StateError('UPLOAD_FAILED');
   }
 
   static Future<void> registerGuestNotifications() async {

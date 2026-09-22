@@ -51,7 +51,7 @@ language sql security definer set search_path='' as $$
  update public.notification_outbox set attempts=attempts+1,locked_until=now()+interval '5 minutes'
  where id in (select id from public.notification_outbox where delivered_at is null
  and attempts<8 and available_at<=now() and (locked_until is null or locked_until<now())
- order by id for update skip locked limit 25) returning *;
+ order by id for update skip locked limit 5) returning *;
 $$;
 revoke all on function public.claim_notification_jobs() from public,anon,authenticated;
 grant execute on function public.claim_notification_jobs() to service_role;
@@ -107,6 +107,7 @@ create or replace function public.create_support_conversation(
 ) returns uuid language plpgsql security definer set search_path='' as $$
 declare new_id uuid; uid uuid:=auth.uid(); token_hash text;
 begin
+ if uid is not null and not public.is_staff() then perform public.require_active_device_session(); end if;
  if length(trim(coalesce(p_subject,''))) not between 2 and 100 or
  length(trim(coalesce(p_message,''))) not between 1 and 5000 then raise exception 'INVALID_MESSAGE'; end if;
  if p_locale not in ('nl','en') or p_category not in ('account','plus','kaarten','delen','meldingen','import','privacy','overig') then raise exception 'INVALID_CATEGORY'; end if;

@@ -1,3 +1,4 @@
+import 'package:image_picker/image_picker.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
@@ -22,6 +23,8 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
   List<SupportMessage> _messages = const [];
   bool _loading = true;
   bool _sending = false;
+  List<Map<String,dynamic>> _attachments=[];
+  DateTime? _attachmentRefresh;
   late String _status = widget.thread.status;
 
   @override
@@ -45,6 +48,12 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
   Future<void> _loadMessages({bool scroll = false}) async {
     try {
       final messages = await SupportService.loadMessages(widget.thread.id);
+      if(_attachmentRefresh==null || DateTime.now().difference(_attachmentRefresh!).inSeconds>180 || messages.length!=_messages.length){
+        try {
+          final attachments=await SupportService.loadAttachments(widget.thread.id);
+          if(mounted){_attachments=attachments;_attachmentRefresh=DateTime.now();}
+        } catch (_) {}
+      }
       final threads = await SupportService.loadThreads();
       final latest = threads.where((t) => t.id == widget.thread.id).firstOrNull;
       if (!mounted) return;
@@ -79,6 +88,33 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  Future<void> _sendScreenshot() async {
+    if(_sending || _status=='closed')return;
+    try {
+      final picked=await ImagePicker().pickImage(source:ImageSource.gallery,maxWidth:1600,maxHeight:1600,imageQuality:80);
+      if(picked==null || !mounted)return;
+      final bytes=await picked.readAsBytes();
+      if(!mounted)return;
+      if(bytes.length>5*1024*1024)throw StateError('IMAGE_TOO_LARGE');
+      final send=await showDialog<bool>(context:context,builder:(dialogContext)=>AlertDialog(
+        title:Text(L10n.current.sendScreenshot),
+        content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[
+          Text(L10n.current.screenshotPrivacy),const SizedBox(height:12),
+          Image.memory(bytes,height:220,fit:BoxFit.contain),
+        ])),
+        actions:[TextButton(onPressed:()=>Navigator.pop(dialogContext,false),child:Text(L10n.current.cancel)),
+          FilledButton(onPressed:()=>Navigator.pop(dialogContext,true),child:Text(L10n.current.send))],
+      ));
+      if(send!=true || !mounted)return;
+      setState(()=>_sending=true);
+      await SupportService.sendScreenshot(widget.thread.id,bytes);
+      _attachmentRefresh=null;
+      await _loadMessages(scroll:true);
+    } catch (_) {
+      if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(L10n.current.screenshotFailed)));
+    } finally {if(mounted)setState(()=>_sending=false);}
   }
 
   void _scrollToBottom() {
@@ -129,7 +165,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
                         final user = AccountService.currentUser;
                         final mine = message.senderKind == 'guest' ||
                             (message.senderKind == 'user' && message.senderId == user?.id);
-                        return _MessageBubble(message: message, mine: mine);
+                        return _MessageBubble(message: message, mine: mine, attachments: _attachments.where((a)=>a['message_id']==message.id).map((a)=>a['url'] as String).toList());
                       },
                     ),
                   ),
@@ -154,6 +190,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    IconButton(tooltip:L10n.current.sendScreenshot,onPressed:_sending?null:_sendScreenshot,icon:const Icon(Icons.attach_file_rounded)),
                     Expanded(
                       child: TextField(
                         controller: _messageController,
@@ -196,8 +233,9 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
 class _MessageBubble extends StatelessWidget {
   final SupportMessage message;
   final bool mine;
+  final List<String> attachments;
 
-  const _MessageBubble({required this.message, required this.mine});
+  const _MessageBubble({required this.message, required this.mine, this.attachments=const []});
 
   @override
   Widget build(BuildContext context) {
@@ -226,6 +264,15 @@ class _MessageBubble extends StatelessWidget {
             Text(
               message.message,
               style: TextStyle(color: mine ? Colors.white : Colors.black87),
+            ),
+            for(final url in attachments) Padding(padding:const EdgeInsets.only(top:10),child:
+              InkWell(onTap:()=>showDialog<void>(context:context,builder:(dialogContext)=>Dialog(
+                child:Column(mainAxisSize:MainAxisSize.min,children:[
+                  Flexible(child:InteractiveViewer(child:Image.network(url,fit:BoxFit.contain))),
+                  TextButton(onPressed:()=>Navigator.pop(dialogContext),child:Text(L10n.current.close)),
+                ]),
+              )),child:Image.network(url,height:180,fit:BoxFit.contain,
+                errorBuilder:(_,__,___)=>Text(L10n.current.screenshotUnavailable))),
             ),
             const SizedBox(height: 5),
             Text(

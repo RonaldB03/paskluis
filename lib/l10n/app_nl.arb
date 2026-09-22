@@ -1022,5 +1022,12 @@
   "purchasePending": "De aankoop wacht op bevestiging van de store.",
   "purchaseCancelled": "De aankoop is geannuleerd.",
   "purchaseVerificationPending": "De aankoop kon nog niet worden bevestigd. Controleer je verbinding en gebruik Aankopen herstellen. Koop niet opnieuw. Gebruik hetzelfde PasKluis-account als bij je aankoop.",
-  "purchaseFailed": "De aankoop is niet afgerond. Probeer later opnieuw."
+  "purchaseFailed": "De aankoop is niet afgerond. Probeer later opnieuw.",
+  "maintenanceNotice": "De online diensten van PasKluis zijn tijdelijk in onderhoud. Je eigen lokale kaarten blijven beschikbaar.",
+  "updateNotice": "Er staat een nieuwere versie klaar. Werk PasKluis bij via de App Store of Google Play.",
+  "sendScreenshot": "Screenshot meesturen",
+  "screenshotPrivacy": "Deze afbeelding wordt naar de klantenservice geüpload. Maak kaartnummers, barcodes, QR-codes en pincodes onleesbaar voordat je hem verstuurt.",
+  "screenshotFailed": "De screenshot kon niet worden verzonden. Gebruik een JPG-, PNG- of WebP-afbeelding van maximaal 5 MB. Je kunt maximaal 6 afbeeldingen per gesprek per dag sturen.",
+  "screenshotUnavailable": "Afbeelding tijdelijk niet beschikbaar. Vernieuw het gesprek.",
+  "close": "Sluiten"
 }

@@ -19,6 +19,21 @@ Deno.serve(async request=>{
   const profile=await admin.from('profiles').select('role').eq('id',user.id).single();
   if(profile.error)throw new Error('PROFILE_UNAVAILABLE');
   if(profile.data.role!=='user')return Response.json({error:'STAFF_ROLE_MUST_BE_REMOVED_FIRST'},{status:409,headers:cors});
+  // Remove private support files before their database references are cascaded.
+  const ownThreads=await admin.from('support_threads').select('id').eq('user_id',user.id);
+  const guestThreads=await admin.from('support_threads').select('id').is('user_id',null).eq('guest_email',user.email.toLowerCase());
+  if(ownThreads.error||guestThreads.error)throw new Error('ATTACHMENT_LOOKUP_FAILED');
+  const threadIds=[...ownThreads.data,...guestThreads.data].map(t=>t.id);
+  for(const threadId of threadIds){
+   let offset=0;
+   while(true){
+    const files=await admin.from('support_attachments').select('storage_path').eq('thread_id',threadId).range(offset,offset+99);
+    if(files.error)throw new Error('ATTACHMENT_LOOKUP_FAILED');
+    if(!files.data.length)break;
+    const removed=await admin.storage.from('support-attachments').remove(files.data.map(f=>f.storage_path));
+    if(removed.error)throw new Error('ATTACHMENT_CLEANUP_FAILED');offset+=100;
+   }
+  }
   const cleanup=await admin.rpc('prepare_account_deletion',{p_user_id:user.id});
   if(cleanup.error)throw new Error('CLEANUP_FAILED');
   const deleted=await admin.auth.admin.deleteUser(user.id);

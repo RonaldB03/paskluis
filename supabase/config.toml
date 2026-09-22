@@ -10,3 +10,5 @@ verify_jwt = false
 verify_jwt = false
 [functions.nearest-brand-stores]
 verify_jwt = false
+[functions.support-attachments]
+verify_jwt = false

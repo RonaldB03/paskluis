@@ -1,6 +1,6 @@
 # PasKluis build trigger 2026-09-19: QR support for loyalty and gift cards
 workflows:
-  ios-release:
+  ios-release: &ios_release
     name: iOS Release Build
     max_build_duration: 60
 
@@ -44,7 +44,7 @@ workflows:
       app_store_connect:
         auth: integration
 
-  android-test:
+  android-test: &android_test
     name: Android Test Build
     max_build_duration: 60
 
@@ -115,3 +115,15 @@ workflows:
         script: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Run regression tests
         script: flutter test --reporter expanded
+
+  # Candidate builds compile and test without distributing an app that requires
+  # backend changes which are not yet deployed. Use the existing release
+  # workflows once the deployment checklist is signed off.
+  ios-candidate:
+    <<: *ios_release
+    name: iOS Candidate Build
+    publishing: {}
+  android-candidate:
+    <<: *android_test
+    name: Android Candidate Build
+    publishing: {}

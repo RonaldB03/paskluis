@@ -1022,5 +1022,12 @@
   "purchasePending": "The purchase is awaiting confirmation from the store.",
   "purchaseCancelled": "The purchase was cancelled.",
   "purchaseVerificationPending": "The purchase could not yet be verified. Check your connection and use Restore purchases. Do not buy again. Use the same PasKluis account as for the original purchase.",
-  "purchaseFailed": "The purchase was not completed. Please try again later."
+  "purchaseFailed": "The purchase was not completed. Please try again later.",
+  "maintenanceNotice": "PasKluis online services are temporarily undergoing maintenance. Your own local cards remain available.",
+  "updateNotice": "A newer version is available. Update PasKluis through the App Store or Google Play.",
+  "sendScreenshot": "Attach screenshot",
+  "screenshotPrivacy": "This image will be uploaded to customer support. Hide card numbers, barcodes, QR codes and PINs before sending.",
+  "screenshotFailed": "The screenshot could not be sent. Use a JPG, PNG or WebP image no larger than 5 MB. You can send up to 6 images per conversation per day.",
+  "screenshotUnavailable": "Image temporarily unavailable. Refresh the conversation.",
+  "close": "Close"
 }
