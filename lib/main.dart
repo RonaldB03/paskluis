@@ -217,13 +217,18 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   Future<void> _openSupportThread(String id) async {
     if(id.isEmpty)return;
     try {
-      final threads=await SupportService.loadThreads();
-      final thread=threads.where((t)=>t.id==id).firstOrNull;
-      if(thread==null || !mounted)return;
+      final conversation = await SupportService.loadConversation(id);
+      final thread = conversation.thread;
+      if(!mounted)return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if(mounted) _navigatorKey.currentState?.push(MaterialPageRoute<void>(builder:(_)=>SupportThreadScreen(thread:thread)));
       });
-    } catch (_) {}
+    } catch (_) {
+      if (!mounted) return;
+      final context = _navigatorKey.currentContext;
+      if (context != null) ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(L10n.current.supportMessagesLoadFailed)));
+    }
   }
 
   void _openPasswordRecovery() {

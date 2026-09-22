@@ -9,11 +9,11 @@ import {stripTypeScriptTypes} from 'node:module';
 const source = stripTypeScriptTypes((await readFile(new URL('../functions/dispatch-notifications/index.ts', import.meta.url),'utf8'))
   .replace(/^import .*;\n/gm,''));
 
-function setup({pushFails=false,mailFails=false,mailErrorCode=null,invalidMailConfig=false,mailbox=null,inbox=null,jobPatch={},membershipRevoked=false,readFails=false}={}) {
+function setup({pushFails=false,mailFails=false,mailErrorCode=null,invalidMailConfig=false,mailbox=null,inbox=null,jobPatch={},membershipRevoked=false,readFails=false,guest=false}={}) {
   const updates=[],mail=[],push=[],transports=[];
   const job={id:'test-event',recipient_id:'test-user',thread_id:'test-thread',membership_id:'test-membership',
     event_type:'support_reply',attempts:1,push_done:false,email_done:false,...jobPatch};
-  const rows={support_threads:{user_id:'test-user',guest_email:null,locale:'nl'},profiles:{email:'test@example.invalid'},
+  const rows={support_threads:{user_id:guest?null:'test-user',guest_email:guest?'guest@example.invalid':null,guest_token_hash:guest?'guest-hash':null,locale:'nl'},guest_support_push_tokens:{token:'fake-guest-token',locale:'nl'},profiles:{email:'test@example.invalid'},
     account_device_sessions:{device_id:'test-device'},push_device_tokens:[{id:'test-push',token:'fake-push-token',locale:'nl'}],
     card_share_members:{revoked_at:membershipRevoked?'2026-01-01':null,removed_by_recipient_at:null}};
   let handler,claims=0,mailClosed=0;
@@ -47,9 +47,9 @@ function setup({pushFails=false,mailFails=false,mailErrorCode=null,invalidMailCo
     method:'POST',headers:{'x-job-secret':secret??env.NOTIFICATION_WORKER_SECRET},body:'{}'}))};
 }
 
-test('a push failure still delivers email and retries only the incomplete channel',async()=>{
+test('a customer reply retries failed push without sending an email',async()=>{
   const ctx=setup({pushFails:true});await ctx.run();
-  assert.equal(ctx.mail.length,1);assert.equal(ctx.push.length,1);
+  assert.equal(ctx.mail.length,0);assert.equal(ctx.push.length,1);
   assert.equal(ctx.updates.at(-1).email_done,true);
   assert.equal(ctx.updates.at(-1).push_done,false);
   assert.equal(ctx.updates.at(-1).last_error,'PUSH_503');
@@ -58,10 +58,10 @@ test('a push failure still delivers email and retries only the incomplete channe
   assert.equal(retry.mail.length,0);assert.ok(retry.updates.at(-1).delivered_at);
 });
 
-test('mail failure preserves successful push to prevent a duplicate on retry',async()=>{
-  const ctx=setup({mailFails:true});await ctx.run();
+test('staff inbox mail failure retries without a customer push',async()=>{
+  const ctx=setup({mailFails:true,jobPatch:{event_type:'support_question'}});await ctx.run();
   assert.equal(ctx.updates.at(-1).push_done,true);assert.equal(ctx.updates.at(-1).email_done,false);
-  const retry=setup({jobPatch:{push_done:true}});await retry.run();
+  const retry=setup({jobPatch:{push_done:true,event_type:'support_question'}});await retry.run();
   assert.equal(retry.push.length,0);assert.equal(retry.mail.length,1);assert.ok(retry.updates.at(-1).delivered_at);
 });
 
@@ -85,12 +85,12 @@ test('database lookup failure retains the job for retry instead of marking it de
 
 test('SMTP diagnostics expose only bounded codes and close failed connections',async()=>{
   for(const code of ['EAUTH','ETIMEDOUT','credential-bearing-arbitrary-code']){
-    const ctx=setup({mailFails:true,mailErrorCode:code});await ctx.run();
+    const ctx=setup({mailFails:true,mailErrorCode:code,jobPatch:{event_type:'support_question'}});await ctx.run();
     assert.equal(ctx.updates.at(-1).last_error,code==='credential-bearing-arbitrary-code'?'MAIL_SEND_FAILED':`MAIL_${code}`);
     assert.equal(ctx.updates.at(-1).email_done,false);
     assert.equal(ctx.mailClosed(),1);
   }
-  const malformed=setup({invalidMailConfig:true});await malformed.run();
+  const malformed=setup({invalidMailConfig:true,jobPatch:{event_type:'support_question'}});await malformed.run();
   assert.equal(malformed.updates.at(-1).last_error,'MAIL_INVALID_CONFIG');
   assert.equal(malformed.mail.length,0);
 });
@@ -104,4 +104,25 @@ test('a mailbox correction preserves the password and aligns login, sender and s
   assert.equal(ctx.updates.at(-1).email_done,true);
   const override=setup({mailbox:'info@paskluis.com',inbox:'staff@example.invalid',jobPatch:{event_type:'support_question'}});await override.run();
   assert.equal(override.mail[0].to,'staff@example.invalid');
+});
+
+
+test('signed-in and guest replies use push only, including pending legacy jobs',async()=>{
+  for(const guest of [false,true]){
+    const ctx=setup({guest,invalidMailConfig:true,jobPatch:{recipient_id:guest?null:'test-user',email_done:false}});
+    const response=await ctx.run();
+    assert.equal((await response.json()).completed,1);
+    assert.equal(ctx.mail.length,0);
+    assert.equal(ctx.transports.length,0);
+    assert.equal(ctx.push.length,1);
+    assert.equal(ctx.push[0].message.data.thread_id,'test-thread');
+    assert.equal(ctx.push[0].message.data.event,'support_reply');
+    assert.equal(ctx.updates.at(-1).email_done,true);
+  }
+});
+
+test('a delivered push with previously pending customer email completes without contacting any provider',async()=>{
+  const ctx=setup({jobPatch:{push_done:true,email_done:false}});await ctx.run();
+  assert.equal(ctx.mail.length,0);assert.equal(ctx.push.length,0);
+  assert.ok(ctx.updates.at(-1).delivered_at);
 });

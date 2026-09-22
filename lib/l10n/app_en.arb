@@ -1029,5 +1029,7 @@
   "screenshotPrivacy": "This image will be uploaded to customer support. Hide card numbers, barcodes, QR codes and PINs before sending.",
   "screenshotFailed": "The screenshot could not be sent. Use a JPG, PNG or WebP image no larger than 5 MB. You can send up to 6 images per conversation per day.",
   "screenshotUnavailable": "Image temporarily unavailable. Refresh the conversation.",
-  "close": "Close"
+  "close": "Close",
+  "supportYou": "You",
+  "supportMessagesLoadFailed": "New messages could not be loaded. Please try again."
 }

@@ -1029,5 +1029,7 @@
   "screenshotPrivacy": "Deze afbeelding wordt naar de klantenservice geüpload. Maak kaartnummers, barcodes, QR-codes en pincodes onleesbaar voordat je hem verstuurt.",
   "screenshotFailed": "De screenshot kon niet worden verzonden. Gebruik een JPG-, PNG- of WebP-afbeelding van maximaal 5 MB. Je kunt maximaal 6 afbeeldingen per gesprek per dag sturen.",
   "screenshotUnavailable": "Afbeelding tijdelijk niet beschikbaar. Vernieuw het gesprek.",
-  "close": "Sluiten"
+  "close": "Sluiten",
+  "supportYou": "Jij",
+  "supportMessagesLoadFailed": "Nieuwe berichten konden niet worden opgehaald. Probeer opnieuw."
 }

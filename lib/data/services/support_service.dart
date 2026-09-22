@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'settings_service.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
@@ -48,6 +49,7 @@ class SupportMessage {
   final String id;
   final String senderId;
   final String senderKind;
+  final String? senderName;
   final String message;
   final DateTime createdAt;
 
@@ -55,6 +57,7 @@ class SupportMessage {
     required this.id,
     required this.senderId,
     this.senderKind = 'user',
+    this.senderName,
     required this.message,
     required this.createdAt,
   });
@@ -64,18 +67,35 @@ class SupportMessage {
       id: json['id']?.toString() ?? '',
       senderId: json['sender_id']?.toString() ?? '',
       senderKind: json['sender_kind']?.toString() ?? 'user',
+      senderName: json['sender_name']?.toString(),
       message: json['message']?.toString() ?? '',
       createdAt:
           DateTime.tryParse(json['created_at']?.toString() ?? '') ??
-          DateTime.now(),
+          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
     );
   }
+}
+
+class SupportConversation {
+  final SupportThread thread;
+  final List<SupportMessage> messages;
+
+  SupportConversation({required this.thread, required List<SupportMessage> messages})
+      : messages = List.unmodifiable([...messages]..sort((a, b) {
+          final time = a.createdAt.compareTo(b.createdAt);
+          return time != 0 ? time : a.id.compareTo(b.id);
+        }));
 }
 
 abstract final class SupportService {
   static const _secure = FlutterSecureStorage();
   static final Set<String> _guestThreadIds = {};
   static const _guestTokenKey = 'support_guest_token';
+  static final _conversationChanges = StreamController<String>.broadcast();
+  static Stream<String> get conversationChanges => _conversationChanges.stream;
+  static void notifyConversationChanged(String id) {
+    if (id.isNotEmpty) _conversationChanges.add(id);
+  }
 
   static SupabaseClient get _client {
     final client = SupabaseService.client;
@@ -126,25 +146,44 @@ abstract final class SupportService {
     return threads.firstWhere((t) => t.id == id.toString());
   }
 
-  static Future<List<SupportMessage>> loadMessages(String threadId) async {
-    if (AccountService.currentUser == null || _guestThreadIds.contains(threadId)) {
-      final rows = await _client.rpc(
-        'guest_support_messages_v2',
-        params: {
-          'p_token': await _guestToken(),
-          'p_thread_id': threadId,
-        },
-      ) as List;
-      return rows
-          .map((row) => SupportMessage.fromJson(Map<String, dynamic>.from(row)))
-          .toList();
+  static Future<SupportConversation> loadConversation(String threadId, {
+    SupportThread? fallbackThread,
+  }) async {
+    final token = await _guestToken();
+    try {
+      // Authorize this exact conversation on the server, even when opened
+      // directly from a notification before the conversation list has loaded.
+      final data = Map<String, dynamic>.from(await _client.rpc(
+        'support_conversation',
+        params: {'p_thread_id': threadId, 'p_token': token},
+      ) as Map);
+      if (data['is_guest'] == true) _guestThreadIds.add(threadId);
+      return SupportConversation(
+        thread: SupportThread.fromJson(Map<String, dynamic>.from(data['thread'])),
+        messages: (data['messages'] as List).map((row) =>
+          SupportMessage.fromJson(Map<String, dynamic>.from(row))).toList(),
+      );
+    } on PostgrestException catch (error) {
+      // Keep the existing app usable during the database rollout. Authorization
+      // and network failures must never be mistaken for an older server.
+      if (error.code != 'PGRST202' && error.code != '42883') rethrow;
     }
-    final rows = await _client
-        .from('support_messages')
-        .select('id, sender_id, sender_kind, message, created_at')
-        .eq('thread_id', threadId)
-        .order('created_at');
-    return rows.map(SupportMessage.fromJson).toList();
+    final guestRows = await _client.rpc('guest_support_messages_v2', params: {
+      'p_thread_id': threadId, 'p_token': token,
+    }) as List;
+    if (guestRows.isNotEmpty) _guestThreadIds.add(threadId);
+    final rows = guestRows.isNotEmpty ? guestRows : await _client
+        .from('support_messages').select().eq('thread_id', threadId)
+        .order('created_at', ascending: true).order('id', ascending: true);
+    var thread = fallbackThread;
+    // Older servers cannot provide a single snapshot. Keep the current status
+    // instead of letting an optional list request hide successfully read replies.
+    if (thread == null) {
+      thread = (await loadThreads()).where((t) => t.id == threadId).firstOrNull;
+    }
+    if (thread == null) throw StateError('CONVERSATION_UNAVAILABLE');
+    return SupportConversation(thread: thread, messages: rows.map((row) =>
+      SupportMessage.fromJson(Map<String, dynamic>.from(row))).toList());
   }
 
   static Future<void> sendMessage(String threadId, String message) async {
@@ -161,6 +200,7 @@ abstract final class SupportService {
     await _client.from('support_messages').insert({
       'thread_id': threadId,
       'sender_id': user.id,
+      'sender_kind': 'user',
       'message': message.trim(),
     });
   }

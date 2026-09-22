@@ -7,6 +7,7 @@ import 'device_session_service.dart';
 import 'notification_service.dart';
 import 'supabase_service.dart';
 import 'locale_service.dart';
+import 'support_service.dart';
 
 abstract final class PushNotificationService {
   static StreamSubscription<String>? _tokenSubscription;
@@ -133,6 +134,11 @@ abstract final class PushNotificationService {
   }
 
   static Future<void> _handleForegroundMessage(RemoteMessage message) async {
+    if (message.data['event'] == 'support_reply') {
+      SupportService.notifyConversationChanged(message.data['thread_id']?.toString() ?? '');
+      await NotificationService.showRemoteMessage(message);
+      return;
+    }
     final membershipId = message.data['membership_id']?.toString() ?? '';
     if (membershipId.isNotEmpty) {
       NotificationService.markSharedCardPushReceived(membershipId);
