@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:screen_brightness/screen_brightness.dart';
@@ -61,13 +62,14 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
       setState(() => showPin = true);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Authenticatie mislukt of geannuleerd')),
+         SnackBar(content: Text(L10n.current.authenticationFailedOrCancelled)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final name = widget.item['name']?.toString() ?? '';
     final code = widget.item['code']?.toString() ?? '';
     final type = widget.item['type']?.toString() ?? '';
@@ -84,7 +86,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(name.isEmpty ? 'Kaart' : name),
+        title: Text(name.isEmpty ? L10n.current.card : name),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -96,7 +98,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
             const SizedBox(height: 20),
 
             Text(
-              name.isEmpty ? 'Kaart' : name,
+              name.isEmpty ? L10n.current.card : name,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w800),
             ),
@@ -159,7 +161,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: const Icon(Icons.confirmation_number),
-                          title: const Text('Kaartnummer'),
+                          title:  Text(L10n.current.cardNumber),
                           subtitle: SelectableText(cardNumber),
                         ),
 
@@ -167,7 +169,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: const Icon(Icons.euro),
-                          title: const Text('Saldo'),
+                          title:  Text(L10n.current.balance),
                           subtitle: Text('€ $currentBalance'),
                         ),
 
@@ -175,7 +177,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: const Icon(Icons.lock),
-                          title: const Text('Pincode'),
+                          title:  Text(L10n.current.pin),
                           subtitle: SelectableText(
                             showPin ? pinCode : '••••••',
                           ),
@@ -184,7 +186,7 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                             icon: Icon(
                               showPin ? Icons.visibility_off : Icons.visibility,
                             ),
-                            label: Text(showPin ? 'Getoond' : 'Toon'),
+                            label: Text(showPin ? L10n.current.visible : L10n.current.actionShow),
                           ),
                         ),
                     ],
@@ -210,8 +212,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
 
             const SizedBox(height: 30),
 
-            const Text(
-              'Houd je scherm bij de scanner',
+             Text(
+              L10n.current.holdYourScreenUpToTheScanner,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.black45, fontSize: 15),
             ),

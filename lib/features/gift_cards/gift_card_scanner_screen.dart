@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -146,7 +147,7 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
         setState(() => importingImage = false);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Geen cadeaukaart-barcode gevonden.')),
+           SnackBar(content: Text(L10n.current.noGiftCardBarcodeFound)),
         );
         return;
       }
@@ -158,13 +159,14 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
       setState(() => importingImage = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Afbeelding kon niet worden gelezen.')),
+         SnackBar(content: Text(L10n.current.unableToReadImage)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     const frameWidth = 330.0;
     const frameHeight = 155.0;
 
@@ -253,8 +255,8 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
                     onTap: () => Navigator.pop(context),
                   ),
                   const Spacer(),
-                  const Text(
-                    'Cadeaukaart scannen',
+                   Text(
+                    L10n.current.scanGiftCard,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 17,
@@ -278,8 +280,8 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
             bottom: 42,
             child: Column(
               children: [
-                const Text(
-                  'Scan de barcode van je cadeaukaart',
+                 Text(
+                  L10n.current.scanTheBarcodeOnYourGiftCard,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
@@ -290,7 +292,7 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Later breiden we dit uit met pincode-herkenning',
+                  L10n.current.pinRecognitionWillBeAddedLater,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.72),
@@ -304,7 +306,7 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
                     Expanded(
                       child: _BottomActionButton(
                         icon: Icons.keyboard_alt_outlined,
-                        label: 'Handmatig',
+                        label: L10n.current.manual,
                         visible: showManualButton,
                         onTap: openManualEntry,
                       ),
@@ -315,7 +317,7 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
                         icon: importingImage
                             ? Icons.hourglass_top_rounded
                             : Icons.image_outlined,
-                        label: importingImage ? 'Lezen...' : 'Importeren',
+                        label: importingImage ? L10n.current.reading : L10n.current.actionImport,
                         visible: true,
                         onTap: importingImage ? null : importScreenshot,
                       ),
@@ -326,8 +328,8 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
                 _SecondaryActionButton(
                   icon: Icons.cameraswitch_outlined,
                   label: usingFrontCamera
-                      ? 'Gebruik achtercamera'
-                      : 'Camera wisselen',
+                      ? L10n.current.useRearCamera
+                      : L10n.current.switchCamera,
                   onTap: switchCamera,
                 ),
               ],
@@ -347,6 +349,7 @@ class _ScannerOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return CustomPaint(
       painter: _ScannerOverlayPainter(
         frameWidth: frameWidth,
@@ -409,6 +412,7 @@ class _Corner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Align(
       alignment: alignment,
       child: Container(
@@ -444,6 +448,7 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Material(
       color: Colors.white.withOpacity(0.13),
       shape: const CircleBorder(),
@@ -475,6 +480,7 @@ class _BottomActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return AnimatedOpacity(
       opacity: visible ? 1 : 0,
       duration: const Duration(milliseconds: 250),
@@ -519,6 +525,7 @@ class _SecondaryActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return TextButton.icon(
       onPressed: onTap,
       icon: Icon(icon),
@@ -557,6 +564,7 @@ class _ManualGiftCardBarcodeDialogState
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
@@ -571,8 +579,8 @@ class _ManualGiftCardBarcodeDialogState
               size: 42,
             ),
             const SizedBox(height: 14),
-            const Text(
-              'Barcode handmatig invoeren',
+             Text(
+              L10n.current.enterBarcodeManually,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 22,
@@ -582,7 +590,7 @@ class _ManualGiftCardBarcodeDialogState
             ),
             const SizedBox(height: 8),
             Text(
-              'Voer het nummer onder de barcode in.',
+              L10n.current.enterTheNumberBelowTheBarcode,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -598,7 +606,7 @@ class _ManualGiftCardBarcodeDialogState
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => submit(),
               decoration: InputDecoration(
-                hintText: 'Bijv. 8712345678901',
+                hintText: L10n.current.eG8712345678901,
                 filled: true,
                 fillColor: const Color(0xFFF4F4F6),
                 border: OutlineInputBorder(
@@ -617,8 +625,8 @@ class _ManualGiftCardBarcodeDialogState
                 Expanded(
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Annuleren',
+                    child:  Text(
+                      L10n.current.cancel,
                       style: TextStyle(
                         color: Colors.black54,
                         fontWeight: FontWeight.w700,
@@ -636,8 +644,8 @@ class _ManualGiftCardBarcodeDialogState
                         borderRadius: BorderRadius.circular(22),
                       ),
                     ),
-                    child: const Text(
-                      'Verder',
+                    child:  Text(
+                      L10n.current.actionContinue,
                       style: TextStyle(fontWeight: FontWeight.w900),
                     ),
                   ),

@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -76,8 +77,8 @@ class ChooseQrCodeScreen extends StatelessWidget {
     if (!context.mounted) return;
     if (codes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Geen QR-code gevonden in de gekozen afbeelding(en).'),
+         SnackBar(
+          content: Text(L10n.current.noQrCodeFoundInTheSelected),
         ),
       );
       return;
@@ -95,21 +96,21 @@ class ChooseQrCodeScreen extends StatelessWidget {
   ) async {
 
     final nameController = TextEditingController(
-      text: 'QR-codes (${codes.length})',
+      text: L10n.current.qrCodes((codes.length).toString()),
     );
 
     final setName = await showDialog<String>(
       context: context,
       builder: (_) {
         return AlertDialog(
-          title: const Text('Naam voor QR-set'),
+          title:  Text(L10n.current.nameYourQrSet),
           content: TextField(
             controller: nameController,
             autofocus: true,
             textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              labelText: 'Naam',
-              hintText: 'Bijv. Festival tickets',
+            decoration:  InputDecoration(
+              labelText: L10n.current.name,
+              hintText: L10n.current.eGFestivalTickets,
             ),
             onSubmitted: (_) {
               final value = nameController.text.trim();
@@ -121,7 +122,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Annuleren'),
+              child:  Text(L10n.current.cancel),
             ),
             FilledButton(
               onPressed: () {
@@ -129,7 +130,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
                 if (value.isEmpty) return;
                 Navigator.pop(context, value);
               },
-              child: const Text('Opslaan'),
+              child:  Text(L10n.current.save),
             ),
           ],
         );
@@ -159,6 +160,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
@@ -166,15 +168,15 @@ class ChooseQrCodeScreen extends StatelessWidget {
         elevation: 0,
         foregroundColor: const Color(0xFF303036),
         centerTitle: true,
-        title: const Text(
-          'QR-code toevoegen',
+        title:  Text(
+          L10n.current.addQrCode,
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
         ),
         actions: [
           TextButton(
             onPressed: () => openManual(context),
-            child: const Text(
-              'Handmatig',
+            child:  Text(
+              L10n.current.manual,
               style: TextStyle(
                 color: Color(0xFFD51B46),
                 fontSize: 14,
@@ -187,8 +189,8 @@ class ChooseQrCodeScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
         children: [
-          const Text(
-            'Hoe wil je je QR-code toevoegen?',
+           Text(
+            L10n.current.howWouldYouLikeToAddYour,
             style: TextStyle(
               fontSize: 24,
               height: 1.15,
@@ -197,8 +199,8 @@ class ChooseQrCodeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Scan één QR-code of meerdere tickets achter elkaar.',
+           Text(
+            L10n.current.scanOneQrCodeOrSeveralTickets,
             style: TextStyle(
               fontSize: 16,
               height: 1.35,
@@ -208,30 +210,30 @@ class ChooseQrCodeScreen extends StatelessWidget {
           const SizedBox(height: 22),
           _QrChoiceTile(
             icon: Icons.qr_code_scanner_rounded,
-            title: '1 QR-code scannen',
-            subtitle: 'Gebruik je camera om één QR-code toe te voegen',
+            title: L10n.current.scanOneQrCode,
+            subtitle: L10n.current.useYourCameraToAddAQr,
             onTap: () => openScanner(context),
           ),
           const SizedBox(height: 10),
           _QrChoiceTile(
             icon: Icons.confirmation_number_rounded,
-            title: 'Meerdere QR-codes',
+            title: L10n.current.multipleQrCodes,
             subtitle:
-                'Scan meerdere tickets achter elkaar en sla ze als set op',
+                L10n.current.scanSeveralTicketsInARowAnd,
             onTap: () => openMultiScanner(context),
           ),
           const SizedBox(height: 10),
           _QrChoiceTile(
             icon: Icons.edit_note_rounded,
-            title: 'Handmatig invoeren',
-            subtitle: 'Voer zelf een naam en QR-code inhoud in',
+            title: L10n.current.enterManually,
+            subtitle: L10n.current.enterANameAndQrCodeContent,
             onTap: () => openManual(context),
           ),
           const SizedBox(height: 10),
           _QrChoiceTile(
             icon: Icons.image_rounded,
-            title: 'Foto of screenshot importeren',
-            subtitle: 'Lees één of meerdere QR-codes uit afbeeldingen',
+            title: L10n.current.importPhotoOrScreenshot,
+            subtitle: L10n.current.readOneOrMoreQrCodesFrom,
             onTap: () => importImages(context),
           ),
         ],
@@ -257,6 +259,7 @@ class _QrChoiceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final color = isDisabled ? Colors.grey : const Color(0xFFD51B46);
 
     return Material(

@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:convert';
 import 'dart:math';
 
@@ -28,7 +29,7 @@ class SupportThread {
         DateTime.now();
     return SupportThread(
       id: json['id']?.toString() ?? '',
-      subject: json['subject']?.toString() ?? 'Vraag',
+      subject: json['subject']?.toString() ?? L10n.current.question,
       status: json['status']?.toString() ?? 'open',
       createdAt: createdAt,
       updatedAt:
@@ -68,8 +69,8 @@ abstract final class SupportService {
   static SupabaseClient get _client {
     final client = SupabaseService.client;
     if (client == null) {
-      throw const AuthException(
-        'De klantenservice is momenteel niet beschikbaar.',
+      throw  AuthException(
+        L10n.current.customerSupportIsCurrentlyUnavailable,
       );
     }
     return client;

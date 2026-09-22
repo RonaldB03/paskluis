@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/cards/card_detail_screen.dart';
@@ -30,6 +31,7 @@ class _CardListViewState extends State<CardListView> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final filteredItems = widget.items.where((item) {
       final name = item['name']?.toString().toLowerCase() ?? '';
       final code = item['code']?.toString().toLowerCase() ?? '';
@@ -60,7 +62,7 @@ class _CardListViewState extends State<CardListView> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: TextField(
             decoration: InputDecoration(
-              hintText: 'Zoeken...',
+              hintText: L10n.current.searching,
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -73,7 +75,7 @@ class _CardListViewState extends State<CardListView> {
           ),
         ),
         if (filteredItems.isEmpty)
-          const Expanded(child: Center(child: Text('Geen resultaten gevonden')))
+           Expanded(child: Center(child: Text(L10n.current.noResultsFound)))
         else
           Expanded(
             child: ListView.builder(
@@ -106,20 +108,20 @@ class _CardListViewState extends State<CardListView> {
                               context: context,
                               builder: (context) {
                                 return AlertDialog(
-                                  title: const Text('Verwijderen?'),
+                                  title:  Text(L10n.current.delete468),
                                   content: Text(
-                                    'Weet je zeker dat je "${item['name']}" wilt verwijderen?',
+                                    L10n.current.areYouSureYouWantToDelete743((item['name']).toString()),
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.pop(context, false),
-                                      child: const Text('Annuleren'),
+                                      child:  Text(L10n.current.cancel),
                                     ),
                                     FilledButton(
                                       onPressed: () =>
                                           Navigator.pop(context, true),
-                                      child: const Text('Verwijderen'),
+                                      child:  Text(L10n.current.delete),
                                     ),
                                   ],
                                 );

@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -212,9 +213,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+           SnackBar(
             content: Text(
-              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+              L10n.current.sharedAccessCouldNotBeUpdatedTry,
             ),
           ),
         );
@@ -248,7 +249,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     if (items.isEmpty) return;
 
     final item = items[currentIndex];
-    final name = item['name']?.toString() ?? 'deze cadeaukaart';
+    final name = item['name']?.toString() ?? L10n.current.thisGiftCard;
     final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
@@ -256,22 +257,22 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
       builder: (context) {
         return AlertDialog(
           title: Text(
-            isShared ? 'Uit jouw PasKluis verwijderen?' : 'Definitief verwijderen?',
+            isShared ? L10n.current.removeFromYourPaskluis : L10n.current.permanentlyDelete,
           ),
           content: Text(
             isShared
-                ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De kaart van de eigenaar blijft bestaan.'
-                : 'Weet je zeker dat je "$name" definitief wilt verwijderen? De kaart verdwijnt ook bij iedereen met wie je hem hebt gedeeld. Dit kun je niet ongedaan maken.',
+                ? L10n.current.youAreOnlyRemovingFromYourOwn((name).toString())
+                : L10n.current.areYouSureYouWantToPermanently((name).toString()),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuleren'),
+              child:  Text(L10n.current.cancel),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(context, true),
-              child: Text(isShared ? 'Verwijderen' : 'Definitief verwijderen'),
+              child: Text(isShared ? L10n.current.delete : L10n.current.permanentlyDelete391),
             ),
           ],
         );
@@ -300,7 +301,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     if (items.isEmpty) return;
     if (!SettingsService.cardSharingAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kaarten delen is tijdelijk niet beschikbaar.')),
+         SnackBar(content: Text(L10n.current.cardSharingIsTemporarilyUnavailable)),
       );
       return;
     }
@@ -312,7 +313,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     if (items.isEmpty) return;
     if (!SettingsService.cardSharingAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kaarten delen is tijdelijk niet beschikbaar.')),
+         SnackBar(content: Text(L10n.current.cardSharingIsTemporarilyUnavailable)),
       );
       return;
     }
@@ -355,7 +356,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Beveiliging niet gelukt',
+                  L10n.current.verificationFailed,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 24,
@@ -365,7 +366,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'We konden je identiteit niet bevestigen. Wil je de pincode toch tonen?',
+                  L10n.current.weCouldNotVerifyYourIdentityWould,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -381,7 +382,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                   child: FilledButton.icon(
                     onPressed: () => Navigator.pop(context, true),
                     icon: const Icon(Icons.visibility_rounded),
-                    label: const Text('Pincode tonen'),
+                    label:  Text(L10n.current.showPin),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFD51B46),
                       foregroundColor: Colors.white,
@@ -398,8 +399,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 const SizedBox(height: 10),
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text(
-                    'Annuleren',
+                  child:  Text(
+                    L10n.current.cancel,
                     style: TextStyle(
                       color: Colors.black54,
                       fontWeight: FontWeight.w800,
@@ -433,7 +434,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     HapticFeedback.selectionClick();
 
     final item = items[currentIndex];
-    final name = item['name']?.toString() ?? 'deze cadeaukaart';
+    final name = item['name']?.toString() ?? L10n.current.thisGiftCard;
     final balance = item['currentBalance']?.toString() ?? '';
 
     showModalBottomSheet(
@@ -450,8 +451,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Kaart gebruikt?',
+                 Text(
+                  L10n.current.usedThisCard,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -462,7 +463,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 Text(
                   balance.isEmpty
                       ? name
-                      : '$name • huidig saldo € ${formatAmountValue(balance)}',
+                      : L10n.current.currentBalance396((name).toString(), (formatAmountValue(balance)).toString()),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -474,7 +475,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 const SizedBox(height: 22),
                 _ActionButton(
                   icon: Icons.shopping_bag_rounded,
-                  label: 'Bedrag besteed',
+                  label: L10n.current.amountSpent,
                   onTap: () {
                     Navigator.pop(context);
                     openBalanceEditor(spentMode: true);
@@ -483,7 +484,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 const SizedBox(height: 10),
                 _ActionButton(
                   icon: Icons.account_balance_wallet_rounded,
-                  label: 'Nieuw saldo invoeren',
+                  label: L10n.current.enterNewBalance,
                   onTap: () {
                     Navigator.pop(context);
                     openBalanceEditor();
@@ -492,7 +493,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 const SizedBox(height: 10),
                 _ActionButton(
                   icon: Icons.check_circle_outline_rounded,
-                  label: 'Kaart volledig gebruikt',
+                  label: L10n.current.cardFullyUsed,
                   onTap: () async {
                     Navigator.pop(context);
                     await _saveBalance(0, kind: 'used');
@@ -555,24 +556,24 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
           color: Color(0xFFD5A021),
           size: 42,
         ),
-        title: const Text(
-          'Samen beheren met Plus',
+        title:  Text(
+          L10n.current.manageTogetherWithPlus,
           textAlign: TextAlign.center,
         ),
-        content: const Text(
-          'Je kunt deze gedeelde cadeaukaart bekijken. Met PasKluis Plus kun je samen ook het saldo en de kaartgegevens aanpassen.',
+        content:  Text(
+          L10n.current.youCanViewThisSharedGiftCard,
           textAlign: TextAlign.center,
         ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Niet nu'),
+            child:  Text(L10n.current.notNow),
           ),
           FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
             icon: const Icon(Icons.workspace_premium_rounded),
-            label: const Text('Neem Plus • € 1,99 eenmalig'),
+            label:  Text(L10n.current.getPlus199Once),
           ),
         ],
       ),
@@ -590,11 +591,11 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     final archive = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Cadeaukaart is leeg'),
-        content: const Text('Wil je deze kaart archiveren? Je kunt hem later altijd terugzetten.'),
+        title:  Text(L10n.current.giftCardIsEmpty),
+        content:  Text(L10n.current.wouldYouLikeToArchiveThisCard),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Bewaren')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Archiveren')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child:  Text(L10n.current.keep)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child:  Text(L10n.current.archive)),
         ],
       ),
     );
@@ -637,7 +638,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  spentMode ? 'Bedrag besteed' : 'Nieuw saldo invoeren',
+                  spentMode ? L10n.current.amountSpent : L10n.current.enterNewBalance,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -652,7 +653,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                     decimal: true,
                   ),
                   decoration: InputDecoration(
-                    labelText: spentMode ? 'Besteed bedrag' : 'Nieuw saldo',
+                    labelText: spentMode ? L10n.current.amountSpent410 : L10n.current.newBalance,
                     prefixText: '€ ',
                     filled: true,
                     fillColor: const Color(0xFFF4F4F6),
@@ -680,7 +681,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       final oldBalance = _balanceOf(items[currentIndex]);
                       if (spentMode && entered > oldBalance) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Het bedrag is hoger dan het huidige saldo.')),
+                           SnackBar(content: Text(L10n.current.theAmountIsHigherThanTheCurrent)),
                         );
                         return;
                       }
@@ -698,7 +699,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       }
                     },
                     icon: const Icon(Icons.save_rounded),
-                    label: Text(spentMode ? 'Bedrag verwerken' : 'Saldo opslaan'),
+                    label: Text(spentMode ? L10n.current.applyAmount : L10n.current.saveBalance),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFD51B46),
                       foregroundColor: Colors.white,
@@ -734,12 +735,12 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Saldohistorie', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+               Text(L10n.current.balanceHistory, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
               const SizedBox(height: 16),
               if (history.isEmpty)
-                const Padding(
+                 Padding(
                   padding: EdgeInsets.all(24),
-                  child: Text('Nog geen saldowijzigingen.'),
+                  child: Text(L10n.current.noBalanceChangesYet),
                 )
               else
                 ConstrainedBox(
@@ -753,12 +754,12 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       final date = DateTime.tryParse(entry['createdAt']?.toString() ?? '');
                       final type = entry['type']?.toString();
                       final title = type == 'spent'
-                          ? '€ ${formatAmountValue(entry['amount'])} besteed'
+                          ? L10n.current.spent((formatAmountValue(entry['amount'])).toString())
                           : type == 'used'
-                              ? 'Volledig gebruikt'
+                              ? L10n.current.fullyUsed
                               : type == 'undo'
-                                  ? 'Wijziging ongedaan gemaakt'
-                                  : 'Saldo aangepast';
+                                  ? L10n.current.changeUndone
+                                  : L10n.current.balanceUpdated;
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const CircleAvatar(
@@ -788,7 +789,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                                   await updateCurrentItem(updated);
                                   if (context.mounted) Navigator.pop(context);
                                 },
-                                child: const Text('Ongedaan'),
+                                child:  Text(L10n.current.undo),
                               )
                             : null,
                       );
@@ -819,7 +820,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
     final item = items[currentIndex];
 
-    final name = item['name']?.toString() ?? 'Cadeaukaart';
+    final name = item['name']?.toString() ?? L10n.current.giftCard;
     final code = item['code']?.toString() ?? '';
     final note = item['note']?.toString() ?? '';
     final cardNumber = item['cardNumber']?.toString() ?? '';
@@ -858,8 +859,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
               }
 
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Authenticatie mislukt of geannuleerd'),
+                 SnackBar(
+                  content: Text(L10n.current.authenticationFailedOrCancelled),
                 ),
               );
             }
@@ -881,10 +882,10 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                     children: [
                       Row(
                         children: [
-                          const Expanded(
+                           Expanded(
                             child: Center(
                               child: Text(
-                                'Cadeaukaartdetails',
+                                L10n.current.giftCardDetails424,
                                 style: TextStyle(
                                   fontSize: 24,
                                   fontWeight: FontWeight.w900,
@@ -902,24 +903,24 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
                       const SizedBox(height: 20),
 
-                      _DetailRow(label: 'Naam', value: name),
+                      _DetailRow(label: L10n.current.name, value: name),
                       if (isShared) ...[
                         const SizedBox(height: 12),
                         _DetailRow(
-                          label: 'Toegang',
+                          label: L10n.current.access,
                           value: canEditShared
-                              ? 'Met jou gedeeld • samen bewerken'
-                              : 'Met jou gedeeld • alleen bekijken',
+                              ? L10n.current.sharedWithYouEditTogether
+                              : L10n.current.sharedWithYouViewOnly,
                         ),
                       ],
                       const SizedBox(height: 16),
 
-                      _DetailRow(label: 'Barcode', value: code, showCopy: true),
+                      _DetailRow(label: L10n.current.barcode, value: code, showCopy: true),
 
                       if (cardNumber.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         _DetailRow(
-                          label: 'Kaartnummer',
+                          label: L10n.current.cardNumber,
                           value: cardNumber,
                           showCopy: true,
                         ),
@@ -928,7 +929,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       if (initialBalance.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         _DetailRow(
-                          label: 'Startsaldo',
+                          label: L10n.current.startingBalance,
                           value: '€ $initialBalance',
                         ),
                       ],
@@ -936,7 +937,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       if (currentBalance.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         _DetailRow(
-                          label: 'Huidig saldo',
+                          label: L10n.current.currentBalance,
                           value: '€ ${formatAmountValue(currentBalance)}',
                         ),
                       ],
@@ -944,7 +945,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       if (expiryDate != null) ...[
                         const SizedBox(height: 16),
                         _DetailRow(
-                          label: 'Vervaldatum',
+                          label: L10n.current.expiryDate,
                           value: '${expiryDate.day.toString().padLeft(2, '0')}-${expiryDate.month.toString().padLeft(2, '0')}-${expiryDate.year}',
                         ),
                       ],
@@ -957,8 +958,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                               child: SelectableText.rich(
                                 TextSpan(
                                   children: [
-                                    const TextSpan(
-                                      text: 'Pincode / krascode\n',
+                                     TextSpan(
+                                      text: L10n.current.pinScratchCode427,
                                       style: TextStyle(
                                         fontSize: 15,
                                         color: Colors.black54,
@@ -978,7 +979,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                             ),
                             FilledButton(
                               onPressed: sheetShowPin ? null : showPinCode,
-                              child: Text(sheetShowPin ? 'Getoond' : 'Toon'),
+                              child: Text(sheetShowPin ? L10n.current.visible : L10n.current.actionShow),
                             ),
                           ],
                         ),
@@ -986,7 +987,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
                       if (note.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        _DetailRow(label: 'Notitie', value: note),
+                        _DetailRow(label: L10n.current.note, value: note),
                       ],
 
                       const SizedBox(height: 24),
@@ -994,7 +995,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       if (!isShared || canEditShared)
                         _ActionButton(
                           icon: Icons.euro,
-                          label: 'Saldo aanpassen',
+                          label: L10n.current.updateBalance,
                           onTap: () {
                             Navigator.pop(context);
                             openBalanceEditor();
@@ -1003,7 +1004,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       else
                         _ActionButton(
                           icon: Icons.workspace_premium_rounded,
-                          label: 'Saldo aanpassen met Plus',
+                          label: L10n.current.updateBalanceWithPlus,
                           onTap: () {
                             Navigator.pop(context);
                             _showSharedBalancePlusDialog();
@@ -1014,7 +1015,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
                       _ActionButton(
                         icon: Icons.history_rounded,
-                        label: 'Saldohistorie',
+                        label: L10n.current.balanceHistory,
                         onTap: () {
                           Navigator.pop(context);
                           openBalanceHistory();
@@ -1026,8 +1027,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       _ActionButton(
                         icon: isFavorite ? Icons.star : Icons.star_border,
                         label: isFavorite
-                            ? 'Verwijder uit favorieten'
-                            : 'Maak favoriet',
+                            ? L10n.current.removeFromFavourites
+                            : L10n.current.addToFavourites,
                         onTap: () async {
                           Navigator.pop(context);
                           await toggleFavoriteCurrentItem();
@@ -1039,7 +1040,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       if (!isShared) ...[
                         _ActionButton(
                           icon: Icons.share_rounded,
-                          label: 'Delen via e-mailadres',
+                          label: L10n.current.shareByEmail,
                           onTap: () {
                             Navigator.pop(context);
                             openShareCard();
@@ -1048,7 +1049,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                         const SizedBox(height: 10),
                         _ActionButton(
                           icon: Icons.group_outlined,
-                          label: 'Gedeelde toegang beheren',
+                          label: L10n.current.manageSharedAccess,
                           onTap: () {
                             Navigator.pop(context);
                             openSharedAccess();
@@ -1057,7 +1058,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                         const SizedBox(height: 10),
                         _ActionButton(
                           icon: Icons.edit_outlined,
-                          label: 'Bewerken',
+                          label: L10n.current.edit,
                           onTap: () {
                             Navigator.pop(context);
                             openEdit(items[currentIndex]);
@@ -1066,7 +1067,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       ] else if (canEditShared) ...[
                         _ActionButton(
                           icon: Icons.edit_outlined,
-                          label: 'Bewerken',
+                          label: L10n.current.edit,
                           onTap: () {
                             Navigator.pop(context);
                             openEdit(items[currentIndex]);
@@ -1079,7 +1080,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       if (!isShared)
                         _ActionButton(
                           icon: Icons.delete_forever_rounded,
-                          label: 'Definitief verwijderen',
+                          label: L10n.current.permanentlyDelete391,
                           destructive: true,
                           onTap: () {
                             Navigator.pop(context);
@@ -1089,7 +1090,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       else
                         _ActionButton(
                           icon: Icons.remove_circle_outline_rounded,
-                          label: 'Uit mijn PasKluis verwijderen',
+                          label: L10n.current.removeFromMyPaskluis,
                           destructive: true,
                           onTap: () {
                             Navigator.pop(context);
@@ -1111,10 +1112,11 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     if (items.isEmpty) {
-      return const Scaffold(
+      return  Scaffold(
         backgroundColor: Color(0xFFF8F8FA),
-        body: Center(child: Text('Geen cadeaukaarten')),
+        body: Center(child: Text(L10n.current.noGiftCards)),
       );
     }
 
@@ -1146,7 +1148,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 left: 8,
                 top: 4,
                 child: IconButton.filledTonal(
-                  tooltip: 'Terug',
+                  tooltip: L10n.current.back,
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.arrow_back_rounded),
                 ),
@@ -1218,8 +1220,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
           if (items.length > 1)
             _Dots(count: items.length, activeIndex: currentIndex),
           const SizedBox(height: 20),
-          const Text(
-            'Houd je scherm bij de scanner',
+           Text(
+            L10n.current.holdYourScreenUpToTheScanner,
             style: TextStyle(
               color: Colors.black45,
               fontSize: 15,
@@ -1241,7 +1243,8 @@ class _GiftLandscapeBarcode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = item['name']?.toString() ?? 'Cadeaukaart';
+    L10n.watch(context);
+    final name = item['name']?.toString() ?? L10n.current.giftCard;
     final code = item['code']?.toString() ?? '';
     final isQr = item['codeFormat']?.toString() == 'qr';
     return Padding(
@@ -1257,7 +1260,7 @@ class _GiftLandscapeBarcode extends StatelessWidget {
           const SizedBox(height: 10),
           Expanded(
             child: code.isEmpty
-                ? const Center(child: Text('Geen barcode beschikbaar'))
+                ?  Center(child: Text(L10n.current.noBarcodeAvailable))
                 : isQr
                 ? Center(child: QrImageView(data: code, padding: const EdgeInsets.all(8)))
                 : BarcodeWidget(
@@ -1355,7 +1358,8 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
 
   @override
   Widget build(BuildContext context) {
-    final name = widget.item['name']?.toString() ?? 'Cadeaukaart';
+    L10n.watch(context);
+    final name = widget.item['name']?.toString() ?? L10n.current.giftCard;
     final code = widget.item['code']?.toString() ?? '';
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final logoAsset = widget.item['logoAsset']?.toString() ?? '';
@@ -1449,7 +1453,7 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
                       top: 4,
                       right: 0,
                       child: IconButton(
-                        tooltip: 'Details en opties',
+                        tooltip: L10n.current.detailsAndOptions,
                         onPressed: widget.onDetails,
                         icon: const Icon(Icons.more_horiz_rounded),
                         color: headerColor.computeLuminance() > 0.55
@@ -1466,7 +1470,7 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
                   padding: const EdgeInsets.symmetric(vertical: 7),
                   color: const Color(0xFFF8E3EA),
                   child: Text(
-                    'Saldo: € ${formatAmountValue(balance)}',
+                    L10n.current.balance277((formatAmountValue(balance)).toString()),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Color(0xFFD51B46),
@@ -1484,7 +1488,7 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
                   child: FilledButton.icon(
                     onPressed: widget.onUsed,
                     icon: const Icon(Icons.shopping_bag_rounded),
-                    label: const Text('Kaart gebruikt?'),
+                    label:  Text(L10n.current.usedThisCard),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFD51B46),
                       foregroundColor: Colors.white,
@@ -1575,6 +1579,7 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Row(
       children: [
         Expanded(
@@ -1603,9 +1608,9 @@ class _DetailRow extends StatelessWidget {
               Clipboard.setData(ClipboardData(text: value));
               HapticFeedback.lightImpact();
               ScaffoldMessenger.of(context)
-                  .showSnackBar(const SnackBar(content: Text('Gekopieerd')));
+                  .showSnackBar( SnackBar(content: Text(L10n.current.copied)));
             },
-            child: const Text('Kopiëren'),
+            child:  Text(L10n.current.copy),
           ),
       ],
     );
@@ -1627,6 +1632,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final color = destructive ? Colors.red : const Color(0xFFD51B46);
 
     return InkWell(
@@ -1670,6 +1676,7 @@ class _Dots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(count, (index) {

@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 import '../account/account_screen.dart';
@@ -9,6 +10,7 @@ class PlusInformationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF6F4F0),
       appBar: AppBar(
@@ -39,14 +41,14 @@ class PlusInformationScreen extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Column(
+            child:  Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.workspace_premium_rounded,
                     color: Color(0xFFFFF2BE), size: 42),
                 SizedBox(height: 14),
                 Text(
-                  'Meer vrijheid. Voor altijd.',
+                  L10n.current.moreFreedomForever,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 28,
@@ -56,7 +58,7 @@ class PlusInformationScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  'Ontgrendel alle cadeaukaart- en deelfuncties met één eenmalige aankoop.',
+                  L10n.current.unlockAllGiftCardAndSharingFeatures,
                   style: TextStyle(
                     color: Color(0xFFFFF8DE),
                     fontSize: 16,
@@ -69,30 +71,30 @@ class PlusInformationScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
-          const Text(
-            'Dit krijg je met Plus',
+           Text(
+            L10n.current.whatYouGetWithPlus,
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 12),
-          const _Benefit(
+           _Benefit(
             icon: Icons.all_inclusive_rounded,
-            title: 'Onbeperkt cadeaukaarten',
-            subtitle: 'Bewaar zoveel cadeaukaarten als je wilt. Zonder Plus kun je één cadeaukaart bewaren.',
+            title: L10n.current.unlimitedGiftCards,
+            subtitle: L10n.current.storeAsManyGiftCardsAsYou,
           ),
-          const _Benefit(
+           _Benefit(
             icon: Icons.ios_share_rounded,
-            title: 'Klanten- én cadeaukaarten delen',
-            subtitle: 'Deel veilig via e-mailadres. Een cadeaukaart wordt inclusief pincode of krascode gedeeld.',
+            title: L10n.current.shareLoyaltyCardsAndGiftCards,
+            subtitle: L10n.current.shareSecurelyByEmailGiftCardsAre,
           ),
-          const _Benefit(
+           _Benefit(
             icon: Icons.edit_note_rounded,
-            title: 'Samen beheren',
-            subtitle: 'Heeft de ontvanger ook Plus, dan kunnen jullie dezelfde gedeelde kaart allebei bijwerken.',
+            title: L10n.current.manageTogether,
+            subtitle: L10n.current.ifTheRecipientAlsoHasPlusYou,
           ),
-          const _Benefit(
+           _Benefit(
             icon: Icons.manage_history_rounded,
-            title: 'Gedeelde toegang beheren',
-            subtitle: 'Bekijk met wie je kaarten deelt en stop toegang wanneer je wilt.',
+            title: L10n.current.manageSharedAccess,
+            subtitle: L10n.current.seeWhoYouShareCardsWithAnd,
           ),
           const SizedBox(height: 10),
           Container(
@@ -102,14 +104,14 @@ class PlusInformationScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: const Color(0xFFE4C15D)),
             ),
-            child: const Row(
+            child:  Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(Icons.verified_rounded, color: Color(0xFFA87800)),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Eén keer betalen en geniet voor altijd van PasKluis Plus.',
+                    L10n.current.payOnceAndEnjoyPaskluisPlusForever,
                     style: TextStyle(
                       color: Color(0xFF6D5000),
                       fontWeight: FontWeight.w800,
@@ -137,16 +139,16 @@ class PlusInformationScreen extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const AccountScreen()),
                 ),
                 icon: const Icon(Icons.workspace_premium_rounded),
-                label: const Text(
-                  'Bekijk mijn Plus-status',
+                label:  Text(
+                  L10n.current.viewMyPlusStatus,
                   style: TextStyle(fontWeight: FontWeight.w900),
                 ),
               ),
             ),
           ],
           const SizedBox(height: 14),
-          const Text(
-            'PasKluis is voor iedereen reclamevrij. Plus voegt extra functies toe, geen reclamevrije modus.',
+           Text(
+            L10n.current.paskluisIsAdFreeForEveryonePlus,
             textAlign: TextAlign.center,
             style: TextStyle(color: Color(0xFF77717D), fontSize: 12.5),
           ),
@@ -162,6 +164,7 @@ class _PricePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -169,8 +172,8 @@ class _PricePill extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: .28)),
       ),
-      child: const Text(
-        '€ 1,99 eenmalig  •  levenslange toegang',
+      child:  Text(
+        L10n.current.text199OnceLifetimeAccess516,
         style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
       ),
     );
@@ -190,6 +193,7 @@ class _Benefit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(17),

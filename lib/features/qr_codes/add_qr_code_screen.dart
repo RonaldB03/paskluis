@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -120,8 +121,8 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('De afbeelding kon niet worden opgeslagen.'),
+         SnackBar(
+          content: Text(L10n.current.theImageCouldNotBeSaved),
         ),
       );
     }
@@ -143,13 +144,13 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Naam is verplicht.')));
+          .showSnackBar( SnackBar(content: Text(L10n.current.aNameIsRequired)));
       return;
     }
 
     if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('QR-code inhoud is verplicht.')),
+         SnackBar(content: Text(L10n.current.qrCodeContentIsRequired)),
       );
       return;
     }
@@ -182,8 +183,9 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final name = nameController.text.trim().isEmpty
-        ? 'QR-code'
+        ? L10n.current.qrCode
         : nameController.text.trim();
 
     final code = codeController.text.trim();
@@ -192,7 +194,7 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
       backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
         title: Text(
-          widget.isEditing ? 'QR-code bewerken' : 'QR-code afronden',
+          widget.isEditing ? L10n.current.editQrCode : L10n.current.finishQrCode,
           style: const TextStyle(fontWeight: FontWeight.w900),
         ),
         centerTitle: true,
@@ -202,8 +204,8 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
         actions: [
           TextButton(
             onPressed: saveQrCode,
-            child: const Text(
-              'Opslaan',
+            child:  Text(
+              L10n.current.save,
               style: TextStyle(
                 color: Color(0xFFD51B46),
                 fontWeight: FontWeight.w900,
@@ -226,19 +228,19 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
           const SizedBox(height: 16),
 
           _SectionCard(
-            title: 'QR-code',
-            subtitle: 'Scan een QR-code of voer de inhoud handmatig in.',
+            title: L10n.current.qrCode,
+            subtitle: L10n.current.scanAQrCodeOrEnterIts,
             children: [
               _InputField(
                 controller: nameController,
-                label: 'Naam QR-code',
+                label: L10n.current.qrCodeName,
                 icon: Icons.qr_code_2_rounded,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 14),
               _InputField(
                 controller: codeController,
-                label: 'QR-code inhoud',
+                label: L10n.current.qrCodeContent,
                 icon: Icons.qr_code_scanner_rounded,
                 keyboardType: TextInputType.text,
                 suffix: IconButton(
@@ -256,7 +258,7 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
                 child: OutlinedButton.icon(
                   onPressed: scanQrCode,
                   icon: const Icon(Icons.qr_code_scanner_rounded),
-                  label: const Text('QR-code scannen'),
+                  label:  Text(L10n.current.scanQrCode),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFD51B46),
                     side: const BorderSide(
@@ -276,11 +278,11 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
           const SizedBox(height: 14),
 
           _SectionCard(
-            title: 'Notitie',
+            title: L10n.current.note,
             children: [
               _InputField(
                 controller: noteController,
-                label: 'Notitie',
+                label: L10n.current.note,
                 icon: Icons.notes_rounded,
                 maxLines: 4,
                 keyboardType: TextInputType.multiline,
@@ -291,7 +293,7 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
           const SizedBox(height: 14),
 
           _SectionCard(
-            title: 'Logo',
+            title: L10n.current.logo,
             children: [
               _LogoEditor(
                 logoAsset: logoAsset,
@@ -312,7 +314,7 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
               onPressed: saveQrCode,
               icon: const Icon(Icons.save_rounded),
               label: Text(
-                widget.isEditing ? 'Wijzigingen opslaan' : 'QR-code opslaan',
+                widget.isEditing ? L10n.current.saveChanges : L10n.current.saveQrCode,
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFD51B46),
@@ -356,6 +358,7 @@ class _QrLivePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
@@ -424,11 +427,11 @@ class _QrLivePreview extends StatelessWidget {
                   borderRadius: BorderRadius.circular(22),
                 ),
                 child: code.isEmpty
-                    ? const SizedBox(
+                    ?  SizedBox(
                         height: 180,
                         child: Center(
                           child: Text(
-                            'Nog geen QR-code',
+                            L10n.current.noQrCodeYet,
                             style: TextStyle(
                               color: Colors.black38,
                               fontWeight: FontWeight.w700,
@@ -470,6 +473,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       decoration: BoxDecoration(
@@ -535,6 +539,7 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return TextField(
       controller: controller,
       maxLines: maxLines,
@@ -582,6 +587,7 @@ class _LogoEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final hasLogo = hasPresetLogo || hasCustomLogo;
 
     return Column(
@@ -613,7 +619,7 @@ class _LogoEditor extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onPickImage,
                 icon: const Icon(Icons.photo_library_rounded),
-                label: Text(hasLogo ? 'Logo wijzigen' : 'Logo toevoegen'),
+                label: Text(hasLogo ? L10n.current.changeLogo : L10n.current.addLogo),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFD51B46),
                   side: const BorderSide(color: Color(0xFFD51B46), width: 1.2),

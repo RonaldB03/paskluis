@@ -1,3 +1,5 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
+import '../../shared/widgets/language_picker.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -162,37 +164,37 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Center(
+               Center(
                 child: Text(
-                  'Een kaart toevoegen of importeren',
+                  L10n.current.addOrImportACard,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
                 ),
               ),
               const SizedBox(height: 22),
-              const _AddHelpStep(
+               _AddHelpStep(
                 number: '1',
-                title: 'Tik op +',
+                title: L10n.current.tap,
                 description:
-                    'Kies Klantenkaart, QR-code of Cadeaukaart. PasKluis opent daarna de juiste invoer.',
+                    L10n.current.chooseLoyaltyCardQrCodeOrGift,
               ),
-              const _AddHelpStep(
+               _AddHelpStep(
                 number: '2',
-                title: 'Scan of vul handmatig in',
+                title: L10n.current.scanOrEnterManually,
                 description:
-                    'Kies een winkel en scan de barcode of QR-code. Je kunt de code ook zelf invoeren.',
+                    L10n.current.chooseAStoreAndScanTheBarcode,
               ),
-              const _AddHelpStep(
+               _AddHelpStep(
                 number: '3',
-                title: 'Importeer een foto of screenshot',
+                title: L10n.current.importAPhotoOrScreenshot,
                 description:
-                    'PasKluis kan een klantenkaart, QR-code of cadeaukaart op je toestel herkennen. De afbeelding wordt niet geüpload.',
+                    L10n.current.paskluisCanRecogniseALoyaltyCardQr,
               ),
-              const _AddHelpStep(
+               _AddHelpStep(
                 number: '4',
-                title: 'Controleer en bewaar',
+                title: L10n.current.checkAndSave,
                 description:
-                    'Controleer altijd de winkel en code voordat je de kaart opslaat.',
+                    L10n.current.alwaysCheckTheStoreAndCodeBefore,
                 showConnector: false,
               ),
               const SizedBox(height: 20),
@@ -204,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     showAddChoices();
                   },
                   icon: const Icon(Icons.add_rounded),
-                  label: const Text('Kaart toevoegen'),
+                  label:  Text(L10n.current.addCard),
                 ),
               ),
             ],
@@ -420,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await StorageService.cardsBox.add({
         'id': result['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
         'type': 'QR-set',
-        'name': result['name'] ?? 'QR-codes (${codeList.length})',
+        'name': result['name'] ?? L10n.current.qrCodes((codeList.length).toString()),
         'code': '',
         'codes': codes,
         'used':
@@ -463,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cadeaukaart is opgeslagen.')),
+         SnackBar(content: Text(L10n.current.giftCardSaved)),
       );
     }
   }
@@ -555,7 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     if (type == 'Cadeaukaart' && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cadeaukaart is opgeslagen.')),
+         SnackBar(content: Text(L10n.current.giftCardSaved)),
       );
     }
   }
@@ -662,31 +664,31 @@ class _HomeScreenState extends State<HomeScreen> {
     final key = findHiveKey(item);
     if (key == null) return;
 
-    final name = item['name']?.toString() ?? 'deze kaart';
+    final name = item['name']?.toString() ?? L10n.current.thisCard;
     final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: Text(
-          isShared ? 'Uit jouw PasKluis verwijderen?' : 'Verwijderen?',
+          isShared ? L10n.current.removeFromYourPaskluis : L10n.current.delete468,
         ),
         content: Text(
           isShared
-              ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De kaart van de eigenaar blijft bestaan.'
-              : 'Weet je zeker dat je "$name" wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.',
+              ? L10n.current.youAreOnlyRemovingFromYourOwn((name).toString())
+              : L10n.current.areYouSureYouWantToDelete((name).toString()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuleren'),
+            child:  Text(L10n.current.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFD51B46),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Verwijderen'),
+            child:  Text(L10n.current.delete),
           ),
         ],
       ),
@@ -707,9 +709,9 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+           SnackBar(
             content: Text(
-              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+              L10n.current.sharedAccessCouldNotBeUpdatedTry,
             ),
           ),
         );
@@ -721,11 +723,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('$name is verwijderd.')));
+        .showSnackBar(SnackBar(content: Text(L10n.current.hasBeenDeleted((name).toString()))));
   }
 
   void showItemOptions(BuildContext context, Map<String, dynamic> item) {
-    final name = item['name']?.toString() ?? 'Kaart';
+    final name = item['name']?.toString() ?? L10n.current.card;
     final type = item['type']?.toString() ?? '';
     final isShared = item['isShared'] == true;
     final canEdit = !isShared || item['canEditShared'] == true;
@@ -759,7 +761,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (canEdit)
                   _OptionTile(
                     icon: Icons.edit_rounded,
-                    title: 'Bewerken',
+                    title: L10n.current.edit,
                     onTap: () {
                       Navigator.pop(context);
 
@@ -769,8 +771,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         editGiftCard(context, item);
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('QR-code bewerken maken we straks.'),
+                           SnackBar(
+                            content: Text(L10n.current.qrCodeEditingIsComingSoon),
                           ),
                         );
                       }
@@ -779,8 +781,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _OptionTile(
                   icon: Icons.delete_rounded,
                   title: isShared
-                      ? 'Uit mijn PasKluis verwijderen'
-                      : 'Verwijderen',
+                      ? L10n.current.removeFromMyPaskluis
+                      : L10n.current.delete,
                   isDestructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -869,6 +871,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return ValueListenableBuilder<Box>(
       valueListenable: StorageService.cardsBox.listenable(),
       builder: (context, box, _) {
@@ -914,7 +917,7 @@ class _HomeScreenState extends State<HomeScreen> {
             : allItems.where((item) {
                 final searchable = [
                   item['name'],
-                  item['type'],
+                  L10n.cardType(item['type']?.toString()),
                   item['note'],
                   item['brandId'],
                 ].map((value) => value?.toString().toLowerCase() ?? '');
@@ -932,14 +935,20 @@ class _HomeScreenState extends State<HomeScreen> {
           backgroundColor: const Color(0xFFF4F4F6),
           appBar: AppBar(
             automaticallyImplyLeading: false,
-            leadingWidth: 112,
-            leading: Align(
-              alignment: Alignment.centerLeft,
-              child: IconButton(
-                tooltip: 'Uitleg over kaarten toevoegen',
-                onPressed: _showAddHelp,
-                icon: const Icon(Icons.info_outline_rounded),
-              ),
+            leadingWidth: 96,
+            leading: Row(
+              children: [
+                IconButton(
+                  tooltip: L10n.current.helpWithAddingCards,
+                  onPressed: _showAddHelp,
+                  icon: const Icon(Icons.info_outline_rounded),
+                ),
+                IconButton(
+                  tooltip: L10n.current.add,
+                  onPressed: showAddChoices,
+                  icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
+                ),
+              ],
             ),
             flexibleSpace: const SafeArea(
               child: IgnorePointer(
@@ -959,23 +968,16 @@ class _HomeScreenState extends State<HomeScreen> {
             elevation: 0,
             foregroundColor: const Color(0xFF333333),
             actions: [
+              const LanguageButton(),
               IconButton(
-                tooltip: 'Instellingen',
+                tooltip: L10n.current.settings,
                 onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                  );
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
                   if (!mounted) return;
                   setState(() {});
                   await _loadNearbyLocation();
                 },
                 icon: const Icon(Icons.settings_outlined),
-              ),
-              IconButton(
-                tooltip: 'Toevoegen',
-                onPressed: showAddChoices,
-                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
               ),
             ],
           ),
@@ -994,12 +996,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   onChanged: (value) => setState(() => _searchQuery = value),
                   textInputAction: TextInputAction.search,
                   decoration: InputDecoration(
-                    hintText: 'Zoek in PasKluis',
+                    hintText: L10n.current.searchPaskluis,
                     prefixIcon: const Icon(Icons.search_rounded),
                     suffixIcon: _searchQuery.isEmpty
                         ? null
                         : IconButton(
-                            tooltip: 'Zoekopdracht wissen',
+                            tooltip: L10n.current.clearSearch,
                             onPressed: () {
                               _searchController.clear();
                               setState(() => _searchQuery = '');
@@ -1043,12 +1045,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 28),
                   ],
                   _CategorySection(
-                    title: 'Klantenkaarten',
+                    title: L10n.current.loyaltyCards,
                     icon: Icons.card_membership,
                     items: getPreviewItems(cards),
                     hasItems: cards.isNotEmpty,
                     actionTitle:
-                        cards.isEmpty ? 'Voeg kaart toe' : 'Al je kaarten',
+                        cards.isEmpty ? L10n.current.addCard476 : L10n.current.allYourCards,
                     onActionTap:
                         cards.isEmpty ? openLoyaltyAddFlow : () => openTab(1),
                     onItemTap: (item) => openCardView(cards, item),
@@ -1056,13 +1058,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 28),
                   _CategorySection(
-                    title: 'QR-codes',
+                    title: L10n.current.qrCodes478,
                     icon: Icons.qr_code,
                     items: getPreviewItems(qrCodes),
                     hasItems: qrCodes.isNotEmpty,
                     actionTitle: qrCodes.isEmpty
-                        ? 'Voeg QR-code toe'
-                        : 'Al je QR-codes',
+                        ? L10n.current.addQrCode479
+                        : L10n.current.allYourQrCodes,
                     onActionTap:
                         qrCodes.isEmpty ? openQrAddFlow : () => openTab(2),
                     onItemTap: (item) => openCardView(qrCodes, item),
@@ -1070,13 +1072,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const SizedBox(height: 28),
                   _CategorySection(
-                    title: 'Cadeaukaarten',
+                    title: L10n.current.giftCards,
                     icon: Icons.card_giftcard,
                     items: getPreviewItems(giftCards),
                     hasItems: giftCards.isNotEmpty,
                     actionTitle: giftCards.isEmpty
-                        ? 'Voeg cadeaukaart toe'
-                        : 'Al je cadeaukaarten',
+                        ? L10n.current.addGiftCard447
+                        : L10n.current.allYourGiftCards,
                     onActionTap: giftCards.isEmpty
                         ? openGiftCardAddFlow
                         : () => openTab(3),
@@ -1108,15 +1110,16 @@ class _FavoritesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+         Row(
           children: [
             Icon(Icons.star_rounded, color: Color(0xFFD5A021)),
             SizedBox(width: 8),
             Text(
-              'Favorieten',
+              L10n.current.favourites,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
@@ -1127,10 +1130,10 @@ class _FavoritesSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         if (items.isEmpty)
-          const _HomeSectionPrompt(
+           _HomeSectionPrompt(
             icon: Icons.star_border_rounded,
-            title: 'Nog geen favorieten',
-            subtitle: 'Markeer je belangrijkste kaarten met een ster.',
+            title: L10n.current.noFavouritesYet,
+            subtitle: L10n.current.markYourMostImportantCardsWithA,
           )
         else
           _HomeCardStrip(
@@ -1162,6 +1165,7 @@ class _NearbySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     Widget content;
     if (state == LocationAccessState.checking) {
       content = const SizedBox(
@@ -1176,42 +1180,42 @@ class _NearbySection extends StatelessWidget {
         onItemLongPress: onItemLongPress,
       );
     } else if (state == LocationAccessState.ready) {
-      content = const _HomeSectionPrompt(
+      content =  _HomeSectionPrompt(
         icon: Icons.location_history_rounded,
-        title: 'Nog geen kaart op deze plek',
+        title: L10n.current.noCardAtThisLocationYet,
         subtitle:
-            'Open een kaart bij een winkel. PasKluis onthoudt die plek alleen op dit toestel.',
+            L10n.current.openACardAtAStorePaskluis,
       );
     } else if (state == LocationAccessState.servicesDisabled) {
       content = _HomeSectionPrompt(
         icon: Icons.location_disabled_rounded,
-        title: 'Locatievoorzieningen staan uit',
-        subtitle: 'Zet locatie aan om eerder gebruikte kaarten hier te tonen.',
-        actionLabel: 'Locatie aanzetten',
+        title: L10n.current.locationServicesAreOff,
+        subtitle: L10n.current.enableLocationToShowPreviouslyUsedCards,
+        actionLabel: L10n.current.enableLocation,
         onAction: onAction,
       );
     } else if (state == LocationAccessState.permissionDeniedForever) {
       content = _HomeSectionPrompt(
         icon: Icons.location_off_rounded,
-        title: 'Locatie staat uit voor PasKluis',
-        subtitle: 'Je kunt dit aanpassen in de instellingen van je telefoon.',
-        actionLabel: 'Open instellingen',
+        title: L10n.current.locationIsOffForPaskluis,
+        subtitle: L10n.current.youCanChangeThisInYourPhone,
+        actionLabel: L10n.current.openSettings,
         onAction: onAction,
       );
     } else if (state == LocationAccessState.permissionNeeded) {
       content = _HomeSectionPrompt(
         icon: Icons.near_me_outlined,
-        title: 'Toon kaarten die je hier gebruikt',
-        subtitle: 'Je locatie blijft op je telefoon en wordt niet geüpload.',
-        actionLabel: 'Locatie gebruiken',
+        title: L10n.current.showCardsYouUseHere,
+        subtitle: L10n.current.yourLocationStaysOnYourPhoneAnd,
+        actionLabel: L10n.current.useLocation,
         onAction: onAction,
       );
     } else {
       content = _HomeSectionPrompt(
         icon: Icons.location_searching_rounded,
-        title: 'Locatie niet beschikbaar',
-        subtitle: 'Probeer het opnieuw wanneer je bereik hebt.',
-        actionLabel: 'Opnieuw',
+        title: L10n.current.locationUnavailable,
+        subtitle: L10n.current.tryAgainWhenYouHaveAConnection,
+        actionLabel: L10n.current.tryAgain498,
         onAction: onAction,
       );
     }
@@ -1219,12 +1223,12 @@ class _NearbySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+         Row(
           children: [
             Icon(Icons.near_me_rounded, color: Color(0xFFD51B46)),
             SizedBox(width: 8),
             Text(
-              'In de buurt',
+              L10n.current.nearby,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
@@ -1255,6 +1259,7 @@ class _HomeCardStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final cardWidth = ((constraints.maxWidth - 16) / 3)
@@ -1278,7 +1283,7 @@ class _HomeCardStrip extends StatelessWidget {
                     Positioned.fill(
                       child: HomePreviewCard(
                         item: item,
-                        title: item['name']?.toString() ?? 'Kaart',
+                        title: item['name']?.toString() ?? L10n.current.card,
                         logoAsset: item['logoAsset']?.toString() ?? '',
                         customImage: item['customImage']?.toString() ?? '',
                         brandColor: item['brandColor']?.toString() ?? '',
@@ -1341,6 +1346,7 @@ class _HomeSectionPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 92),
@@ -1398,14 +1404,15 @@ class _SearchResults extends StatelessWidget {
   }
 
   static String _labelFor(String type) {
-    if (type == 'Cadeaukaart') return 'Cadeaukaart';
-    if (type == 'QR-set') return 'QR-set';
-    if (type == 'QR-code') return 'QR-code';
-    return 'Klantenkaart';
+    if (type == 'Cadeaukaart') return L10n.current.giftCard;
+    if (type == 'QR-set') return L10n.current.qrSet;
+    if (type == 'QR-code') return L10n.current.qrCode;
+    return L10n.current.loyaltyCard;
   }
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     if (items.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(28),
@@ -1418,13 +1425,13 @@ class _SearchResults extends StatelessWidget {
             const Icon(Icons.search_off_rounded, size: 48, color: Colors.black38),
             const SizedBox(height: 12),
             Text(
-              'Geen resultaten voor “$query”',
+              L10n.current.noResultsFor((query).toString()),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Zoek op de naam, het soort kaart of een notitie.',
+             Text(
+              L10n.current.searchByNameCardTypeOrA,
               textAlign: TextAlign.center,
             ),
           ],
@@ -1501,6 +1508,7 @@ class _CategorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1543,6 +1551,7 @@ class _ResponsiveSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     const titleStyle = TextStyle(
       fontSize: 22,
       fontWeight: FontWeight.w800,
@@ -1642,6 +1651,7 @@ class _EmptyCategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(22),
@@ -1693,8 +1703,8 @@ class _EmptyCategoryCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'Veilig opgeslagen op dit toestel',
+                     Text(
+                      L10n.current.safelyStoredOnThisDevice,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -1770,6 +1780,7 @@ class _HomePreviewCardState extends State<HomePreviewCard> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final useImage = hasAssetLogo || hasCustomLogo;
     final usesBrandBackground = useImage && widget.brandColor.isNotEmpty;
     final hasDarkBrandBackground =
@@ -1875,7 +1886,7 @@ class _HomePreviewCardState extends State<HomePreviewCard> {
                       ),
                       child: Text(
                         widget.balance.isEmpty
-                            ? 'Saldo onbekend'
+                            ? L10n.current.balanceUnknown
                             : '€ ${formatAmountValue(widget.balance)}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1915,6 +1926,7 @@ class _AddHelpStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1989,6 +2001,7 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return InkWell(
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
@@ -2036,6 +2049,7 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final color = isDestructive ? Colors.red : const Color(0xFFD51B46);
 
     return ListTile(

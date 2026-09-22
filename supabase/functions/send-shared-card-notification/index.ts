@@ -113,7 +113,7 @@ Deno.serve(async (request) => {
 
     const { data: tokens, error: tokensError } = await admin
       .from('push_device_tokens')
-      .select('id, token')
+      .select('id, token, locale')
       .eq('user_id', membership.recipient_id);
     if (tokensError) throw tokensError;
     if (!tokens || tokens.length === 0) {
@@ -121,13 +121,14 @@ Deno.serve(async (request) => {
     }
 
     const cardName = String(card.card_payload?.name || '').trim();
-    const fallback = card.card_type === 'Cadeaukaart'
-      ? 'Een cadeaukaart'
-      : 'Een klantenkaart';
     const accessToken = await createGoogleAccessToken(serviceAccount);
     let sent = 0;
 
     for (const device of tokens) {
+      const english = device.locale === 'en';
+      const fallback = card.card_type === 'Cadeaukaart'
+        ? (english ? 'A gift card' : 'Een cadeaukaart')
+        : (english ? 'A loyalty card' : 'Een klantenkaart');
       const response = await fetch(
         `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
         {
@@ -140,11 +141,12 @@ Deno.serve(async (request) => {
             message: {
               token: device.token,
               notification: {
-                title: 'Nieuwe kaart in PasKluis',
-                body: `${cardName || fallback} is met jou gedeeld.`,
+                title: english ? 'New card in PasKluis' : 'Nieuwe kaart in PasKluis',
+                body: english ? `${cardName || fallback} has been shared with you.` : `${cardName || fallback} is met jou gedeeld.`,
               },
               data: {
                 event: 'shared_card',
+                card_name: cardName,
                 membership_id: membership.id,
                 shared_card_id: card.id,
                 card_type: String(card.card_type),

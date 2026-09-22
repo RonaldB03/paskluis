@@ -1,3 +1,6 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
+import '../../shared/widgets/language_picker.dart';
+import '../../data/services/locale_service.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/services/location_service.dart';
@@ -83,9 +86,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final result = await LocationService.resolve(requestPermission: true);
     if (!mounted || result.state == LocationAccessState.ready) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+       SnackBar(
         content: Text(
-          'Locatie staat aan in PasKluis. Geef ook toestemming in de instellingen van je telefoon.',
+          L10n.current.locationIsEnabledInPaskluisAlsoGrant,
         ),
       ),
     );
@@ -101,7 +104,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _savingLock = true);
     if (enabled) {
       final authenticated = await SecurityService.authenticate(
-        reason: 'Bevestig je identiteit om app-vergrendeling in te schakelen',
+        reason: L10n.current.confirmYourIdentityToEnableAppLock,
       );
       if (!authenticated) {
         if (mounted) setState(() => _savingLock = false);
@@ -142,14 +145,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Afstand tot winkel',
+               Text(
+                L10n.current.distanceToStore,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Wanneer beschouwt PasKluis een opgeslagen kaart als dichtbij?',
+               Text(
+                L10n.current.whenShouldPaskluisConsiderASavedCard,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 14),
@@ -157,7 +160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 RadioListTile<int>(
                   value: meters,
                   groupValue: _nearbyRadiusMeters,
-                  title: Text(meters == 1000 ? '1 kilometer' : '$meters meter'),
+                  title: Text(meters == 1000 ? L10n.current.text1Kilometre : L10n.current.metres((meters).toString())),
                   onChanged: (value) => Navigator.pop(context, value),
                 ),
             ],
@@ -184,15 +187,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Standaard sortering',
+               Text(
+                L10n.current.defaultSorting,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 12),
-              for (final option in const {
-                'recent': 'Laatst gebruikt',
-                'added': 'Laatst toegevoegd',
-                'alphabetical': 'Alfabetisch',
+              for (final option in  {
+                'recent': L10n.current.lastUsed,
+                'added': L10n.current.recentlyAdded,
+                'alphabetical': L10n.current.alphabetical,
               }.entries)
                 RadioListTile<String>(
                   value: option.key,
@@ -224,16 +227,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Standaard startscherm',
+               Text(
+                L10n.current.defaultStartScreen,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 12),
-              for (final option in const {
-                'home': 'Home',
-                'cards': 'Klantenkaarten',
-                'qr': 'QR-codes',
-                'gift': 'Cadeaukaarten',
+              for (final option in  {
+                'home': L10n.current.home,
+                'cards': L10n.current.loyaltyCards,
+                'qr': L10n.current.qrCodes478,
+                'gift': L10n.current.giftCards,
               }.entries)
                 RadioListTile<String>(
                   value: option.key,
@@ -255,40 +258,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _nearbyRadiusMeters == 1000 ? '1 km' : '$_nearbyRadiusMeters m';
 
   String get _sortLabel => switch (_cardSortOrder) {
-        'alphabetical' => 'Alfabetisch',
-        'added' => 'Laatst toegevoegd',
-        _ => 'Laatst gebruikt',
+        'alphabetical' => L10n.current.alphabetical,
+        'added' => L10n.current.recentlyAdded,
+        _ => L10n.current.lastUsed,
       };
 
   String get _startTabLabel => switch (_defaultStartTab) {
-        'cards' => 'Klantenkaarten',
-        'qr' => 'QR-codes',
-        'gift' => 'Cadeaukaarten',
-        _ => 'Home',
+        'cards' => L10n.current.loyaltyCards,
+        'qr' => L10n.current.qrCodes478,
+        'gift' => L10n.current.giftCards,
+        _ => L10n.current.home,
       };
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF4F2F7),
       appBar: AppBar(
-        title: const Text('Instellingen'),
+        title:  Text(L10n.current.settings),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF28242C),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 18, 14, 32),
         children: [
+          _SettingsSection(
+            title: L10n.current.language,
+            children: [
+              ValueListenableBuilder<String>(
+                valueListenable: LocaleService.preference,
+                builder: (context, choice, _) => _SettingsTile(
+                  icon: Icons.language_rounded,
+                  iconColor: const Color(0xFF286DC8),
+                  iconBackground: const Color(0xFFE7F0FF),
+                  title: L10n.current.language,
+                  subtitle: L10n.current.languageSettingsSubtitle,
+                  value: choice == 'system' ? L10n.current.followPhoneLanguage : choice == 'nl' ? 'Nederlands' : 'English',
+                  onTap: () => showLanguagePicker(context),
+                ),
+              ),
+            ],
+          ),
           if (SettingsService.locationCardsAvailable)
             _SettingsSection(
-              title: 'Slimme kaarten',
+              title: L10n.current.smartCards,
               children: [
                 _SettingsSwitchTile(
                   icon: Icons.location_on_outlined,
                   iconColor: const Color(0xFF286DC8),
                   iconBackground: const Color(0xFFE7F0FF),
-                  title: 'Kaarten op basis van locatie',
-                  subtitle: 'Toon de juiste kaart bij een winkel in de buurt',
+                  title: L10n.current.locationBasedCards,
+                  subtitle: L10n.current.showTheRightCardAtANearby,
                   value: _locationCardsEnabled,
                   onChanged: _changeLocationCards,
                 ),
@@ -297,8 +318,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.radar_rounded,
                     iconColor: const Color(0xFF7046B8),
                     iconBackground: const Color(0xFFEFE8FF),
-                    title: 'Afstand',
-                    subtitle: 'Hoe dichtbij een winkel moet zijn',
+                    title: L10n.current.distance,
+                    subtitle: L10n.current.howCloseAStoreNeedsToBe,
                     value: _radiusLabel,
                     onTap: _chooseRadius,
                   ),
@@ -306,10 +327,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.near_me_outlined,
                   iconColor: const Color(0xFF286DC8),
                   iconBackground: const Color(0xFFE7F0FF),
-                  title: 'Dichtstbijzijnde klantenkaarten bovenaan',
+                  title: L10n.current.nearestLoyaltyCardsFirst,
                   subtitle: _locationCardsEnabled
-                      ? 'Binnen de gekozen afstand: eerst dichtbij, daarna je favorieten en normale sortering'
-                      : 'Zet kaarten op basis van locatie aan om deze optie te gebruiken',
+                      ? L10n.current.withinTheChosenDistanceNearestFirstThen
+                      : L10n.current.enableLocationBasedCardsToUseThis,
                   value: _nearbyLoyaltyCardsFirst,
                   onChanged: !_locationCardsEnabled ? null : (value) async {
                     await SettingsService.setNearbyLoyaltyCardsFirst(value);
@@ -321,16 +342,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           _SettingsSection(
-            title: 'Kaarten en weergave',
+            title: L10n.current.cardsAndDisplay,
             children: [
               _SettingsSwitchTile(
                 icon: Icons.star_outline_rounded,
                 iconColor: const Color(0xFFA26D00),
                 iconBackground: const Color(0xFFFFF2CC),
-                title: 'Favorieten bovenaan',
+                title: L10n.current.favouritesFirst,
                 subtitle: _locationCardsEnabled && _nearbyLoyaltyCardsFirst
-                    ? 'Favorieten volgen na klantenkaarten in de buurt'
-                    : 'Je belangrijkste kaarten als eerste',
+                    ? L10n.current.favouritesFollowNearbyLoyaltyCards
+                    : L10n.current.yourMostImportantCardsFirst,
                 value: _favoritesFirst,
                 onChanged: (value) async {
                   await SettingsService.setFavoritesFirst(value);
@@ -341,8 +362,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.dashboard_customize_outlined,
                 iconColor: const Color(0xFFD51B46),
                 iconBackground: const Color(0xFFFFE5E9),
-                title: 'Favorietenblok op Home',
-                subtitle: 'Toon een apart overzicht met favoriete kaarten',
+                title: L10n.current.favouritesOnHome,
+                subtitle: L10n.current.showASeparateSectionWithFavouriteCards,
                 value: _showFavoritesSection,
                 onChanged: (value) async {
                   await SettingsService.setShowFavoritesSection(value);
@@ -354,10 +375,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.near_me_outlined,
                   iconColor: const Color(0xFF286DC8),
                   iconBackground: const Color(0xFFE7F0FF),
-                  title: 'In de buurt op Home',
+                  title: L10n.current.nearbyOnHome,
                   subtitle: _locationCardsEnabled
-                      ? 'Toon een apart overzicht met klantenkaarten in de buurt'
-                      : 'Het blok verschijnt zodra kaarten op basis van locatie aanstaat',
+                      ? L10n.current.showASeparateSectionWithNearbyLoyalty
+                      : L10n.current.theSectionAppearsWhenLocationBasedCards,
                   value: _showNearbySection,
                   onChanged: (value) async {
                     await SettingsService.setShowNearbySection(value);
@@ -368,8 +389,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.swap_vert_rounded,
                 iconColor: const Color(0xFF23814A),
                 iconBackground: const Color(0xFFDDF5E5),
-                title: 'Standaard sortering',
-                subtitle: 'Volgorde in je kaartenoverzicht',
+                title: L10n.current.defaultSorting,
+                subtitle: L10n.current.orderInYourCardOverview,
                 value: _sortLabel,
                 onTap: _chooseSorting,
               ),
@@ -377,8 +398,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.home_outlined,
                 iconColor: const Color(0xFF286DC8),
                 iconBackground: const Color(0xFFE7F0FF),
-                title: 'Standaard startscherm',
-                subtitle: 'Open PasKluis direct op jouw favoriete onderdeel',
+                title: L10n.current.defaultStartScreen,
+                subtitle: L10n.current.openPaskluisInYourFavouriteSection,
                 value: _startTabLabel,
                 onTap: _chooseStartTab,
               ),
@@ -386,22 +407,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.visibility_outlined,
                 iconColor: const Color(0xFF7046B8),
                 iconBackground: const Color(0xFFEFE8FF),
-                title: 'Extra duidelijk',
-                subtitle: 'Grotere tekst, hoger contrast en grotere kaartvakken',
+                title: L10n.current.extraClarity,
+                subtitle: L10n.current.largerTextHigherContrastAndLargerCards,
                 value: _extraClearEnabled,
                 onChanged: _changeExtraClear,
               ),
             ],
           ),
           _SettingsSection(
-            title: 'Tijdens gebruik',
+            title: L10n.current.whileUsingCards,
             children: [
               _SettingsSwitchTile(
                 icon: Icons.light_mode_outlined,
                 iconColor: const Color(0xFFA26D00),
                 iconBackground: const Color(0xFFFFF2CC),
-                title: 'Helderheid automatisch verhogen',
-                subtitle: 'Barcodes zijn zo makkelijker te scannen',
+                title: L10n.current.automaticallyIncreaseBrightness,
+                subtitle: L10n.current.makesBarcodesEasierToScan,
                 value: _autoBrightnessEnabled,
                 onChanged: (value) async {
                   await SettingsService.setAutoBrightnessEnabled(value);
@@ -412,8 +433,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.timer_outlined,
                 iconColor: const Color(0xFF7046B8),
                 iconBackground: const Color(0xFFEFE8FF),
-                title: 'Scherm wakker houden',
-                subtitle: 'Voorkom dat het scherm uitgaat bij een kaart',
+                title: L10n.current.keepScreenAwake,
+                subtitle: L10n.current.preventTheScreenFromTurningOffWhile,
                 value: _keepScreenAwakeEnabled,
                 onChanged: (value) async {
                   await SettingsService.setKeepScreenAwakeEnabled(value);
@@ -425,22 +446,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.notifications_active_outlined,
                   iconColor: const Color(0xFFD51B46),
                   iconBackground: const Color(0xFFFFE5E9),
-                  title: 'Cadeaukaartherinneringen',
-                  subtitle: 'Meldingen vóór de vervaldatum',
+                  title: L10n.current.giftCardReminders,
+                  subtitle: L10n.current.notificationsBeforeTheExpiryDate,
                   value: _giftExpiryNotificationsEnabled,
                   onChanged: _changeExpiryNotifications,
                 ),
             ],
           ),
           _SettingsSection(
-            title: 'Beveiliging en privacy',
+            title: L10n.current.securityAndPrivacy,
             children: [
               _SettingsSwitchTile(
                 icon: Icons.face_rounded,
                 iconColor: const Color(0xFF23814A),
                 iconBackground: const Color(0xFFDDF5E5),
-                title: 'Vergrendel PasKluis',
-                subtitle: 'Gebruik Face ID, biometrie of je toestelcode',
+                title: L10n.current.lockPaskluis,
+                subtitle: L10n.current.useFaceIdBiometricsOrYourDevice,
                 value: _appLockEnabled,
                 onChanged: _savingLock ? null : _changeAppLock,
               ),
@@ -448,8 +469,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.visibility_off_outlined,
                 iconColor: const Color(0xFFD51B46),
                 iconBackground: const Color(0xFFFFE5E9),
-                title: 'Pincodes standaard verbergen',
-                subtitle: 'Toon gevoelige codes pas na bevestiging',
+                title: L10n.current.hidePinsByDefault,
+                subtitle: L10n.current.showSensitiveCodesOnlyAfterConfirmation,
                 value: _hideSensitiveCodes,
                 onChanged: (value) async {
                   await SettingsService.setHideSensitiveCodes(value);
@@ -460,8 +481,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.shield_outlined,
                 iconColor: const Color(0xFF286DC8),
                 iconBackground: const Color(0xFFE7F0FF),
-                title: 'Privacy en gegevens',
-                subtitle: 'Bekijk wat PasKluis wel en niet bewaart',
+                title: L10n.current.privacyAndData,
+                subtitle: L10n.current.seeWhatPaskluisDoesAndDoesNot,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const PrivacyScreen()),
@@ -470,14 +491,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           _SettingsSection(
-            title: 'Account en hulp',
+            title: L10n.current.accountAndHelp,
             children: [
               _SettingsTile(
                 icon: Icons.workspace_premium_outlined,
                 iconColor: const Color(0xFFA26D00),
                 iconBackground: const Color(0xFFFFF2CC),
-                title: 'Account en PasKluis Plus',
-                subtitle: 'Inloggen, Plus-status en accountbeheer',
+                title: L10n.current.accountAndPaskluisPlus,
+                subtitle: L10n.current.signInPlusStatusAndAccountManagement,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const AccountScreen()),
@@ -487,8 +508,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.support_agent_rounded,
                 iconColor: const Color(0xFFD51B46),
                 iconBackground: const Color(0xFFFFE5E9),
-                title: 'Klantenservice',
-                subtitle: 'Stel een vraag of bekijk eerdere gesprekken',
+                title: L10n.current.customerSupport,
+                subtitle: L10n.current.askAQuestionOrViewPreviousConversations,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const SupportScreen()),
@@ -498,8 +519,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.help_outline_rounded,
                 iconColor: const Color(0xFF7046B8),
                 iconBackground: const Color(0xFFEFE8FF),
-                title: 'Hulp en uitleg',
-                subtitle: 'Uitleg en veelgestelde vragen',
+                title: L10n.current.helpAndGuidance,
+                subtitle: L10n.current.guidanceAndFrequentlyAskedQuestions,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const HelpCenterScreen()),
@@ -510,8 +531,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.admin_panel_settings_rounded,
                   iconColor: const Color(0xFFD51B46),
                   iconBackground: const Color(0xFFFFE5E9),
-                  title: 'Beheerder',
-                  subtitle: 'Aparte beheerfuncties voor PasKluis',
+                  title: L10n.current.administrator,
+                  subtitle: L10n.current.separateAdministrationToolsForPaskluis,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AdminToolsScreen()),
@@ -521,16 +542,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 icon: Icons.phone_iphone_rounded,
                 iconColor: const Color(0xFF286DC8),
                 iconBackground: const Color(0xFFE7F0FF),
-                title: 'Gegevens op dit apparaat',
-                subtitle: '${StorageService.cardsBox.length} kaarten lokaal opgeslagen',
+                title: L10n.current.dataOnThisDevice,
+                subtitle: L10n.current.cardsStoredLocally((StorageService.cardsBox.length).toString()),
               ),
             ],
           ),
-          const Center(
+           Center(
             child: Padding(
               padding: EdgeInsets.only(top: 2),
               child: Text(
-                'PasKluis versie 1.4.1 (40)',
+                L10n.current.paskluisVersion14140,
                 style: TextStyle(color: Color(0xFF77717D), fontSize: 12),
               ),
             ),
@@ -549,6 +570,7 @@ class _SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
@@ -610,6 +632,7 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return ListTile(
       minTileHeight: 62,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
@@ -658,6 +681,7 @@ class _SettingsSwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return SwitchListTile.adaptive(
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       secondary: _SettingsIcon(
@@ -687,6 +711,7 @@ class _SettingsIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       width: 34,
       height: 34,

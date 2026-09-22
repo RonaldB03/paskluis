@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -31,7 +32,7 @@ class _ChooseGiftCardTemplateScreenState
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('De foto kon niet worden gelezen. Probeer het opnieuw.')),
+           SnackBar(content: Text(L10n.current.thePhotoCouldNotBeReadPlease)),
         );
       }
       return;
@@ -40,8 +41,8 @@ class _ChooseGiftCardTemplateScreenState
     final importResult = scan;
     if (importResult.code.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Geen code gevonden. Probeer een duidelijkere foto.'),
+         SnackBar(
+          content: Text(L10n.current.noCodeFoundTryAClearerPhoto),
         ),
       );
       return;
@@ -52,7 +53,7 @@ class _ChooseGiftCardTemplateScreenState
       context,
       MaterialPageRoute(
         builder: (_) => AddGiftCardScreen(
-          initialName: brand == null ? null : '${brand.name} cadeaukaart',
+          initialName: brand == null ? null : L10n.current.giftCard((brand.name).toString()),
           initialCode: importResult.code.trim(),
           initialCodeFormat: importResult.codeFormat,
           initialPinCode: importResult.pinCode,
@@ -73,6 +74,7 @@ class _ChooseGiftCardTemplateScreenState
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
@@ -80,8 +82,8 @@ class _ChooseGiftCardTemplateScreenState
         elevation: 0,
         foregroundColor: const Color(0xFF303036),
         centerTitle: true,
-        title: const Text(
-          'Cadeaukaart toevoegen',
+        title:  Text(
+          L10n.current.addGiftCard,
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
         ),
       ),
@@ -94,8 +96,8 @@ class _ChooseGiftCardTemplateScreenState
             color: Color(0xFFD51B46),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Fotografeer de hele cadeaukaart',
+           Text(
+            L10n.current.photographTheWholeGiftCard,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 24,
@@ -104,8 +106,8 @@ class _ChooseGiftCardTemplateScreenState
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Zorg dat de code en eventuele pincode duidelijk zichtbaar zijn. PasKluis probeert de winkel, het logo, de kaartcode en de pincode automatisch te herkennen.',
+           Text(
+            L10n.current.makeSureTheCodeAndAnyPin,
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 16, height: 1.45, color: Colors.black54),
           ),
@@ -115,7 +117,7 @@ class _ChooseGiftCardTemplateScreenState
             child: FilledButton.icon(
               onPressed: () => startAutomaticImport(ImageSource.camera),
               icon: const Icon(Icons.camera_alt_rounded),
-              label: const Text('Maak een foto'),
+              label:  Text(L10n.current.takeAPhoto),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFD51B46),
                 textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
@@ -129,7 +131,7 @@ class _ChooseGiftCardTemplateScreenState
             child: OutlinedButton.icon(
               onPressed: () => startAutomaticImport(ImageSource.gallery),
               icon: const Icon(Icons.photo_library_rounded),
-              label: const Text('Kies foto of screenshot'),
+              label:  Text(L10n.current.choosePhotoOrScreenshot),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFD51B46),
                 side: const BorderSide(color: Color(0xFFD51B46)),
@@ -142,18 +144,18 @@ class _ChooseGiftCardTemplateScreenState
           TextButton.icon(
             onPressed: openCustomGiftCard,
             icon: const Icon(Icons.edit_outlined),
-            label: const Text('Handmatig toevoegen'),
+            label:  Text(L10n.current.addManually),
             style: TextButton.styleFrom(foregroundColor: Colors.black54),
           ),
           const SizedBox(height: 22),
-          const Row(
+           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.lock_outline_rounded, size: 18, color: Colors.black38),
               SizedBox(width: 7),
               Flexible(
                 child: Text(
-                  'Herkenning gebeurt op je toestel; je foto wordt niet geüpload.',
+                  L10n.current.recognitionHappensOnYourDeviceYourPhoto,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 13, color: Colors.black45),
                 ),

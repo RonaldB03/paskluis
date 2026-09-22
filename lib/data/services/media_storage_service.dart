@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
 import 'package:path/path.dart' as path;
@@ -13,8 +14,8 @@ class MediaStorageService {
   static Future<String> persistImage(String sourcePath) async {
     final source = File(sourcePath);
     if (!await source.exists()) {
-      throw const FileSystemException(
-        'De gekozen afbeelding bestaat niet meer.',
+      throw  FileSystemException(
+        L10n.current.theSelectedImageIsNoLongerAvailable,
       );
     }
 

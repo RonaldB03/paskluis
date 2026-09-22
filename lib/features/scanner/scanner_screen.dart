@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -24,27 +25,27 @@ Future<ScannerMode?> showCodeTypeDialog(BuildContext context) {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Welk type code staat op de kaart?',
+             Text(
+              L10n.current.whatTypeOfCodeIsOnThe,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
-            const Text('Automatisch herkennen werkt voor de meeste kaarten.'),
+             Text(L10n.current.automaticDetectionWorksForMostCards),
             const SizedBox(height: 16),
             _CodeTypeTile(
               icon: Icons.auto_awesome,
-              title: 'Automatisch herkennen',
-              subtitle: 'Aanbevolen',
+              title: L10n.current.detectAutomatically,
+              subtitle: L10n.current.recommended,
               onTap: () => Navigator.pop(context, ScannerMode.auto),
             ),
             _CodeTypeTile(
               icon: Icons.view_week_outlined,
-              title: 'Streepjescode',
+              title: L10n.current.barcode,
               onTap: () => Navigator.pop(context, ScannerMode.barcode),
             ),
             _CodeTypeTile(
               icon: Icons.qr_code,
-              title: 'QR-code',
+              title: L10n.current.qrCode,
               onTap: () => Navigator.pop(context, ScannerMode.qr),
             ),
           ],
@@ -244,8 +245,8 @@ class _ScannerScreenState extends State<ScannerScreen>
         setState(() => importingImage = false);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Geen barcode gevonden in deze afbeelding.'),
+           SnackBar(
+            content: Text(L10n.current.noBarcodeFoundInThisImage),
           ),
         );
         return;
@@ -258,13 +259,14 @@ class _ScannerScreenState extends State<ScannerScreen>
       setState(() => importingImage = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Afbeelding kon niet worden gelezen.')),
+         SnackBar(content: Text(L10n.current.unableToReadImage)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     const frameWidth = 330.0;
     const frameHeight = 155.0;
 
@@ -353,8 +355,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                     onTap: () => Navigator.pop(context),
                   ),
                   const Spacer(),
-                  const Text(
-                    'Barcode scannen',
+                   Text(
+                    L10n.current.scanBarcode,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 17,
@@ -378,8 +380,8 @@ class _ScannerScreenState extends State<ScannerScreen>
             bottom: 42,
             child: Column(
               children: [
-                const Text(
-                  'Richt je camera op de barcode van je klantenkaart',
+                 Text(
+                  L10n.current.pointYourCameraAtTheBarcodeOn,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
@@ -390,7 +392,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Houd de barcode binnen het kader',
+                  L10n.current.keepTheBarcodeInsideTheFrame,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.72),
@@ -404,7 +406,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                     Expanded(
                       child: _BottomActionButton(
                         icon: Icons.keyboard_alt_outlined,
-                        label: 'Handmatig',
+                        label: L10n.current.manual,
                         visible: showManualButton,
                         onTap: openManualEntry,
                       ),
@@ -415,7 +417,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                         icon: importingImage
                             ? Icons.hourglass_top_rounded
                             : Icons.image_outlined,
-                        label: importingImage ? 'Lezen...' : 'Importeren',
+                        label: importingImage ? L10n.current.reading : L10n.current.actionImport,
                         visible: true,
                         onTap: importingImage ? null : importScreenshot,
                       ),
@@ -426,8 +428,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                 _SecondaryActionButton(
                   icon: Icons.cameraswitch_outlined,
                   label: usingFrontCamera
-                      ? 'Gebruik achtercamera'
-                      : 'Camera wisselen',
+                      ? L10n.current.useRearCamera
+                      : L10n.current.switchCamera,
                   onTap: switchCamera,
                 ),
               ],
@@ -447,6 +449,7 @@ class _ScannerOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return CustomPaint(
       painter: _ScannerOverlayPainter(
         frameWidth: frameWidth,
@@ -509,6 +512,7 @@ class _Corner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Align(
       alignment: alignment,
       child: Container(
@@ -544,6 +548,7 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Material(
       color: Colors.white.withOpacity(0.13),
       shape: const CircleBorder(),
@@ -575,6 +580,7 @@ class _BottomActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return AnimatedOpacity(
       opacity: visible ? 1 : 0,
       duration: const Duration(milliseconds: 250),
@@ -619,6 +625,7 @@ class _SecondaryActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return TextButton.icon(
       onPressed: onTap,
       icon: Icon(icon),
@@ -655,6 +662,7 @@ class _ManualBarcodeDialogState extends State<_ManualBarcodeDialog> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
@@ -669,8 +677,8 @@ class _ManualBarcodeDialogState extends State<_ManualBarcodeDialog> {
               size: 42,
             ),
             const SizedBox(height: 14),
-            const Text(
-              'Barcode handmatig invoeren',
+             Text(
+              L10n.current.enterBarcodeManually,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 22,
@@ -680,7 +688,7 @@ class _ManualBarcodeDialogState extends State<_ManualBarcodeDialog> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Voer het nummer onder de barcode in.',
+              L10n.current.enterTheNumberBelowTheBarcode,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -696,7 +704,7 @@ class _ManualBarcodeDialogState extends State<_ManualBarcodeDialog> {
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => submit(),
               decoration: InputDecoration(
-                hintText: 'Bijv. 8712345678901',
+                hintText: L10n.current.eG8712345678901,
                 filled: true,
                 fillColor: const Color(0xFFF4F4F6),
                 border: OutlineInputBorder(
@@ -715,8 +723,8 @@ class _ManualBarcodeDialogState extends State<_ManualBarcodeDialog> {
                 Expanded(
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Annuleren',
+                    child:  Text(
+                      L10n.current.cancel,
                       style: TextStyle(
                         color: Colors.black54,
                         fontWeight: FontWeight.w700,
@@ -734,8 +742,8 @@ class _ManualBarcodeDialogState extends State<_ManualBarcodeDialog> {
                         borderRadius: BorderRadius.circular(22),
                       ),
                     ),
-                    child: const Text(
-                      'Verder',
+                    child:  Text(
+                      L10n.current.actionContinue,
                       style: TextStyle(fontWeight: FontWeight.w900),
                     ),
                   ),

@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:convert';
 import 'dart:math';
 
@@ -49,7 +50,7 @@ class StorageService {
     final expectedId = value['id']?.toString() ?? '';
     if (stored is! Map ||
         (expectedId.isNotEmpty && stored['id']?.toString() != expectedId)) {
-      throw StateError('De kaart kon niet worden gecontroleerd na opslaan.');
+      throw StateError(L10n.current.theCardCouldNotBeVerifiedAfter);
     }
     return key;
   }

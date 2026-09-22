@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -63,13 +64,13 @@ class NotificationService {
     final name = card['name']?.toString().trim().isNotEmpty == true
         ? card['name'].toString().trim()
         : card['type']?.toString() == 'Cadeaukaart'
-            ? 'Een cadeaukaart'
-            : 'Een klantenkaart';
-    const details = NotificationDetails(
+            ? L10n.current.aGiftCard
+            : L10n.current.aLoyaltyCard;
+    final details = NotificationDetails(
       android: AndroidNotificationDetails(
         'shared_cards',
-        'Gedeelde kaarten',
-        channelDescription: 'Meldingen wanneer iemand een kaart met je deelt',
+        L10n.current.sharedCards,
+        channelDescription: L10n.current.notificationsWhenSomeoneSharesACardWith,
         importance: Importance.high,
         priority: Priority.high,
       ),
@@ -77,8 +78,8 @@ class NotificationService {
     );
     await _plugin.show(
       _baseId('shared:$id'),
-      'Nieuwe kaart in PasKluis',
-      '$name is met jou gedeeld.',
+      L10n.current.newCardInPaskluis,
+      L10n.current.hasBeenSharedWithYou((name).toString()),
       details,
     );
   }
@@ -88,17 +89,21 @@ class NotificationService {
   }
 
   static Future<void> showRemoteMessage(RemoteMessage message) async {
-    final title = message.notification?.title ?? 'Nieuwe kaart in PasKluis';
-    final body = message.notification?.body ??
-        'Er is een kaart met je gedeeld. Open PasKluis om hem te bekijken.';
+    final isSharedCard = message.data['event'] == 'shared_card';
+    final name = message.data['card_name']?.toString().trim() ?? '';
+    final title = isSharedCard ? L10n.current.newCardInPaskluis
+        : message.notification?.title ?? L10n.current.newCardInPaskluis;
+    final body = isSharedCard
+        ? (name.isEmpty ? L10n.current.aCardHasBeenSharedWithYou : L10n.current.hasBeenSharedWithYou(name))
+        : message.notification?.body ?? L10n.current.aCardHasBeenSharedWithYou;
     final membershipId = message.data['membership_id']?.toString() ??
         message.messageId ??
         DateTime.now().millisecondsSinceEpoch.toString();
-    const details = NotificationDetails(
+    final details = NotificationDetails(
       android: AndroidNotificationDetails(
         'shared_cards',
-        'Gedeelde kaarten',
-        channelDescription: 'Meldingen wanneer iemand een kaart met je deelt',
+        L10n.current.sharedCards,
+        channelDescription: L10n.current.notificationsWhenSomeoneSharesACardWith,
         importance: Importance.high,
         priority: Priority.high,
       ),
@@ -131,19 +136,19 @@ class NotificationService {
 
     final name = card['name']?.toString().trim().isNotEmpty == true
         ? card['name'].toString().trim()
-        : 'Je cadeaukaart';
+        : L10n.current.yourGiftCard;
     final localExpiry = DateTime(expiry.year, expiry.month, expiry.day, 9);
     final reminders = <({int days, String body})>[
-      (days: 30, body: '$name verloopt over 30 dagen.'),
-      (days: 7, body: '$name verloopt over 7 dagen.'),
-      (days: 0, body: '$name verloopt vandaag.'),
+      (days: 30, body: L10n.current.expiresIn30Days((name).toString())),
+      (days: 7, body: L10n.current.expiresIn7Days((name).toString())),
+      (days: 0, body: L10n.current.expiresToday((name).toString())),
     ];
     final base = _baseId(id);
-    const details = NotificationDetails(
+    final details = NotificationDetails(
       android: AndroidNotificationDetails(
         'gift_card_expiry',
-        'Vervaldatums cadeaukaarten',
-        channelDescription: 'Herinneringen voordat cadeaukaarten verlopen',
+        L10n.current.giftCardExpiryDates,
+        channelDescription: L10n.current.remindersBeforeGiftCardsExpire,
         importance: Importance.high,
         priority: Priority.high,
       ),
@@ -156,7 +161,7 @@ class NotificationService {
       if (!moment.isAfter(DateTime.now())) continue;
       await _plugin.zonedSchedule(
         base + i,
-        'Cadeaukaart niet vergeten',
+        L10n.current.rememberYourGiftCard,
         reminder.body,
         tz.TZDateTime.from(moment.toUtc(), tz.UTC),
         details,

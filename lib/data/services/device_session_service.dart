@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 import 'dart:math';
 
@@ -37,11 +38,11 @@ abstract final class DeviceSessionService {
   }
 
   static String get deviceName {
-    if (Platform.isIOS) return 'iPhone of iPad';
-    if (Platform.isAndroid) return 'Android-apparaat';
+    if (Platform.isIOS) return L10n.current.iphoneOrIpad;
+    if (Platform.isAndroid) return L10n.current.androidDevice;
     if (Platform.isMacOS) return 'Mac';
-    if (Platform.isWindows) return 'Windows-apparaat';
-    return 'Ander apparaat';
+    if (Platform.isWindows) return L10n.current.windowsDevice;
+    return L10n.current.anotherDevice;
   }
 
   static Future<DeviceSessionStatus> inspect() async {

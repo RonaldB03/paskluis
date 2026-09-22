@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart' as mobile;
@@ -236,9 +237,9 @@ abstract final class SmartCardImportService {
           orElse: () => '',
         );
     if (line.isNotEmpty) return line;
-    if (type == 'Cadeaukaart') return 'Cadeaukaart';
-    if (type == 'QR-code') return 'QR-code';
-    return 'Klantenkaart';
+    if (type == 'Cadeaukaart') return L10n.current.giftCard;
+    if (type == 'QR-code') return L10n.current.qrCode;
+    return L10n.current.loyaltyCard;
   }
 
   static String _normalize(String value) => value

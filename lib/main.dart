@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'firebase_options.dart';
+import 'data/services/locale_service.dart';
+import 'l10n/generated/app_localizations.dart';
 import 'features/home/home_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'data/services/storage_service.dart';
@@ -49,11 +52,13 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initialization = _initialize();
+    LocaleService.locale.addListener(_languageChanged);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    LocaleService.locale.removeListener(_languageChanged);
     _deviceSessionTimer?.cancel();
     _authSubscription?.cancel();
     super.dispose();
@@ -65,6 +70,27 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
       _checkDeviceSession();
       _syncSharedCards();
       _registerPushToken();
+      _syncLanguage();
+    }
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) => LocaleService.refreshSystemLocale();
+
+  void _languageChanged() {
+    if (mounted) setState(() {});
+    _syncLanguage();
+  }
+
+  Future<void> _syncLanguage() async {
+    try {
+      await AccountService.syncLanguage();
+      await PushNotificationService.syncLanguage();
+      for (final card in StorageService.cardsBox.values.whereType<Map>()) {
+        await NotificationService.syncGiftCard(card);
+      }
+    } catch (_) {
+      // Device preference remains available offline; retry on app resume/sign-in.
     }
   }
 
@@ -74,8 +100,8 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     try {
       final isCurrent = await DeviceSessionService.ensureCurrentSession();
       if (!isCurrent && AccountService.currentUser != null) {
-        const notice =
-            'Er is met jouw account ingelogd op een ander apparaat. Daarom ben je op dit apparaat uitgelogd.';
+        final notice =
+            L10n.current.someoneSignedInToYourAccountOn;
         DeviceSessionService.sessionNotice.value = notice;
         await AccountService.signOut(releaseDevice: false);
         _showDeviceLogoutNotice(notice);
@@ -96,12 +122,12 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
           icon: const Icon(Icons.devices_rounded, size: 44),
-          title: const Text('Je bent uitgelogd'),
+          title:  Text(L10n.current.youHaveBeenSignedOut733),
           content: Text(notice),
           actions: [
             FilledButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Begrepen'),
+              child:  Text(L10n.current.gotIt),
             ),
           ],
         ),
@@ -130,8 +156,9 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   }
 
   Future<void> _initialize() async {
-    await SettingsService.init();
     await StorageService.init();
+    await LocaleService.init(hasSavedCards: StorageService.cardsBox.isNotEmpty);
+    await SettingsService.init();
     await NotificationService.init();
     await SupabaseService.init();
     try {
@@ -147,6 +174,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
           state.event == AuthChangeEvent.tokenRefreshed ||
           state.event == AuthChangeEvent.userUpdated) {
         await _registerPushToken();
+        await _syncLanguage();
         await _syncSharedCards();
       }
     });
@@ -157,6 +185,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     );
     await SettingsService.refreshRemoteConfig();
     await _registerPushToken();
+    await _syncLanguage();
     for (final item in StorageService.cardsBox.values.whereType<Map>()) {
       await NotificationService.syncGiftCard(item);
     }
@@ -191,9 +220,10 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
         navigatorKey: _navigatorKey,
         title: 'PasKluis',
         debugShowCheckedModeBanner: false,
-        locale: const Locale('nl', 'NL'),
-        supportedLocales: const [Locale('nl', 'NL')],
+        locale: LocaleService.locale.value,
+        supportedLocales: LocaleService.supportedLocales,
         localizationsDelegates: const [
+          AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
@@ -244,6 +274,7 @@ class _StartupError extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -254,20 +285,20 @@ class _StartupError extends StatelessWidget {
               children: [
                 const Icon(Icons.lock_reset_rounded, size: 64),
                 const SizedBox(height: 18),
-                const Text(
-                  'PasKluis kon je beveiligde opslag niet openen.',
+                 Text(
+                  L10n.current.paskluisCouldNotOpenYourSecureStorage,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  'Je gegevens zijn niet verwijderd. Probeer het opnieuw of herstart je apparaat.',
+                 Text(
+                  L10n.current.yourDataHasNotBeenDeletedTry,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 22),
                 FilledButton(
                   onPressed: onRetry,
-                  child: const Text('Opnieuw proberen'),
+                  child:  Text(L10n.current.tryAgain),
                 ),
               ],
             ),

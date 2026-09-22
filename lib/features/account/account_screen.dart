@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -83,7 +84,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Future<void> _restorePurchases() async {
     if (_user == null) {
-      _showMessage('Log eerst in om je aankoop te herstellen.');
+      _showMessage(L10n.current.signInToRestoreYourPurchase);
       return;
     }
     setState(() => _loadingStatus = true);
@@ -92,10 +93,10 @@ class _AccountScreenState extends State<AccountScreen> {
       if (!mounted) return;
       setState(() => _plusStatus = status);
       _showMessage(status.isActive
-          ? 'Je PasKluis Plus-toegang is hersteld.'
-          : 'Er is nog geen Plus-aankoop aan dit account gekoppeld.');
+          ? L10n.current.yourPaskluisPlusAccessHasBeenRestored
+          : L10n.current.noPlusPurchaseIsLinkedToThis);
     } catch (_) {
-      if (mounted) _showMessage('Herstellen is nu niet gelukt.', error: true);
+      if (mounted) _showMessage(L10n.current.unableToRestoreYourPurchaseRightNow, error: true);
     } finally {
       if (mounted) setState(() => _loadingStatus = false);
     }
@@ -104,14 +105,14 @@ class _AccountScreenState extends State<AccountScreen> {
   String? _validateEmail(String? value) {
     final email = value?.trim() ?? '';
     if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
-      return 'Vul een geldig e-mailadres in.';
+      return L10n.current.enterAValidEmailAddress;
     }
     return null;
   }
 
   String? _validatePassword(String? value) {
     if ((value ?? '').length < 8) {
-      return 'Gebruik minimaal 8 tekens.';
+      return L10n.current.useAtLeast8Characters;
     }
     return null;
   }
@@ -131,11 +132,11 @@ class _AccountScreenState extends State<AccountScreen> {
         if (!mounted) return;
         if (response.session == null) {
           _showMessage(
-            'Je account is aangemaakt. Controleer je e-mail om je account te bevestigen.',
+            L10n.current.yourAccountHasBeenCreatedCheckYour,
           );
         } else {
           if (!await _activateDeviceSession()) return;
-          _showMessage('Welkom bij PasKluis!');
+          _showMessage(L10n.current.welcomeToPaskluis);
         }
       } else {
         await AccountService.signIn(
@@ -149,14 +150,14 @@ class _AccountScreenState extends State<AccountScreen> {
         } catch (_) {
           // Inloggen blijft bruikbaar als delen tijdelijk niet beschikbaar is.
         }
-        if (mounted) _showMessage('Je bent ingelogd.');
+        if (mounted) _showMessage(L10n.current.youAreSignedIn);
       }
       _passwordController.clear();
     } on AuthException catch (error) {
       if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
     } catch (_) {
       if (mounted) {
-        _showMessage('Dat ging niet goed. Probeer het later opnieuw.', error: true);
+        _showMessage(L10n.current.somethingWentWrongPleaseTryAgainLater, error: true);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -176,14 +177,14 @@ class _AccountScreenState extends State<AccountScreen> {
       await AccountService.resetPassword(_emailController.text);
       if (mounted) {
         _showMessage(
-          'Als dit e-mailadres bij PasKluis bekend is, ontvang je een e-mail waarmee je een nieuw wachtwoord kunt instellen.',
+          L10n.current.ifThisEmailAddressIsRegisteredWith,
         );
       }
     } on AuthException catch (error) {
       if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
     } catch (_) {
       if (mounted) {
-        _showMessage('De herstelmail kon niet worden verstuurd.', error: true);
+        _showMessage(L10n.current.thePasswordResetEmailCouldNotBe, error: true);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -207,12 +208,12 @@ class _AccountScreenState extends State<AccountScreen> {
       await AccountService.updatePassword(password);
       await _activateDeviceSession();
       await PushNotificationService.registerForCurrentUser();
-      if (mounted) _showMessage('Je nieuwe wachtwoord is opgeslagen.');
+      if (mounted) _showMessage(L10n.current.yourNewPasswordHasBeenSaved);
     } on AuthException catch (error) {
       if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
     } catch (_) {
       if (mounted) {
-        _showMessage('Wachtwoord wijzigen is niet gelukt.', error: true);
+        _showMessage(L10n.current.unableToChangeYourPassword, error: true);
       }
     } finally {
       _handlingPasswordRecovery = false;
@@ -231,19 +232,18 @@ class _AccountScreenState extends State<AccountScreen> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         icon: const Icon(Icons.devices_rounded, size: 42),
-        title: const Text('Al ingelogd op een ander apparaat'),
+        title:  Text(L10n.current.alreadySignedInOnAnotherDevice),
         content: Text(
-          'Dit account is actief op ${status.activeDeviceName.isEmpty ? 'een ander apparaat' : status.activeDeviceName}. '
-          'Als je hier doorgaat, wordt dat apparaat automatisch uitgelogd.',
+          L10n.current.thisAccountIsActiveOnIfYou((status.activeDeviceName.isEmpty ? L10n.current.anotherDevice151 : status.activeDeviceName).toString()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Annuleren'),
+            child:  Text(L10n.current.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Hier inloggen'),
+            child:  Text(L10n.current.signInHere),
           ),
         ],
       ),
@@ -260,7 +260,7 @@ class _AccountScreenState extends State<AccountScreen> {
     setState(() => _busy = true);
     try {
       await AccountService.signOut();
-      if (mounted) _showMessage('Je bent uitgelogd.');
+      if (mounted) _showMessage(L10n.current.youHaveBeenSignedOut);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -280,12 +280,12 @@ class _AccountScreenState extends State<AccountScreen> {
     setState(() => _busy = true);
     try {
       await AccountService.updatePassword(password);
-      if (mounted) _showMessage('Je wachtwoord is gewijzigd.');
+      if (mounted) _showMessage(L10n.current.yourPasswordHasBeenChanged);
     } on AuthException catch (error) {
       if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
     } catch (_) {
       if (mounted) {
-        _showMessage('Wachtwoord wijzigen is niet gelukt.', error: true);
+        _showMessage(L10n.current.unableToChangeYourPassword, error: true);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -295,18 +295,18 @@ class _AccountScreenState extends State<AccountScreen> {
   String _friendlyAuthError(String message) {
     final normalized = message.toLowerCase();
     if (normalized.contains('invalid login credentials')) {
-      return 'Het e-mailadres of wachtwoord klopt niet.';
+      return L10n.current.theEmailAddressOrPasswordIsIncorrect;
     }
     if (normalized.contains('already registered')) {
-      return 'Er bestaat al een account met dit e-mailadres.';
+      return L10n.current.anAccountWithThisEmailAddressAlready;
     }
     if (normalized.contains('email not confirmed')) {
-      return 'Bevestig eerst je e-mailadres via de ontvangen e-mail.';
+      return L10n.current.confirmYourEmailAddressUsingTheEmail;
     }
     if (normalized.contains('password')) {
-      return 'Het wachtwoord voldoet niet aan de beveiligingseisen.';
+      return L10n.current.thePasswordDoesNotMeetTheSecurity;
     }
-    return message;
+    return L10n.current.pleaseTryAgain;
   }
 
   void _showMessage(String message, {bool error = false}) {
@@ -320,10 +320,11 @@ class _AccountScreenState extends State<AccountScreen> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
-        title: const Text('Account & PasKluis Plus'),
+        title:  Text(L10n.current.accountPaskluisPlus),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF333333),
       ),
@@ -346,8 +347,8 @@ class _AccountScreenState extends State<AccountScreen> {
             elevation: 0,
             child: ListTile(
               leading: const Icon(Icons.logout_rounded),
-              title: const Text(
-                'Uitgelogd op dit apparaat',
+              title:  Text(
+                L10n.current.signedOutOnThisDevice,
                 style: TextStyle(fontWeight: FontWeight.w900),
               ),
               subtitle: Text(sessionNotice),
@@ -367,7 +368,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    _registering ? 'Account aanmaken' : 'Inloggen',
+                    _registering ? L10n.current.createAccount : L10n.current.signIn,
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -376,21 +377,21 @@ class _AccountScreenState extends State<AccountScreen> {
                   const SizedBox(height: 6),
                   Text(
                     _registering
-                        ? 'Je kaarten blijven veilig op dit apparaat staan.'
-                        : 'Bekijk je Plus-status en neem contact op met de klantenservice.',
+                        ? L10n.current.yourCardsStaySafelyOnThisDevice
+                        : L10n.current.checkYourPlusStatusAndContactCustomer,
                   ),
                   if (_registering) ...[
                     const SizedBox(height: 18),
                     TextFormField(
                       controller: _nameController,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Naam',
+                      decoration:  InputDecoration(
+                        labelText: L10n.current.name,
                         prefixIcon: Icon(Icons.person_outline_rounded),
                         border: OutlineInputBorder(),
                       ),
                       validator: (value) => (value?.trim().isEmpty ?? true)
-                          ? 'Vul je naam in.'
+                          ? L10n.current.enterYourName
                           : null,
                     ),
                   ],
@@ -400,8 +401,8 @@ class _AccountScreenState extends State<AccountScreen> {
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
                     autocorrect: false,
-                    decoration: const InputDecoration(
-                      labelText: 'E-mailadres',
+                    decoration:  InputDecoration(
+                      labelText: L10n.current.emailAddress,
                       prefixIcon: Icon(Icons.mail_outline_rounded),
                       border: OutlineInputBorder(),
                     ),
@@ -414,7 +415,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _submit(),
                     decoration: InputDecoration(
-                      labelText: 'Wachtwoord',
+                      labelText: L10n.current.password,
                       prefixIcon: const Icon(Icons.lock_outline_rounded),
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
@@ -435,7 +436,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: _busy ? null : _forgotPassword,
-                        child: const Text('Wachtwoord vergeten?'),
+                        child:  Text(L10n.current.forgotPassword),
                       ),
                     )
                   else
@@ -453,7 +454,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 : Icons.login_rounded,
                           ),
                     label: Text(
-                      _registering ? 'Account aanmaken' : 'Inloggen',
+                      _registering ? L10n.current.createAccount : L10n.current.signIn,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -463,8 +464,8 @@ class _AccountScreenState extends State<AccountScreen> {
                         : () => setState(() => _registering = !_registering),
                     child: Text(
                       _registering
-                          ? 'Ik heb al een account'
-                          : 'Nog geen account? Maak er één aan',
+                          ? L10n.current.iAlreadyHaveAnAccount
+                          : L10n.current.noAccountYetCreateOne,
                     ),
                   ),
                 ],
@@ -506,7 +507,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          name?.isNotEmpty == true ? name! : 'PasKluis-account',
+                          name?.isNotEmpty == true ? name! : L10n.current.paskluisAccount,
                           style: const TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.w900,
@@ -529,9 +530,9 @@ class _AccountScreenState extends State<AccountScreen> {
             child: ListTile(
               leading: const Icon(Icons.workspace_premium_rounded,
                   color: Color(0xFFD5A021)),
-              title: const Text('Alles over PasKluis Plus',
+              title:  Text(L10n.current.allAboutPaskluisPlus,
                   style: TextStyle(fontWeight: FontWeight.w900)),
-              subtitle: const Text('Bekijk alle voordelen en hoe delen werkt.'),
+              subtitle:  Text(L10n.current.exploreAllBenefitsAndLearnHowSharing),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.push(
                 context,
@@ -549,9 +550,9 @@ class _AccountScreenState extends State<AccountScreen> {
             child: ListTile(
               leading: const Icon(Icons.people_alt_outlined,
                   color: Color(0xFF7046B8)),
-              title: const Text('Gedeelde kaarten beheren',
+              title:  Text(L10n.current.manageSharedCards,
                   style: TextStyle(fontWeight: FontWeight.w900)),
-              subtitle: const Text('Bekijk gedeelde toegang en stop deze wanneer je wilt.'),
+              subtitle:  Text(L10n.current.viewSharedAccessAndStopItWhenever),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.push(
                 context,
@@ -567,9 +568,9 @@ class _AccountScreenState extends State<AccountScreen> {
             child: ListTile(
               leading: const Icon(Icons.restore_rounded,
                   color: Color(0xFF286DC8)),
-              title: const Text('Aankopen herstellen',
+              title:  Text(L10n.current.restorePurchases,
                   style: TextStyle(fontWeight: FontWeight.w900)),
-              subtitle: const Text('Controleer opnieuw je gekoppelde Plus-toegang.'),
+              subtitle:  Text(L10n.current.checkYourLinkedPlusAccessAgain),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: _loadingStatus ? null : _restorePurchases,
             ),
@@ -582,28 +583,28 @@ class _AccountScreenState extends State<AccountScreen> {
                 Icons.password_rounded,
                 color: Color(0xFFD51B46),
               ),
-              title: const Text(
-                'Wachtwoord wijzigen',
+              title:  Text(
+                L10n.current.changePassword,
                 style: TextStyle(fontWeight: FontWeight.w900),
               ),
-              subtitle: const Text(
-                'Kies een nieuw wachtwoord van minimaal 8 tekens.',
+              subtitle:  Text(
+                L10n.current.chooseANewPasswordWithAtLeast,
               ),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: _busy ? null : _changePassword,
             ),
           ),
           const SizedBox(height: 16),
-          const Card(
+           Card(
             elevation: 0,
             child: ListTile(
               leading: Icon(Icons.cloud_off_outlined),
               title: Text(
-                'Je kaarten blijven lokaal',
+                L10n.current.yourCardsStayLocal,
                 style: TextStyle(fontWeight: FontWeight.w800),
               ),
               subtitle: Text(
-                'Inloggen verplaatst je kaarten, barcodes en pincodes niet naar de cloud.',
+                L10n.current.signingInDoesNotMoveYourCards,
               ),
             ),
           ),
@@ -611,7 +612,7 @@ class _AccountScreenState extends State<AccountScreen> {
           OutlinedButton.icon(
             onPressed: _busy ? null : _signOut,
             icon: const Icon(Icons.logout_rounded),
-            label: const Text('Uitloggen'),
+            label:  Text(L10n.current.signOut),
           ),
         ],
       ),
@@ -647,6 +648,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return AnimatedPadding(
       duration: const Duration(milliseconds: 180),
       padding: EdgeInsets.fromLTRB(
@@ -662,14 +664,14 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Wachtwoord wijzigen',
+               Text(
+                L10n.current.changePassword,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Gebruik minimaal 8 tekens. Je blijft na de wijziging ingelogd.',
+               Text(
+                L10n.current.useAtLeast8CharactersYouWill,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.black54),
               ),
@@ -680,7 +682,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                 obscureText: _hidePassword,
                 textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
-                  labelText: 'Nieuw wachtwoord',
+                  labelText: L10n.current.newPassword,
                   prefixIcon: const Icon(Icons.lock_outline_rounded),
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
@@ -695,7 +697,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                   ),
                 ),
                 validator: (value) => (value ?? '').length < 8
-                    ? 'Gebruik minimaal 8 tekens.'
+                    ? L10n.current.useAtLeast8Characters
                     : null,
               ),
               const SizedBox(height: 14),
@@ -704,13 +706,13 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                 obscureText: _hidePassword,
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: (_) => _submit(),
-                decoration: const InputDecoration(
-                  labelText: 'Herhaal nieuw wachtwoord',
+                decoration:  InputDecoration(
+                  labelText: L10n.current.repeatNewPassword,
                   prefixIcon: Icon(Icons.lock_reset_rounded),
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) => value != _passwordController.text
-                    ? 'De wachtwoorden zijn niet gelijk.'
+                    ? L10n.current.thePasswordsDoNotMatch
                     : null,
               ),
               const SizedBox(height: 18),
@@ -719,7 +721,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                 child: FilledButton.icon(
                   onPressed: _submit,
                   icon: const Icon(Icons.check_rounded),
-                  label: const Text('Wachtwoord opslaan'),
+                  label:  Text(L10n.current.savePassword),
                 ),
               ),
             ],
@@ -735,6 +737,7 @@ class _PlusHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -745,7 +748,7 @@ class _PlusHero extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: const Column(
+      child:  Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 38),
@@ -760,7 +763,7 @@ class _PlusHero extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Onbeperkt cadeaukaarten bewaren en kaarten veilig delen voor € 1,99 eenmalig. Geen abonnement.',
+            L10n.current.storeUnlimitedGiftCardsAndShareCards,
             style: TextStyle(color: Colors.white, fontSize: 16),
           ),
         ],
@@ -777,6 +780,7 @@ class _StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Card(
       elevation: 0,
       color: status.isActive
@@ -811,10 +815,10 @@ class _StatusCard extends StatelessWidget {
                 children: [
                   Text(
                     loading
-                        ? 'Plus-status controleren…'
+                        ? L10n.current.checkingPlusStatus
                         : status.isActive
-                        ? 'PasKluis Plus is actief'
-                        : 'Gratis versie',
+                        ? L10n.current.paskluisPlusIsActive
+                        : L10n.current.freeVersion,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,
@@ -827,9 +831,9 @@ class _StatusCard extends StatelessWidget {
                   Text(
                     status.isActive
                         ? status.expiresAt == null
-                              ? 'Je hebt onbeperkt toegang.${_source(status.source)}'
-                              : 'Je toegang is actief tot ${_date(status.expiresAt!)}.'
-                        : 'Eén cadeaukaart is gratis. Klantenkaarten en QR-codes blijven onbeperkt gratis.',
+                              ? L10n.current.youHaveUnlimitedAccess((_source(status.source)).toString())
+                              : L10n.current.yourAccessIsActiveUntil((_date(status.expiresAt!)).toString())
+                        : L10n.current.storeOneGiftCardForFreeLoyalty,
                   ),
                 ],
               ),
@@ -844,9 +848,9 @@ class _StatusCard extends StatelessWidget {
       '${value.day.toString().padLeft(2, '0')}-${value.month.toString().padLeft(2, '0')}-${value.year}';
 
   static String _source(String? source) {
-    if (source == 'complimentary') return ' Handmatig geactiveerd via beheer.';
-    if (source == 'apple') return ' Geactiveerd via Apple.';
-    if (source == 'google') return ' Geactiveerd via Google Play.';
+    if (source == 'complimentary') return L10n.current.activatedManuallyByAnAdministrator;
+    if (source == 'apple') return L10n.current.activatedThroughApple;
+    if (source == 'google') return L10n.current.activatedThroughGooglePlay;
     return '';
   }
 }
@@ -856,7 +860,8 @@ class _OfflineAccountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    L10n.watch(context);
+    return  Center(
       child: Padding(
         padding: EdgeInsets.all(28),
         child: Card(
@@ -869,13 +874,13 @@ class _OfflineAccountCard extends StatelessWidget {
                 Icon(Icons.cloud_off_rounded, size: 48),
                 SizedBox(height: 14),
                 Text(
-                  'Account tijdelijk niet beschikbaar',
+                  L10n.current.accountTemporarilyUnavailable,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Controleer je internetverbinding. Je lokale kaarten blijven gewoon werken.',
+                  L10n.current.checkYourInternetConnectionYourLocalCards,
                   textAlign: TextAlign.center,
                 ),
               ],

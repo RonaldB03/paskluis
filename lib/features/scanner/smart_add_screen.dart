@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -42,9 +43,9 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
       if (!mounted) return;
       setState(() => analyzing = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+         SnackBar(
           content: Text(
-            'Deze afbeelding kon niet worden gelezen. Probeer het opnieuw.',
+            L10n.current.thisImageCouldNotBeReadPlease,
           ),
         ),
       );
@@ -56,14 +57,15 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
   }
 
   String get selectedLabel => switch (selectedType) {
-    SmartAddManualType.loyalty => 'klantenkaart',
-    SmartAddManualType.qr => 'QR-code',
-    SmartAddManualType.gift => 'cadeaukaart',
+    SmartAddManualType.loyalty => L10n.current.loyaltyCard.toLowerCase(),
+    SmartAddManualType.qr => L10n.current.qrCode,
+    SmartAddManualType.gift => L10n.current.giftCard.toLowerCase(),
     null => 'kaart',
   };
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
@@ -71,8 +73,8 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
         foregroundColor: const Color(0xFF303036),
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          'Kaart toevoegen',
+        title:  Text(
+          L10n.current.addCard,
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
       ),
@@ -90,16 +92,16 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
             const SizedBox(height: 12),
             Text(
               selectedType == null
-                  ? 'Wat wil je toevoegen?'
-                  : 'Hoe wil je deze $selectedLabel toevoegen?',
+                  ? L10n.current.whatWouldYouLikeToAdd
+                  : L10n.current.howWouldYouLikeToAddThis((selectedLabel).toString()),
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             Text(
               selectedType == null
-                  ? 'Kies eerst het soort kaart. Daarna kies je scannen, zelf invoeren of importeren uit een screenshot.'
-                  : 'Je kunt een winkel kiezen en de code scannen, alles zelf invoeren, of gegevens uit een screenshot laten herkennen.',
+                  ? L10n.current.chooseTheCardTypeFirstThenChoose
+                  : L10n.current.chooseAStoreAndScanTheCode,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -111,8 +113,8 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
             if (selectedType == null) ...[
               _SmartChoice(
                 icon: Icons.card_membership_rounded,
-                title: 'Klantenkaart',
-                subtitle: 'Voeg een klantenkaart of ledenpas toe',
+                title: L10n.current.loyaltyCard,
+                subtitle: L10n.current.addALoyaltyCardOrMembershipCard,
                 onTap: () => setState(
                   () => selectedType = SmartAddManualType.loyalty,
                 ),
@@ -120,8 +122,8 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
               const SizedBox(height: 12),
               _SmartChoice(
                 icon: Icons.qr_code_rounded,
-                title: 'QR-code',
-                subtitle: 'Voeg één QR-code of meerdere tickets toe',
+                title: L10n.current.qrCode,
+                subtitle: L10n.current.addOneQrCodeOrMultipleTickets,
                 onTap: () => setState(
                   () => selectedType = SmartAddManualType.qr,
                 ),
@@ -129,8 +131,8 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
               const SizedBox(height: 12),
               _SmartChoice(
                 icon: Icons.card_giftcard_rounded,
-                title: 'Cadeaukaart',
-                subtitle: 'Voeg een cadeaukaart met eventueel saldo toe',
+                title: L10n.current.giftCard,
+                subtitle: L10n.current.addAGiftCardWithAnOptional,
                 onTap: () => setState(
                   () => selectedType = SmartAddManualType.gift,
                 ),
@@ -138,17 +140,17 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
             ] else ...[
               _SmartChoice(
                 icon: Icons.qr_code_scanner_rounded,
-                title: 'Winkel kiezen of zelf invoeren',
+                title: L10n.current.chooseAStoreOrEnterManually,
                 subtitle: selectedType == SmartAddManualType.qr
-                    ? 'Scan de QR-code of voer de gegevens zelf in'
-                    : 'Kies een winkel, scan de barcode of kies Handmatig',
+                    ? L10n.current.scanTheQrCodeOrEnterThe
+                    : L10n.current.chooseAStoreScanTheBarcodeOr604,
                 onTap: () => manual(selectedType!),
               ),
               const SizedBox(height: 12),
               _SmartChoice(
                 icon: Icons.photo_library_rounded,
-                title: 'Importeren uit screenshot',
-                subtitle: 'Kies een afbeelding uit je fotobibliotheek',
+                title: L10n.current.importFromScreenshot,
+                subtitle: L10n.current.chooseAnImageFromYourPhotoLibrary,
                 onTap: analyzing ? null : () => analyze(ImageSource.gallery),
               ),
             ],
@@ -158,7 +160,7 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
                 child: CircularProgressIndicator(color: Color(0xFFD51B46)),
               ),
               const SizedBox(height: 8),
-              const Center(child: Text('Kaart wordt herkend…')),
+               Center(child: Text(L10n.current.recognisingCard)),
             ],
             if (selectedType != null) ...[
               const SizedBox(height: 16),
@@ -167,11 +169,11 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
                     ? null
                     : () => setState(() => selectedType = null),
                 icon: const Icon(Icons.arrow_back_rounded),
-                label: const Text('Ander type kiezen'),
+                label:  Text(L10n.current.chooseAnotherType),
               ),
             ],
             const SizedBox(height: 22),
-            const Row(
+             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
@@ -182,7 +184,7 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
                 SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    'Herkenning gebeurt op je toestel; je foto wordt niet geüpload.',
+                    L10n.current.recognitionHappensOnYourDeviceYourPhoto,
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 12, color: Color(0xFF77777B)),
                   ),
@@ -211,6 +213,7 @@ class _SmartChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(22),

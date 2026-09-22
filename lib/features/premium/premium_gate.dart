@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/services/account_service.dart';
@@ -35,28 +36,25 @@ abstract final class PremiumGate {
           color: Color(0xFFD5A021),
           size: 42,
         ),
-        title: const Text(
-          'Meer cadeaukaarten bewaren',
+        title:  Text(
+          L10n.current.storeMoreGiftCards,
           textAlign: TextAlign.center,
         ),
-        content: const Text(
-          'Je eerste cadeaukaart is gratis. Met PasKluis Plus bewaar je '
-          'onbeperkt cadeaukaarten voor € 1,99 eenmalig. Je krijgt levenslange '
-          'toegang, zonder abonnement. Je kunt met Plus ook klanten- en cadeaukaarten delen.\n\n'
-          'Tijdens deze test kan Plus via beheer op je account worden geactiveerd.',
+        content:  Text(
+          L10n.current.storeOneGiftCardForFreeWith,
           textAlign: TextAlign.center,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Niet nu'),
+            child:  Text(L10n.current.notNow),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(
               AccountService.currentUser == null
-                  ? 'Inloggen of registreren'
-                  : 'Bekijk Plus-status',
+                  ? L10n.current.signInOrRegister
+                  : L10n.current.viewPlusStatus,
             ),
           ),
         ],

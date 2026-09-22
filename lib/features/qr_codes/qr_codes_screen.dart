@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -120,7 +121,7 @@ class QrCodesScreen extends StatelessWidget {
       await StorageService.cardsBox.add({
         'id': result['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
         'type': 'QR-set',
-        'name': result['name'] ?? 'QR-codes (${codeList.length})',
+        'name': result['name'] ?? L10n.current.qrCodes((codeList.length).toString()),
         'code': '',
         'codes': codes,
         'used':
@@ -260,26 +261,26 @@ class QrCodesScreen extends StatelessWidget {
     final key = findHiveKey(item);
     if (key == null) return;
 
-    final name = item['name']?.toString() ?? 'deze QR-code';
+    final name = item['name']?.toString() ?? L10n.current.thisQrCode;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('QR-code verwijderen?'),
+        title:  Text(L10n.current.deleteQrCode),
         content: Text(
-          'Weet je zeker dat je "$name" wilt verwijderen? Dit kun je niet ongedaan maken.',
+          L10n.current.areYouSureYouWantToDelete561((name).toString()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuleren'),
+            child:  Text(L10n.current.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFD51B46),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Verwijderen'),
+            child:  Text(L10n.current.delete),
           ),
         ],
       ),
@@ -292,7 +293,7 @@ class QrCodesScreen extends StatelessWidget {
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('$name is verwijderd.')));
+        .showSnackBar(SnackBar(content: Text(L10n.current.hasBeenDeleted((name).toString()))));
   }
 
   void openTab(BuildContext context, int index) {
@@ -341,7 +342,7 @@ class QrCodesScreen extends StatelessWidget {
   }
 
   void showQrOptions(BuildContext context, Map<String, dynamic> item) {
-    final name = item['name']?.toString() ?? 'QR-code';
+    final name = item['name']?.toString() ?? L10n.current.qrCode;
     final isFavorite = item['isFavorite'] == true;
 
     showModalBottomSheet(
@@ -373,8 +374,8 @@ class QrCodesScreen extends StatelessWidget {
                       ? Icons.star_rounded
                       : Icons.star_border_rounded,
                   title: isFavorite
-                      ? 'Verwijderen uit favorieten'
-                      : 'Toevoegen aan favorieten',
+                      ? L10n.current.removeFromFavourites562
+                      : L10n.current.addToFavourites563,
                   onTap: () {
                     Navigator.pop(context);
                     toggleFavorite(item);
@@ -382,7 +383,7 @@ class QrCodesScreen extends StatelessWidget {
                 ),
                 _OptionTile(
                   icon: Icons.edit_rounded,
-                  title: 'Bewerken',
+                  title: L10n.current.edit,
                   onTap: () {
                     Navigator.pop(context);
                     editQrCode(context, item);
@@ -390,7 +391,7 @@ class QrCodesScreen extends StatelessWidget {
                 ),
                 _OptionTile(
                   icon: Icons.delete_rounded,
-                  title: 'Verwijderen',
+                  title: L10n.current.delete,
                   isDestructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -407,6 +408,7 @@ class QrCodesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -423,7 +425,7 @@ class QrCodesScreen extends StatelessWidget {
             automaticallyImplyLeading: false,
             leadingWidth: 56,
             leading: const SizedBox.shrink(),
-            title: const PremiumAppTitle('QR-codes'),
+            title:  PremiumAppTitle(L10n.current.qrCodes478),
             centerTitle: true,
             backgroundColor: Colors.white,
             foregroundColor: const Color(0xFF333333),
@@ -607,11 +609,11 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
         content: Text(
           willBeUsed
               ? isSet
-                  ? 'Ticket ${ticketIndex + 1} gemarkeerd als gebruikt.'
-                  : 'QR-code gemarkeerd als gebruikt.'
+                  ? L10n.current.ticketMarkedAsUsed((ticketIndex + 1).toString())
+                  : L10n.current.qrCodeMarkedAsUsed
               : isSet
-                  ? 'Ticket ${ticketIndex + 1} is weer beschikbaar.'
-                  : 'QR-code is weer beschikbaar.',
+                  ? L10n.current.ticketIsAvailableAgain((ticketIndex + 1).toString())
+                  : L10n.current.qrCodeIsAvailableAgain,
         ),
       ),
     );
@@ -656,7 +658,8 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
 
   @override
   Widget build(BuildContext context) {
-    final name = item['name']?.toString() ?? 'QR-code';
+    L10n.watch(context);
+    final name = item['name']?.toString() ?? L10n.current.qrCode;
     final isFavorite = item['isFavorite'] == true;
     final isLandscape =
         MediaQuery.orientationOf(context) == Orientation.landscape;
@@ -693,7 +696,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
                     name: current['name']?.toString() ?? 'QR-code',
                     code: codes.isEmpty ? '' : codes[safeIndex],
                     position: isSet && codes.isNotEmpty
-                        ? 'Ticket ${safeIndex + 1} van ${codes.length}'
+                        ? L10n.current.ticketOf((safeIndex + 1).toString(), (codes.length).toString())
                         : '',
                   );
                 },
@@ -702,7 +705,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
                 left: 8,
                 top: 4,
                 child: IconButton.filledTonal(
-                  tooltip: 'Terug',
+                  tooltip: L10n.current.back,
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.arrow_back_rounded),
                 ),
@@ -806,7 +809,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
                     if (isCurrentSet) ...[
                       const SizedBox(height: 8),
                       Text(
-                        'Ticket ${safeTicketIndex + 1} van ${codes.length} • $usedCount gebruikt',
+                        L10n.current.ticketOfUsed((safeTicketIndex + 1).toString(), (codes.length).toString(), (usedCount).toString()),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
@@ -827,10 +830,10 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
                         alignment: Alignment.center,
                         children: [
                           if (currentCode.isEmpty)
-                            const SizedBox(
+                             SizedBox(
                               height: 245,
                               child: Center(
-                                child: Text('Geen QR-code gevonden'),
+                                child: Text(L10n.current.noQrCodeFound),
                               ),
                             )
                           else
@@ -849,9 +852,9 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
                                 color: Colors.white.withOpacity(0.86),
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              child: const Center(
+                              child:  Center(
                                 child: Text(
-                                  'GEBRUIKT',
+                                  L10n.current.used571,
                                   style: TextStyle(
                                     color: Color(0xFFD51B46),
                                     fontSize: 28,
@@ -877,7 +880,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
                         child: OutlinedButton.icon(
                           onPressed: showFirstUnused,
                           icon: const Icon(Icons.skip_next_rounded),
-                          label: const Text('Eerste ongebruikte'),
+                          label:  Text(L10n.current.firstUnused),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFFD51B46),
                             side: const BorderSide(
@@ -901,7 +904,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
                         child: FilledButton.icon(
                           onPressed: nextTicket,
                           icon: const Icon(Icons.arrow_forward_rounded),
-                          label: const Text('Volgende'),
+                          label:  Text(L10n.current.next),
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFFD51B46),
                             shape: RoundedRectangleBorder(
@@ -929,10 +932,10 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
                   ),
                   label: Text(
                     currentUsed
-                        ? 'Markeer als niet gebruikt'
+                        ? L10n.current.markAsUnused
                         : isCurrentSet
-                        ? 'Dit ticket gebruikt'
-                        : 'QR-code gebruikt',
+                        ? L10n.current.ticketUsed
+                        : L10n.current.qrCodeUsed,
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFD51B46),
@@ -983,6 +986,7 @@ class _LandscapeQrPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(76, 8, 32, 12),
       child: Row(
@@ -1012,7 +1016,7 @@ class _LandscapeQrPage extends StatelessWidget {
             flex: 2,
             child: Center(
               child: code.isEmpty
-                  ? const Text('Geen QR-code beschikbaar')
+                  ?  Text(L10n.current.noQrCodeAvailable)
                   : QrImageView(
                       data: code,
                       version: QrVersions.auto,
@@ -1035,13 +1039,14 @@ class _EmptyQrState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return LuxuryEmptyState(
       icon: Icons.qr_code_2_rounded,
-      eyebrow: 'Snel tevoorschijn',
-      title: 'Bewaar je eerste QR-code',
+      eyebrow: L10n.current.readyWhenYouNeedIt,
+      title: L10n.current.saveYourFirstQrCode,
       subtitle:
-          'Tickets, toegangscodes, links of een hele set QR-codes: bewaar ze overzichtelijk en open ze in één tik.',
-      buttonLabel: 'QR-code toevoegen',
+          L10n.current.ticketsAccessCodesLinksOrAWhole,
+      buttonLabel: L10n.current.addQrCode,
       onPressed: onAdd,
       accent: const Color(0xFF5B67A3),
     );
@@ -1086,7 +1091,8 @@ class _QrTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = item['name']?.toString() ?? 'QR-code';
+    L10n.watch(context);
+    final title = item['name']?.toString() ?? L10n.current.qrCode;
     final isFavorite = item['isFavorite'] == true;
     final isSet = item['type']?.toString() == 'QR-set';
     final firstCode = codes.isEmpty ? '' : codes.first;
@@ -1146,7 +1152,7 @@ class _QrTile extends StatelessWidget {
                 if (isSet) ...[
                   const SizedBox(height: 4),
                   Text(
-                    '${codes.length} tickets • $usedCount gebruikt',
+                    L10n.current.ticketsUsed((codes.length).toString(), (usedCount).toString()),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12.5,
@@ -1189,6 +1195,7 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final color = isDestructive ? Colors.red : const Color(0xFFD51B46);
 
     return ListTile(

@@ -1,0 +1,4 @@
+"NSCameraUsageDescription" = "PasKluis uses the camera to scan barcodes and QR codes.";
+"NSPhotoLibraryUsageDescription" = "PasKluis reads a photo or screenshot to import a card.";
+"NSFaceIDUsageDescription" = "PasKluis uses Face ID to protect your vault and sensitive codes.";
+"NSLocationWhenInUseUsageDescription" = "PasKluis uses your location while you use the app to find nearby stores.";

@@ -1,7 +1,9 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'supabase_service.dart';
+import 'locale_service.dart';
 
 abstract final class SettingsService {
   static const _appLockKey = 'app_lock_enabled';
@@ -206,12 +208,12 @@ abstract final class SettingsService {
       _remoteBool('feature_card_sharing', true);
 
   static String get privacyMessage => _remoteString(
-        'privacy_message',
-        'Je kaarten, codes en pincodes blijven op dit apparaat. PasKluis bewaart geen locatiegeschiedenis.',
+        LocaleService.languageCode == 'en' ? 'privacy_message_en' : 'privacy_message',
+        L10n.current.yourCardsCodesAndPinsStayOn,
       );
 
   static String get helpText => _remoteString(
-        'help_add_card_text',
-        'Tik op + om een klantenkaart, QR-code of cadeaukaart toe te voegen. Je kunt scannen, handmatig invoeren of een foto importeren.',
+        LocaleService.languageCode == 'en' ? 'help_add_card_text_en' : 'help_add_card_text',
+        L10n.current.tapToAddALoyaltyCardQr,
       );
 }

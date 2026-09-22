@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
 import 'package:barcode_widget/barcode_widget.dart';
@@ -185,8 +186,8 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       if (result == null) return;
       if (result.code.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Geen barcode of QR-code gevonden in deze foto.'),
+           SnackBar(
+            content: Text(L10n.current.noBarcodeOrQrCodeFoundIn),
           ),
         );
         return;
@@ -218,15 +219,15 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
         SnackBar(
           content: Text(
             result.pinCode.isEmpty
-                ? 'Code gevonden. Controleer de gegevens voor opslaan.'
-                : 'Code en pincode gevonden. Controleer ze voor opslaan.',
+                ? L10n.current.codeFoundCheckTheDetailsBeforeSaving
+                : L10n.current.codeAndPinFoundCheckThemBefore,
           ),
         ),
       );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('De afbeelding kon niet worden gelezen.')),
+         SnackBar(content: Text(L10n.current.theImageCouldNotBeRead)),
       );
     }
   }
@@ -252,8 +253,8 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('De afbeelding kon niet worden opgeslagen.'),
+         SnackBar(
+          content: Text(L10n.current.theImageCouldNotBeSaved),
         ),
       );
     }
@@ -285,7 +286,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       logoLayout = selected.logoLayout;
       customImage = '';
       customBrandSelected = false;
-      nameController.text = '${selected.name} cadeaukaart';
+      nameController.text = L10n.current.giftCard((selected.name).toString());
     });
   }
 
@@ -314,7 +315,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       initialDate: expiryDate ?? now.add(const Duration(days: 365)),
       firstDate: DateTime(2000),
       lastDate: DateTime(now.year + 20),
-      helpText: 'Kies de vervaldatum',
+      helpText: L10n.current.chooseExpiryDate,
     );
     if (picked != null && mounted) setState(() => expiryDate = picked);
   }
@@ -327,13 +328,13 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Naam is verplicht.')));
+          .showSnackBar( SnackBar(content: Text(L10n.current.aNameIsRequired)));
       return;
     }
 
     if (code.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Barcode / kaartnummer is verplicht.')),
+         SnackBar(content: Text(L10n.current.aBarcodeCardNumberIsRequired)),
       );
       return;
     }
@@ -382,9 +383,9 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       } catch (_) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+           SnackBar(
             content: Text(
-              'Opslaan is niet gelukt. Probeer het nog een keer.',
+              L10n.current.unableToSavePleaseTryAgain,
             ),
           ),
         );
@@ -400,15 +401,16 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final name = nameController.text.trim().isEmpty
-        ? 'Cadeaukaart'
+        ? L10n.current.giftCard
         : nameController.text.trim();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
         title: Text(
-          widget.isEditing ? 'Cadeaukaart bewerken' : 'Cadeaukaart afronden',
+          widget.isEditing ? L10n.current.editGiftCard : L10n.current.finishGiftCard,
           style: const TextStyle(fontWeight: FontWeight.w900),
         ),
         centerTitle: true,
@@ -423,8 +425,8 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                     dimension: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text(
-                    'Opslaan',
+                :  Text(
+                    L10n.current.save,
                     style: TextStyle(
                       color: Color(0xFFD51B46),
                       fontWeight: FontWeight.w900,
@@ -447,33 +449,33 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Welke winkel hoort bij deze cadeaukaart?',
+                   Text(
+                    L10n.current.whichStoreIsThisGiftCardFor,
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     codeController.text.trim().isEmpty
-                        ? 'Kies een bestaande winkel of maak een eigen cadeaukaart.'
-                        : 'De kaartcode is gevonden, maar de winkel nog niet.',
+                        ? L10n.current.chooseAnExistingStoreOrCreateYour
+                        : L10n.current.theCardCodeWasFoundButThe,
                     style: const TextStyle(color: Colors.black54),
                   ),
                   const SizedBox(height: 14),
                   FilledButton.icon(
                     onPressed: chooseBrand,
                     icon: const Icon(Icons.storefront_rounded),
-                    label: const Text('Kies een winkel'),
+                    label:  Text(L10n.current.chooseAStore),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: () => setState(() {
                       customBrandSelected = true;
                       if (nameController.text.trim().isEmpty) {
-                        nameController.text = 'Eigen cadeaukaart';
+                        nameController.text = L10n.current.customGiftCard;
                       }
                     }),
                     icon: const Icon(Icons.add_photo_alternate_outlined),
-                    label: const Text('Eigen cadeaukaart'),
+                    label:  Text(L10n.current.customGiftCard),
                   ),
                 ],
               ),
@@ -495,11 +497,11 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      customBrandSelected ? 'Eigen cadeaukaart' : name,
+                      customBrandSelected ? L10n.current.customGiftCard : name,
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                   ),
-                  TextButton(onPressed: chooseBrand, child: const Text('Wijzigen')),
+                  TextButton(onPressed: chooseBrand, child:  Text(L10n.current.change)),
                 ],
               ),
             ),
@@ -521,12 +523,12 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
           const SizedBox(height: 16),
 
           _SectionCard(
-            title: 'Wat is het saldo?',
-            subtitle: 'Vul het huidige saldo van deze cadeaukaart in.',
+            title: L10n.current.whatIsTheBalance,
+            subtitle: L10n.current.enterTheCurrentBalanceOfThisGift,
             children: [
               _InputField(
                 controller: balanceController,
-                label: 'Saldo',
+                label: L10n.current.balance,
                 icon: Icons.account_balance_wallet_rounded,
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -535,7 +537,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
               const SizedBox(height: 14),
               _InputField(
                 controller: pinCodeController,
-                label: 'Pincode / krascode (optioneel)',
+                label: L10n.current.pinScratchCodeOptional,
                 icon: Icons.lock_outline_rounded,
                 keyboardType: TextInputType.text,
               ),
@@ -545,20 +547,20 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
           const SizedBox(height: 14),
 
           _SectionCard(
-            title: 'Geldigheid',
-            subtitle: 'Optioneel. PasKluis kan je herinneren voordat de kaart verloopt.',
+            title: L10n.current.validity,
+            subtitle: L10n.current.optionalPaskluisCanRemindYouBeforeThe,
             children: [
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.event_rounded, color: Color(0xFFD51B46)),
                 title: Text(
-                  expiryDate == null ? 'Vervaldatum toevoegen' : formatDate(expiryDate!),
+                  expiryDate == null ? L10n.current.addExpiryDate : formatDate(expiryDate!),
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 trailing: expiryDate == null
                     ? const Icon(Icons.chevron_right_rounded)
                     : IconButton(
-                        tooltip: 'Vervaldatum verwijderen',
+                        tooltip: L10n.current.removeExpiryDate,
                         onPressed: () => setState(() => expiryDate = null),
                         icon: const Icon(Icons.close_rounded),
                       ),
@@ -569,8 +571,8 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                   contentPadding: EdgeInsets.zero,
                   value: expiryNotificationsEnabled,
                   activeColor: const Color(0xFFD51B46),
-                  title: const Text('Herinneringen', style: TextStyle(fontWeight: FontWeight.w800)),
-                  subtitle: const Text('30 dagen, 7 dagen en op de vervaldatum'),
+                  title:  Text(L10n.current.reminders, style: TextStyle(fontWeight: FontWeight.w800)),
+                  subtitle:  Text(L10n.current.text30Days7DaysAndOnThe),
                   onChanged: (value) => setState(() => expiryNotificationsEnabled = value),
                 ),
             ],
@@ -579,18 +581,18 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
           const SizedBox(height: 14),
 
           _SectionCard(
-            title: 'Kaart',
+            title: L10n.current.card,
             children: [
               _InputField(
                 controller: nameController,
-                label: 'Naam cadeaukaart',
+                label: L10n.current.giftCardName,
                 icon: Icons.card_giftcard_rounded,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 14),
               _InputField(
                 controller: codeController,
-                label: 'Kaartcode / kaartnummer',
+                label: L10n.current.cardCodeCardNumber,
                 icon: Icons.qr_code_scanner_rounded,
                 keyboardType: TextInputType.text,
                 suffix: IconButton(
@@ -608,7 +610,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                 child: OutlinedButton.icon(
                   onPressed: scanCode,
                   icon: const Icon(Icons.qr_code_scanner_rounded),
-                  label: const Text('Cadeaukaart opnieuw scannen'),
+                  label:  Text(L10n.current.scanGiftCardAgain),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFD51B46),
                     side: const BorderSide(
@@ -629,7 +631,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                 child: FilledButton.icon(
                   onPressed: () => importGiftCardPhoto(ImageSource.camera),
                   icon: const Icon(Icons.camera_alt_rounded),
-                  label: const Text('Foto maken en gegevens uitlezen'),
+                  label:  Text(L10n.current.takeAPhotoAndReadItsDetails),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFD51B46),
                     shape: RoundedRectangleBorder(
@@ -646,7 +648,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                 child: FilledButton.icon(
                   onPressed: () => importGiftCardPhoto(ImageSource.gallery),
                   icon: const Icon(Icons.add_photo_alternate_rounded),
-                  label: const Text('Foto of screenshot importeren'),
+                  label:  Text(L10n.current.importPhotoOrScreenshot),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFD51B46),
                     shape: RoundedRectangleBorder(
@@ -662,11 +664,11 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
           const SizedBox(height: 14),
 
           _SectionCard(
-            title: 'Notitie',
+            title: L10n.current.note,
             children: [
               _InputField(
                 controller: noteController,
-                label: 'Notitie',
+                label: L10n.current.note,
                 icon: Icons.notes_rounded,
                 maxLines: 4,
                 keyboardType: TextInputType.multiline,
@@ -677,7 +679,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
           const SizedBox(height: 14),
 
           _SectionCard(
-            title: 'Logo',
+            title: L10n.current.logo,
             children: [
               _LogoEditor(
                 logoAsset: logoAsset,
@@ -707,10 +709,10 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
                   : const Icon(Icons.save_rounded),
               label: Text(
                 _saving
-                    ? 'Opslaan…'
+                    ? L10n.current.saving
                     : widget.isEditing
-                    ? 'Wijzigingen opslaan'
-                    : 'Cadeaukaart opslaan',
+                    ? L10n.current.saveChanges
+                    : L10n.current.saveGiftCard,
               ),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFD51B46),
@@ -755,6 +757,7 @@ class _GiftBrandPickerSheetState extends State<GiftBrandPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final query = searchQuery.trim().toLowerCase();
     final sortedBrands = [...widget.brands]
       ..sort(
@@ -792,10 +795,10 @@ class _GiftBrandPickerSheetState extends State<GiftBrandPickerSheet> {
                   ),
                 ),
               ),
-            const Padding(
+             Padding(
               padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
               child: Text(
-                'Kies de winkel',
+                L10n.current.chooseTheStore,
                 style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
               ),
             ),
@@ -808,7 +811,7 @@ class _GiftBrandPickerSheetState extends State<GiftBrandPickerSheet> {
                 onSubmitted: (_) => FocusScope.of(context).unfocus(),
                 onTapOutside: (_) => FocusScope.of(context).unfocus(),
                 decoration: InputDecoration(
-                  hintText: 'Zoek winkel',
+                  hintText: L10n.current.searchStores,
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
                   fillColor: Colors.white,
@@ -826,20 +829,20 @@ class _GiftBrandPickerSheetState extends State<GiftBrandPickerSheet> {
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                 children: [
                   if (query.isEmpty && popularBrands.isNotEmpty) ...[
-                    _pickerSectionTitle('Populaire kaarten'),
+                    _pickerSectionTitle(L10n.current.popularCards),
                     ...popularBrands.map(_pickerBrandTile),
                     const SizedBox(height: 12),
                   ],
                   _pickerSectionTitle(
-                    query.isEmpty ? 'Alle winkels' : 'Zoekresultaten',
+                    query.isEmpty ? L10n.current.allStores : L10n.current.searchResults,
                   ),
                   ...listedBrands.map(_pickerBrandTile),
                   if (listedBrands.isEmpty)
-                    const Padding(
+                     Padding(
                       padding: EdgeInsets.symmetric(vertical: 28),
                       child: Center(
                         child: Text(
-                          'Geen winkels gevonden.',
+                          L10n.current.noStoresFound312,
                           style: TextStyle(color: Colors.black54),
                         ),
                       ),
@@ -927,6 +930,7 @@ class GiftCardLivePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
@@ -1005,11 +1009,11 @@ class GiftCardLivePreview extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: code.isEmpty
-                        ? const SizedBox(
+                        ?  SizedBox(
                             height: 86,
                             child: Center(
                               child: Text(
-                                'Nog geen barcode',
+                                L10n.current.noBarcodeYet,
                                 style: TextStyle(
                                   color: Colors.black38,
                                   fontWeight: FontWeight.w700,
@@ -1032,11 +1036,11 @@ class GiftCardLivePreview extends StatelessWidget {
                             height: 86,
                             drawText: false,
                             errorBuilder: (_, __) {
-                              return const SizedBox(
+                              return  SizedBox(
                                 height: 86,
                                 child: Center(
                                   child: Text(
-                                    'Barcode kan niet worden weergegeven',
+                                    L10n.current.unableToDisplayBarcode,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: Colors.red,
@@ -1071,7 +1075,7 @@ class GiftCardLivePreview extends StatelessWidget {
                     ),
                     child: Text(
                       balance.trim().isEmpty
-                          ? 'Saldo onbekend'
+                          ? L10n.current.balanceUnknown
                           : '€ ${formatAmountValue(balance)}',
                       textAlign: TextAlign.center,
                       style: const TextStyle(
@@ -1104,6 +1108,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       decoration: BoxDecoration(
@@ -1169,6 +1174,7 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return TextField(
       controller: controller,
       maxLines: maxLines,
@@ -1215,6 +1221,7 @@ class _LogoEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final hasLogo = hasPresetLogo || hasCustomLogo;
 
     return Column(
@@ -1246,7 +1253,7 @@ class _LogoEditor extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onPickImage,
                 icon: const Icon(Icons.photo_library_rounded),
-                label: Text(hasLogo ? 'Logo wijzigen' : 'Logo toevoegen'),
+                label: Text(hasLogo ? L10n.current.changeLogo : L10n.current.addLogo),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFD51B46),
                   side: const BorderSide(color: Color(0xFFD51B46), width: 1.2),

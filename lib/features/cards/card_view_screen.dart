@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -262,7 +263,7 @@ class _CardViewScreenState extends State<CardViewScreen>
     if (items.isEmpty) return;
 
     final item = items[currentIndex];
-    final name = item['name']?.toString() ?? 'deze kaart';
+    final name = item['name']?.toString() ?? L10n.current.thisCard;
     final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
@@ -270,22 +271,22 @@ class _CardViewScreenState extends State<CardViewScreen>
       builder: (_) {
         return AlertDialog(
           title: Text(
-            isShared ? 'Uit jouw PasKluis verwijderen?' : 'Kaart verwijderen?',
+            isShared ? L10n.current.removeFromYourPaskluis : L10n.current.deleteCard,
           ),
           content: Text(
             isShared
-                ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De kaart van de eigenaar blijft bestaan.'
-                : 'Weet je zeker dat je "$name" wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.',
+                ? L10n.current.youAreOnlyRemovingFromYourOwn((name).toString())
+                : L10n.current.areYouSureYouWantToDelete((name).toString()),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuleren'),
+              child:  Text(L10n.current.cancel),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Verwijderen'),
+              child:  Text(L10n.current.delete),
             ),
           ],
         );
@@ -317,9 +318,9 @@ class _CardViewScreenState extends State<CardViewScreen>
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+           SnackBar(
             content: Text(
-              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+              L10n.current.sharedAccessCouldNotBeUpdatedTry,
             ),
           ),
         );
@@ -368,14 +369,14 @@ class _CardViewScreenState extends State<CardViewScreen>
     HapticFeedback.lightImpact();
 
     ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Code gekopieerd')));
+        .showSnackBar( SnackBar(content: Text(L10n.current.codeCopied)));
   }
 
   Future<void> openShareCard() async {
     if (items.isEmpty) return;
     if (!SettingsService.cardSharingAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kaarten delen is tijdelijk niet beschikbaar.')),
+         SnackBar(content: Text(L10n.current.cardSharingIsTemporarilyUnavailable)),
       );
       return;
     }
@@ -387,7 +388,7 @@ class _CardViewScreenState extends State<CardViewScreen>
     if (items.isEmpty) return;
     if (!SettingsService.cardSharingAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kaarten delen is tijdelijk niet beschikbaar.')),
+         SnackBar(content: Text(L10n.current.cardSharingIsTemporarilyUnavailable)),
       );
       return;
     }
@@ -399,7 +400,7 @@ class _CardViewScreenState extends State<CardViewScreen>
 
     final item = items[currentIndex];
     final code = item['code']?.toString() ?? '';
-    final name = item['name']?.toString() ?? 'Kaart';
+    final name = item['name']?.toString() ?? L10n.current.card;
     final note = item['note']?.toString() ?? '';
     final brandId = item['brandId']?.toString() ?? '';
     final isFavorite = item['isFavorite'] == true;
@@ -424,8 +425,8 @@ class _CardViewScreenState extends State<CardViewScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Kaartdetails',
+                 Text(
+                  L10n.current.cardDetails,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -433,24 +434,24 @@ class _CardViewScreenState extends State<CardViewScreen>
                   ),
                 ),
                 const SizedBox(height: 22),
-                _DetailRow(label: 'Naam', value: name),
+                _DetailRow(label: L10n.current.name, value: name),
                 const SizedBox(height: 16),
-                _DetailRow(label: 'Code', value: code, showCopy: true),
+                _DetailRow(label: L10n.current.code, value: code, showCopy: true),
                 if (brandId.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  _DetailRow(label: 'Merk', value: brandId),
+                  _DetailRow(label: L10n.current.brand, value: brandId),
                 ],
                 if (note.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  _DetailRow(label: 'Notitie', value: note),
+                  _DetailRow(label: L10n.current.note, value: note),
                 ],
                 if (isShared) ...[
                   const SizedBox(height: 16),
                   _DetailRow(
-                    label: 'Toegang',
+                    label: L10n.current.access,
                     value: canEditShared
-                        ? 'Met jou gedeeld • samen bewerken'
-                        : 'Met jou gedeeld • alleen bekijken',
+                        ? L10n.current.sharedWithYouEditTogether
+                        : L10n.current.sharedWithYouViewOnly,
                   ),
                 ],
                 if (linkedGiftCards.isNotEmpty) ...[
@@ -467,8 +468,8 @@ class _CardViewScreenState extends State<CardViewScreen>
                 _ActionButton(
                   icon: isFavorite ? Icons.star : Icons.star_border,
                   label: isFavorite
-                      ? 'Verwijder uit favorieten'
-                      : 'Maak favoriet',
+                      ? L10n.current.removeFromFavourites
+                      : L10n.current.addToFavourites,
                   onTap: () async {
                     Navigator.pop(context);
                     await toggleFavoriteCurrentItem();
@@ -478,7 +479,7 @@ class _CardViewScreenState extends State<CardViewScreen>
                 if (!isShared || canEditShared) ...[
                   _ActionButton(
                     icon: Icons.edit_outlined,
-                    label: 'Bewerken',
+                    label: L10n.current.edit,
                     onTap: () {
                       Navigator.pop(context);
                       openEdit();
@@ -489,7 +490,7 @@ class _CardViewScreenState extends State<CardViewScreen>
                 if (!isShared) ...[
                   _ActionButton(
                     icon: Icons.share_rounded,
-                    label: 'Delen via e-mailadres',
+                    label: L10n.current.shareByEmail,
                     onTap: () {
                       Navigator.pop(context);
                       openShareCard();
@@ -498,7 +499,7 @@ class _CardViewScreenState extends State<CardViewScreen>
                   const SizedBox(height: 10),
                   _ActionButton(
                     icon: Icons.group_outlined,
-                    label: 'Gedeelde toegang beheren',
+                    label: L10n.current.manageSharedAccess,
                     onTap: () {
                       Navigator.pop(context);
                       openSharedAccess();
@@ -508,7 +509,7 @@ class _CardViewScreenState extends State<CardViewScreen>
                 ],
                 _ActionButton(
                   icon: Icons.copy_rounded,
-                  label: 'Code kopiëren',
+                  label: L10n.current.copyCode,
                   onTap: () {
                     Navigator.pop(context);
                     copyCurrentCode();
@@ -518,8 +519,8 @@ class _CardViewScreenState extends State<CardViewScreen>
                 _ActionButton(
                   icon: Icons.delete_outline,
                   label: isShared
-                      ? 'Uit mijn PasKluis verwijderen'
-                      : 'Verwijderen',
+                      ? L10n.current.removeFromMyPaskluis
+                      : L10n.current.delete,
                   destructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -536,10 +537,11 @@ class _CardViewScreenState extends State<CardViewScreen>
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     if (items.isEmpty) {
-      return const Scaffold(
+      return  Scaffold(
         backgroundColor: Color(0xFFF4F4F6),
-        body: Center(child: Text('Geen kaarten')),
+        body: Center(child: Text(L10n.current.noCards)),
       );
     }
 
@@ -571,7 +573,7 @@ class _CardViewScreenState extends State<CardViewScreen>
                 left: 8,
                 top: 4,
                 child: IconButton.filledTonal(
-                  tooltip: 'Terug',
+                  tooltip: L10n.current.back,
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.arrow_back_rounded),
                 ),
@@ -591,7 +593,7 @@ class _CardViewScreenState extends State<CardViewScreen>
         leading: const BackButton(),
         centerTitle: true,
         title: Text(
-          currentItem['name']?.toString() ?? 'Klantenkaart',
+          currentItem['name']?.toString() ?? L10n.current.loyaltyCard,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontWeight: FontWeight.w900),
@@ -665,8 +667,8 @@ class _CardViewScreenState extends State<CardViewScreen>
             _Dots(count: items.length, activeIndex: currentIndex),
           ],
           const SizedBox(height: 16),
-          const Text(
-            'Houd de barcode goed voor de scanner',
+           Text(
+            L10n.current.holdTheBarcodeUpToTheScanner,
             style: TextStyle(
               color: Colors.black45,
               fontSize: 15,
@@ -688,7 +690,8 @@ class _LandscapeBarcodeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = item['name']?.toString() ?? 'Klantenkaart';
+    L10n.watch(context);
+    final name = item['name']?.toString() ?? L10n.current.loyaltyCard;
     final code = item['code']?.toString() ?? '';
     final isQr = item['codeFormat']?.toString() == 'qr';
     return Padding(
@@ -705,7 +708,7 @@ class _LandscapeBarcodeCard extends StatelessWidget {
           Expanded(
             child: Center(
               child: code.isEmpty
-                  ? const Text('Geen barcode beschikbaar')
+                  ?  Text(L10n.current.noBarcodeAvailable)
                   : isQr
                   ? QrImageView(data: code, padding: const EdgeInsets.all(8))
                   : BarcodeWidget(
@@ -780,6 +783,7 @@ class LoyaltyBarcodeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final code = item['code']?.toString() ?? '';
     final logoAsset = item['logoAsset']?.toString() ?? '';
     final customImage = item['customImage']?.toString() ?? '';
@@ -889,9 +893,9 @@ class LoyaltyBarcodeCard extends StatelessWidget {
                               height: hasLinkedGiftCard ? 150 : 180,
                               drawText: false,
                               errorBuilder: (_, __) {
-                                return const Center(
+                                return  Center(
                                   child: Text(
-                                    'Barcode kan niet worden weergegeven',
+                                    L10n.current.unableToDisplayBarcode,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: Colors.red,
@@ -929,7 +933,7 @@ class LoyaltyBarcodeCard extends StatelessWidget {
                       TextButton.icon(
                         onPressed: onDetails,
                         icon: const Icon(Icons.info_outline_rounded),
-                        label: const Text('Details en opties'),
+                        label:  Text(L10n.current.detailsAndOptions),
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFFD51B46),
                           textStyle: const TextStyle(
@@ -957,6 +961,7 @@ class _LinkedGiftCardInline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final count = giftCards.length;
 
     double totalBalance = 0;
@@ -998,8 +1003,8 @@ class _LinkedGiftCardInline extends StatelessWidget {
                   children: [
                     Text(
                       count > 1
-                          ? 'U heeft $count cadeaukaarten beschikbaar'
-                          : 'U heeft een cadeaukaart beschikbaar',
+                          ? L10n.current.youHaveGiftCardsAvailable((count).toString())
+                          : L10n.current.youHaveOneGiftCardAvailable,
                       style: const TextStyle(
                         color: Color(0xFFD51B46),
                         fontSize: 12.5,
@@ -1009,7 +1014,7 @@ class _LinkedGiftCardInline extends StatelessWidget {
                     if (balance.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
-                        'Saldo: € $balance',
+                        L10n.current.balance277((balance).toString()),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -1039,6 +1044,7 @@ class _LinkedGiftCardAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final count = giftCards.length;
 
     double totalBalance = 0;
@@ -1078,8 +1084,8 @@ class _LinkedGiftCardAction extends StatelessWidget {
                 children: [
                   Text(
                     count > 1
-                        ? 'U heeft $count cadeaukaarten beschikbaar'
-                        : 'U heeft een cadeaukaart beschikbaar',
+                        ? L10n.current.youHaveGiftCardsAvailable((count).toString())
+                        : L10n.current.youHaveOneGiftCardAvailable,
                     style: const TextStyle(
                       color: Color(0xFFD51B46),
                       fontSize: 13,
@@ -1089,7 +1095,7 @@ class _LinkedGiftCardAction extends StatelessWidget {
                   if (balance.isNotEmpty) ...[
                     const SizedBox(height: 3),
                     Text(
-                      'Saldo: € $balance',
+                      L10n.current.balance277((balance).toString()),
                       style: const TextStyle(
                         color: Color(0xFF333333),
                         fontSize: 16,
@@ -1116,6 +1122,7 @@ class _Dots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(count, (index) {
@@ -1150,6 +1157,7 @@ class _DetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Row(
       children: [
         Expanded(
@@ -1178,9 +1186,9 @@ class _DetailRow extends StatelessWidget {
               Clipboard.setData(ClipboardData(text: value));
               HapticFeedback.lightImpact();
               ScaffoldMessenger.of(context)
-                  .showSnackBar(const SnackBar(content: Text('Gekopieerd')));
+                  .showSnackBar( SnackBar(content: Text(L10n.current.copied)));
             },
-            child: const Text('Kopiëren'),
+            child:  Text(L10n.current.copy),
           ),
       ],
     );
@@ -1202,6 +1210,7 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final color = destructive ? Colors.red : const Color(0xFFD51B46);
 
     return InkWell(

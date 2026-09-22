@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -68,7 +69,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bericht kon niet worden verstuurd.')),
+           SnackBar(content: Text(L10n.current.theMessageCouldNotBeSent)),
         );
       }
     } finally {
@@ -89,6 +90,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final closed = widget.thread.status == 'closed';
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
@@ -98,7 +100,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
         foregroundColor: const Color(0xFF333333),
         actions: [
           IconButton(
-            tooltip: 'Vernieuwen',
+            tooltip: L10n.current.refresh,
             onPressed: _loadMessages,
             icon: const Icon(Icons.refresh_rounded),
           ),
@@ -110,7 +112,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _messages.isEmpty
-                ? const Center(child: Text('Nog geen berichten.'))
+                ?  Center(child: Text(L10n.current.noMessagesYet))
                 : RefreshIndicator(
                     onRefresh: () => _loadMessages(),
                     child: ListView.builder(
@@ -130,11 +132,11 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
                   ),
           ),
           if (closed)
-            const SafeArea(
+             SafeArea(
               top: false,
               child: Padding(
                 padding: EdgeInsets.all(16),
-                child: Text('Dit gesprek is gesloten.'),
+                child: Text(L10n.current.thisConversationIsClosed),
               ),
             )
           else
@@ -155,8 +157,8 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
                         minLines: 1,
                         maxLines: 5,
                         maxLength: 5000,
-                        decoration: const InputDecoration(
-                          hintText: 'Schrijf een bericht…',
+                        decoration:  InputDecoration(
+                          hintText: L10n.current.writeAMessage,
                           counterText: '',
                           filled: true,
                           fillColor: Color(0xFFF6F4F7),
@@ -169,7 +171,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> {
                     ),
                     const SizedBox(width: 8),
                     IconButton.filled(
-                      tooltip: 'Versturen',
+                      tooltip: L10n.current.send,
                       onPressed: _sending ? null : _send,
                       icon: _sending
                           ? const SizedBox.square(
@@ -196,6 +198,7 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(

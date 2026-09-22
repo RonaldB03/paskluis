@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -24,7 +25,7 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
   void initState() {
     super.initState();
 
-    nameController.text = widget.item['name']?.toString() ?? 'QR-codes';
+    nameController.text = widget.item['name']?.toString() ?? L10n.current.qrCodes478;
     noteController.text = widget.item['note']?.toString() ?? '';
 
     codes = (widget.item['codes']?.toString() ?? '')
@@ -66,7 +67,7 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
 
     if (codes.contains(code)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Deze QR-code staat al in deze set.')),
+         SnackBar(content: Text(L10n.current.thisQrCodeIsAlreadyInThis)),
       );
       return;
     }
@@ -95,7 +96,7 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
 
     if (alreadyExists) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Deze QR-code staat al in deze set.')),
+         SnackBar(content: Text(L10n.current.thisQrCodeIsAlreadyInThis)),
       );
       return;
     }
@@ -111,8 +112,8 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
   void removeQrCode(int index) {
     if (codes.length <= 1) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Een QR-set moet minimaal 1 QR-code bevatten.'),
+         SnackBar(
+          content: Text(L10n.current.aQrSetMustContainAtLeast),
         ),
       );
       return;
@@ -139,13 +140,13 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Naam is verplicht.')));
+          .showSnackBar( SnackBar(content: Text(L10n.current.aNameIsRequired)));
       return;
     }
 
     if (codes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Voeg minimaal 1 QR-code toe.')),
+         SnackBar(content: Text(L10n.current.addAtLeastOneQrCode)),
       );
       return;
     }
@@ -164,13 +165,14 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final usedCount = used.where((value) => value == true).length;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
-        title: const Text(
-          'QR-set bewerken',
+        title:  Text(
+          L10n.current.editQrSet,
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
         centerTitle: true,
@@ -180,8 +182,8 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
         actions: [
           TextButton(
             onPressed: save,
-            child: const Text(
-              'Opslaan',
+            child:  Text(
+              L10n.current.save,
               style: TextStyle(
                 color: Color(0xFFD51B46),
                 fontWeight: FontWeight.w900,
@@ -194,18 +196,18 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
         padding: const EdgeInsets.fromLTRB(18, 10, 18, 30),
         children: [
           _SectionCard(
-            title: 'Setgegevens',
-            subtitle: '$usedCount van ${codes.length} QR-codes gebruikt',
+            title: L10n.current.setDetails,
+            subtitle: L10n.current.ofQrCodesUsed((usedCount).toString(), (codes.length).toString()),
             children: [
               _InputField(
                 controller: nameController,
-                label: 'Naam QR-set',
+                label: L10n.current.qrSetName,
                 icon: Icons.confirmation_number_rounded,
               ),
               const SizedBox(height: 14),
               _InputField(
                 controller: noteController,
-                label: 'Notitie',
+                label: L10n.current.note,
                 icon: Icons.notes_rounded,
                 maxLines: 3,
                 keyboardType: TextInputType.multiline,
@@ -214,8 +216,8 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
           ),
           const SizedBox(height: 14),
           _SectionCard(
-            title: 'QR-codes',
-            subtitle: 'Beheer de tickets binnen deze set.',
+            title: L10n.current.qrCodes478,
+            subtitle: L10n.current.manageTheTicketsInThisSet,
             children: [
               ...List.generate(codes.length, (index) {
                 return Padding(
@@ -239,7 +241,7 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
                 child: OutlinedButton.icon(
                   onPressed: addQrCode,
                   icon: const Icon(Icons.qr_code_scanner_rounded),
-                  label: const Text('QR-code toevoegen'),
+                  label:  Text(L10n.current.addQrCode),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFD51B46),
                     side: const BorderSide(
@@ -262,7 +264,7 @@ class _EditQrSetScreenState extends State<EditQrSetScreen> {
             child: FilledButton.icon(
               onPressed: save,
               icon: const Icon(Icons.save_rounded),
-              label: const Text('Wijzigingen opslaan'),
+              label:  Text(L10n.current.saveChanges),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFD51B46),
                 foregroundColor: Colors.white,
@@ -301,6 +303,7 @@ class _QrSetItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -350,7 +353,7 @@ class _QrSetItemTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Ticket ${index + 1}',
+                  L10n.current.ticket((index + 1).toString()),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
@@ -359,7 +362,7 @@ class _QrSetItemTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  isUsed ? 'Gebruikt' : 'Niet gebruikt',
+                  isUsed ? L10n.current.used : L10n.current.notUsed,
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
@@ -392,14 +395,14 @@ class _QrSetItemTile extends StatelessWidget {
               PopupMenuItem(
                 value: 'used',
                 child: Text(
-                  isUsed ? 'Markeer als niet gebruikt' : 'Markeer als gebruikt',
+                  isUsed ? L10n.current.markAsUnused : L10n.current.markAsUsed,
                 ),
               ),
-              const PopupMenuItem(
+               PopupMenuItem(
                 value: 'replace',
-                child: Text('Opnieuw scannen'),
+                child: Text(L10n.current.scanAgain),
               ),
-              const PopupMenuItem(value: 'remove', child: Text('Verwijderen')),
+               PopupMenuItem(value: 'remove', child: Text(L10n.current.delete)),
             ],
             icon: const Icon(Icons.more_vert_rounded),
           ),
@@ -422,6 +425,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       decoration: BoxDecoration(
@@ -483,6 +487,7 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return TextField(
       controller: controller,
       maxLines: maxLines,

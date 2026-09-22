@@ -1,3 +1,5 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
+import 'locale_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'supabase_service.dart';
@@ -38,8 +40,8 @@ abstract final class AccountService {
   static SupabaseClient get _client {
     final client = SupabaseService.client;
     if (client == null) {
-      throw const AuthException(
-        'De online diensten zijn momenteel niet beschikbaar.',
+      throw  AuthException(
+        L10n.current.onlineServicesAreCurrentlyUnavailable,
       );
     }
     return client;
@@ -68,9 +70,15 @@ abstract final class AccountService {
     return _client.auth.signUp(
       email: email.trim(),
       password: password,
-      data: {'name': name.trim()},
+      data: {'name': name.trim(), 'locale': LocaleService.languageCode},
       emailRedirectTo: 'nl.paskluis.app://login-callback/',
     );
+  }
+
+  static Future<void> syncLanguage() async {
+    final user = currentUser;
+    if (user == null || user.userMetadata?['locale'] == LocaleService.languageCode) return;
+    await _client.auth.updateUser(UserAttributes(data: {'locale': LocaleService.languageCode}));
   }
 
   static Future<void> resetPassword(String email) {

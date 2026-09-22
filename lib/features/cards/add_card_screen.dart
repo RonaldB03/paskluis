@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -93,8 +94,8 @@ class _AddCardScreenState extends State<AddCardScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('De afbeelding kon niet worden opgeslagen.'),
+         SnackBar(
+          content: Text(L10n.current.theImageCouldNotBeSaved),
         ),
       );
     }
@@ -130,7 +131,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
     if (codeController.text.trim().isEmpty ||
         (!isBrandMode && nameController.text.trim().isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vul de verplichte velden in.')),
+         SnackBar(content: Text(L10n.current.fillInTheRequiredFields)),
       );
       return;
     }
@@ -157,11 +158,12 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final title = selectedType == 'QR-code'
-        ? 'QR-code toevoegen'
+        ? L10n.current.addQrCode
         : selectedType == 'Cadeaukaart'
-        ? 'Cadeaukaart toevoegen'
-        : 'Klantenkaart toevoegen';
+        ? L10n.current.addGiftCard
+        : L10n.current.addLoyaltyCard;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F5),
@@ -218,8 +220,8 @@ class _AddCardScreenState extends State<AddCardScreen> {
           ] else ...[
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Naam',
+              decoration:  InputDecoration(
+                labelText: L10n.current.name,
                 border: OutlineInputBorder(),
               ),
             ),
@@ -241,9 +243,9 @@ class _AddCardScreenState extends State<AddCardScreen> {
                         fit: BoxFit.contain,
                         width: double.infinity,
                       )
-                    : const Center(
+                    :  Center(
                         child: Text(
-                          'Logo toevoegen (optioneel)',
+                          L10n.current.addLogoOptional,
                           style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
@@ -253,14 +255,14 @@ class _AddCardScreenState extends State<AddCardScreen> {
           const SizedBox(height: 24),
           DropdownButtonFormField<ScannerMode>(
             value: selectedCodeMode,
-            decoration: const InputDecoration(
-              labelText: 'Type code',
+            decoration:  InputDecoration(
+              labelText: L10n.current.codeType,
               border: OutlineInputBorder(),
             ),
-            items: const [
-              DropdownMenuItem(value: ScannerMode.auto, child: Text('Automatisch herkennen')),
-              DropdownMenuItem(value: ScannerMode.barcode, child: Text('Streepjescode')),
-              DropdownMenuItem(value: ScannerMode.qr, child: Text('QR-code')),
+            items:  [
+              DropdownMenuItem(value: ScannerMode.auto, child: Text(L10n.current.detectAutomatically)),
+              DropdownMenuItem(value: ScannerMode.barcode, child: Text(L10n.current.barcode)),
+              DropdownMenuItem(value: ScannerMode.qr, child: Text(L10n.current.qrCode)),
             ],
             onChanged: (value) {
               if (value != null) setState(() => selectedCodeMode = value);
@@ -270,8 +272,8 @@ class _AddCardScreenState extends State<AddCardScreen> {
           TextField(
             controller: codeController,
             decoration: InputDecoration(
-              labelText: 'Code',
-              hintText: 'Scan of vul handmatig in',
+              labelText: L10n.current.code,
+              hintText: L10n.current.scanOrEnterManually,
               border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.qr_code_scanner),
@@ -284,14 +286,14 @@ class _AddCardScreenState extends State<AddCardScreen> {
             onPressed: scanCode,
             icon: const Icon(Icons.qr_code_scanner),
             label: Text(
-              'Code scannen',
+              L10n.current.scanCode,
             ),
           ),
           const SizedBox(height: 28),
           FilledButton.icon(
             onPressed: saveCard,
             icon: const Icon(Icons.save),
-            label: const Text('Opslaan'),
+            label:  Text(L10n.current.save),
           ),
         ],
       ),

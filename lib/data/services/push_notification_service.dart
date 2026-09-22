@@ -6,6 +6,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'device_session_service.dart';
 import 'notification_service.dart';
 import 'supabase_service.dart';
+import 'locale_service.dart';
 
 abstract final class PushNotificationService {
   static StreamSubscription<String>? _tokenSubscription;
@@ -116,6 +117,16 @@ abstract final class PushNotificationService {
         'p_device_id': await DeviceSessionService.deviceId,
       },
     );
+    await syncLanguage();
+  }
+
+  static Future<void> syncLanguage() async {
+    final client = SupabaseService.client;
+    if (client?.auth.currentUser == null) return;
+    await client!.rpc('set_push_device_locale', params: {
+      'p_device_id': await DeviceSessionService.deviceId,
+      'p_locale': LocaleService.languageCode,
+    });
   }
 
   static Future<void> _handleForegroundMessage(RemoteMessage message) async {

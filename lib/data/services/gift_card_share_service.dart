@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'account_service.dart';
@@ -7,7 +8,7 @@ import 'supabase_service.dart';
 abstract final class GiftCardShareService {
   static SupabaseClient get _client {
     final client = SupabaseService.client;
-    if (client == null) throw const AuthException('De online diensten zijn niet beschikbaar.');
+    if (client == null) throw  AuthException(L10n.current.onlineServicesAreUnavailable);
     return client;
   }
 
@@ -29,9 +30,9 @@ abstract final class GiftCardShareService {
 
   static Future<void> shareWithEmail(Map<String, dynamic> card, String email) async {
     final user = AccountService.currentUser;
-    if (user == null) throw const AuthException('Log eerst in om een kaart te delen.');
+    if (user == null) throw  AuthException(L10n.current.signInToShareACard);
     final status = await AccountService.loadPlusStatus();
-    if (!status.isActive) throw const AuthException('PasKluis Plus is vereist om kaarten te delen.');
+    if (!status.isActive) throw  AuthException(L10n.current.paskluisPlusIsRequiredToShareCards);
     await _client.rpc('share_gift_card_by_email', params: {
       'p_recipient_email': email.trim(),
       'p_card_external_id': card['id']?.toString() ?? '',

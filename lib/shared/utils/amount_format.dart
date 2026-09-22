@@ -1,3 +1,5 @@
+import '../../data/services/locale_service.dart';
+
 String normalizeAmountValue(String value) {
   final cleaned = value.trim().replaceAll(',', '.');
   final amount = double.tryParse(cleaned);
@@ -8,5 +10,5 @@ String normalizeAmountValue(String value) {
 
 String formatAmountValue(Object? value) {
   final normalized = normalizeAmountValue(value?.toString() ?? '');
-  return normalized.replaceAll('.', ',');
+  return LocaleService.languageCode == 'nl' ? normalized.replaceAll('.', ',') : normalized;
 }

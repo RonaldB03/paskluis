@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/services/account_service.dart';
@@ -35,7 +36,7 @@ class _SupportScreenState extends State<SupportScreen> {
       if (mounted) setState(() => _threads = threads);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = 'Gesprekken konden niet worden opgehaald.');
+        setState(() => _error = L10n.current.unableToLoadConversations);
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -70,7 +71,7 @@ class _SupportScreenState extends State<SupportScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Je vraag kon niet worden verzonden.')),
+           SnackBar(content: Text(L10n.current.yourQuestionCouldNotBeSent)),
         );
       }
     } finally {
@@ -80,10 +81,11 @@ class _SupportScreenState extends State<SupportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF5F3F6),
       appBar: AppBar(
-        title: const Text('Klantenservice'),
+        title:  Text(L10n.current.customerSupport),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF333333),
       ),
@@ -92,7 +94,7 @@ class _SupportScreenState extends State<SupportScreen> {
         backgroundColor: const Color(0xFFD51B46),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_comment_rounded),
-        label: const Text('Nieuwe vraag'),
+        label:  Text(L10n.current.newQuestion),
       ),
       body: _buildSupport(),
     );
@@ -106,8 +108,8 @@ class _SupportScreenState extends State<SupportScreen> {
       return _SupportEmpty(
         icon: Icons.cloud_off_rounded,
         title: _error!,
-        subtitle: 'Controleer je verbinding en probeer het opnieuw.',
-        buttonLabel: 'Opnieuw proberen',
+        subtitle: L10n.current.checkYourConnectionAndTryAgain,
+        buttonLabel: L10n.current.tryAgain,
         onPressed: _loadThreads,
       );
     }
@@ -117,17 +119,17 @@ class _SupportScreenState extends State<SupportScreen> {
         children: [
           _SupportEmpty(
             icon: Icons.support_agent_rounded,
-            title: 'We staan voor je klaar',
+            title: L10n.current.weAreHereToHelp,
             subtitle: AccountService.currentUser == null
-                ? 'Je hoeft niet in te loggen. Laat je naam en e-mailadres achter en volg het gesprek gewoon in PasKluis.'
-                : 'Stel gerust een vraag. Je vindt onze antwoorden overzichtelijk in dit scherm terug.',
+                ? L10n.current.noSignInNeededLeaveYourName
+                : L10n.current.feelFreeToAskAQuestionYou,
             showAction: false,
             buttonLabel: '',
             onPressed: _newConversation,
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Veelgestelde vragen',
+           Text(
+            L10n.current.frequentlyAskedQuestions,
             style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 10),
@@ -245,11 +247,11 @@ class _SupportScreenState extends State<SupportScreen> {
   static String _statusLabel(String status) {
     switch (status) {
       case 'waiting_for_user':
-        return 'Er staat een antwoord voor je klaar';
+        return L10n.current.aReplyIsWaitingForYou;
       case 'closed':
-        return 'Gesloten';
+        return L10n.current.closed;
       default:
-        return 'Open';
+        return L10n.current.open;
     }
   }
 }
@@ -281,6 +283,7 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -297,8 +300,8 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Waar kunnen we mee helpen?',
+             Text(
+              L10n.current.howCanWeHelp,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 16),
@@ -306,13 +309,13 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
               TextFormField(
                 controller: _nameController,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Naam',
+                decoration:  InputDecoration(
+                  labelText: L10n.current.name,
                   prefixIcon: Icon(Icons.person_outline_rounded),
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) => (value?.trim().length ?? 0) < 2
-                    ? 'Vul je naam in.'
+                    ? L10n.current.enterYourName
                     : null,
               ),
               const SizedBox(height: 12),
@@ -320,15 +323,15 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'E-mailadres',
+                decoration:  InputDecoration(
+                  labelText: L10n.current.emailAddress,
                   prefixIcon: Icon(Icons.mail_outline_rounded),
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   final email = value?.trim() ?? '';
                   return !email.contains('@') || !email.contains('.')
-                      ? 'Vul een geldig e-mailadres in.'
+                      ? L10n.current.enterAValidEmailAddress
                       : null;
                 },
               ),
@@ -338,12 +341,12 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
               controller: _subjectController,
               textInputAction: TextInputAction.next,
               maxLength: 100,
-              decoration: const InputDecoration(
-                labelText: 'Onderwerp',
+              decoration:  InputDecoration(
+                labelText: L10n.current.subject,
                 border: OutlineInputBorder(),
               ),
               validator: (value) => (value?.trim().isEmpty ?? true)
-                  ? 'Vul een onderwerp in.'
+                  ? L10n.current.enterASubject
                   : null,
             ),
             const SizedBox(height: 10),
@@ -352,13 +355,13 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
               minLines: 4,
               maxLines: 7,
               maxLength: 5000,
-              decoration: const InputDecoration(
-                labelText: 'Je vraag of probleem',
+              decoration:  InputDecoration(
+                labelText: L10n.current.yourQuestionOrProblem,
                 alignLabelWithHint: true,
                 border: OutlineInputBorder(),
               ),
               validator: (value) => (value?.trim().isEmpty ?? true)
-                  ? 'Vertel kort waar je hulp bij nodig hebt.'
+                  ? L10n.current.brieflyDescribeWhatYouNeedHelpWith
                   : null,
             ),
             const SizedBox(height: 12),
@@ -377,7 +380,7 @@ class _NewQuestionSheetState extends State<_NewQuestionSheet> {
                 );
               },
               icon: const Icon(Icons.send_rounded),
-              label: const Text('Vraag versturen'),
+              label:  Text(L10n.current.sendQuestion),
             ),
               ],
             ),
@@ -407,6 +410,7 @@ class _SupportHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -415,7 +419,7 @@ class _SupportHero extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: const Row(
+      child:  Row(
         children: [
           CircleAvatar(
             radius: 27,
@@ -428,13 +432,13 @@ class _SupportHero extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Persoonlijke hulp',
+                Text(L10n.current.personalSupport,
                     style: TextStyle(
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.w900)),
                 SizedBox(height: 4),
-                Text('Bekijk je vragen en onze antwoorden op één plek.',
+                Text(L10n.current.findYourQuestionsAndOurRepliesIn,
                     style: TextStyle(color: Color(0xFFE8EBFF), height: 1.35)),
               ],
             ),
@@ -464,6 +468,7 @@ class _SupportEmpty extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),

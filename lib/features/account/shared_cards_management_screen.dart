@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/services/card_share_service.dart';
@@ -28,8 +29,8 @@ class _SharedCardsManagementScreenState
       if (mounted) setState(() {});
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Gedeelde kaarten konden niet worden vernieuwd.'),
+        ScaffoldMessenger.of(context).showSnackBar( SnackBar(
+          content: Text(L10n.current.sharedCardsCouldNotBeRefreshed),
         ));
       }
     } finally {
@@ -47,6 +48,7 @@ class _SharedCardsManagementScreenState
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final incoming = _cards.where((card) => card['isShared'] == true).toList();
     final outgoing = _cards.where((card) =>
         card['isShared'] != true &&
@@ -54,12 +56,12 @@ class _SharedCardsManagementScreenState
     return Scaffold(
       backgroundColor: const Color(0xFFF5F3F6),
       appBar: AppBar(
-        title: const Text('Gedeelde kaarten'),
+        title:  Text(L10n.current.sharedCards),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF312D35),
         actions: [
           IconButton(
-            tooltip: 'Vernieuwen',
+            tooltip: L10n.current.refresh,
             onPressed: _syncing ? null : _sync,
             icon: _syncing
                 ? const SizedBox.square(
@@ -76,18 +78,18 @@ class _SharedCardsManagementScreenState
           const _SharingInfo(),
           const SizedBox(height: 20),
           _Section(
-            title: 'Door jou gedeeld',
-            empty: 'Je hebt nog geen kaarten gedeeld.',
+            title: L10n.current.sharedByYou,
+            empty: L10n.current.youHaveNotSharedAnyCardsYet,
             cards: outgoing,
-            actionLabel: 'Beheren',
+            actionLabel: L10n.current.manage,
             onAction: (card) => CardShareDialogs.manage(context, card),
           ),
           const SizedBox(height: 20),
           _Section(
-            title: 'Met jou gedeeld',
-            empty: 'Er zijn nog geen kaarten met jou gedeeld.',
+            title: L10n.current.sharedWithYou,
+            empty: L10n.current.noCardsHaveBeenSharedWithYou,
             cards: incoming,
-            actionLabel: 'Verwijderen',
+            actionLabel: L10n.current.delete,
             onAction: _removeReceived,
           ),
         ],
@@ -101,6 +103,7 @@ class _SharingInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -109,7 +112,7 @@ class _SharingInfo extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(22),
       ),
-      child: const Row(
+      child:  Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.people_alt_rounded, color: Colors.white, size: 32),
@@ -118,14 +121,14 @@ class _SharingInfo extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Delen met controle',
+                Text(L10n.current.sharingWithControl,
                     style: TextStyle(
                         color: Colors.white,
                         fontSize: 19,
                         fontWeight: FontWeight.w900)),
                 SizedBox(height: 5),
                 Text(
-                  'Bekijk wie toegang heeft en stop gedeelde toegang wanneer je wilt.',
+                  L10n.current.seeWhoHasAccessAndStopShared,
                   style: TextStyle(color: Color(0xFFF1EAFF), height: 1.35),
                 ),
               ],
@@ -154,6 +157,7 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -185,9 +189,9 @@ class _Section extends StatelessWidget {
                       color: const Color(0xFFD51B46),
                     ),
                   ),
-                  title: Text(card['name']?.toString() ?? 'Kaart',
+                  title: Text(card['name']?.toString() ?? L10n.current.card,
                       style: const TextStyle(fontWeight: FontWeight.w800)),
-                  subtitle: Text(card['type']?.toString() ?? 'Kaart'),
+                  subtitle: Text(L10n.cardType(card['type']?.toString())),
                   trailing: TextButton(
                     onPressed: () => onAction(card),
                     child: Text(actionLabel),

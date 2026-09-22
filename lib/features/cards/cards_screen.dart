@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -309,31 +310,31 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
     final key = findHiveKey(item);
     if (key == null) return;
 
-    final name = item['name']?.toString() ?? 'deze kaart';
+    final name = item['name']?.toString() ?? L10n.current.thisCard;
     final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: Text(
-          isShared ? 'Uit jouw PasKluis verwijderen?' : 'Kaart verwijderen?',
+          isShared ? L10n.current.removeFromYourPaskluis : L10n.current.deleteCard,
         ),
         content: Text(
           isShared
-              ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De kaart van de eigenaar blijft bestaan.'
-              : 'Weet je zeker dat je "$name" wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.',
+              ? L10n.current.youAreOnlyRemovingFromYourOwn((name).toString())
+              : L10n.current.areYouSureYouWantToDelete((name).toString()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuleren'),
+            child:  Text(L10n.current.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFD51B46),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Verwijderen'),
+            child:  Text(L10n.current.delete),
           ),
         ],
       ),
@@ -354,9 +355,9 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+           SnackBar(
             content: Text(
-              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+              L10n.current.sharedAccessCouldNotBeUpdatedTry,
             ),
           ),
         );
@@ -368,11 +369,11 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('$name is verwijderd.')));
+        .showSnackBar(SnackBar(content: Text(L10n.current.hasBeenDeleted((name).toString()))));
   }
 
   void showCardOptions(BuildContext context, Map<String, dynamic> item) {
-    final name = item['name']?.toString() ?? 'Kaart';
+    final name = item['name']?.toString() ?? L10n.current.card;
     final isShared = item['isShared'] == true;
     final canEdit = !isShared || item['canEditShared'] == true;
 
@@ -405,7 +406,7 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
                 if (canEdit)
                   _OptionTile(
                     icon: Icons.edit_rounded,
-                    title: 'Bewerken',
+                    title: L10n.current.edit,
                     onTap: () {
                       Navigator.pop(context);
                       editCard(context, item);
@@ -414,8 +415,8 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
                 _OptionTile(
                   icon: Icons.delete_rounded,
                   title: isShared
-                      ? 'Uit mijn PasKluis verwijderen'
-                      : 'Verwijderen',
+                      ? L10n.current.removeFromMyPaskluis
+                      : L10n.current.delete,
                   isDestructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -432,6 +433,7 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -451,7 +453,7 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
             backgroundColor: Colors.white,
             elevation: 0,
             centerTitle: true,
-            title: const PremiumAppTitle('Klantenkaarten'),
+            title:  PremiumAppTitle(L10n.current.loyaltyCards),
             actions: [
               IconButton(
                 icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
@@ -521,23 +523,24 @@ class _EmptyCardsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return LuxuryEmptyState(
       scrollable: false,
       icon: Icons.card_membership_rounded,
-      eyebrow: 'Alles bij de hand',
-      title: 'Voeg je eerste klantenkaart toe',
+      eyebrow: L10n.current.everythingAtHand,
+      title: L10n.current.addYourFirstLoyaltyCard,
       subtitle:
-          'Kies een winkel, scan de barcode of importeer een foto. PasKluis bewaart je kaart veilig op dit toestel.',
-      buttonLabel: 'Klantenkaart toevoegen',
+          L10n.current.chooseAStoreScanTheBarcodeOr,
+      buttonLabel: L10n.current.addLoyaltyCard,
       onPressed: onAdd,
-      footer: const Row(
+      footer:  Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.lock_outline_rounded, size: 17, color: Color(0xFF77717D)),
           SizedBox(width: 7),
           Flexible(
             child: Text(
-              'Geen account nodig',
+              L10n.current.noAccountNeeded,
               style: TextStyle(color: Color(0xFF77717D)),
             ),
           ),
@@ -590,9 +593,10 @@ class _StoredCardTileState extends State<StoredCardTile> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final logoAsset = widget.item['logoAsset']?.toString() ?? '';
     final customImage = widget.item['customImage']?.toString() ?? '';
-    final title = widget.item['name']?.toString() ?? 'Kaart';
+    final title = widget.item['name']?.toString() ?? L10n.current.card;
     final isFavorite = widget.item['isFavorite'] == true;
     final useImage = hasAssetLogo || hasCustomLogo;
     final usesBrandBackground =
@@ -602,9 +606,8 @@ class _StoredCardTileState extends State<StoredCardTile> {
 
     return Semantics(
       button: true,
-      label: '$title, klantenkaart${isFavorite ? ', favoriet' : ''}'
-          '${widget.distanceMeters == null ? '' : ', ${LocationService.formatDistance(widget.distanceMeters!)} afstand'}',
-      hint: 'Tik tweemaal om de kaart te openen',
+      label: L10n.current.loyaltyCard((title).toString(), (isFavorite ? L10n.current.favourite : '').toString(), (widget.distanceMeters == null ? '' : ', ${LocationService.formatDistance(widget.distanceMeters!)} afstand').toString()),
+      hint: L10n.current.doubleTapToOpenTheCard,
       child: GestureDetector(
         onTapDown: (_) => setPressed(true),
         onTapCancel: () => setPressed(false),
@@ -744,6 +747,7 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final color = isDestructive ? Colors.red : const Color(0xFFD51B46);
 
     return ListTile(

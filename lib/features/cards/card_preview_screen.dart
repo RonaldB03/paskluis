@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
 import 'package:barcode_widget/barcode_widget.dart';
@@ -111,7 +112,8 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
 
   @override
   Widget build(BuildContext context) {
-    final name = item['name'] ?? 'Kaart';
+    L10n.watch(context);
+    final name = item['name'] ?? L10n.current.card;
     final code = item['code'] ?? '';
     final logoAsset = item['logoAsset'] ?? '';
     final customImagePath = item['customImage'] ?? '';
@@ -142,8 +144,8 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
           actions: [
             TextButton(
               onPressed: openEdit,
-              child: const Text(
-                'Bewerken',
+              child:  Text(
+                L10n.current.edit,
                 style: TextStyle(
                   color: Color(0xFFD51B46),
                   fontWeight: FontWeight.w800,
@@ -237,8 +239,8 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                                     height: 118,
                                     drawText: false,
                                     errorBuilder: (_, __) {
-                                      return const Text(
-                                        'Barcode kan niet worden weergegeven',
+                                      return  Text(
+                                        L10n.current.unableToDisplayBarcode,
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           color: Colors.red,
@@ -273,8 +275,8 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                   const SizedBox(height: 22),
 
                   _InfoBlock(
-                    title: 'Kaart opgeslagen',
-                    subtitle: 'Deze klantenkaart staat nu in je PasKluis en is klaar voor gebruik.',
+                    title: L10n.current.cardSaved,
+                    subtitle: L10n.current.thisLoyaltyCardIsNowInYour,
                     icon: Icons.check_circle_rounded,
                     color: brandColor,
                   ),
@@ -283,8 +285,8 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
 
                   _PreviewAction(
                     icon: Icons.edit_note_rounded,
-                    title: 'Gegevens aanpassen',
-                    subtitle: 'Naam, code of notities wijzigen',
+                    title: L10n.current.editDetails,
+                    subtitle: L10n.current.changeTheNameCodeOrNotes,
                     onTap: openEdit,
                   ),
 
@@ -292,12 +294,12 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
 
                   _PreviewAction(
                     icon: Icons.photo_camera_outlined,
-                    title: 'Kaartfoto’s',
-                    subtitle: 'Voeg later een foto van je kaart toe',
+                    title: L10n.current.cardPhotos,
+                    subtitle: L10n.current.addAPhotoOfYourCardLater,
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Kaartfoto’s voegen we later toe.'),
+                         SnackBar(
+                          content: Text(L10n.current.cardPhotosAreComingLater),
                         ),
                       );
                     },
@@ -307,8 +309,8 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
 
                   _PreviewAction(
                     icon: Icons.notes_rounded,
-                    title: 'Notities',
-                    subtitle: 'Bewaar extra informatie bij deze kaart',
+                    title: L10n.current.notes,
+                    subtitle: L10n.current.keepExtraInformationWithThisCard,
                     onTap: openEdit,
                   ),
                 ],
@@ -336,6 +338,7 @@ class _InfoBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -396,6 +399,7 @@ class _PreviewAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(24),

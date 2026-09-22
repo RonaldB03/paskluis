@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 class PrivacyScreen extends StatelessWidget {
@@ -5,10 +6,11 @@ class PrivacyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF3F6FA),
       appBar: AppBar(
-        title: const Text('Privacy en gegevens'),
+        title:  Text(L10n.current.privacyAndData),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF27313D),
       ),
@@ -17,68 +19,68 @@ class PrivacyScreen extends StatelessWidget {
         minimum: const EdgeInsets.only(bottom: 12),
         child: ListView(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 36),
-          children: const [
+          children:  [
           _PrivacyHero(),
           SizedBox(height: 18),
           _PrivacySection(
             icon: Icons.phone_iphone_rounded,
-            title: 'Blijft op jouw telefoon',
+            title: L10n.current.staysOnYourPhone,
             color: Color(0xFF23814A),
             points: [
-              'Klantenkaarten, QR-codes en cadeaukaarten',
-              'Barcodes, kaartnummers, pincodes en krascodes',
-              'Saldo’s, notities en geïmporteerde afbeeldingen',
-              'Opgeslagen gebruikslocaties voor kaarten in de buurt',
+              L10n.current.loyaltyCardsQrCodesAndGiftCards,
+              L10n.current.barcodesCardNumbersPinsAndScratchCodes,
+              L10n.current.balancesNotesAndImportedImages,
+              L10n.current.savedCardUsageLocationsForNearbyCards,
             ],
           ),
           _PrivacySection(
             icon: Icons.cloud_outlined,
-            title: 'Alleen online wanneer jij dat gebruikt',
+            title: L10n.current.onlyOnlineWhenYouUseIt,
             color: Color(0xFF286DC8),
             points: [
-              'Je accountnaam, e-mailadres en Plus-status na inloggen',
-              'Een kaart die je bewust met iemand deelt, inclusief de gegevens die op die kaart staan',
-              'Vragen en berichten die je zelf naar de klantenservice stuurt',
-              'Openbare winkelinformatie en logo’s die de app ophaalt',
+              L10n.current.yourAccountNameEmailAddressAndPlus,
+              L10n.current.aCardYouDeliberatelyShareWithSomeone,
+              L10n.current.questionsAndMessagesYouSendToCustomer,
+              L10n.current.publicStoreInformationAndLogosRetrievedBy,
             ],
           ),
           _PrivacySection(
             icon: Icons.visibility_off_outlined,
-            title: 'Niet zichtbaar in het beheer',
+            title: L10n.current.notVisibleInTheAdminPortal,
             color: Color(0xFFD51B46),
             points: [
-              'Jouw gewone lokale kaarten en codes',
-              'Pincodes of krascodes van niet-gedeelde cadeaukaarten',
-              'Je precieze locatie of locatiegeschiedenis',
-              'Welke kaart je waar en wanneer opent',
+              L10n.current.yourRegularLocalCardsAndCodes,
+              L10n.current.pinsOrScratchCodesOfUnsharedGift,
+              L10n.current.yourPreciseLocationOrLocationHistory,
+              L10n.current.whichCardYouOpenWhereAndWhen,
             ],
           ),
           _PrivacySection(
             icon: Icons.share_outlined,
-            title: 'Bij het delen van een kaart',
+            title: L10n.current.whenSharingACard,
             color: Color(0xFFA26D00),
             points: [
-              'Je kiest zelf welke kaart en met welk e-mailadres je deelt.',
-              'Een cadeaukaart wordt altijd volledig gedeeld, dus ook met pincode of krascode.',
-              'Je kunt gedeelde toegang later weer stoppen.',
-              'Zonder Plus kan de ontvanger alleen kijken; met Plus kunnen beide gebruikers bewerken.',
+              L10n.current.youChooseWhichCardToShareAnd,
+              L10n.current.aGiftCardIsAlwaysSharedIn,
+              L10n.current.youCanStopSharedAccessLater,
+              L10n.current.recipientsWithoutPlusCanOnlyViewCards,
             ],
           ),
           _PrivacySection(
             icon: Icons.security_rounded,
-            title: 'Beveiliging en jouw keuzes',
+            title: L10n.current.securityAndYourChoices,
             color: Color(0xFF7046B8),
             points: [
-              'Je kunt PasKluis vergrendelen met Face ID, biometrie of je toestelcode.',
-              'Gevoelige codes kunnen standaard verborgen blijven.',
-              'Locatiegestuurde kaarten kun je volledig uitschakelen.',
-              'Uitloggen verwijdert je lokale kaarten niet van het apparaat.',
+              L10n.current.youCanLockPaskluisWithFaceId,
+              L10n.current.sensitiveCodesCanStayHiddenByDefault,
+              L10n.current.youCanDisableLocationBasedCardsEntirely,
+              L10n.current.signingOutDoesNotRemoveYourLocal,
             ],
           ),
           Padding(
             padding: EdgeInsets.fromLTRB(8, 8, 8, 0),
             child: Text(
-              'PasKluis verkoopt geen persoonsgegevens en gebruikt je kaartgegevens niet voor advertenties. PasKluis is voor iedereen reclamevrij.',
+              L10n.current.paskluisDoesNotSellPersonalDataOr,
               textAlign: TextAlign.center,
               style: TextStyle(color: Color(0xFF5D6875), height: 1.45),
             ),
@@ -95,6 +97,7 @@ class _PrivacyHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -103,19 +106,19 @@ class _PrivacyHero extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(26),
       ),
-      child: const Column(
+      child:  Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.shield_rounded, color: Colors.white, size: 40),
           SizedBox(height: 13),
-          Text('Jouw PasKluis is van jou',
+          Text(L10n.current.yourPaskluisBelongsToYou,
               style: TextStyle(
                   color: Colors.white,
                   fontSize: 25,
                   fontWeight: FontWeight.w900)),
           SizedBox(height: 7),
           Text(
-            'De belangrijkste gegevens blijven lokaal op je telefoon. Hieronder zie je precies wat wel en niet online wordt verwerkt.',
+            L10n.current.yourMostImportantDataStaysLocallyOn,
             style: TextStyle(color: Color(0xFFE7F3FF), height: 1.42),
           ),
         ],
@@ -139,6 +142,7 @@ class _PrivacySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 11),
       padding: const EdgeInsets.all(18),

@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/services/security_service.dart';
@@ -58,7 +59,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
     if (_authenticating) return;
     setState(() => _authenticating = true);
     final success = await SecurityService.authenticate(
-      reason: 'Ontgrendel PasKluis',
+      reason: L10n.current.unlockPaskluis,
     );
     if (!mounted) return;
     setState(() {
@@ -69,6 +70,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     if (_privacyCover) {
       return const ColoredBox(color: Color(0xFFF4F4F6));
     }
@@ -90,14 +92,14 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
                   color: Color(0xFFD51B46),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'PasKluis is vergrendeld',
+                 Text(
+                  L10n.current.paskluisIsLocked,
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  'Gebruik je biometrie of toestelcode om je kaarten te openen.',
+                 Text(
+                  L10n.current.useBiometricsOrYourDevicePasscodeTo,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
@@ -109,7 +111,7 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.fingerprint_rounded),
-                  label: const Text('Ontgrendelen'),
+                  label:  Text(L10n.current.unlock),
                 ),
               ],
             ),

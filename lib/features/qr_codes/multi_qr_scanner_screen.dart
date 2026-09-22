@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -87,6 +88,7 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     const frameWidth = 280.0;
     const frameHeight = 280.0;
 
@@ -140,8 +142,8 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
                     onTap: () => Navigator.pop(context),
                   ),
                   const Spacer(),
-                  const Text(
-                    'Meerdere QR scannen',
+                   Text(
+                    L10n.current.scanMultipleQrCodes,
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w800,
@@ -165,7 +167,7 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
             child: Column(
               children: [
                 Text(
-                  '${scannedCodes.length} QR-codes toegevoegd',
+                  L10n.current.qrCodesAdded((scannedCodes.length).toString()),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -185,8 +187,8 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
                         borderRadius: BorderRadius.circular(28),
                       ),
                     ),
-                    child: const Text(
-                      'Gereed',
+                    child:  Text(
+                      L10n.current.done,
                       style: TextStyle(fontWeight: FontWeight.w900),
                     ),
                   ),
@@ -199,8 +201,8 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
                   icon: const Icon(Icons.cameraswitch),
                   label: Text(
                     usingFrontCamera
-                        ? 'Gebruik achtercamera'
-                        : 'Camera wisselen',
+                        ? L10n.current.useRearCamera
+                        : L10n.current.switchCamera,
                   ),
                   style: TextButton.styleFrom(foregroundColor: Colors.white70),
                 ),
@@ -221,6 +223,7 @@ class _CircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Material(
       color: Colors.white.withOpacity(0.2),
       shape: const CircleBorder(),

@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import '../templates/card_templates.dart';
 import 'supabase_service.dart';
 
@@ -31,7 +32,7 @@ abstract final class BrandCatalogService {
   static Future<List<CardBrandTemplate>> loadForAdmin() async {
     final client = SupabaseService.client;
     if (client == null) {
-      throw StateError('De online diensten zijn niet beschikbaar.');
+      throw StateError(L10n.current.onlineServicesAreUnavailable);
     }
 
     final rows = await client
@@ -46,7 +47,7 @@ abstract final class BrandCatalogService {
         .where((brand) => brand.id.isNotEmpty && brand.name.isNotEmpty)
         .toList();
     if (brands.isEmpty) {
-      throw StateError('Er zijn geen winkels gevonden.');
+      throw StateError(L10n.current.noStoresFound);
     }
     return brands;
   }
@@ -57,7 +58,7 @@ abstract final class BrandCatalogService {
   }) async {
     final client = SupabaseService.client;
     if (client == null) {
-      throw StateError('De online diensten zijn niet beschikbaar.');
+      throw StateError(L10n.current.onlineServicesAreUnavailable);
     }
 
     final payload = <String, double>{
@@ -84,7 +85,7 @@ abstract final class BrandCatalogService {
         .select('id')
         .maybeSingle();
     if (updated == null) {
-      throw StateError('De winkel kon niet worden bijgewerkt.');
+      throw StateError(L10n.current.theStoreCouldNotBeUpdated);
     }
   }
 }

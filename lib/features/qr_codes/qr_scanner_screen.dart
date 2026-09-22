@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -139,8 +140,8 @@ class _QrScannerScreenState extends State<QrScannerScreen>
         setState(() => importingImage = false);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Geen QR-code gevonden in deze afbeelding.'),
+           SnackBar(
+            content: Text(L10n.current.noQrCodeFoundInThisImage),
           ),
         );
         return;
@@ -153,13 +154,14 @@ class _QrScannerScreenState extends State<QrScannerScreen>
       setState(() => importingImage = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Afbeelding kon niet worden gelezen.')),
+         SnackBar(content: Text(L10n.current.unableToReadImage)),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     const frameSize = 285.0;
 
     return Scaffold(
@@ -242,8 +244,8 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                     onTap: () => Navigator.pop(context),
                   ),
                   const Spacer(),
-                  const Text(
-                    'QR-code scannen',
+                   Text(
+                    L10n.current.scanQrCode,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 17,
@@ -267,8 +269,8 @@ class _QrScannerScreenState extends State<QrScannerScreen>
             bottom: 42,
             child: Column(
               children: [
-                const Text(
-                  'Plaats de QR-code binnen het kader',
+                 Text(
+                  L10n.current.placeTheQrCodeInsideTheFrame,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white,
@@ -279,7 +281,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'De QR-code wordt automatisch herkend',
+                  L10n.current.theQrCodeIsRecognisedAutomatically,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.72),
@@ -293,7 +295,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                     Expanded(
                       child: _BottomActionButton(
                         icon: Icons.keyboard_alt_outlined,
-                        label: 'Handmatig',
+                        label: L10n.current.manual,
                         visible: showManualButton,
                         onTap: openManualEntry,
                       ),
@@ -304,7 +306,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                         icon: importingImage
                             ? Icons.hourglass_top_rounded
                             : Icons.image_outlined,
-                        label: importingImage ? 'Lezen...' : 'Importeren',
+                        label: importingImage ? L10n.current.reading : L10n.current.actionImport,
                         visible: true,
                         onTap: importingImage ? null : importScreenshot,
                       ),
@@ -315,8 +317,8 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                 _SecondaryActionButton(
                   icon: Icons.cameraswitch_outlined,
                   label: usingFrontCamera
-                      ? 'Gebruik achtercamera'
-                      : 'Camera wisselen',
+                      ? L10n.current.useRearCamera
+                      : L10n.current.switchCamera,
                   onTap: switchCamera,
                 ),
               ],
@@ -336,6 +338,7 @@ class _ScannerOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return CustomPaint(
       painter: _ScannerOverlayPainter(
         frameWidth: frameWidth,
@@ -398,6 +401,7 @@ class _Corner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Align(
       alignment: alignment,
       child: Container(
@@ -433,6 +437,7 @@ class _CircleIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Material(
       color: Colors.white.withOpacity(0.13),
       shape: const CircleBorder(),
@@ -464,6 +469,7 @@ class _BottomActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return AnimatedOpacity(
       opacity: visible ? 1 : 0,
       duration: const Duration(milliseconds: 250),
@@ -508,6 +514,7 @@ class _SecondaryActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return TextButton.icon(
       onPressed: onTap,
       icon: Icon(icon),
@@ -544,6 +551,7 @@ class _ManualQrCodeDialogState extends State<_ManualQrCodeDialog> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
@@ -558,8 +566,8 @@ class _ManualQrCodeDialogState extends State<_ManualQrCodeDialog> {
               size: 42,
             ),
             const SizedBox(height: 14),
-            const Text(
-              'QR-code handmatig invoeren',
+             Text(
+              L10n.current.enterQrCodeManually,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 22,
@@ -569,7 +577,7 @@ class _ManualQrCodeDialogState extends State<_ManualQrCodeDialog> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Voer de tekst, link of code in die in de QR-code staat.',
+              L10n.current.enterTheTextLinkOrCodeContained,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -587,7 +595,7 @@ class _ManualQrCodeDialogState extends State<_ManualQrCodeDialog> {
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => submit(),
               decoration: InputDecoration(
-                hintText: 'Bijv. https://voorbeeld.nl/ticket',
+                hintText: L10n.current.eGHttpsExampleComTicket,
                 filled: true,
                 fillColor: const Color(0xFFF4F4F6),
                 border: OutlineInputBorder(
@@ -606,8 +614,8 @@ class _ManualQrCodeDialogState extends State<_ManualQrCodeDialog> {
                 Expanded(
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Annuleren',
+                    child:  Text(
+                      L10n.current.cancel,
                       style: TextStyle(
                         color: Colors.black54,
                         fontWeight: FontWeight.w700,
@@ -625,8 +633,8 @@ class _ManualQrCodeDialogState extends State<_ManualQrCodeDialog> {
                         borderRadius: BorderRadius.circular(22),
                       ),
                     ),
-                    child: const Text(
-                      'Verder',
+                    child:  Text(
+                      L10n.current.actionContinue,
                       style: TextStyle(fontWeight: FontWeight.w900),
                     ),
                   ),

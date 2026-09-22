@@ -1,0 +1,995 @@
+{
+  "@@locale": "en",
+  "onlineServicesAreCurrentlyUnavailable": "Online services are currently unavailable.",
+  "onlineServicesAreUnavailable": "Online services are unavailable.",
+  "noStoresFound": "No stores found.",
+  "theStoreCouldNotBeUpdated": "The store could not be updated.",
+  "signInToShareACard": "Sign in to share a card.",
+  "paskluisPlusIsRequiredToShareCards": "PasKluis Plus is required to share cards.",
+  "iphoneOrIpad": "iPhone or iPad",
+  "androidDevice": "Android device",
+  "windowsDevice": "Windows device",
+  "anotherDevice": "Another device",
+  "general": "General",
+  "addingCards": "Adding cards",
+  "howDoIAddACard": "How do I add a card?",
+  "tapChooseALoyaltyCardQrCode": "Tap +. Choose a loyalty card, QR code or gift card. Scan the code, enter it manually or import a photo or screenshot.",
+  "privacy": "Privacy",
+  "whereAreMyCardsStored": "Where are my cards stored?",
+  "yourCardsBarcodesPinsAndImagesAre": "Your cards, barcodes, PINs and images are stored locally on your phone. They are not automatically uploaded to PasKluis or the admin portal.",
+  "share": "Share",
+  "whatDoIGetWithPaskluisPlus": "What do I get with PasKluis Plus?",
+  "withPlusYouCanStoreUnlimitedGift": "With Plus you can store unlimited gift cards and share loyalty cards and gift cards. Plus is a one-time purchase, with no subscription.",
+  "howDoesASharedCardWork": "How does a shared card work?",
+  "theSenderNeedsPlusRecipientsWithoutPlus": "The sender needs Plus. Recipients without Plus can view the card. If you both have Plus, you can both update it.",
+  "theSelectedImageIsNoLongerAvailable": "The selected image is no longer available.",
+  "aGiftCard": "A gift card",
+  "aLoyaltyCard": "A loyalty card",
+  "sharedCards": "Shared cards",
+  "notificationsWhenSomeoneSharesACardWith": "Notifications when someone shares a card with you",
+  "newCardInPaskluis": "New card in PasKluis",
+  "hasBeenSharedWithYou": "{p0} has been shared with you.",
+  "@hasBeenSharedWithYou": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "aCardHasBeenSharedWithYou": "A card has been shared with you. Open PasKluis to view it.",
+  "yourGiftCard": "Your gift card",
+  "expiresIn30Days": "{p0} expires in 30 days.",
+  "@expiresIn30Days": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "expiresIn7Days": "{p0} expires in 7 days.",
+  "@expiresIn7Days": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "expiresToday": "{p0} expires today.",
+  "@expiresToday": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "giftCardExpiryDates": "Gift card expiry dates",
+  "remindersBeforeGiftCardsExpire": "Reminders before gift cards expire",
+  "rememberYourGiftCard": "Remember your gift card",
+  "confirmYourIdentityToViewThePin": "Confirm your identity to view the PIN",
+  "yourCardsCodesAndPinsStayOn": "Your cards, codes and PINs stay on this device. PasKluis does not keep a location history.",
+  "tapToAddALoyaltyCardQr": "Tap + to add a loyalty card, QR code or gift card. Scan, enter details manually or import a photo.",
+  "theCardCouldNotBeVerifiedAfter": "The card could not be verified after saving.",
+  "question": "Question",
+  "customerSupportIsCurrentlyUnavailable": "Customer support is currently unavailable.",
+  "refresh": "Refresh",
+  "tryAgain": "Try again",
+  "signInToRestoreYourPurchase": "Sign in to restore your purchase.",
+  "yourPaskluisPlusAccessHasBeenRestored": "Your PasKluis Plus access has been restored.",
+  "noPlusPurchaseIsLinkedToThis": "No Plus purchase is linked to this account yet.",
+  "unableToRestoreYourPurchaseRightNow": "Unable to restore your purchase right now.",
+  "enterAValidEmailAddress": "Enter a valid email address.",
+  "useAtLeast8Characters": "Use at least 8 characters.",
+  "yourAccountHasBeenCreatedCheckYour": "Your account has been created. Check your email to confirm your account.",
+  "welcomeToPaskluis": "Welcome to PasKluis!",
+  "youAreSignedIn": "You are signed in.",
+  "somethingWentWrongPleaseTryAgainLater": "Something went wrong. Please try again later.",
+  "ifThisEmailAddressIsRegisteredWith": "If this email address is registered with PasKluis, you will receive an email to reset your password.",
+  "thePasswordResetEmailCouldNotBe": "The password reset email could not be sent.",
+  "yourNewPasswordHasBeenSaved": "Your new password has been saved.",
+  "unableToChangeYourPassword": "Unable to change your password.",
+  "alreadySignedInOnAnotherDevice": "Already signed in on another device",
+  "thisAccountIsActiveOnIfYou": "This account is active on {p0}. If you continue here, that device will be signed out automatically.",
+  "@thisAccountIsActiveOnIfYou": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "anotherDevice151": "another device",
+  "cancel": "Cancel",
+  "signInHere": "Sign in here",
+  "youHaveBeenSignedOut": "You have been signed out.",
+  "yourPasswordHasBeenChanged": "Your password has been changed.",
+  "theEmailAddressOrPasswordIsIncorrect": "The email address or password is incorrect.",
+  "anAccountWithThisEmailAddressAlready": "An account with this email address already exists.",
+  "confirmYourEmailAddressUsingTheEmail": "Confirm your email address using the email we sent you.",
+  "thePasswordDoesNotMeetTheSecurity": "The password does not meet the security requirements.",
+  "accountPaskluisPlus": "Account & PasKluis Plus",
+  "signedOutOnThisDevice": "Signed out on this device",
+  "createAccount": "Create account",
+  "signIn": "Sign in",
+  "yourCardsStaySafelyOnThisDevice": "Your cards stay safely on this device.",
+  "checkYourPlusStatusAndContactCustomer": "Check your Plus status and contact customer support.",
+  "name": "Name",
+  "enterYourName": "Enter your name.",
+  "emailAddress": "Email address",
+  "password": "Password",
+  "forgotPassword": "Forgot password?",
+  "iAlreadyHaveAnAccount": "I already have an account",
+  "noAccountYetCreateOne": "No account yet? Create one",
+  "paskluisAccount": "PasKluis account",
+  "allAboutPaskluisPlus": "All about PasKluis Plus",
+  "exploreAllBenefitsAndLearnHowSharing": "Explore all benefits and learn how sharing works.",
+  "manageSharedCards": "Manage shared cards",
+  "viewSharedAccessAndStopItWhenever": "View shared access and stop it whenever you want.",
+  "restorePurchases": "Restore purchases",
+  "checkYourLinkedPlusAccessAgain": "Check your linked Plus access again.",
+  "changePassword": "Change password",
+  "chooseANewPasswordWithAtLeast": "Choose a new password with at least 8 characters.",
+  "yourCardsStayLocal": "Your cards stay local",
+  "signingInDoesNotMoveYourCards": "Signing in does not move your cards, barcodes or PINs to the cloud.",
+  "signOut": "Sign out",
+  "useAtLeast8CharactersYouWill": "Use at least 8 characters. You will stay signed in after changing it.",
+  "newPassword": "New password",
+  "repeatNewPassword": "Repeat new password",
+  "thePasswordsDoNotMatch": "The passwords do not match.",
+  "savePassword": "Save password",
+  "storeUnlimitedGiftCardsAndShareCards": "Store unlimited gift cards and share cards securely for a one-time payment of €1.99. No subscription.",
+  "checkingPlusStatus": "Checking Plus status…",
+  "paskluisPlusIsActive": "PasKluis Plus is active",
+  "freeVersion": "Free version",
+  "youHaveUnlimitedAccess": "You have unlimited access.{p0}",
+  "@youHaveUnlimitedAccess": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "yourAccessIsActiveUntil": "Your access is active until {p0}.",
+  "@yourAccessIsActiveUntil": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "storeOneGiftCardForFreeLoyalty": "Store one gift card for free. Loyalty cards and QR codes are always unlimited and free.",
+  "activatedManuallyByAnAdministrator": " Activated manually by an administrator.",
+  "activatedThroughApple": " Activated through Apple.",
+  "activatedThroughGooglePlay": " Activated through Google Play.",
+  "accountTemporarilyUnavailable": "Account temporarily unavailable",
+  "checkYourInternetConnectionYourLocalCards": "Check your internet connection. Your local cards still work.",
+  "sharedCardsCouldNotBeRefreshed": "Shared cards could not be refreshed.",
+  "sharedByYou": "Shared by you",
+  "youHaveNotSharedAnyCardsYet": "You have not shared any cards yet.",
+  "manage": "Manage",
+  "sharedWithYou": "Shared with you",
+  "noCardsHaveBeenSharedWithYou": "No cards have been shared with you yet.",
+  "delete": "Delete",
+  "sharingWithControl": "Sharing with control",
+  "seeWhoHasAccessAndStopShared": "See who has access and stop shared access whenever you want.",
+  "card": "Card",
+  "theImageCouldNotBeSaved": "The image could not be saved.",
+  "fillInTheRequiredFields": "Fill in the required fields.",
+  "addQrCode": "Add QR code",
+  "addGiftCard": "Add gift card",
+  "addLoyaltyCard": "Add loyalty card",
+  "addLogoOptional": "Add logo (optional)",
+  "codeType": "Code type",
+  "detectAutomatically": "Detect automatically",
+  "code": "Code",
+  "scanOrEnterManually": "Scan or enter manually",
+  "scanCode": "Scan code",
+  "save": "Save",
+  "authenticationFailedOrCancelled": "Authentication failed or cancelled",
+  "cardNumber": "Card number",
+  "balance": "Balance",
+  "pin": "PIN",
+  "visible": "Visible",
+  "actionShow": "Show",
+  "holdYourScreenUpToTheScanner": "Hold your screen up to the scanner",
+  "edit": "Edit",
+  "unableToDisplayBarcode": "Unable to display barcode",
+  "cardSaved": "Card saved",
+  "thisLoyaltyCardIsNowInYour": "This loyalty card is now in your PasKluis and ready to use.",
+  "editDetails": "Edit details",
+  "changeTheNameCodeOrNotes": "Change the name, code or notes",
+  "cardPhotos": "Card photos",
+  "addAPhotoOfYourCardLater": "Add a photo of your card later",
+  "cardPhotosAreComingLater": "Card photos are coming later.",
+  "notes": "Notes",
+  "keepExtraInformationWithThisCard": "Keep extra information with this card",
+  "thisCard": "this card",
+  "removeFromYourPaskluis": "Remove from your PasKluis?",
+  "deleteCard": "Delete card?",
+  "youAreOnlyRemovingFromYourOwn": "You are only removing \"{p0}\" from your own PasKluis. The owner's card will stay available.",
+  "@youAreOnlyRemovingFromYourOwn": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "areYouSureYouWantToDelete": "Are you sure you want to delete \"{p0}\"? Shared access will stop for everyone.",
+  "@areYouSureYouWantToDelete": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "sharedAccessCouldNotBeUpdatedTry": "Shared access could not be updated. Try again with an internet connection.",
+  "codeCopied": "Code copied",
+  "cardSharingIsTemporarilyUnavailable": "Card sharing is temporarily unavailable.",
+  "cardDetails": "Card details",
+  "brand": "Brand",
+  "note": "Note",
+  "access": "Access",
+  "sharedWithYouEditTogether": "Shared with you • edit together",
+  "sharedWithYouViewOnly": "Shared with you • view only",
+  "removeFromFavourites": "Remove from favourites",
+  "addToFavourites": "Add to favourites",
+  "shareByEmail": "Share by email",
+  "manageSharedAccess": "Manage shared access",
+  "copyCode": "Copy code",
+  "removeFromMyPaskluis": "Remove from my PasKluis",
+  "noCards": "No cards",
+  "back": "Back",
+  "holdTheBarcodeUpToTheScanner": "Hold the barcode up to the scanner",
+  "noBarcodeAvailable": "No barcode available",
+  "detailsAndOptions": "Details and options",
+  "youHaveGiftCardsAvailable": "You have {p0} gift cards available",
+  "@youHaveGiftCardsAvailable": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "youHaveOneGiftCardAvailable": "You have one gift card available",
+  "balance277": "Balance: €{p0}",
+  "@balance277": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "copied": "Copied",
+  "copy": "Copy",
+  "hasBeenDeleted": "{p0} has been deleted.",
+  "@hasBeenDeleted": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "loyaltyCards": "Loyalty cards",
+  "everythingAtHand": "Everything at hand",
+  "addYourFirstLoyaltyCard": "Add your first loyalty card",
+  "chooseAStoreScanTheBarcodeOr": "Choose a store, scan the barcode or import a photo. PasKluis stores your card safely on this device.",
+  "noAccountNeeded": "No account needed",
+  "loyaltyCard": "Loyalty card",
+  "@loyaltyCard": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      },
+      "p2": {
+        "type": "Object"
+      }
+    }
+  },
+  "favourite": ", favourite",
+  "away": ", {p0} away",
+  "@away": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "doubleTapToOpenTheCard": "Double-tap to open the card",
+  "codeDetectedNowChooseTheStore": "Code detected. Now choose the store.",
+  "theImageCouldNotBeRead": "The image could not be read.",
+  "noCardCodeFoundInThisImage": "No card code found in this image.",
+  "weCouldNotIdentifyTheStoreChoose": "We could not identify the store. Choose a store or add it manually.",
+  "storeRecognised": "Store recognised",
+  "weRecogniseThisLoyaltyCardAsIs": "We recognise this loyalty card as {p0}. Is that correct?",
+  "@weRecogniseThisLoyaltyCardAsIs": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "differentStore": "Different store",
+  "use": "Use {p0}",
+  "@use": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "myLoyaltyCard": "My loyalty card",
+  "manual": "Manual",
+  "codeDetectedChooseTheStoreBelow": "Code detected. Choose the store below.",
+  "quickAdd": "Quick add",
+  "scanCard": "Scan card",
+  "importPhoto": "Import photo",
+  "searchStores": "Search stores",
+  "popularCards": "Popular cards",
+  "allStores": "All stores",
+  "searchResults": "Search results",
+  "noStoresFound312": "No stores found.",
+  "customCard": "Custom card",
+  "addAnotherStoreManually": "Add another store manually",
+  "aNameIsRequired": "A name is required.",
+  "aBarcodeIsRequired": "A barcode is required.",
+  "editCard": "Edit card",
+  "cardDetails318": "Card details",
+  "barcode": "Barcode",
+  "scanBarcodeAgain": "Scan barcode again",
+  "logo": "Logo",
+  "addNote": "Add note",
+  "saveChanges": "Save changes",
+  "noBarcodeYet": "No barcode yet",
+  "changeLogo": "Change logo",
+  "addLogo": "Add logo",
+  "noBarcodeOrQrCodeFoundIn": "No barcode or QR code found in this photo.",
+  "codeFoundCheckTheDetailsBeforeSaving": "Code found. Check the details before saving.",
+  "codeAndPinFoundCheckThemBefore": "Code and PIN found. Check them before saving.",
+  "giftCard": "Gift card",
+  "@giftCard": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "chooseExpiryDate": "Choose expiry date",
+  "aBarcodeCardNumberIsRequired": "A barcode / card number is required.",
+  "unableToSavePleaseTryAgain": "Unable to save. Please try again.",
+  "editGiftCard": "Edit gift card",
+  "finishGiftCard": "Finish gift card",
+  "whichStoreIsThisGiftCardFor": "Which store is this gift card for?",
+  "chooseAnExistingStoreOrCreateYour": "Choose an existing store or create your own gift card.",
+  "theCardCodeWasFoundButThe": "The card code was found, but the store was not identified.",
+  "chooseAStore": "Choose a store",
+  "customGiftCard": "Custom gift card",
+  "change": "Change",
+  "whatIsTheBalance": "What is the balance?",
+  "enterTheCurrentBalanceOfThisGift": "Enter the current balance of this gift card.",
+  "pinScratchCodeOptional": "PIN / scratch code (optional)",
+  "validity": "Validity",
+  "optionalPaskluisCanRemindYouBeforeThe": "Optional. PasKluis can remind you before the card expires.",
+  "addExpiryDate": "Add expiry date",
+  "removeExpiryDate": "Remove expiry date",
+  "reminders": "Reminders",
+  "text30Days7DaysAndOnThe": "30 days, 7 days and on the expiry date",
+  "giftCardName": "Gift card name",
+  "cardCodeCardNumber": "Card code / card number",
+  "scanGiftCardAgain": "Scan gift card again",
+  "takeAPhotoAndReadItsDetails": "Take a photo and read its details",
+  "importPhotoOrScreenshot": "Import photo or screenshot",
+  "saving": "Saving…",
+  "saveGiftCard": "Save gift card",
+  "chooseTheStore": "Choose the store",
+  "balanceUnknown": "Balance unknown",
+  "thePhotoCouldNotBeReadPlease": "The photo could not be read. Please try again.",
+  "noCodeFoundTryAClearerPhoto": "No code found. Try a clearer photo.",
+  "photographTheWholeGiftCard": "Photograph the whole gift card",
+  "makeSureTheCodeAndAnyPin": "Make sure the code and any PIN are clearly visible. PasKluis will try to recognise the store, logo, card code and PIN automatically.",
+  "takeAPhoto": "Take a photo",
+  "choosePhotoOrScreenshot": "Choose photo or screenshot",
+  "addManually": "Add manually",
+  "recognitionHappensOnYourDeviceYourPhoto": "Recognition happens on your device; your photo is not uploaded.",
+  "enterAtLeastANameAndBarcode": "Enter at least a name and barcode.",
+  "giftCardDetails": "Gift card details",
+  "pinScratchCode": "PIN / scratch code",
+  "originalBalance": "Original balance",
+  "currentBalance": "Current balance",
+  "expiryDateReminders": "Expiry date reminders",
+  "text30Days7DaysAndOnThe374": "30 days, 7 days and on the day itself",
+  "noGiftCardBarcodeFound": "No gift card barcode found.",
+  "unableToReadImage": "Unable to read image.",
+  "scanGiftCard": "Scan gift card",
+  "scanTheBarcodeOnYourGiftCard": "Scan the barcode on your gift card",
+  "pinRecognitionWillBeAddedLater": "PIN recognition will be added later",
+  "reading": "Reading…",
+  "actionImport": "Import",
+  "useRearCamera": "Use rear camera",
+  "switchCamera": "Switch camera",
+  "enterBarcodeManually": "Enter barcode manually",
+  "enterTheNumberBelowTheBarcode": "Enter the number below the barcode.",
+  "eG8712345678901": "E.g. 8712345678901",
+  "actionContinue": "Continue",
+  "thisGiftCard": "this gift card",
+  "permanentlyDelete": "Permanently delete?",
+  "areYouSureYouWantToPermanently": "Are you sure you want to permanently delete \"{p0}\"? It will also disappear for everyone you shared it with. This cannot be undone.",
+  "@areYouSureYouWantToPermanently": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "permanentlyDelete391": "Permanently delete",
+  "verificationFailed": "Verification failed",
+  "weCouldNotVerifyYourIdentityWould": "We could not verify your identity. Would you still like to show the PIN?",
+  "showPin": "Show PIN",
+  "usedThisCard": "Used this card?",
+  "currentBalance396": "{p0} • current balance €{p1}",
+  "@currentBalance396": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      }
+    }
+  },
+  "amountSpent": "Amount spent",
+  "enterNewBalance": "Enter new balance",
+  "cardFullyUsed": "Card fully used",
+  "manageTogetherWithPlus": "Manage together with Plus",
+  "youCanViewThisSharedGiftCard": "You can view this shared gift card. With PasKluis Plus you can also update its balance and details together.",
+  "notNow": "Not now",
+  "getPlus199Once": "Get Plus • €1.99 once",
+  "giftCardIsEmpty": "Gift card is empty",
+  "wouldYouLikeToArchiveThisCard": "Would you like to archive this card? You can restore it at any time.",
+  "keep": "Keep",
+  "archive": "Archive",
+  "amountSpent410": "Amount spent",
+  "newBalance": "New balance",
+  "theAmountIsHigherThanTheCurrent": "The amount is higher than the current balance.",
+  "applyAmount": "Apply amount",
+  "saveBalance": "Save balance",
+  "balanceHistory": "Balance history",
+  "noBalanceChangesYet": "No balance changes yet.",
+  "spent": "€{p0} spent",
+  "@spent": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "fullyUsed": "Fully used",
+  "changeUndone": "Change undone",
+  "balanceUpdated": "Balance updated",
+  "undo": "Undo",
+  "giftCardDetails424": "Gift card details",
+  "startingBalance": "Starting balance",
+  "expiryDate": "Expiry date",
+  "pinScratchCode427": "PIN / scratch code\n",
+  "updateBalance": "Update balance",
+  "updateBalanceWithPlus": "Update balance with Plus",
+  "noGiftCards": "No gift cards",
+  "unableToUpdateCheckYourConnection": "Unable to update. Check your connection.",
+  "giftCardSaved": "Gift card saved.",
+  "youAreOnlyRemovingFromYourOwn433": "You are only removing \"{p0}\" from your own PasKluis. The owner's gift card will stay available.",
+  "@youAreOnlyRemovingFromYourOwn433": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "areYouSureYouWantToPermanently434": "Are you sure you want to permanently delete \"{p0}\"? Shared access will stop for everyone.",
+  "@areYouSureYouWantToPermanently434": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "archive435": "Archive",
+  "thereAreNoGiftCardsInThe": "There are no gift cards in the archive yet.",
+  "balance437": "Balance €{p0}",
+  "@balance437": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "restore": "Restore",
+  "giftCards": "Gift cards",
+  "moreInformation": "More information",
+  "discoverEverythingYouGetWithPaskluisPlus": "Discover everything you get with PasKluis Plus",
+  "storeYourFirstGiftCardForFree": "Store your first gift card for free",
+  "goFurtherWithPlusStoreUnlimitedGift": "Go further with Plus: store unlimited gift cards and securely share loyalty cards and gift cards with others.",
+  "text199OnceLifetimeAccess": "€1.99 once • lifetime access",
+  "discoverAllPlusBenefits": "Discover all Plus benefits",
+  "addGiftCard447": "Add gift card",
+  "tapToGetStarted": "Tap to get started",
+  "expired": "Expired",
+  "expiresToday450": "Expires today",
+  "text1DayLeft": "1 day left",
+  "daysLeft": "{p0} days left",
+  "@daysLeft": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "giftCard453": "{p0}, gift card, {p1}{p2}",
+  "@giftCard453": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      },
+      "p2": {
+        "type": "Object"
+      }
+    }
+  },
+  "balanceUnknown454": "balance unknown",
+  "balance455": "balance €{p0}",
+  "@balance455": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "doubleTapToOpenTheGiftCard": "Double-tap to open the gift card",
+  "addOrImportACard": "Add or import a card",
+  "tap": "Tap +",
+  "chooseLoyaltyCardQrCodeOrGift": "Choose Loyalty card, QR code or Gift card. PasKluis will open the right form.",
+  "chooseAStoreAndScanTheBarcode": "Choose a store and scan the barcode or QR code. You can also enter the code yourself.",
+  "importAPhotoOrScreenshot": "Import a photo or screenshot",
+  "paskluisCanRecogniseALoyaltyCardQr": "PasKluis can recognise a loyalty card, QR code or gift card on your device. The image is not uploaded.",
+  "checkAndSave": "Check and save",
+  "alwaysCheckTheStoreAndCodeBefore": "Always check the store and code before saving the card.",
+  "addCard": "Add card",
+  "qrCodes": "QR codes ({p0})",
+  "@qrCodes": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "delete468": "Delete?",
+  "qrCodeEditingIsComingSoon": "QR code editing is coming soon.",
+  "helpWithAddingCards": "Help with adding cards",
+  "settings": "Settings",
+  "add": "Add",
+  "searchPaskluis": "Search PasKluis",
+  "clearSearch": "Clear search",
+  "addCard476": "Add card",
+  "allYourCards": "All your cards",
+  "qrCodes478": "QR codes",
+  "addQrCode479": "Add QR code",
+  "allYourQrCodes": "All your QR codes",
+  "allYourGiftCards": "All your gift cards",
+  "favourites": "Favourites",
+  "noFavouritesYet": "No favourites yet",
+  "markYourMostImportantCardsWithA": "Mark your most important cards with a star.",
+  "noCardAtThisLocationYet": "No card at this location yet",
+  "openACardAtAStorePaskluis": "Open a card at a store. PasKluis remembers that location only on this device.",
+  "locationServicesAreOff": "Location services are off",
+  "enableLocationToShowPreviouslyUsedCards": "Enable location to show previously used cards here.",
+  "enableLocation": "Enable location",
+  "locationIsOffForPaskluis": "Location is off for PasKluis",
+  "youCanChangeThisInYourPhone": "You can change this in your phone's settings.",
+  "openSettings": "Open settings",
+  "showCardsYouUseHere": "Show cards you use here",
+  "yourLocationStaysOnYourPhoneAnd": "Your location stays on your phone and is not uploaded.",
+  "useLocation": "Use location",
+  "locationUnavailable": "Location unavailable",
+  "tryAgainWhenYouHaveAConnection": "Try again when you have a connection.",
+  "tryAgain498": "Try again",
+  "nearby": "Nearby",
+  "noResultsFor": "No results for “{p0}”",
+  "@noResultsFor": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "searchByNameCardTypeOrA": "Search by name, card type or a note.",
+  "safelyStoredOnThisDevice": "Safely stored on this device",
+  "moreFreedomForever": "More freedom. Forever.",
+  "unlockAllGiftCardAndSharingFeatures": "Unlock all gift card and sharing features with a single purchase.",
+  "whatYouGetWithPlus": "What you get with Plus",
+  "unlimitedGiftCards": "Unlimited gift cards",
+  "storeAsManyGiftCardsAsYou": "Store as many gift cards as you want. Without Plus you can store one gift card.",
+  "shareLoyaltyCardsAndGiftCards": "Share loyalty cards and gift cards",
+  "shareSecurelyByEmailGiftCardsAre": "Share securely by email. Gift cards are shared including their PIN or scratch code.",
+  "manageTogether": "Manage together",
+  "ifTheRecipientAlsoHasPlusYou": "If the recipient also has Plus, you can both update the same shared card.",
+  "seeWhoYouShareCardsWithAnd": "See who you share cards with and stop access whenever you want.",
+  "payOnceAndEnjoyPaskluisPlusForever": "Pay once and enjoy PasKluis Plus forever.",
+  "viewMyPlusStatus": "View my Plus status",
+  "paskluisIsAdFreeForEveryonePlus": "PasKluis is ad-free for everyone. Plus adds extra features.",
+  "text199OnceLifetimeAccess516": "€1.99 once  •  lifetime access",
+  "storeMoreGiftCards": "Store more gift cards",
+  "storeOneGiftCardForFreeWith": "Store one gift card for free. With PasKluis Plus you can store unlimited gift cards for a one-time payment of €1.99. You get lifetime access, with no subscription. Plus also lets you share loyalty cards and gift cards.\n\nDuring this test, an administrator can activate Plus on your account.",
+  "signInOrRegister": "Sign in or register",
+  "viewPlusStatus": "View Plus status",
+  "qrCodeContentIsRequired": "QR code content is required.",
+  "editQrCode": "Edit QR code",
+  "finishQrCode": "Finish QR code",
+  "scanAQrCodeOrEnterIts": "Scan a QR code or enter its content manually.",
+  "qrCodeName": "QR code name",
+  "qrCodeContent": "QR code content",
+  "scanQrCode": "Scan QR code",
+  "saveQrCode": "Save QR code",
+  "noQrCodeYet": "No QR code yet",
+  "noQrCodeFoundInTheSelected": "No QR code found in the selected image(s).",
+  "nameYourQrSet": "Name your QR set",
+  "eGFestivalTickets": "E.g. Festival tickets",
+  "howWouldYouLikeToAddYour": "How would you like to add your QR code?",
+  "scanOneQrCodeOrSeveralTickets": "Scan one QR code or several tickets in a row.",
+  "scanOneQrCode": "Scan one QR code",
+  "useYourCameraToAddAQr": "Use your camera to add a QR code",
+  "multipleQrCodes": "Multiple QR codes",
+  "scanSeveralTicketsInARowAnd": "Scan several tickets in a row and save them as a set",
+  "enterManually": "Enter manually",
+  "enterANameAndQrCodeContent": "Enter a name and QR code content yourself",
+  "readOneOrMoreQrCodesFrom": "Read one or more QR codes from images",
+  "thisQrCodeIsAlreadyInThis": "This QR code is already in this set.",
+  "aQrSetMustContainAtLeast": "A QR set must contain at least one QR code.",
+  "addAtLeastOneQrCode": "Add at least one QR code.",
+  "editQrSet": "Edit QR set",
+  "setDetails": "Set details",
+  "ofQrCodesUsed": "{p0} of {p1} QR codes used",
+  "@ofQrCodesUsed": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      }
+    }
+  },
+  "qrSetName": "QR set name",
+  "manageTheTicketsInThisSet": "Manage the tickets in this set.",
+  "ticket": "Ticket {p0}",
+  "@ticket": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "used": "Used",
+  "notUsed": "Not used",
+  "markAsUnused": "Mark as unused",
+  "markAsUsed": "Mark as used",
+  "scanAgain": "Scan again",
+  "scanMultipleQrCodes": "Scan multiple QR codes",
+  "qrCodesAdded": "{p0} QR codes added",
+  "@qrCodesAdded": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "done": "Done",
+  "thisQrCode": "this QR code",
+  "deleteQrCode": "Delete QR code?",
+  "areYouSureYouWantToDelete561": "Are you sure you want to delete \"{p0}\"? This cannot be undone.",
+  "@areYouSureYouWantToDelete561": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "removeFromFavourites562": "Remove from favourites",
+  "addToFavourites563": "Add to favourites",
+  "ticketMarkedAsUsed": "Ticket {p0} marked as used.",
+  "@ticketMarkedAsUsed": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "qrCodeMarkedAsUsed": "QR code marked as used.",
+  "ticketIsAvailableAgain": "Ticket {p0} is available again.",
+  "@ticketIsAvailableAgain": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "qrCodeIsAvailableAgain": "QR code is available again.",
+  "ticketOf": "Ticket {p0} of {p1}",
+  "@ticketOf": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      }
+    }
+  },
+  "ticketOfUsed": "Ticket {p0} of {p1} • {p2} used",
+  "@ticketOfUsed": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      },
+      "p2": {
+        "type": "Object"
+      }
+    }
+  },
+  "noQrCodeFound": "No QR code found",
+  "used571": "USED",
+  "firstUnused": "First unused",
+  "next": "Next",
+  "ticketUsed": "Ticket used",
+  "qrCodeUsed": "QR code used",
+  "noQrCodeAvailable": "No QR code available",
+  "readyWhenYouNeedIt": "Ready when you need it",
+  "saveYourFirstQrCode": "Save your first QR code",
+  "ticketsAccessCodesLinksOrAWhole": "Tickets, access codes, links or a whole set of QR codes: keep them organised and open them with one tap.",
+  "ticketsUsed": "{p0} tickets • {p1} used",
+  "@ticketsUsed": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      }
+    }
+  },
+  "noQrCodeFoundInThisImage": "No QR code found in this image.",
+  "placeTheQrCodeInsideTheFrame": "Place the QR code inside the frame",
+  "theQrCodeIsRecognisedAutomatically": "The QR code is recognised automatically",
+  "enterQrCodeManually": "Enter QR code manually",
+  "enterTheTextLinkOrCodeContained": "Enter the text, link or code contained in the QR code.",
+  "eGHttpsExampleComTicket": "E.g. https://example.com/ticket",
+  "whatTypeOfCodeIsOnThe": "What type of code is on the card?",
+  "automaticDetectionWorksForMostCards": "Automatic detection works for most cards.",
+  "recommended": "Recommended",
+  "noBarcodeFoundInThisImage": "No barcode found in this image.",
+  "scanBarcode": "Scan barcode",
+  "pointYourCameraAtTheBarcodeOn": "Point your camera at the barcode on your loyalty card",
+  "keepTheBarcodeInsideTheFrame": "Keep the barcode inside the frame",
+  "thisImageCouldNotBeReadPlease": "This image could not be read. Please try again.",
+  "whatWouldYouLikeToAdd": "What would you like to add?",
+  "howWouldYouLikeToAddThis": "How would you like to add this {p0}?",
+  "@howWouldYouLikeToAddThis": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "chooseTheCardTypeFirstThenChoose": "Choose the card type first. Then choose to scan, enter details manually or import a screenshot.",
+  "chooseAStoreAndScanTheCode": "Choose a store and scan the code, enter everything manually or recognise details from a screenshot.",
+  "addALoyaltyCardOrMembershipCard": "Add a loyalty card or membership card",
+  "addOneQrCodeOrMultipleTickets": "Add one QR code or multiple tickets",
+  "addAGiftCardWithAnOptional": "Add a gift card with an optional balance",
+  "chooseAStoreOrEnterManually": "Choose a store or enter manually",
+  "scanTheQrCodeOrEnterThe": "Scan the QR code or enter the details yourself",
+  "chooseAStoreScanTheBarcodeOr604": "Choose a store, scan the barcode or choose Manual",
+  "importFromScreenshot": "Import from screenshot",
+  "chooseAnImageFromYourPhotoLibrary": "Choose an image from your photo library",
+  "recognisingCard": "Recognising card…",
+  "chooseAnotherType": "Choose another type",
+  "unlockPaskluis": "Unlock PasKluis",
+  "paskluisIsLocked": "PasKluis is locked",
+  "useBiometricsOrYourDevicePasscodeTo": "Use biometrics or your device passcode to open your cards.",
+  "unlock": "Unlock",
+  "helpAndGuidance": "Help and guidance",
+  "howCanWeHelp": "How can we help?",
+  "findHelpWithAddingScanningSharingPrivacy": "Find help with adding, scanning, sharing, privacy and Plus.",
+  "searchQuestions": "Search questions",
+  "frequentlyAskedQuestions": "Frequently asked questions",
+  "noMatchingQuestionsFound": "No matching questions found.",
+  "cannotFindYourQuestion": "Cannot find your question?",
+  "ourCustomerSupportIsAvailableToEveryone": "Our customer support is available to everyone.",
+  "contactUs": "Contact us",
+  "privacyAndData": "Privacy and data",
+  "staysOnYourPhone": "Stays on your phone",
+  "loyaltyCardsQrCodesAndGiftCards": "Loyalty cards, QR codes and gift cards",
+  "barcodesCardNumbersPinsAndScratchCodes": "Barcodes, card numbers, PINs and scratch codes",
+  "balancesNotesAndImportedImages": "Balances, notes and imported images",
+  "savedCardUsageLocationsForNearbyCards": "Saved card usage locations for nearby cards",
+  "onlyOnlineWhenYouUseIt": "Only online when you use it",
+  "yourAccountNameEmailAddressAndPlus": "Your account name, email address and Plus status after signing in",
+  "aCardYouDeliberatelyShareWithSomeone": "A card you deliberately share with someone, including its details",
+  "questionsAndMessagesYouSendToCustomer": "Questions and messages you send to customer support",
+  "publicStoreInformationAndLogosRetrievedBy": "Public store information and logos retrieved by the app",
+  "notVisibleInTheAdminPortal": "Not visible in the admin portal",
+  "yourRegularLocalCardsAndCodes": "Your regular local cards and codes",
+  "pinsOrScratchCodesOfUnsharedGift": "PINs or scratch codes of unshared gift cards",
+  "yourPreciseLocationOrLocationHistory": "Your precise location or location history",
+  "whichCardYouOpenWhereAndWhen": "Which card you open, where and when",
+  "whenSharingACard": "When sharing a card",
+  "youChooseWhichCardToShareAnd": "You choose which card to share and which email address to share it with.",
+  "aGiftCardIsAlwaysSharedIn": "A gift card is always shared in full, including its PIN or scratch code.",
+  "youCanStopSharedAccessLater": "You can stop shared access later.",
+  "recipientsWithoutPlusCanOnlyViewCards": "Recipients without Plus can only view cards; with Plus both users can edit them.",
+  "securityAndYourChoices": "Security and your choices",
+  "youCanLockPaskluisWithFaceId": "You can lock PasKluis with Face ID, biometrics or your device passcode.",
+  "sensitiveCodesCanStayHiddenByDefault": "Sensitive codes can stay hidden by default.",
+  "youCanDisableLocationBasedCardsEntirely": "You can disable location-based cards entirely.",
+  "signingOutDoesNotRemoveYourLocal": "Signing out does not remove your local cards from the device.",
+  "paskluisDoesNotSellPersonalDataOr": "PasKluis does not sell personal data or use your card details for advertising. PasKluis is ad-free for everyone.",
+  "yourPaskluisBelongsToYou": "Your PasKluis belongs to you",
+  "yourMostImportantDataStaysLocallyOn": "Your most important data stays locally on your phone. Below you can see what is and is not processed online.",
+  "locationIsEnabledInPaskluisAlsoGrant": "Location is enabled in PasKluis. Also grant permission in your phone's settings.",
+  "confirmYourIdentityToEnableAppLock": "Confirm your identity to enable app lock",
+  "distanceToStore": "Distance to store",
+  "whenShouldPaskluisConsiderASavedCard": "When should PasKluis consider a saved card nearby?",
+  "text1Kilometre": "1 kilometre",
+  "metres": "{p0} metres",
+  "@metres": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "defaultSorting": "Default sorting",
+  "lastUsed": "Last used",
+  "recentlyAdded": "Recently added",
+  "alphabetical": "Alphabetical",
+  "defaultStartScreen": "Default start screen",
+  "home": "Home",
+  "smartCards": "Smart cards",
+  "locationBasedCards": "Location-based cards",
+  "showTheRightCardAtANearby": "Show the right card at a nearby store",
+  "distance": "Distance",
+  "howCloseAStoreNeedsToBe": "How close a store needs to be",
+  "nearestLoyaltyCardsFirst": "Nearest loyalty cards first",
+  "withinTheChosenDistanceNearestFirstThen": "Within the chosen distance: nearest first, then your favourites and normal sorting",
+  "enableLocationBasedCardsToUseThis": "Enable location-based cards to use this option",
+  "cardsAndDisplay": "Cards and display",
+  "favouritesFirst": "Favourites first",
+  "favouritesFollowNearbyLoyaltyCards": "Favourites follow nearby loyalty cards",
+  "yourMostImportantCardsFirst": "Your most important cards first",
+  "favouritesOnHome": "Favourites on Home",
+  "showASeparateSectionWithFavouriteCards": "Show a separate section with favourite cards",
+  "nearbyOnHome": "Nearby on Home",
+  "showASeparateSectionWithNearbyLoyalty": "Show a separate section with nearby loyalty cards",
+  "theSectionAppearsWhenLocationBasedCards": "The section appears when location-based cards are enabled",
+  "orderInYourCardOverview": "Order in your card overview",
+  "openPaskluisInYourFavouriteSection": "Open PasKluis in your favourite section",
+  "extraClarity": "Extra clarity",
+  "largerTextHigherContrastAndLargerCards": "Larger text, higher contrast and larger cards",
+  "whileUsingCards": "While using cards",
+  "automaticallyIncreaseBrightness": "Automatically increase brightness",
+  "makesBarcodesEasierToScan": "Makes barcodes easier to scan",
+  "keepScreenAwake": "Keep screen awake",
+  "preventTheScreenFromTurningOffWhile": "Prevent the screen from turning off while viewing a card",
+  "giftCardReminders": "Gift card reminders",
+  "notificationsBeforeTheExpiryDate": "Notifications before the expiry date",
+  "securityAndPrivacy": "Security and privacy",
+  "lockPaskluis": "Lock PasKluis",
+  "useFaceIdBiometricsOrYourDevice": "Use Face ID, biometrics or your device passcode",
+  "hidePinsByDefault": "Hide PINs by default",
+  "showSensitiveCodesOnlyAfterConfirmation": "Show sensitive codes only after confirmation",
+  "seeWhatPaskluisDoesAndDoesNot": "See what PasKluis does and does not store",
+  "accountAndHelp": "Account and help",
+  "accountAndPaskluisPlus": "Account and PasKluis Plus",
+  "signInPlusStatusAndAccountManagement": "Sign in, Plus status and account management",
+  "customerSupport": "Customer support",
+  "askAQuestionOrViewPreviousConversations": "Ask a question or view previous conversations",
+  "guidanceAndFrequentlyAskedQuestions": "Guidance and frequently asked questions",
+  "administrator": "Administrator",
+  "separateAdministrationToolsForPaskluis": "Separate administration tools for PasKluis",
+  "dataOnThisDevice": "Data on this device",
+  "cardsStoredLocally": "{p0} cards stored locally",
+  "@cardsStoredLocally": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "paskluisVersion14140": "PasKluis version 1.4.1 (40)",
+  "unableToLoadConversations": "Unable to load conversations.",
+  "yourQuestionCouldNotBeSent": "Your question could not be sent.",
+  "newQuestion": "New question",
+  "checkYourConnectionAndTryAgain": "Check your connection and try again.",
+  "weAreHereToHelp": "We are here to help",
+  "noSignInNeededLeaveYourName": "No sign-in needed. Leave your name and email address and follow the conversation in PasKluis.",
+  "feelFreeToAskAQuestionYou": "Feel free to ask a question. You can find our replies here.",
+  "aReplyIsWaitingForYou": "A reply is waiting for you",
+  "closed": "Closed",
+  "open": "Open",
+  "subject": "Subject",
+  "enterASubject": "Enter a subject.",
+  "yourQuestionOrProblem": "Your question or problem",
+  "brieflyDescribeWhatYouNeedHelpWith": "Briefly describe what you need help with.",
+  "sendQuestion": "Send question",
+  "personalSupport": "Personal support",
+  "findYourQuestionsAndOurRepliesIn": "Find your questions and our replies in one place.",
+  "theMessageCouldNotBeSent": "The message could not be sent.",
+  "noMessagesYet": "No messages yet.",
+  "thisConversationIsClosed": "This conversation is closed.",
+  "writeAMessage": "Write a message…",
+  "send": "Send",
+  "someoneSignedInToYourAccountOn": "Someone signed in to your account on another device. You have been signed out on this device.",
+  "youHaveBeenSignedOut733": "You have been signed out",
+  "gotIt": "Got it",
+  "paskluisCouldNotOpenYourSecureStorage": "PasKluis could not open your secure storage.",
+  "yourDataHasNotBeenDeletedTry": "Your data has not been deleted. Try again or restart your device.",
+  "searching": "Searching…",
+  "noResultsFound": "No results found",
+  "areYouSureYouWantToDelete743": "Are you sure you want to delete \"{p0}\"?",
+  "@areYouSureYouWantToDelete743": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "signInRequired": "Sign-in required",
+  "signInWithYourPaskluisAccountTo": "Sign in with your PasKluis account to share cards securely by email.",
+  "sharingIsOnlyAvailableWithPaskluisPlus": "Sharing is only available with PasKluis Plus.",
+  "shareTheEntireGiftCard": "Share the entire gift card?",
+  "theRecipientWillAlsoReceiveThePin": "The recipient will also receive the PIN or scratch code and can spend the full balance.",
+  "continue749": "Continue",
+  "share750": "Share {p0}",
+  "@share750": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "recipientSEmailAddress": "Recipient's email address",
+  "nameExampleCom": "name@example.com",
+  "cardSharedWithYouCanBothEdit": "Card shared with {p0}. You can both edit the card.",
+  "@cardSharedWithYouCanBothEdit": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "cardSharedWithAsViewOnly": "Card shared with {p0} as view-only.",
+  "@cardSharedWithAsViewOnly": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "sharedAccess": "Shared access",
+  "thisCardHasNotBeenSharedWith": "This card has not been shared with anyone yet.",
+  "viewOnlyWithoutPlusEditableWithPlus": "View-only without Plus; editable with Plus",
+  "sharedAccessHasBeenStopped": "Shared access has been stopped.",
+  "stop": "Stop",
+  "language": "Language",
+  "chooseLanguage": "Choose your language",
+  "languageDescription": "PasKluis updates immediately. Your choice is saved on this device.",
+  "followPhoneLanguage": "Follow phone language",
+  "phoneLanguageHint": "Dutch or English, depending on your phone",
+  "languageSettingsSubtitle": "Choose the language for PasKluis",
+  "qrCode": "QR code",
+  "qrSet": "QR set",
+  "pleaseTryAgain": "That did not work. Check your connection and try again."
+}

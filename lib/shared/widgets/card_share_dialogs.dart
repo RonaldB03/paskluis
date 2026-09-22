@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -14,18 +15,18 @@ abstract final class CardShareDialogs {
       final open = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Inloggen vereist'),
-          content: const Text(
-            'Log in met je PasKluis-account om kaarten veilig per e-mailadres te delen.',
+          title:  Text(L10n.current.signInRequired),
+          content:  Text(
+            L10n.current.signInWithYourPaskluisAccountTo,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuleren'),
+              child:  Text(L10n.current.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Inloggen'),
+              child:  Text(L10n.current.signIn),
             ),
           ],
         ),
@@ -42,8 +43,8 @@ abstract final class CardShareDialogs {
     try {
       final plus = await AccountService.loadPlusStatus();
       if (!plus.isActive) {
-        throw const AuthException(
-          'Delen is alleen beschikbaar met PasKluis Plus.',
+        throw  AuthException(
+          L10n.current.sharingIsOnlyAvailableWithPaskluisPlus,
         );
       }
     } catch (error) {
@@ -60,18 +61,18 @@ abstract final class CardShareDialogs {
             color: Color(0xFFD51B46),
             size: 40,
           ),
-          title: const Text('Volledige cadeaukaart delen?'),
-          content: const Text(
-            'De ontvanger krijgt ook de pincode of krascode en kan het volledige saldo gebruiken.',
+          title:  Text(L10n.current.shareTheEntireGiftCard),
+          content:  Text(
+            L10n.current.theRecipientWillAlsoReceiveThePin,
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuleren'),
+              child:  Text(L10n.current.cancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Doorgaan'),
+              child:  Text(L10n.current.continue749),
             ),
           ],
         ),
@@ -88,26 +89,26 @@ abstract final class CardShareDialogs {
           color: Color(0xFFD51B46),
           size: 38,
         ),
-        title: Text('${_typeLabel(card)} delen'),
+        title: Text(L10n.current.share750((_typeLabel(card)).toString())),
         content: TextField(
           controller: controller,
           autofocus: true,
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
-          decoration: const InputDecoration(
-            labelText: 'E-mailadres ontvanger',
-            hintText: 'naam@voorbeeld.nl',
+          decoration:  InputDecoration(
+            labelText: L10n.current.recipientSEmailAddress,
+            hintText: L10n.current.nameExampleCom,
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuleren'),
+            child:  Text(L10n.current.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Delen'),
+            child:  Text(L10n.current.share),
           ),
         ],
       ),
@@ -126,8 +127,8 @@ abstract final class CardShareDialogs {
           SnackBar(
             content: Text(
               canEdit
-                  ? 'Kaart gedeeld met $email. Jullie kunnen de kaart allebei bewerken.'
-                  : 'Kaart gedeeld met $email als alleen-lezen.',
+                  ? L10n.current.cardSharedWithYouCanBothEdit((email).toString())
+                  : L10n.current.cardSharedWithAsViewOnly((email).toString()),
             ),
           ),
         );
@@ -158,15 +159,15 @@ abstract final class CardShareDialogs {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Gedeelde toegang',
+                 Text(
+                  L10n.current.sharedAccess,
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 12),
                 if (shares.isEmpty)
-                  const Padding(
+                   Padding(
                     padding: EdgeInsets.all(24),
-                    child: Text('Deze kaart is nog met niemand gedeeld.'),
+                    child: Text(L10n.current.thisCardHasNotBeenSharedWith),
                   )
                 else
                   ...shares.map(
@@ -177,8 +178,8 @@ abstract final class CardShareDialogs {
                       title: Text(
                         share['recipient_email']?.toString() ?? '',
                       ),
-                      subtitle: const Text(
-                        'Zonder Plus alleen-lezen; met Plus bewerkbaar',
+                      subtitle:  Text(
+                        L10n.current.viewOnlyWithoutPlusEditableWithPlus,
                       ),
                       trailing: TextButton(
                         onPressed: () async {
@@ -190,13 +191,13 @@ abstract final class CardShareDialogs {
                           }
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Gedeelde toegang is gestopt.'),
+                               SnackBar(
+                                content: Text(L10n.current.sharedAccessHasBeenStopped),
                               ),
                             );
                           }
                         },
-                        child: const Text('Stoppen'),
+                        child:  Text(L10n.current.stop),
                       ),
                     ),
                   ),
@@ -213,19 +214,13 @@ abstract final class CardShareDialogs {
   static String _typeLabel(Map<String, dynamic> card) => switch (
         card['type']?.toString()
       ) {
-        'Cadeaukaart' => 'Cadeaukaart',
-        'QR-code' || 'QR-set' => 'QR-code',
-        _ => 'Klantenkaart',
+        'Cadeaukaart' => L10n.current.giftCard,
+        'QR-code' || 'QR-set' => L10n.current.qrCode,
+        _ => L10n.current.loyaltyCard,
       };
 
   static void _showError(BuildContext context, Object error) {
-    var message = error.toString();
-    message = message
-        .replaceFirst('AuthException(message: ', '')
-        .replaceFirst('PostgrestException(message: ', '')
-        .split(', code:')
-        .first;
-    if (message.endsWith(')')) message = message.substring(0, message.length - 1);
+    final message = L10n.current.pleaseTryAgain;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
     );

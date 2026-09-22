@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
 import 'package:barcode_widget/barcode_widget.dart';
@@ -107,8 +108,8 @@ class _EditCardScreenState extends State<EditCardScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('De afbeelding kon niet worden opgeslagen.'),
+         SnackBar(
+          content: Text(L10n.current.theImageCouldNotBeSaved),
         ),
       );
     }
@@ -153,13 +154,13 @@ class _EditCardScreenState extends State<EditCardScreen> {
 
     if (name.isEmpty) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Naam is verplicht.')));
+          .showSnackBar( SnackBar(content: Text(L10n.current.aNameIsRequired)));
       return;
     }
 
     if (code.isEmpty) {
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Barcode is verplicht.')));
+          .showSnackBar( SnackBar(content: Text(L10n.current.aBarcodeIsRequired)));
       return;
     }
 
@@ -187,8 +188,9 @@ class _EditCardScreenState extends State<EditCardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final name = nameController.text.trim().isEmpty
-        ? 'Klantenkaart'
+        ? L10n.current.loyaltyCard
         : nameController.text.trim();
 
     return Scaffold(
@@ -198,15 +200,15 @@ class _EditCardScreenState extends State<EditCardScreen> {
         elevation: 0,
         centerTitle: true,
         foregroundColor: const Color(0xFF2F2F34),
-        title: const Text(
-          'Kaart bewerken',
+        title:  Text(
+          L10n.current.editCard,
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
         actions: [
           TextButton(
             onPressed: save,
-            child: const Text(
-              'Opslaan',
+            child:  Text(
+              L10n.current.save,
               style: TextStyle(
                 color: Color(0xFFD51B46),
                 fontWeight: FontWeight.w900,
@@ -231,18 +233,18 @@ class _EditCardScreenState extends State<EditCardScreen> {
           const SizedBox(height: 20),
 
           _SectionCard(
-            title: 'Kaartgegevens',
+            title: L10n.current.cardDetails318,
             children: [
               _InputField(
                 controller: nameController,
-                label: 'Naam',
+                label: L10n.current.name,
                 icon: Icons.badge_outlined,
                 textInputAction: TextInputAction.next,
               ),
               const SizedBox(height: 14),
               _InputField(
                 controller: codeController,
-                label: 'Barcode',
+                label: L10n.current.barcode,
                 icon: Icons.qr_code_scanner_rounded,
                 keyboardType: TextInputType.number,
                 suffix: IconButton(
@@ -260,7 +262,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
                 child: OutlinedButton.icon(
                   onPressed: scanCode,
                   icon: const Icon(Icons.qr_code_scanner_rounded),
-                  label: const Text('Barcode opnieuw scannen'),
+                  label:  Text(L10n.current.scanBarcodeAgain),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFD51B46),
                     side: const BorderSide(
@@ -280,7 +282,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
           const SizedBox(height: 14),
 
           _SectionCard(
-            title: 'Logo',
+            title: L10n.current.logo,
             children: [
               _LogoEditor(
                 logoAsset: logoAsset,
@@ -295,11 +297,11 @@ class _EditCardScreenState extends State<EditCardScreen> {
           const SizedBox(height: 14),
 
           _SectionCard(
-            title: 'Notitie',
+            title: L10n.current.note,
             children: [
               _InputField(
                 controller: noteController,
-                label: 'Notitie toevoegen',
+                label: L10n.current.addNote,
                 icon: Icons.notes_rounded,
                 maxLines: 4,
                 keyboardType: TextInputType.multiline,
@@ -315,7 +317,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
             child: FilledButton.icon(
               onPressed: save,
               icon: const Icon(Icons.save_rounded),
-              label: const Text('Wijzigingen opslaan'),
+              label:  Text(L10n.current.saveChanges),
               style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFFD51B46),
                 foregroundColor: Colors.white,
@@ -361,6 +363,7 @@ class _LiveCardPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
@@ -440,11 +443,11 @@ class _LiveCardPreview extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: code.isEmpty
-                        ? const SizedBox(
+                        ?  SizedBox(
                             height: 94,
                             child: Center(
                               child: Text(
-                                'Nog geen barcode',
+                                L10n.current.noBarcodeYet,
                                 style: TextStyle(
                                   color: Colors.black38,
                                   fontWeight: FontWeight.w700,
@@ -459,11 +462,11 @@ class _LiveCardPreview extends StatelessWidget {
                             height: 94,
                             drawText: false,
                             errorBuilder: (_, __) {
-                              return const SizedBox(
+                              return  SizedBox(
                                 height: 94,
                                 child: Center(
                                   child: Text(
-                                    'Barcode kan niet worden weergegeven',
+                                    L10n.current.unableToDisplayBarcode,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: Colors.red,
@@ -507,6 +510,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
       decoration: BoxDecoration(
@@ -560,6 +564,7 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return TextField(
       controller: controller,
       maxLines: maxLines,
@@ -610,6 +615,7 @@ class _LogoEditor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final hasLogo = hasPresetLogo || hasCustomLogo;
 
     return Column(
@@ -648,7 +654,7 @@ class _LogoEditor extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onPickImage,
                 icon: const Icon(Icons.photo_library_rounded),
-                label: Text(hasLogo ? 'Logo wijzigen' : 'Logo toevoegen'),
+                label: Text(hasLogo ? L10n.current.changeLogo : L10n.current.addLogo),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFFD51B46),
                   side: const BorderSide(color: Color(0xFFD51B46), width: 1.2),

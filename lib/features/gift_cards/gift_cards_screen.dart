@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -69,8 +70,8 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
       } catch (_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Bijwerken lukte niet. Controleer je verbinding.'),
+             SnackBar(
+              content: Text(L10n.current.unableToUpdateCheckYourConnection),
             ),
           );
         }
@@ -184,7 +185,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
     }
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cadeaukaart is opgeslagen.')),
+         SnackBar(content: Text(L10n.current.giftCardSaved)),
       );
     }
   }
@@ -251,7 +252,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
     final key = findHiveKey(item);
     if (key == null) return;
 
-    final name = item['name']?.toString() ?? 'deze cadeaukaart';
+    final name = item['name']?.toString() ?? L10n.current.thisGiftCard;
     final isShared = item['isShared'] == true;
 
     final confirmed = await showDialog<bool>(
@@ -259,18 +260,18 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
       builder: (_) => AlertDialog(
         title: Text(
           isShared
-              ? 'Uit jouw PasKluis verwijderen?'
-              : 'Definitief verwijderen?',
+              ? L10n.current.removeFromYourPaskluis
+              : L10n.current.permanentlyDelete,
         ),
         content: Text(
           isShared
-              ? 'Je verwijdert "$name" alleen uit jouw PasKluis. De cadeaukaart van de eigenaar blijft bestaan.'
-              : 'Weet je zeker dat je "$name" definitief wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.',
+              ? L10n.current.youAreOnlyRemovingFromYourOwn433((name).toString())
+              : L10n.current.areYouSureYouWantToPermanently434((name).toString()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuleren'),
+            child:  Text(L10n.current.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -278,7 +279,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
             ),
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              isShared ? 'Verwijderen' : 'Definitief verwijderen',
+              isShared ? L10n.current.delete : L10n.current.permanentlyDelete391,
             ),
           ),
         ],
@@ -301,9 +302,9 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+           SnackBar(
             content: Text(
-              'De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.',
+              L10n.current.sharedAccessCouldNotBeUpdatedTry,
             ),
           ),
         );
@@ -315,11 +316,11 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text('$name is verwijderd.')));
+        .showSnackBar(SnackBar(content: Text(L10n.current.hasBeenDeleted((name).toString()))));
   }
 
   void showGiftCardOptions(BuildContext context, Map<String, dynamic> item) {
-    final name = item['name']?.toString() ?? 'Cadeaukaart';
+    final name = item['name']?.toString() ?? L10n.current.giftCard;
     final isShared = item['isShared'] == true;
 
     HapticFeedback.mediumImpact();
@@ -351,8 +352,8 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
                 _OptionTile(
                   icon: Icons.delete_rounded,
                   title: isShared
-                      ? 'Uit mijn PasKluis verwijderen'
-                      : 'Definitief verwijderen',
+                      ? L10n.current.removeFromMyPaskluis
+                      : L10n.current.permanentlyDelete391,
                   isDestructive: true,
                   onTap: () {
                     Navigator.pop(context);
@@ -434,19 +435,19 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Archief', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+               Text(L10n.current.archive435, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
               const SizedBox(height: 14),
               if (archived.isEmpty)
-                const Padding(
+                 Padding(
                   padding: EdgeInsets.all(28),
-                  child: Text('Er staan nog geen cadeaukaarten in het archief.'),
+                  child: Text(L10n.current.thereAreNoGiftCardsInThe),
                 )
               else
                 ...archived.map((item) => ListTile(
                       leading: const CircleAvatar(child: Icon(Icons.card_giftcard_rounded)),
                       title: Text(item['name']?.toString() ?? 'Cadeaukaart'),
                       subtitle: Text(
-                        'Saldo € ${formatAmountValue(item['currentBalance'] ?? '0')}',
+                        L10n.current.balance437((formatAmountValue(item['currentBalance'] ?? '0')).toString()),
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -470,10 +471,10 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
                                 Navigator.pop(sheetContext);
                               }
                             },
-                            child: const Text('Terugzetten'),
+                            child:  Text(L10n.current.restore),
                           ),
                           IconButton(
-                            tooltip: 'Definitief verwijderen',
+                            tooltip: L10n.current.permanentlyDelete391,
                             color: Colors.red,
                             onPressed: () async {
                               Navigator.pop(sheetContext);
@@ -493,6 +494,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -509,7 +511,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
             automaticallyImplyLeading: false,
             leadingWidth: 56,
             leading: const SizedBox.shrink(),
-            title: const PremiumAppTitle('Cadeaukaarten'),
+            title:  PremiumAppTitle(L10n.current.giftCards),
             centerTitle: true,
             titleSpacing: 4,
             backgroundColor: Colors.white,
@@ -576,6 +578,7 @@ class _GiftCardsOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
@@ -589,7 +592,7 @@ class _GiftCardsOverview extends StatelessWidget {
                 child: InkWell(
                   onTap: onOpenPlus,
                   borderRadius: BorderRadius.circular(18),
-                  child: const Padding(
+                  child:  Padding(
                     padding: EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 13,
@@ -606,14 +609,14 @@ class _GiftCardsOverview extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Extra informatie',
+                                L10n.current.moreInformation,
                                 style: TextStyle(
                                   color: Color(0xFF6D5000),
                                   fontWeight: FontWeight.w900,
                                 ),
                               ),
                               Text(
-                                'Ontdek alles wat je met PasKluis Plus krijgt',
+                                L10n.current.discoverEverythingYouGetWithPaskluisPlus,
                                 style: TextStyle(
                                   color: Color(0xFF806719),
                                   fontSize: 12.5,
@@ -686,6 +689,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(maxWidth: 520),
@@ -706,8 +710,8 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
             size: 38,
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Je eerste cadeaukaart is gratis',
+           Text(
+            L10n.current.storeYourFirstGiftCardForFree,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 20,
@@ -716,8 +720,8 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Ga verder met Plus: bewaar onbeperkt cadeaukaarten en deel klanten- en cadeaukaarten veilig met anderen.',
+           Text(
+            L10n.current.goFurtherWithPlusStoreUnlimitedGift,
             textAlign: TextAlign.center,
             style: TextStyle(height: 1.35, color: Color(0xFF6D5000)),
           ),
@@ -728,7 +732,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.62),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const FittedBox(
+            child:  FittedBox(
               fit: BoxFit.scaleDown,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -740,7 +744,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
                   ),
                   SizedBox(width: 7),
                   Text(
-                    '€ 1,99 eenmalig • levenslange toegang',
+                    L10n.current.text199OnceLifetimeAccess,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
@@ -759,7 +763,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
               foregroundColor: Colors.white,
             ),
             icon: const Icon(Icons.workspace_premium_rounded),
-            label: const Text('Ontdek alle Plus-voordelen'),
+            label:  Text(L10n.current.discoverAllPlusBenefits),
           ),
         ],
       ),
@@ -774,6 +778,7 @@ class _AddGiftCardTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(22),
@@ -793,7 +798,7 @@ class _AddGiftCardTile extends StatelessWidget {
               ),
             ],
           ),
-          child: const Column(
+          child:  Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircleAvatar(
@@ -807,7 +812,7 @@ class _AddGiftCardTile extends StatelessWidget {
               ),
               SizedBox(height: 7),
               Text(
-                'Voeg cadeaukaart toe',
+                L10n.current.addGiftCard447,
                 maxLines: 2,
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -819,7 +824,7 @@ class _AddGiftCardTile extends StatelessWidget {
               ),
               SizedBox(height: 3),
               Text(
-                'Tik om te beginnen',
+                L10n.current.tapToGetStarted,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -876,7 +881,8 @@ class _GiftCardTileState extends State<GiftCardTile> {
 
   @override
   Widget build(BuildContext context) {
-    final title = widget.item['name']?.toString() ?? 'Cadeaukaart';
+    L10n.watch(context);
+    final title = widget.item['name']?.toString() ?? L10n.current.giftCard;
     final logoAsset = widget.item['logoAsset']?.toString() ?? '';
     final customImage = widget.item['customImage']?.toString() ?? '';
     final balance = widget.item['currentBalance']?.toString() ?? '';
@@ -893,13 +899,13 @@ class _GiftCardTileState extends State<GiftCardTile> {
     final daysUntilExpiry = expiryDay?.difference(today).inDays;
     final isExpired = daysUntilExpiry != null && daysUntilExpiry < 0;
     final expiryStatus = isExpired
-        ? 'Verlopen'
+        ? L10n.current.expired
         : daysUntilExpiry == 0
-            ? 'Verloopt vandaag'
+            ? L10n.current.expiresToday450
             : daysUntilExpiry == 1
-                ? 'Nog 1 dag'
+                ? L10n.current.text1DayLeft
                 : daysUntilExpiry != null && daysUntilExpiry <= 7
-                    ? 'Nog $daysUntilExpiry dagen'
+                    ? L10n.current.daysLeft((daysUntilExpiry).toString())
                     : null;
     final hasLogo = hasAssetLogo || hasCustomLogo;
     final usesBrandBackground =
@@ -909,8 +915,8 @@ class _GiftCardTileState extends State<GiftCardTile> {
     return Semantics(
       button: true,
       label:
-          '$title, cadeaukaart, ${balance.isEmpty ? 'saldo onbekend' : 'saldo € ${formatAmountValue(balance)}'}${isFavorite ? ', favoriet' : ''}',
-      hint: 'Tik tweemaal om de cadeaukaart te openen',
+          L10n.current.giftCard453((title).toString(), (balance.isEmpty ? L10n.current.balanceUnknown454 : 'saldo € ${formatAmountValue(balance)}').toString(), (isFavorite ? L10n.current.favourite : '').toString()),
+      hint: L10n.current.doubleTapToOpenTheGiftCard,
       child: GestureDetector(
         onTapDown: (_) => setPressed(true),
         onTapCancel: () => setPressed(false),
@@ -1006,7 +1012,7 @@ class _GiftCardTileState extends State<GiftCardTile> {
                 ),
                 child: Text(
                   balance.isEmpty
-                      ? 'Saldo onbekend'
+                      ? L10n.current.balanceUnknown
                       : '€ ${formatAmountValue(balance)}',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -1076,6 +1082,7 @@ class _OptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final color = isDestructive ? Colors.red : const Color(0xFFD51B46);
 
     return ListTile(

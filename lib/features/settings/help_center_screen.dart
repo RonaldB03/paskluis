@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/services/help_service.dart';
@@ -22,10 +23,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Scaffold(
       backgroundColor: const Color(0xFFF5F3F7),
       appBar: AppBar(
-        title: const Text('Hulp en uitleg'),
+        title:  Text(L10n.current.helpAndGuidance),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF2D2A31),
       ),
@@ -49,20 +51,20 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                   ),
                   borderRadius: BorderRadius.circular(26),
                 ),
-                child: const Column(
+                child:  Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.auto_awesome_rounded,
                         color: Colors.white, size: 36),
                     SizedBox(height: 12),
-                    Text('Waar kunnen we mee helpen?',
+                    Text(L10n.current.howCanWeHelp,
                         style: TextStyle(
                             color: Colors.white,
                             fontSize: 25,
                             fontWeight: FontWeight.w900)),
                     SizedBox(height: 6),
                     Text(
-                      'Vind snel uitleg over toevoegen, scannen, delen, privacy en Plus.',
+                      L10n.current.findHelpWithAddingScanningSharingPrivacy,
                       style: TextStyle(
                           color: Color(0xFFF4EBFF), fontSize: 15, height: 1.4),
                     ),
@@ -73,7 +75,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
               TextField(
                 onChanged: (value) => setState(() => _query = value),
                 decoration: InputDecoration(
-                  hintText: 'Zoek een vraag',
+                  hintText: L10n.current.searchQuestions,
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
                   fillColor: Colors.white,
@@ -84,7 +86,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              const Text('Veelgestelde vragen',
+               Text(L10n.current.frequentlyAskedQuestions,
                   style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
               const SizedBox(height: 10),
               if (snapshot.connectionState == ConnectionState.waiting)
@@ -93,9 +95,9 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                   child: Center(child: CircularProgressIndicator()),
                 )
               else if (visible.isEmpty)
-                const Padding(
+                 Padding(
                   padding: EdgeInsets.all(28),
-                  child: Text('Geen passende vraag gevonden.',
+                  child: Text(L10n.current.noMatchingQuestionsFound,
                       textAlign: TextAlign.center),
                 )
               else
@@ -109,11 +111,11 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                 ),
                 child: Column(
                   children: [
-                    const Text('Staat je vraag er niet tussen?',
+                     Text(L10n.current.cannotFindYourQuestion,
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.w900)),
                     const SizedBox(height: 5),
-                    const Text('Onze klantenservice is voor iedereen bereikbaar.',
+                     Text(L10n.current.ourCustomerSupportIsAvailableToEveryone,
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Color(0xFF6F6A74))),
                     const SizedBox(height: 14),
@@ -123,7 +125,7 @@ class _HelpCenterScreenState extends State<HelpCenterScreen> {
                         MaterialPageRoute(builder: (_) => const SupportScreen()),
                       ),
                       icon: const Icon(Icons.support_agent_rounded),
-                      label: const Text('Neem contact op'),
+                      label:  Text(L10n.current.contactUs),
                     ),
                   ],
                 ),
@@ -143,6 +145,7 @@ class _FaqCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Card(
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 9),

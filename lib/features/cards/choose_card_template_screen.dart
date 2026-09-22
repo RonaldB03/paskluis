@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -35,11 +36,11 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
   String get title {
     switch (widget.type) {
       case 'QR-code':
-        return 'QR-code toevoegen';
+        return L10n.current.addQrCode;
       case 'Cadeaukaart':
-        return 'Cadeaukaart toevoegen';
+        return L10n.current.addGiftCard;
       default:
-        return 'Klantenkaart toevoegen';
+        return L10n.current.addLoyaltyCard;
     }
   }
 
@@ -146,7 +147,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       pendingSuggestedName = null;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Code herkend. Kies nu de winkel.')),
+       SnackBar(content: Text(L10n.current.codeDetectedNowChooseTheStore)),
     );
   }
 
@@ -159,7 +160,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('De afbeelding kon niet worden gelezen.')),
+           SnackBar(content: Text(L10n.current.theImageCouldNotBeRead)),
         );
       }
       return;
@@ -167,7 +168,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     if (!mounted || imported == null) return;
     if (imported.code.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Geen kaartcode gevonden in de afbeelding.')),
+         SnackBar(content: Text(L10n.current.noCardCodeFoundInThisImage)),
       );
       return;
     }
@@ -198,9 +199,9 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       searchQuery = '';
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+       SnackBar(
         content: Text(
-          'Winkel niet automatisch herkend. Kies een winkel of voeg hem handmatig toe.',
+          L10n.current.weCouldNotIdentifyTheStoreChoose,
         ),
       ),
     );
@@ -210,7 +211,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     return showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Winkel herkend', textAlign: TextAlign.center),
+        title:  Text(L10n.current.storeRecognised, textAlign: TextAlign.center),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -231,7 +232,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              'We herkennen deze klantenkaart als ${brand.name}. Klopt dat?',
+              L10n.current.weRecogniseThisLoyaltyCardAsIs((brand.name).toString()),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 16, height: 1.35),
             ),
@@ -241,11 +242,11 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Andere winkel'),
+            child:  Text(L10n.current.differentStore),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('${brand.name} gebruiken'),
+            child: Text(L10n.current.use((brand.name).toString())),
           ),
         ],
       ),
@@ -257,13 +258,14 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     if (name.isEmpty ||
         name.toLowerCase() == 'klantenkaart' ||
         name.toLowerCase() == 'pasje') {
-      return 'Mijn klantenkaart';
+      return L10n.current.myLoyaltyCard;
     }
     return name;
   }
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     final query = searchQuery.trim().toLowerCase();
     final availableBrands = brands
         .where(
@@ -311,8 +313,8 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
         actions: [
           TextButton(
             onPressed: () => openManualForm(),
-            child: const Text(
-              'Handmatig',
+            child:  Text(
+              L10n.current.manual,
               style: TextStyle(
                 color: Color(0xFFD51B46),
                 fontSize: 14,
@@ -340,14 +342,14 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
                     const Icon(Icons.check_circle_rounded,
                         color: Color(0xFFD51B46)),
                     const SizedBox(width: 10),
-                    const Expanded(
+                     Expanded(
                       child: Text(
-                        'Code herkend. Kies hieronder de winkel.',
+                        L10n.current.codeDetectedChooseTheStoreBelow,
                         style: TextStyle(fontWeight: FontWeight.w800),
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Annuleren',
+                      tooltip: L10n.current.cancel,
                       onPressed: () => setState(() {
                         pendingScan = null;
                         pendingSuggestedName = null;
@@ -358,8 +360,8 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
                 ),
               )
             else ...[
-              const Text(
-                'Snel toevoegen',
+               Text(
+                L10n.current.quickAdd,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w900,
@@ -372,7 +374,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
                   Expanded(
                     child: _QuickImportTile(
                       icon: Icons.qr_code_scanner_rounded,
-                      title: 'Kaart scannen',
+                      title: L10n.current.scanCard,
                       onTap: scanQuickCard,
                     ),
                   ),
@@ -380,7 +382,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
                   Expanded(
                     child: _QuickImportTile(
                       icon: Icons.photo_library_rounded,
-                      title: 'Foto importeren',
+                      title: L10n.current.importPhoto,
                       onTap: importCardImage,
                     ),
                   ),
@@ -393,7 +395,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
             onChanged: (value) => setState(() => searchQuery = value),
             style: const TextStyle(fontSize: 15),
             decoration: InputDecoration(
-              hintText: 'Zoek winkel',
+              hintText: L10n.current.searchStores,
               hintStyle: const TextStyle(fontSize: 15),
               prefixIcon: const Icon(Icons.search, size: 21),
               filled: true,
@@ -409,8 +411,8 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
           const SizedBox(height: 16),
 
           if (query.isEmpty && popularBrands.isNotEmpty) ...[
-            const Text(
-              'Populaire kaarten',
+             Text(
+              L10n.current.popularCards,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
@@ -431,7 +433,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
           ],
 
           Text(
-            query.isEmpty ? 'Alle winkels' : 'Zoekresultaten',
+            query.isEmpty ? L10n.current.allStores : L10n.current.searchResults,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,
@@ -452,11 +454,11 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
           }),
 
           if (listedBrands.isEmpty)
-            const Padding(
+             Padding(
               padding: EdgeInsets.symmetric(vertical: 22),
               child: Center(
                 child: Text(
-                  'Geen winkels gevonden.',
+                  L10n.current.noStoresFound312,
                   style: TextStyle(color: Colors.black54),
                 ),
               ),
@@ -466,8 +468,8 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
 
           _CustomCardTile(
             title: pendingScan == null
-                ? 'Aangepaste kaart'
-                : 'Andere winkel handmatig toevoegen',
+                ? L10n.current.customCard
+                : L10n.current.addAnotherStoreManually,
             onTap: () => openManualForm(
               scan: pendingScan,
               suggestedName: pendingScan == null
@@ -494,6 +496,7 @@ class _QuickImportTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(17),
@@ -531,6 +534,7 @@ class BrandListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Material(
       color: Colors.white,
       elevation: 0.8,
@@ -593,6 +597,7 @@ class _CustomCardTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return Material(
       color: Colors.white,
       elevation: 0.8,

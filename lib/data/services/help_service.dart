@@ -1,6 +1,8 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'supabase_service.dart';
+import 'locale_service.dart';
 
 class HelpFaq {
   final String id;
@@ -15,57 +17,62 @@ class HelpFaq {
     required this.answer,
   });
 
-  factory HelpFaq.fromJson(Map<String, dynamic> json) => HelpFaq(
-        id: json['id']?.toString() ?? '',
-        category: json['category']?.toString() ?? 'Algemeen',
-        question: json['question']?.toString() ?? '',
-        answer: json['answer']?.toString() ?? '',
-      );
+  factory HelpFaq.fromJson(Map<String, dynamic> json, {String language = 'nl'}) {
+    final suffix = language == 'en' ? '_en' : '';
+    return HelpFaq(
+      id: json['id']?.toString() ?? '',
+      category: json['category$suffix']?.toString() ?? L10n.current.general,
+      question: json['question$suffix']?.toString() ?? '',
+      answer: json['answer$suffix']?.toString() ?? '',
+    );
+  }
+
 }
 
 abstract final class HelpService {
-  static const fallbackFaqs = <HelpFaq>[
+  static List<HelpFaq> get fallbackFaqs => <HelpFaq>[
     HelpFaq(
       id: 'add',
-      category: 'Kaarten toevoegen',
-      question: 'Hoe voeg ik een kaart toe?',
+      category: L10n.current.addingCards,
+      question: L10n.current.howDoIAddACard,
       answer:
-          'Tik rechtsboven op +. Kies daarna een klantenkaart, QR-code of cadeaukaart. Je kunt de code scannen, handmatig invoeren of een foto of screenshot importeren.',
+          L10n.current.tapChooseALoyaltyCardQrCode,
     ),
     HelpFaq(
       id: 'local',
-      category: 'Privacy',
-      question: 'Waar worden mijn kaarten bewaard?',
+      category: L10n.current.privacy,
+      question: L10n.current.whereAreMyCardsStored,
       answer:
-          'Je kaarten, barcodes, pincodes en afbeeldingen worden lokaal op je telefoon bewaard. Ze worden niet automatisch naar PasKluis of het beheer geüpload.',
+          L10n.current.yourCardsBarcodesPinsAndImagesAre,
     ),
     HelpFaq(
       id: 'share',
-      category: 'Delen',
-      question: 'Hoe werkt een gedeelde kaart?',
+      category: L10n.current.share,
+      question: L10n.current.howDoesASharedCardWork,
       answer:
-          'De verzender heeft Plus nodig. Zonder Plus kan de ontvanger de kaart bekijken. Hebben jullie allebei Plus, dan kunnen jullie de kaart allebei bijwerken.',
+          L10n.current.theSenderNeedsPlusRecipientsWithoutPlus,
     ),
     HelpFaq(
       id: 'gift',
       category: 'PasKluis Plus',
-      question: 'Wat krijg ik met PasKluis Plus?',
+      question: L10n.current.whatDoIGetWithPaskluisPlus,
       answer:
-          'Met Plus bewaar je onbeperkt cadeaukaarten en kun je klanten- en cadeaukaarten delen. Plus is een eenmalige aankoop en geen abonnement.',
+          L10n.current.withPlusYouCanStoreUnlimitedGift,
     ),
   ];
 
   static Future<List<HelpFaq>> loadFaqs() async {
+    final language = LocaleService.languageCode;
     final client = SupabaseService.client;
     if (client == null) return fallbackFaqs;
     try {
       final rows = await client
           .from('help_faqs')
-          .select('id, category, question, answer')
+          .select('id, category, question, answer, category_en, question_en, answer_en')
           .eq('is_active', true)
           .order('sort_order')
           .order('question');
-      final result = rows.map(HelpFaq.fromJson).where((item) =>
+      final result = rows.map((row) => HelpFaq.fromJson(row, language: language)).where((item) =>
           item.question.trim().isNotEmpty && item.answer.trim().isNotEmpty).toList();
       return result.isEmpty ? fallbackFaqs : result;
     } on PostgrestException {

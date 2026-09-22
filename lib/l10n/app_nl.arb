@@ -1,0 +1,995 @@
+{
+  "@@locale": "nl",
+  "onlineServicesAreCurrentlyUnavailable": "De online diensten zijn momenteel niet beschikbaar.",
+  "onlineServicesAreUnavailable": "De online diensten zijn niet beschikbaar.",
+  "noStoresFound": "Er zijn geen winkels gevonden.",
+  "theStoreCouldNotBeUpdated": "De winkel kon niet worden bijgewerkt.",
+  "signInToShareACard": "Log eerst in om een kaart te delen.",
+  "paskluisPlusIsRequiredToShareCards": "PasKluis Plus is vereist om kaarten te delen.",
+  "iphoneOrIpad": "iPhone of iPad",
+  "androidDevice": "Android-apparaat",
+  "windowsDevice": "Windows-apparaat",
+  "anotherDevice": "Ander apparaat",
+  "general": "Algemeen",
+  "addingCards": "Kaarten toevoegen",
+  "howDoIAddACard": "Hoe voeg ik een kaart toe?",
+  "tapChooseALoyaltyCardQrCode": "Tik op +. Kies daarna een klantenkaart, QR-code of cadeaukaart. Je kunt de code scannen, handmatig invoeren of een foto of screenshot importeren.",
+  "privacy": "Privacy",
+  "whereAreMyCardsStored": "Waar worden mijn kaarten bewaard?",
+  "yourCardsBarcodesPinsAndImagesAre": "Je kaarten, barcodes, pincodes en afbeeldingen worden lokaal op je telefoon bewaard. Ze worden niet automatisch naar PasKluis of het beheer geüpload.",
+  "share": "Delen",
+  "whatDoIGetWithPaskluisPlus": "Wat krijg ik met PasKluis Plus?",
+  "withPlusYouCanStoreUnlimitedGift": "Met Plus bewaar je onbeperkt cadeaukaarten en kun je klanten- en cadeaukaarten delen. Plus is een eenmalige aankoop en geen abonnement.",
+  "howDoesASharedCardWork": "Hoe werkt een gedeelde kaart?",
+  "theSenderNeedsPlusRecipientsWithoutPlus": "De verzender heeft Plus nodig. Zonder Plus kan de ontvanger de kaart bekijken. Hebben jullie allebei Plus, dan kunnen jullie de kaart allebei bijwerken.",
+  "theSelectedImageIsNoLongerAvailable": "De gekozen afbeelding bestaat niet meer.",
+  "aGiftCard": "Een cadeaukaart",
+  "aLoyaltyCard": "Een klantenkaart",
+  "sharedCards": "Gedeelde kaarten",
+  "notificationsWhenSomeoneSharesACardWith": "Meldingen wanneer iemand een kaart met je deelt",
+  "newCardInPaskluis": "Nieuwe kaart in PasKluis",
+  "hasBeenSharedWithYou": "{p0} is met jou gedeeld.",
+  "@hasBeenSharedWithYou": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "aCardHasBeenSharedWithYou": "Er is een kaart met je gedeeld. Open PasKluis om hem te bekijken.",
+  "yourGiftCard": "Je cadeaukaart",
+  "expiresIn30Days": "{p0} verloopt over 30 dagen.",
+  "@expiresIn30Days": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "expiresIn7Days": "{p0} verloopt over 7 dagen.",
+  "@expiresIn7Days": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "expiresToday": "{p0} verloopt vandaag.",
+  "@expiresToday": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "giftCardExpiryDates": "Vervaldatums cadeaukaarten",
+  "remindersBeforeGiftCardsExpire": "Herinneringen voordat cadeaukaarten verlopen",
+  "rememberYourGiftCard": "Cadeaukaart niet vergeten",
+  "confirmYourIdentityToViewThePin": "Bevestig je identiteit om de pincode te bekijken",
+  "yourCardsCodesAndPinsStayOn": "Je kaarten, codes en pincodes blijven op dit apparaat. PasKluis bewaart geen locatiegeschiedenis.",
+  "tapToAddALoyaltyCardQr": "Tik op + om een klantenkaart, QR-code of cadeaukaart toe te voegen. Je kunt scannen, handmatig invoeren of een foto importeren.",
+  "theCardCouldNotBeVerifiedAfter": "De kaart kon niet worden gecontroleerd na opslaan.",
+  "question": "Vraag",
+  "customerSupportIsCurrentlyUnavailable": "De klantenservice is momenteel niet beschikbaar.",
+  "refresh": "Vernieuwen",
+  "tryAgain": "Opnieuw proberen",
+  "signInToRestoreYourPurchase": "Log eerst in om je aankoop te herstellen.",
+  "yourPaskluisPlusAccessHasBeenRestored": "Je PasKluis Plus-toegang is hersteld.",
+  "noPlusPurchaseIsLinkedToThis": "Er is nog geen Plus-aankoop aan dit account gekoppeld.",
+  "unableToRestoreYourPurchaseRightNow": "Herstellen is nu niet gelukt.",
+  "enterAValidEmailAddress": "Vul een geldig e-mailadres in.",
+  "useAtLeast8Characters": "Gebruik minimaal 8 tekens.",
+  "yourAccountHasBeenCreatedCheckYour": "Je account is aangemaakt. Controleer je e-mail om je account te bevestigen.",
+  "welcomeToPaskluis": "Welkom bij PasKluis!",
+  "youAreSignedIn": "Je bent ingelogd.",
+  "somethingWentWrongPleaseTryAgainLater": "Dat ging niet goed. Probeer het later opnieuw.",
+  "ifThisEmailAddressIsRegisteredWith": "Als dit e-mailadres bij PasKluis bekend is, ontvang je een e-mail waarmee je een nieuw wachtwoord kunt instellen.",
+  "thePasswordResetEmailCouldNotBe": "De herstelmail kon niet worden verstuurd.",
+  "yourNewPasswordHasBeenSaved": "Je nieuwe wachtwoord is opgeslagen.",
+  "unableToChangeYourPassword": "Wachtwoord wijzigen is niet gelukt.",
+  "alreadySignedInOnAnotherDevice": "Al ingelogd op een ander apparaat",
+  "thisAccountIsActiveOnIfYou": "Dit account is actief op {p0}. Als je hier doorgaat, wordt dat apparaat automatisch uitgelogd.",
+  "@thisAccountIsActiveOnIfYou": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "anotherDevice151": "een ander apparaat",
+  "cancel": "Annuleren",
+  "signInHere": "Hier inloggen",
+  "youHaveBeenSignedOut": "Je bent uitgelogd.",
+  "yourPasswordHasBeenChanged": "Je wachtwoord is gewijzigd.",
+  "theEmailAddressOrPasswordIsIncorrect": "Het e-mailadres of wachtwoord klopt niet.",
+  "anAccountWithThisEmailAddressAlready": "Er bestaat al een account met dit e-mailadres.",
+  "confirmYourEmailAddressUsingTheEmail": "Bevestig eerst je e-mailadres via de ontvangen e-mail.",
+  "thePasswordDoesNotMeetTheSecurity": "Het wachtwoord voldoet niet aan de beveiligingseisen.",
+  "accountPaskluisPlus": "Account & PasKluis Plus",
+  "signedOutOnThisDevice": "Uitgelogd op dit apparaat",
+  "createAccount": "Account aanmaken",
+  "signIn": "Inloggen",
+  "yourCardsStaySafelyOnThisDevice": "Je kaarten blijven veilig op dit apparaat staan.",
+  "checkYourPlusStatusAndContactCustomer": "Bekijk je Plus-status en neem contact op met de klantenservice.",
+  "name": "Naam",
+  "enterYourName": "Vul je naam in.",
+  "emailAddress": "E-mailadres",
+  "password": "Wachtwoord",
+  "forgotPassword": "Wachtwoord vergeten?",
+  "iAlreadyHaveAnAccount": "Ik heb al een account",
+  "noAccountYetCreateOne": "Nog geen account? Maak er één aan",
+  "paskluisAccount": "PasKluis-account",
+  "allAboutPaskluisPlus": "Alles over PasKluis Plus",
+  "exploreAllBenefitsAndLearnHowSharing": "Bekijk alle voordelen en hoe delen werkt.",
+  "manageSharedCards": "Gedeelde kaarten beheren",
+  "viewSharedAccessAndStopItWhenever": "Bekijk gedeelde toegang en stop deze wanneer je wilt.",
+  "restorePurchases": "Aankopen herstellen",
+  "checkYourLinkedPlusAccessAgain": "Controleer opnieuw je gekoppelde Plus-toegang.",
+  "changePassword": "Wachtwoord wijzigen",
+  "chooseANewPasswordWithAtLeast": "Kies een nieuw wachtwoord van minimaal 8 tekens.",
+  "yourCardsStayLocal": "Je kaarten blijven lokaal",
+  "signingInDoesNotMoveYourCards": "Inloggen verplaatst je kaarten, barcodes en pincodes niet naar de cloud.",
+  "signOut": "Uitloggen",
+  "useAtLeast8CharactersYouWill": "Gebruik minimaal 8 tekens. Je blijft na de wijziging ingelogd.",
+  "newPassword": "Nieuw wachtwoord",
+  "repeatNewPassword": "Herhaal nieuw wachtwoord",
+  "thePasswordsDoNotMatch": "De wachtwoorden zijn niet gelijk.",
+  "savePassword": "Wachtwoord opslaan",
+  "storeUnlimitedGiftCardsAndShareCards": "Onbeperkt cadeaukaarten bewaren en kaarten veilig delen voor € 1,99 eenmalig. Geen abonnement.",
+  "checkingPlusStatus": "Plus-status controleren…",
+  "paskluisPlusIsActive": "PasKluis Plus is actief",
+  "freeVersion": "Gratis versie",
+  "youHaveUnlimitedAccess": "Je hebt onbeperkt toegang.{p0}",
+  "@youHaveUnlimitedAccess": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "yourAccessIsActiveUntil": "Je toegang is actief tot {p0}.",
+  "@yourAccessIsActiveUntil": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "storeOneGiftCardForFreeLoyalty": "Eén cadeaukaart is gratis. Klantenkaarten en QR-codes blijven onbeperkt gratis.",
+  "activatedManuallyByAnAdministrator": " Handmatig geactiveerd via beheer.",
+  "activatedThroughApple": " Geactiveerd via Apple.",
+  "activatedThroughGooglePlay": " Geactiveerd via Google Play.",
+  "accountTemporarilyUnavailable": "Account tijdelijk niet beschikbaar",
+  "checkYourInternetConnectionYourLocalCards": "Controleer je internetverbinding. Je lokale kaarten blijven gewoon werken.",
+  "sharedCardsCouldNotBeRefreshed": "Gedeelde kaarten konden niet worden vernieuwd.",
+  "sharedByYou": "Door jou gedeeld",
+  "youHaveNotSharedAnyCardsYet": "Je hebt nog geen kaarten gedeeld.",
+  "manage": "Beheren",
+  "sharedWithYou": "Met jou gedeeld",
+  "noCardsHaveBeenSharedWithYou": "Er zijn nog geen kaarten met jou gedeeld.",
+  "delete": "Verwijderen",
+  "sharingWithControl": "Delen met controle",
+  "seeWhoHasAccessAndStopShared": "Bekijk wie toegang heeft en stop gedeelde toegang wanneer je wilt.",
+  "card": "Kaart",
+  "theImageCouldNotBeSaved": "De afbeelding kon niet worden opgeslagen.",
+  "fillInTheRequiredFields": "Vul de verplichte velden in.",
+  "addQrCode": "QR-code toevoegen",
+  "addGiftCard": "Cadeaukaart toevoegen",
+  "addLoyaltyCard": "Klantenkaart toevoegen",
+  "addLogoOptional": "Logo toevoegen (optioneel)",
+  "codeType": "Type code",
+  "detectAutomatically": "Automatisch herkennen",
+  "code": "Code",
+  "scanOrEnterManually": "Scan of vul handmatig in",
+  "scanCode": "Code scannen",
+  "save": "Opslaan",
+  "authenticationFailedOrCancelled": "Authenticatie mislukt of geannuleerd",
+  "cardNumber": "Kaartnummer",
+  "balance": "Saldo",
+  "pin": "Pincode",
+  "visible": "Getoond",
+  "actionShow": "Toon",
+  "holdYourScreenUpToTheScanner": "Houd je scherm bij de scanner",
+  "edit": "Bewerken",
+  "unableToDisplayBarcode": "Barcode kan niet worden weergegeven",
+  "cardSaved": "Kaart opgeslagen",
+  "thisLoyaltyCardIsNowInYour": "Deze klantenkaart staat nu in je PasKluis en is klaar voor gebruik.",
+  "editDetails": "Gegevens aanpassen",
+  "changeTheNameCodeOrNotes": "Naam, code of notities wijzigen",
+  "cardPhotos": "Kaartfoto’s",
+  "addAPhotoOfYourCardLater": "Voeg later een foto van je kaart toe",
+  "cardPhotosAreComingLater": "Kaartfoto’s voegen we later toe.",
+  "notes": "Notities",
+  "keepExtraInformationWithThisCard": "Bewaar extra informatie bij deze kaart",
+  "thisCard": "deze kaart",
+  "removeFromYourPaskluis": "Uit jouw PasKluis verwijderen?",
+  "deleteCard": "Kaart verwijderen?",
+  "youAreOnlyRemovingFromYourOwn": "Je verwijdert \"{p0}\" alleen uit jouw PasKluis. De kaart van de eigenaar blijft bestaan.",
+  "@youAreOnlyRemovingFromYourOwn": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "areYouSureYouWantToDelete": "Weet je zeker dat je \"{p0}\" wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.",
+  "@areYouSureYouWantToDelete": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "sharedAccessCouldNotBeUpdatedTry": "De gedeelde toegang kon niet worden bijgewerkt. Probeer het opnieuw met internetverbinding.",
+  "codeCopied": "Code gekopieerd",
+  "cardSharingIsTemporarilyUnavailable": "Kaarten delen is tijdelijk niet beschikbaar.",
+  "cardDetails": "Kaartdetails",
+  "brand": "Merk",
+  "note": "Notitie",
+  "access": "Toegang",
+  "sharedWithYouEditTogether": "Met jou gedeeld • samen bewerken",
+  "sharedWithYouViewOnly": "Met jou gedeeld • alleen bekijken",
+  "removeFromFavourites": "Verwijder uit favorieten",
+  "addToFavourites": "Maak favoriet",
+  "shareByEmail": "Delen via e-mailadres",
+  "manageSharedAccess": "Gedeelde toegang beheren",
+  "copyCode": "Code kopiëren",
+  "removeFromMyPaskluis": "Uit mijn PasKluis verwijderen",
+  "noCards": "Geen kaarten",
+  "back": "Terug",
+  "holdTheBarcodeUpToTheScanner": "Houd de barcode goed voor de scanner",
+  "noBarcodeAvailable": "Geen barcode beschikbaar",
+  "detailsAndOptions": "Details en opties",
+  "youHaveGiftCardsAvailable": "U heeft {p0} cadeaukaarten beschikbaar",
+  "@youHaveGiftCardsAvailable": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "youHaveOneGiftCardAvailable": "U heeft een cadeaukaart beschikbaar",
+  "balance277": "Saldo: € {p0}",
+  "@balance277": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "copied": "Gekopieerd",
+  "copy": "Kopiëren",
+  "hasBeenDeleted": "{p0} is verwijderd.",
+  "@hasBeenDeleted": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "loyaltyCards": "Klantenkaarten",
+  "everythingAtHand": "Alles bij de hand",
+  "addYourFirstLoyaltyCard": "Voeg je eerste klantenkaart toe",
+  "chooseAStoreScanTheBarcodeOr": "Kies een winkel, scan de barcode of importeer een foto. PasKluis bewaart je kaart veilig op dit toestel.",
+  "noAccountNeeded": "Geen account nodig",
+  "loyaltyCard": "Klantenkaart",
+  "@loyaltyCard": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      },
+      "p2": {
+        "type": "Object"
+      }
+    }
+  },
+  "favourite": ", favoriet",
+  "away": ", {p0} afstand",
+  "@away": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "doubleTapToOpenTheCard": "Tik tweemaal om de kaart te openen",
+  "codeDetectedNowChooseTheStore": "Code herkend. Kies nu de winkel.",
+  "theImageCouldNotBeRead": "De afbeelding kon niet worden gelezen.",
+  "noCardCodeFoundInThisImage": "Geen kaartcode gevonden in de afbeelding.",
+  "weCouldNotIdentifyTheStoreChoose": "Winkel niet automatisch herkend. Kies een winkel of voeg hem handmatig toe.",
+  "storeRecognised": "Winkel herkend",
+  "weRecogniseThisLoyaltyCardAsIs": "We herkennen deze klantenkaart als {p0}. Klopt dat?",
+  "@weRecogniseThisLoyaltyCardAsIs": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "differentStore": "Andere winkel",
+  "use": "{p0} gebruiken",
+  "@use": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "myLoyaltyCard": "Mijn klantenkaart",
+  "manual": "Handmatig",
+  "codeDetectedChooseTheStoreBelow": "Code herkend. Kies hieronder de winkel.",
+  "quickAdd": "Snel toevoegen",
+  "scanCard": "Kaart scannen",
+  "importPhoto": "Foto importeren",
+  "searchStores": "Zoek winkel",
+  "popularCards": "Populaire kaarten",
+  "allStores": "Alle winkels",
+  "searchResults": "Zoekresultaten",
+  "noStoresFound312": "Geen winkels gevonden.",
+  "customCard": "Aangepaste kaart",
+  "addAnotherStoreManually": "Andere winkel handmatig toevoegen",
+  "aNameIsRequired": "Naam is verplicht.",
+  "aBarcodeIsRequired": "Barcode is verplicht.",
+  "editCard": "Kaart bewerken",
+  "cardDetails318": "Kaartgegevens",
+  "barcode": "Streepjescode",
+  "scanBarcodeAgain": "Barcode opnieuw scannen",
+  "logo": "Logo",
+  "addNote": "Notitie toevoegen",
+  "saveChanges": "Wijzigingen opslaan",
+  "noBarcodeYet": "Nog geen barcode",
+  "changeLogo": "Logo wijzigen",
+  "addLogo": "Logo toevoegen",
+  "noBarcodeOrQrCodeFoundIn": "Geen barcode of QR-code gevonden in deze foto.",
+  "codeFoundCheckTheDetailsBeforeSaving": "Code gevonden. Controleer de gegevens voor opslaan.",
+  "codeAndPinFoundCheckThemBefore": "Code en pincode gevonden. Controleer ze voor opslaan.",
+  "giftCard": "Cadeaukaart",
+  "@giftCard": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "chooseExpiryDate": "Kies de vervaldatum",
+  "aBarcodeCardNumberIsRequired": "Barcode / kaartnummer is verplicht.",
+  "unableToSavePleaseTryAgain": "Opslaan is niet gelukt. Probeer het nog een keer.",
+  "editGiftCard": "Cadeaukaart bewerken",
+  "finishGiftCard": "Cadeaukaart afronden",
+  "whichStoreIsThisGiftCardFor": "Welke winkel hoort bij deze cadeaukaart?",
+  "chooseAnExistingStoreOrCreateYour": "Kies een bestaande winkel of maak een eigen cadeaukaart.",
+  "theCardCodeWasFoundButThe": "De kaartcode is gevonden, maar de winkel nog niet.",
+  "chooseAStore": "Kies een winkel",
+  "customGiftCard": "Eigen cadeaukaart",
+  "change": "Wijzigen",
+  "whatIsTheBalance": "Wat is het saldo?",
+  "enterTheCurrentBalanceOfThisGift": "Vul het huidige saldo van deze cadeaukaart in.",
+  "pinScratchCodeOptional": "Pincode / krascode (optioneel)",
+  "validity": "Geldigheid",
+  "optionalPaskluisCanRemindYouBeforeThe": "Optioneel. PasKluis kan je herinneren voordat de kaart verloopt.",
+  "addExpiryDate": "Vervaldatum toevoegen",
+  "removeExpiryDate": "Vervaldatum verwijderen",
+  "reminders": "Herinneringen",
+  "text30Days7DaysAndOnThe": "30 dagen, 7 dagen en op de vervaldatum",
+  "giftCardName": "Naam cadeaukaart",
+  "cardCodeCardNumber": "Kaartcode / kaartnummer",
+  "scanGiftCardAgain": "Cadeaukaart opnieuw scannen",
+  "takeAPhotoAndReadItsDetails": "Foto maken en gegevens uitlezen",
+  "importPhotoOrScreenshot": "Foto of screenshot importeren",
+  "saving": "Opslaan…",
+  "saveGiftCard": "Cadeaukaart opslaan",
+  "chooseTheStore": "Kies de winkel",
+  "balanceUnknown": "Saldo onbekend",
+  "thePhotoCouldNotBeReadPlease": "De foto kon niet worden gelezen. Probeer het opnieuw.",
+  "noCodeFoundTryAClearerPhoto": "Geen code gevonden. Probeer een duidelijkere foto.",
+  "photographTheWholeGiftCard": "Fotografeer de hele cadeaukaart",
+  "makeSureTheCodeAndAnyPin": "Zorg dat de code en eventuele pincode duidelijk zichtbaar zijn. PasKluis probeert de winkel, het logo, de kaartcode en de pincode automatisch te herkennen.",
+  "takeAPhoto": "Maak een foto",
+  "choosePhotoOrScreenshot": "Kies foto of screenshot",
+  "addManually": "Handmatig toevoegen",
+  "recognitionHappensOnYourDeviceYourPhoto": "Herkenning gebeurt op je toestel; je foto wordt niet geüpload.",
+  "enterAtLeastANameAndBarcode": "Vul minimaal een naam en barcode in.",
+  "giftCardDetails": "Cadeaukaartgegevens",
+  "pinScratchCode": "Pincode / krascode",
+  "originalBalance": "Oorspronkelijk saldo",
+  "currentBalance": "Huidig saldo",
+  "expiryDateReminders": "Vervaldatumherinneringen",
+  "text30Days7DaysAndOnThe374": "30 dagen, 7 dagen en op de dag zelf",
+  "noGiftCardBarcodeFound": "Geen cadeaukaart-barcode gevonden.",
+  "unableToReadImage": "Afbeelding kon niet worden gelezen.",
+  "scanGiftCard": "Cadeaukaart scannen",
+  "scanTheBarcodeOnYourGiftCard": "Scan de barcode van je cadeaukaart",
+  "pinRecognitionWillBeAddedLater": "Later breiden we dit uit met pincode-herkenning",
+  "reading": "Lezen...",
+  "actionImport": "Importeren",
+  "useRearCamera": "Gebruik achtercamera",
+  "switchCamera": "Camera wisselen",
+  "enterBarcodeManually": "Barcode handmatig invoeren",
+  "enterTheNumberBelowTheBarcode": "Voer het nummer onder de barcode in.",
+  "eG8712345678901": "Bijv. 8712345678901",
+  "actionContinue": "Verder",
+  "thisGiftCard": "deze cadeaukaart",
+  "permanentlyDelete": "Definitief verwijderen?",
+  "areYouSureYouWantToPermanently": "Weet je zeker dat je \"{p0}\" definitief wilt verwijderen? De kaart verdwijnt ook bij iedereen met wie je hem hebt gedeeld. Dit kun je niet ongedaan maken.",
+  "@areYouSureYouWantToPermanently": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "permanentlyDelete391": "Definitief verwijderen",
+  "verificationFailed": "Beveiliging niet gelukt",
+  "weCouldNotVerifyYourIdentityWould": "We konden je identiteit niet bevestigen. Wil je de pincode toch tonen?",
+  "showPin": "Pincode tonen",
+  "usedThisCard": "Kaart gebruikt?",
+  "currentBalance396": "{p0} • huidig saldo € {p1}",
+  "@currentBalance396": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      }
+    }
+  },
+  "amountSpent": "Bedrag besteed",
+  "enterNewBalance": "Nieuw saldo invoeren",
+  "cardFullyUsed": "Kaart volledig gebruikt",
+  "manageTogetherWithPlus": "Samen beheren met Plus",
+  "youCanViewThisSharedGiftCard": "Je kunt deze gedeelde cadeaukaart bekijken. Met PasKluis Plus kun je samen ook het saldo en de kaartgegevens aanpassen.",
+  "notNow": "Niet nu",
+  "getPlus199Once": "Neem Plus • € 1,99 eenmalig",
+  "giftCardIsEmpty": "Cadeaukaart is leeg",
+  "wouldYouLikeToArchiveThisCard": "Wil je deze kaart archiveren? Je kunt hem later altijd terugzetten.",
+  "keep": "Bewaren",
+  "archive": "Archiveren",
+  "amountSpent410": "Besteed bedrag",
+  "newBalance": "Nieuw saldo",
+  "theAmountIsHigherThanTheCurrent": "Het bedrag is hoger dan het huidige saldo.",
+  "applyAmount": "Bedrag verwerken",
+  "saveBalance": "Saldo opslaan",
+  "balanceHistory": "Saldohistorie",
+  "noBalanceChangesYet": "Nog geen saldowijzigingen.",
+  "spent": "€ {p0} besteed",
+  "@spent": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "fullyUsed": "Volledig gebruikt",
+  "changeUndone": "Wijziging ongedaan gemaakt",
+  "balanceUpdated": "Saldo aangepast",
+  "undo": "Ongedaan",
+  "giftCardDetails424": "Cadeaukaartdetails",
+  "startingBalance": "Startsaldo",
+  "expiryDate": "Vervaldatum",
+  "pinScratchCode427": "Pincode / krascode\n",
+  "updateBalance": "Saldo aanpassen",
+  "updateBalanceWithPlus": "Saldo aanpassen met Plus",
+  "noGiftCards": "Geen cadeaukaarten",
+  "unableToUpdateCheckYourConnection": "Bijwerken lukte niet. Controleer je verbinding.",
+  "giftCardSaved": "Cadeaukaart is opgeslagen.",
+  "youAreOnlyRemovingFromYourOwn433": "Je verwijdert \"{p0}\" alleen uit jouw PasKluis. De cadeaukaart van de eigenaar blijft bestaan.",
+  "@youAreOnlyRemovingFromYourOwn433": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "areYouSureYouWantToPermanently434": "Weet je zeker dat je \"{p0}\" definitief wilt verwijderen? Gedeelde toegang wordt voor iedereen gestopt.",
+  "@areYouSureYouWantToPermanently434": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "archive435": "Archief",
+  "thereAreNoGiftCardsInThe": "Er staan nog geen cadeaukaarten in het archief.",
+  "balance437": "Saldo € {p0}",
+  "@balance437": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "restore": "Terugzetten",
+  "giftCards": "Cadeaukaarten",
+  "moreInformation": "Extra informatie",
+  "discoverEverythingYouGetWithPaskluisPlus": "Ontdek alles wat je met PasKluis Plus krijgt",
+  "storeYourFirstGiftCardForFree": "Je eerste cadeaukaart is gratis",
+  "goFurtherWithPlusStoreUnlimitedGift": "Ga verder met Plus: bewaar onbeperkt cadeaukaarten en deel klanten- en cadeaukaarten veilig met anderen.",
+  "text199OnceLifetimeAccess": "€ 1,99 eenmalig • levenslange toegang",
+  "discoverAllPlusBenefits": "Ontdek alle Plus-voordelen",
+  "addGiftCard447": "Voeg cadeaukaart toe",
+  "tapToGetStarted": "Tik om te beginnen",
+  "expired": "Verlopen",
+  "expiresToday450": "Verloopt vandaag",
+  "text1DayLeft": "Nog 1 dag",
+  "daysLeft": "Nog {p0} dagen",
+  "@daysLeft": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "giftCard453": "{p0}, cadeaukaart, {p1}{p2}",
+  "@giftCard453": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      },
+      "p2": {
+        "type": "Object"
+      }
+    }
+  },
+  "balanceUnknown454": "saldo onbekend",
+  "balance455": "saldo € {p0}",
+  "@balance455": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "doubleTapToOpenTheGiftCard": "Tik tweemaal om de cadeaukaart te openen",
+  "addOrImportACard": "Een kaart toevoegen of importeren",
+  "tap": "Tik op +",
+  "chooseLoyaltyCardQrCodeOrGift": "Kies Klantenkaart, QR-code of Cadeaukaart. PasKluis opent daarna de juiste invoer.",
+  "chooseAStoreAndScanTheBarcode": "Kies een winkel en scan de barcode of QR-code. Je kunt de code ook zelf invoeren.",
+  "importAPhotoOrScreenshot": "Importeer een foto of screenshot",
+  "paskluisCanRecogniseALoyaltyCardQr": "PasKluis kan een klantenkaart, QR-code of cadeaukaart op je toestel herkennen. De afbeelding wordt niet geüpload.",
+  "checkAndSave": "Controleer en bewaar",
+  "alwaysCheckTheStoreAndCodeBefore": "Controleer altijd de winkel en code voordat je de kaart opslaat.",
+  "addCard": "Kaart toevoegen",
+  "qrCodes": "QR-codes ({p0})",
+  "@qrCodes": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "delete468": "Verwijderen?",
+  "qrCodeEditingIsComingSoon": "QR-code bewerken maken we straks.",
+  "helpWithAddingCards": "Uitleg over kaarten toevoegen",
+  "settings": "Instellingen",
+  "add": "Toevoegen",
+  "searchPaskluis": "Zoek in PasKluis",
+  "clearSearch": "Zoekopdracht wissen",
+  "addCard476": "Voeg kaart toe",
+  "allYourCards": "Al je kaarten",
+  "qrCodes478": "QR-codes",
+  "addQrCode479": "Voeg QR-code toe",
+  "allYourQrCodes": "Al je QR-codes",
+  "allYourGiftCards": "Al je cadeaukaarten",
+  "favourites": "Favorieten",
+  "noFavouritesYet": "Nog geen favorieten",
+  "markYourMostImportantCardsWithA": "Markeer je belangrijkste kaarten met een ster.",
+  "noCardAtThisLocationYet": "Nog geen kaart op deze plek",
+  "openACardAtAStorePaskluis": "Open een kaart bij een winkel. PasKluis onthoudt die plek alleen op dit toestel.",
+  "locationServicesAreOff": "Locatievoorzieningen staan uit",
+  "enableLocationToShowPreviouslyUsedCards": "Zet locatie aan om eerder gebruikte kaarten hier te tonen.",
+  "enableLocation": "Locatie aanzetten",
+  "locationIsOffForPaskluis": "Locatie staat uit voor PasKluis",
+  "youCanChangeThisInYourPhone": "Je kunt dit aanpassen in de instellingen van je telefoon.",
+  "openSettings": "Open instellingen",
+  "showCardsYouUseHere": "Toon kaarten die je hier gebruikt",
+  "yourLocationStaysOnYourPhoneAnd": "Je locatie blijft op je telefoon en wordt niet geüpload.",
+  "useLocation": "Locatie gebruiken",
+  "locationUnavailable": "Locatie niet beschikbaar",
+  "tryAgainWhenYouHaveAConnection": "Probeer het opnieuw wanneer je bereik hebt.",
+  "tryAgain498": "Opnieuw",
+  "nearby": "In de buurt",
+  "noResultsFor": "Geen resultaten voor “{p0}”",
+  "@noResultsFor": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "searchByNameCardTypeOrA": "Zoek op de naam, het soort kaart of een notitie.",
+  "safelyStoredOnThisDevice": "Veilig opgeslagen op dit toestel",
+  "moreFreedomForever": "Meer vrijheid. Voor altijd.",
+  "unlockAllGiftCardAndSharingFeatures": "Ontgrendel alle cadeaukaart- en deelfuncties met één eenmalige aankoop.",
+  "whatYouGetWithPlus": "Dit krijg je met Plus",
+  "unlimitedGiftCards": "Onbeperkt cadeaukaarten",
+  "storeAsManyGiftCardsAsYou": "Bewaar zoveel cadeaukaarten als je wilt. Zonder Plus kun je één cadeaukaart bewaren.",
+  "shareLoyaltyCardsAndGiftCards": "Klanten- én cadeaukaarten delen",
+  "shareSecurelyByEmailGiftCardsAre": "Deel veilig via e-mailadres. Een cadeaukaart wordt inclusief pincode of krascode gedeeld.",
+  "manageTogether": "Samen beheren",
+  "ifTheRecipientAlsoHasPlusYou": "Heeft de ontvanger ook Plus, dan kunnen jullie dezelfde gedeelde kaart allebei bijwerken.",
+  "seeWhoYouShareCardsWithAnd": "Bekijk met wie je kaarten deelt en stop toegang wanneer je wilt.",
+  "payOnceAndEnjoyPaskluisPlusForever": "Eén keer betalen en geniet voor altijd van PasKluis Plus.",
+  "viewMyPlusStatus": "Bekijk mijn Plus-status",
+  "paskluisIsAdFreeForEveryonePlus": "PasKluis is voor iedereen reclamevrij. Plus voegt extra functies toe, geen reclamevrije modus.",
+  "text199OnceLifetimeAccess516": "€ 1,99 eenmalig  •  levenslange toegang",
+  "storeMoreGiftCards": "Meer cadeaukaarten bewaren",
+  "storeOneGiftCardForFreeWith": "Je eerste cadeaukaart is gratis. Met PasKluis Plus bewaar je onbeperkt cadeaukaarten voor € 1,99 eenmalig. Je krijgt levenslange toegang, zonder abonnement. Je kunt met Plus ook klanten- en cadeaukaarten delen.\n\nTijdens deze test kan Plus via beheer op je account worden geactiveerd.",
+  "signInOrRegister": "Inloggen of registreren",
+  "viewPlusStatus": "Bekijk Plus-status",
+  "qrCodeContentIsRequired": "QR-code inhoud is verplicht.",
+  "editQrCode": "QR-code bewerken",
+  "finishQrCode": "QR-code afronden",
+  "scanAQrCodeOrEnterIts": "Scan een QR-code of voer de inhoud handmatig in.",
+  "qrCodeName": "Naam QR-code",
+  "qrCodeContent": "QR-code inhoud",
+  "scanQrCode": "QR-code scannen",
+  "saveQrCode": "QR-code opslaan",
+  "noQrCodeYet": "Nog geen QR-code",
+  "noQrCodeFoundInTheSelected": "Geen QR-code gevonden in de gekozen afbeelding(en).",
+  "nameYourQrSet": "Naam voor QR-set",
+  "eGFestivalTickets": "Bijv. Festival tickets",
+  "howWouldYouLikeToAddYour": "Hoe wil je je QR-code toevoegen?",
+  "scanOneQrCodeOrSeveralTickets": "Scan één QR-code of meerdere tickets achter elkaar.",
+  "scanOneQrCode": "1 QR-code scannen",
+  "useYourCameraToAddAQr": "Gebruik je camera om één QR-code toe te voegen",
+  "multipleQrCodes": "Meerdere QR-codes",
+  "scanSeveralTicketsInARowAnd": "Scan meerdere tickets achter elkaar en sla ze als set op",
+  "enterManually": "Handmatig invoeren",
+  "enterANameAndQrCodeContent": "Voer zelf een naam en QR-code inhoud in",
+  "readOneOrMoreQrCodesFrom": "Lees één of meerdere QR-codes uit afbeeldingen",
+  "thisQrCodeIsAlreadyInThis": "Deze QR-code staat al in deze set.",
+  "aQrSetMustContainAtLeast": "Een QR-set moet minimaal 1 QR-code bevatten.",
+  "addAtLeastOneQrCode": "Voeg minimaal 1 QR-code toe.",
+  "editQrSet": "QR-set bewerken",
+  "setDetails": "Setgegevens",
+  "ofQrCodesUsed": "{p0} van {p1} QR-codes gebruikt",
+  "@ofQrCodesUsed": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      }
+    }
+  },
+  "qrSetName": "Naam QR-set",
+  "manageTheTicketsInThisSet": "Beheer de tickets binnen deze set.",
+  "ticket": "Ticket {p0}",
+  "@ticket": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "used": "Gebruikt",
+  "notUsed": "Niet gebruikt",
+  "markAsUnused": "Markeer als niet gebruikt",
+  "markAsUsed": "Markeer als gebruikt",
+  "scanAgain": "Opnieuw scannen",
+  "scanMultipleQrCodes": "Meerdere QR scannen",
+  "qrCodesAdded": "{p0} QR-codes toegevoegd",
+  "@qrCodesAdded": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "done": "Gereed",
+  "thisQrCode": "deze QR-code",
+  "deleteQrCode": "QR-code verwijderen?",
+  "areYouSureYouWantToDelete561": "Weet je zeker dat je \"{p0}\" wilt verwijderen? Dit kun je niet ongedaan maken.",
+  "@areYouSureYouWantToDelete561": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "removeFromFavourites562": "Verwijderen uit favorieten",
+  "addToFavourites563": "Toevoegen aan favorieten",
+  "ticketMarkedAsUsed": "Ticket {p0} gemarkeerd als gebruikt.",
+  "@ticketMarkedAsUsed": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "qrCodeMarkedAsUsed": "QR-code gemarkeerd als gebruikt.",
+  "ticketIsAvailableAgain": "Ticket {p0} is weer beschikbaar.",
+  "@ticketIsAvailableAgain": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "qrCodeIsAvailableAgain": "QR-code is weer beschikbaar.",
+  "ticketOf": "Ticket {p0} van {p1}",
+  "@ticketOf": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      }
+    }
+  },
+  "ticketOfUsed": "Ticket {p0} van {p1} • {p2} gebruikt",
+  "@ticketOfUsed": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      },
+      "p2": {
+        "type": "Object"
+      }
+    }
+  },
+  "noQrCodeFound": "Geen QR-code gevonden",
+  "used571": "GEBRUIKT",
+  "firstUnused": "Eerste ongebruikte",
+  "next": "Volgende",
+  "ticketUsed": "Dit ticket gebruikt",
+  "qrCodeUsed": "QR-code gebruikt",
+  "noQrCodeAvailable": "Geen QR-code beschikbaar",
+  "readyWhenYouNeedIt": "Snel tevoorschijn",
+  "saveYourFirstQrCode": "Bewaar je eerste QR-code",
+  "ticketsAccessCodesLinksOrAWhole": "Tickets, toegangscodes, links of een hele set QR-codes: bewaar ze overzichtelijk en open ze in één tik.",
+  "ticketsUsed": "{p0} tickets • {p1} gebruikt",
+  "@ticketsUsed": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      },
+      "p1": {
+        "type": "Object"
+      }
+    }
+  },
+  "noQrCodeFoundInThisImage": "Geen QR-code gevonden in deze afbeelding.",
+  "placeTheQrCodeInsideTheFrame": "Plaats de QR-code binnen het kader",
+  "theQrCodeIsRecognisedAutomatically": "De QR-code wordt automatisch herkend",
+  "enterQrCodeManually": "QR-code handmatig invoeren",
+  "enterTheTextLinkOrCodeContained": "Voer de tekst, link of code in die in de QR-code staat.",
+  "eGHttpsExampleComTicket": "Bijv. https://voorbeeld.nl/ticket",
+  "whatTypeOfCodeIsOnThe": "Welk type code staat op de kaart?",
+  "automaticDetectionWorksForMostCards": "Automatisch herkennen werkt voor de meeste kaarten.",
+  "recommended": "Aanbevolen",
+  "noBarcodeFoundInThisImage": "Geen barcode gevonden in deze afbeelding.",
+  "scanBarcode": "Barcode scannen",
+  "pointYourCameraAtTheBarcodeOn": "Richt je camera op de barcode van je klantenkaart",
+  "keepTheBarcodeInsideTheFrame": "Houd de barcode binnen het kader",
+  "thisImageCouldNotBeReadPlease": "Deze afbeelding kon niet worden gelezen. Probeer het opnieuw.",
+  "whatWouldYouLikeToAdd": "Wat wil je toevoegen?",
+  "howWouldYouLikeToAddThis": "Hoe wil je deze {p0} toevoegen?",
+  "@howWouldYouLikeToAddThis": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "chooseTheCardTypeFirstThenChoose": "Kies eerst het soort kaart. Daarna kies je scannen, zelf invoeren of importeren uit een screenshot.",
+  "chooseAStoreAndScanTheCode": "Je kunt een winkel kiezen en de code scannen, alles zelf invoeren, of gegevens uit een screenshot laten herkennen.",
+  "addALoyaltyCardOrMembershipCard": "Voeg een klantenkaart of ledenpas toe",
+  "addOneQrCodeOrMultipleTickets": "Voeg één QR-code of meerdere tickets toe",
+  "addAGiftCardWithAnOptional": "Voeg een cadeaukaart met eventueel saldo toe",
+  "chooseAStoreOrEnterManually": "Winkel kiezen of zelf invoeren",
+  "scanTheQrCodeOrEnterThe": "Scan de QR-code of voer de gegevens zelf in",
+  "chooseAStoreScanTheBarcodeOr604": "Kies een winkel, scan de barcode of kies Handmatig",
+  "importFromScreenshot": "Importeren uit screenshot",
+  "chooseAnImageFromYourPhotoLibrary": "Kies een afbeelding uit je fotobibliotheek",
+  "recognisingCard": "Kaart wordt herkend…",
+  "chooseAnotherType": "Ander type kiezen",
+  "unlockPaskluis": "Ontgrendel PasKluis",
+  "paskluisIsLocked": "PasKluis is vergrendeld",
+  "useBiometricsOrYourDevicePasscodeTo": "Gebruik je biometrie of toestelcode om je kaarten te openen.",
+  "unlock": "Ontgrendelen",
+  "helpAndGuidance": "Hulp en uitleg",
+  "howCanWeHelp": "Waar kunnen we mee helpen?",
+  "findHelpWithAddingScanningSharingPrivacy": "Vind snel uitleg over toevoegen, scannen, delen, privacy en Plus.",
+  "searchQuestions": "Zoek een vraag",
+  "frequentlyAskedQuestions": "Veelgestelde vragen",
+  "noMatchingQuestionsFound": "Geen passende vraag gevonden.",
+  "cannotFindYourQuestion": "Staat je vraag er niet tussen?",
+  "ourCustomerSupportIsAvailableToEveryone": "Onze klantenservice is voor iedereen bereikbaar.",
+  "contactUs": "Neem contact op",
+  "privacyAndData": "Privacy en gegevens",
+  "staysOnYourPhone": "Blijft op jouw telefoon",
+  "loyaltyCardsQrCodesAndGiftCards": "Klantenkaarten, QR-codes en cadeaukaarten",
+  "barcodesCardNumbersPinsAndScratchCodes": "Barcodes, kaartnummers, pincodes en krascodes",
+  "balancesNotesAndImportedImages": "Saldo’s, notities en geïmporteerde afbeeldingen",
+  "savedCardUsageLocationsForNearbyCards": "Opgeslagen gebruikslocaties voor kaarten in de buurt",
+  "onlyOnlineWhenYouUseIt": "Alleen online wanneer jij dat gebruikt",
+  "yourAccountNameEmailAddressAndPlus": "Je accountnaam, e-mailadres en Plus-status na inloggen",
+  "aCardYouDeliberatelyShareWithSomeone": "Een kaart die je bewust met iemand deelt, inclusief de gegevens die op die kaart staan",
+  "questionsAndMessagesYouSendToCustomer": "Vragen en berichten die je zelf naar de klantenservice stuurt",
+  "publicStoreInformationAndLogosRetrievedBy": "Openbare winkelinformatie en logo’s die de app ophaalt",
+  "notVisibleInTheAdminPortal": "Niet zichtbaar in het beheer",
+  "yourRegularLocalCardsAndCodes": "Jouw gewone lokale kaarten en codes",
+  "pinsOrScratchCodesOfUnsharedGift": "Pincodes of krascodes van niet-gedeelde cadeaukaarten",
+  "yourPreciseLocationOrLocationHistory": "Je precieze locatie of locatiegeschiedenis",
+  "whichCardYouOpenWhereAndWhen": "Welke kaart je waar en wanneer opent",
+  "whenSharingACard": "Bij het delen van een kaart",
+  "youChooseWhichCardToShareAnd": "Je kiest zelf welke kaart en met welk e-mailadres je deelt.",
+  "aGiftCardIsAlwaysSharedIn": "Een cadeaukaart wordt altijd volledig gedeeld, dus ook met pincode of krascode.",
+  "youCanStopSharedAccessLater": "Je kunt gedeelde toegang later weer stoppen.",
+  "recipientsWithoutPlusCanOnlyViewCards": "Zonder Plus kan de ontvanger alleen kijken; met Plus kunnen beide gebruikers bewerken.",
+  "securityAndYourChoices": "Beveiliging en jouw keuzes",
+  "youCanLockPaskluisWithFaceId": "Je kunt PasKluis vergrendelen met Face ID, biometrie of je toestelcode.",
+  "sensitiveCodesCanStayHiddenByDefault": "Gevoelige codes kunnen standaard verborgen blijven.",
+  "youCanDisableLocationBasedCardsEntirely": "Locatiegestuurde kaarten kun je volledig uitschakelen.",
+  "signingOutDoesNotRemoveYourLocal": "Uitloggen verwijdert je lokale kaarten niet van het apparaat.",
+  "paskluisDoesNotSellPersonalDataOr": "PasKluis verkoopt geen persoonsgegevens en gebruikt je kaartgegevens niet voor advertenties. PasKluis is voor iedereen reclamevrij.",
+  "yourPaskluisBelongsToYou": "Jouw PasKluis is van jou",
+  "yourMostImportantDataStaysLocallyOn": "De belangrijkste gegevens blijven lokaal op je telefoon. Hieronder zie je precies wat wel en niet online wordt verwerkt.",
+  "locationIsEnabledInPaskluisAlsoGrant": "Locatie staat aan in PasKluis. Geef ook toestemming in de instellingen van je telefoon.",
+  "confirmYourIdentityToEnableAppLock": "Bevestig je identiteit om app-vergrendeling in te schakelen",
+  "distanceToStore": "Afstand tot winkel",
+  "whenShouldPaskluisConsiderASavedCard": "Wanneer beschouwt PasKluis een opgeslagen kaart als dichtbij?",
+  "text1Kilometre": "1 kilometer",
+  "metres": "{p0} meter",
+  "@metres": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "defaultSorting": "Standaard sortering",
+  "lastUsed": "Laatst gebruikt",
+  "recentlyAdded": "Laatst toegevoegd",
+  "alphabetical": "Alfabetisch",
+  "defaultStartScreen": "Standaard startscherm",
+  "home": "Home",
+  "smartCards": "Slimme kaarten",
+  "locationBasedCards": "Kaarten op basis van locatie",
+  "showTheRightCardAtANearby": "Toon de juiste kaart bij een winkel in de buurt",
+  "distance": "Afstand",
+  "howCloseAStoreNeedsToBe": "Hoe dichtbij een winkel moet zijn",
+  "nearestLoyaltyCardsFirst": "Dichtstbijzijnde klantenkaarten bovenaan",
+  "withinTheChosenDistanceNearestFirstThen": "Binnen de gekozen afstand: eerst dichtbij, daarna je favorieten en normale sortering",
+  "enableLocationBasedCardsToUseThis": "Zet kaarten op basis van locatie aan om deze optie te gebruiken",
+  "cardsAndDisplay": "Kaarten en weergave",
+  "favouritesFirst": "Favorieten bovenaan",
+  "favouritesFollowNearbyLoyaltyCards": "Favorieten volgen na klantenkaarten in de buurt",
+  "yourMostImportantCardsFirst": "Je belangrijkste kaarten als eerste",
+  "favouritesOnHome": "Favorietenblok op Home",
+  "showASeparateSectionWithFavouriteCards": "Toon een apart overzicht met favoriete kaarten",
+  "nearbyOnHome": "In de buurt op Home",
+  "showASeparateSectionWithNearbyLoyalty": "Toon een apart overzicht met klantenkaarten in de buurt",
+  "theSectionAppearsWhenLocationBasedCards": "Het blok verschijnt zodra kaarten op basis van locatie aanstaat",
+  "orderInYourCardOverview": "Volgorde in je kaartenoverzicht",
+  "openPaskluisInYourFavouriteSection": "Open PasKluis direct op jouw favoriete onderdeel",
+  "extraClarity": "Extra duidelijk",
+  "largerTextHigherContrastAndLargerCards": "Grotere tekst, hoger contrast en grotere kaartvakken",
+  "whileUsingCards": "Tijdens gebruik",
+  "automaticallyIncreaseBrightness": "Helderheid automatisch verhogen",
+  "makesBarcodesEasierToScan": "Barcodes zijn zo makkelijker te scannen",
+  "keepScreenAwake": "Scherm wakker houden",
+  "preventTheScreenFromTurningOffWhile": "Voorkom dat het scherm uitgaat bij een kaart",
+  "giftCardReminders": "Cadeaukaartherinneringen",
+  "notificationsBeforeTheExpiryDate": "Meldingen vóór de vervaldatum",
+  "securityAndPrivacy": "Beveiliging en privacy",
+  "lockPaskluis": "Vergrendel PasKluis",
+  "useFaceIdBiometricsOrYourDevice": "Gebruik Face ID, biometrie of je toestelcode",
+  "hidePinsByDefault": "Pincodes standaard verbergen",
+  "showSensitiveCodesOnlyAfterConfirmation": "Toon gevoelige codes pas na bevestiging",
+  "seeWhatPaskluisDoesAndDoesNot": "Bekijk wat PasKluis wel en niet bewaart",
+  "accountAndHelp": "Account en hulp",
+  "accountAndPaskluisPlus": "Account en PasKluis Plus",
+  "signInPlusStatusAndAccountManagement": "Inloggen, Plus-status en accountbeheer",
+  "customerSupport": "Klantenservice",
+  "askAQuestionOrViewPreviousConversations": "Stel een vraag of bekijk eerdere gesprekken",
+  "guidanceAndFrequentlyAskedQuestions": "Uitleg en veelgestelde vragen",
+  "administrator": "Beheerder",
+  "separateAdministrationToolsForPaskluis": "Aparte beheerfuncties voor PasKluis",
+  "dataOnThisDevice": "Gegevens op dit apparaat",
+  "cardsStoredLocally": "{p0} kaarten lokaal opgeslagen",
+  "@cardsStoredLocally": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "paskluisVersion14140": "PasKluis versie 1.4.1 (40)",
+  "unableToLoadConversations": "Gesprekken konden niet worden opgehaald.",
+  "yourQuestionCouldNotBeSent": "Je vraag kon niet worden verzonden.",
+  "newQuestion": "Nieuwe vraag",
+  "checkYourConnectionAndTryAgain": "Controleer je verbinding en probeer het opnieuw.",
+  "weAreHereToHelp": "We staan voor je klaar",
+  "noSignInNeededLeaveYourName": "Je hoeft niet in te loggen. Laat je naam en e-mailadres achter en volg het gesprek gewoon in PasKluis.",
+  "feelFreeToAskAQuestionYou": "Stel gerust een vraag. Je vindt onze antwoorden overzichtelijk in dit scherm terug.",
+  "aReplyIsWaitingForYou": "Er staat een antwoord voor je klaar",
+  "closed": "Gesloten",
+  "open": "Open",
+  "subject": "Onderwerp",
+  "enterASubject": "Vul een onderwerp in.",
+  "yourQuestionOrProblem": "Je vraag of probleem",
+  "brieflyDescribeWhatYouNeedHelpWith": "Vertel kort waar je hulp bij nodig hebt.",
+  "sendQuestion": "Vraag versturen",
+  "personalSupport": "Persoonlijke hulp",
+  "findYourQuestionsAndOurRepliesIn": "Bekijk je vragen en onze antwoorden op één plek.",
+  "theMessageCouldNotBeSent": "Bericht kon niet worden verstuurd.",
+  "noMessagesYet": "Nog geen berichten.",
+  "thisConversationIsClosed": "Dit gesprek is gesloten.",
+  "writeAMessage": "Schrijf een bericht…",
+  "send": "Versturen",
+  "someoneSignedInToYourAccountOn": "Er is met jouw account ingelogd op een ander apparaat. Daarom ben je op dit apparaat uitgelogd.",
+  "youHaveBeenSignedOut733": "Je bent uitgelogd",
+  "gotIt": "Begrepen",
+  "paskluisCouldNotOpenYourSecureStorage": "PasKluis kon je beveiligde opslag niet openen.",
+  "yourDataHasNotBeenDeletedTry": "Je gegevens zijn niet verwijderd. Probeer het opnieuw of herstart je apparaat.",
+  "searching": "Zoeken...",
+  "noResultsFound": "Geen resultaten gevonden",
+  "areYouSureYouWantToDelete743": "Weet je zeker dat je \"{p0}\" wilt verwijderen?",
+  "@areYouSureYouWantToDelete743": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "signInRequired": "Inloggen vereist",
+  "signInWithYourPaskluisAccountTo": "Log in met je PasKluis-account om kaarten veilig per e-mailadres te delen.",
+  "sharingIsOnlyAvailableWithPaskluisPlus": "Delen is alleen beschikbaar met PasKluis Plus.",
+  "shareTheEntireGiftCard": "Volledige cadeaukaart delen?",
+  "theRecipientWillAlsoReceiveThePin": "De ontvanger krijgt ook de pincode of krascode en kan het volledige saldo gebruiken.",
+  "continue749": "Doorgaan",
+  "share750": "{p0} delen",
+  "@share750": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "recipientSEmailAddress": "E-mailadres ontvanger",
+  "nameExampleCom": "naam@voorbeeld.nl",
+  "cardSharedWithYouCanBothEdit": "Kaart gedeeld met {p0}. Jullie kunnen de kaart allebei bewerken.",
+  "@cardSharedWithYouCanBothEdit": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "cardSharedWithAsViewOnly": "Kaart gedeeld met {p0} als alleen-lezen.",
+  "@cardSharedWithAsViewOnly": {
+    "placeholders": {
+      "p0": {
+        "type": "Object"
+      }
+    }
+  },
+  "sharedAccess": "Gedeelde toegang",
+  "thisCardHasNotBeenSharedWith": "Deze kaart is nog met niemand gedeeld.",
+  "viewOnlyWithoutPlusEditableWithPlus": "Zonder Plus alleen-lezen; met Plus bewerkbaar",
+  "sharedAccessHasBeenStopped": "Gedeelde toegang is gestopt.",
+  "stop": "Stoppen",
+  "language": "Taal",
+  "chooseLanguage": "Kies je taal",
+  "languageDescription": "PasKluis past zich direct aan. Je keuze blijft bewaard op dit apparaat.",
+  "followPhoneLanguage": "Taal van je telefoon volgen",
+  "phoneLanguageHint": "Nederlands of Engels, afhankelijk van je telefoon",
+  "languageSettingsSubtitle": "Kies de taal voor PasKluis",
+  "qrCode": "QR-code",
+  "qrSet": "QR-set",
+  "pleaseTryAgain": "Dat is niet gelukt. Controleer je verbinding en probeer het opnieuw."
+}

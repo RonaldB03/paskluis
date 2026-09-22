@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/services/account_service.dart';
@@ -14,6 +15,7 @@ class MainBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return FutureBuilder<PlusStatus>(
       future: AccountService.loadPlusStatus(),
       builder: (context, snapshot) {
@@ -63,29 +65,29 @@ class MainBottomNav extends StatelessWidget {
                     selectedIndex: currentIndex,
                     onDestinationSelected: onTap,
                     destinations: [
-                      const NavigationDestination(
+                       NavigationDestination(
                         icon: _NavIcon(icon: Icons.home_rounded),
                         selectedIcon: _NavIcon(
                           icon: Icons.home_rounded,
                           selected: true,
                         ),
-                        label: 'Home',
+                        label: L10n.current.home,
                       ),
-                      const NavigationDestination(
+                       NavigationDestination(
                         icon: _NavIcon(icon: Icons.card_membership),
                         selectedIcon: _NavIcon(
                           icon: Icons.card_membership,
                           selected: true,
                         ),
-                        label: 'Klantenkaarten',
+                        label: L10n.current.loyaltyCards,
                       ),
-                      const NavigationDestination(
+                       NavigationDestination(
                         icon: _NavIcon(icon: Icons.qr_code),
                         selectedIcon: _NavIcon(
                           icon: Icons.qr_code,
                           selected: true,
                         ),
-                        label: 'QR-codes',
+                        label: L10n.current.qrCodes478,
                       ),
                       NavigationDestination(
                         icon: _NavIcon(
@@ -99,7 +101,7 @@ class MainBottomNav extends StatelessWidget {
                               : Icons.card_giftcard,
                           selected: true,
                         ),
-                        label: 'Cadeaukaarten',
+                        label: L10n.current.giftCards,
                       ),
                     ],
                   ),
@@ -121,6 +123,7 @@ class _NavIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    L10n.watch(context);
     return SizedBox(
       width: 34,
       height: 32,
