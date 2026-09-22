@@ -85,13 +85,15 @@ Deno.serve(async request=>{
    let title='PasKluis',copy='',email='',locale='nl',staff=job.event_type==='support_question';
    if(job.event_type==='card_shared'){
     const membership=await admin.from('card_share_members').select('revoked_at,removed_by_recipient_at').eq('id',job.membership_id).maybeSingle();
+    if(membership.error)throw new Error('DATABASE_READ_FAILED');
     if(!membership.data||membership.data.revoked_at||membership.data.removed_by_recipient_at){pushDone=true;emailDone=true;}
    }else{
     const thread=await admin.from('support_threads').select('user_id,guest_email,guest_token_hash,locale').eq('id',job.thread_id).maybeSingle();
+    if(thread.error)throw new Error('DATABASE_READ_FAILED');
     if(!thread.data){pushDone=true;emailDone=true;}
     else{email=thread.data.guest_email||'';locale=thread.data.locale||'nl';guestHash=thread.data.guest_token_hash;}
    }
-   if(job.recipient_id){const profile=await admin.from('profiles').select('email').eq('id',job.recipient_id).maybeSingle();email=profile.data?.email||email;}
+   if(job.recipient_id){const profile=await admin.from('profiles').select('email').eq('id',job.recipient_id).maybeSingle();if(profile.error)throw new Error('DATABASE_READ_FAILED');email=profile.data?.email||email;}
    const en=locale==='en';
    if(staff){title='Nieuwe klantvraag in PasKluis';copy='Er staat een nieuwe vraag of reactie klaar. We streven naar een persoonlijk antwoord binnen 12 uur. Open het beheer om te antwoorden.';email=Deno.env.get('SUPPORT_INBOX_EMAIL')||'info@paskluis.nl';pushDone=true;}
    else if(job.event_type==='card_shared'){title=en?'New card in PasKluis':'Nieuwe kaart in PasKluis';copy=en?'A card has been shared with you. Open PasKluis to view it.':'Er is een kaart met je gedeeld. Open PasKluis om de kaart te bekijken.';emailDone=true;}
@@ -101,8 +103,11 @@ Deno.serve(async request=>{
     if(!job.recipient_id&&!guestHash){pushDone=true;}
     else{
      const active=job.recipient_id?await admin.from('account_device_sessions').select('device_id').eq('user_id',job.recipient_id).maybeSingle():{data:null};
-     let devices=active.data?(await admin.from('push_device_tokens').select('id,token,locale').eq('user_id',job.recipient_id).eq('device_id',active.data.device_id)).data||[]:[];
-     if(guestHash){const guest=await admin.from('guest_support_push_tokens').select('token,locale').eq('guest_token_hash',guestHash).maybeSingle();if(guest.data)devices=[{id:'guest',...guest.data}];}
+     if(active.error)throw new Error('DATABASE_READ_FAILED');
+     const registered=active.data?await admin.from('push_device_tokens').select('id,token,locale').eq('user_id',job.recipient_id).eq('device_id',active.data.device_id):{data:[]};
+     if(registered.error)throw new Error('DATABASE_READ_FAILED');
+     let devices=registered.data||[];
+     if(guestHash){const guest=await admin.from('guest_support_push_tokens').select('token,locale').eq('guest_token_hash',guestHash).maybeSingle();if(guest.error)throw new Error('DATABASE_READ_FAILED');if(guest.data)devices=[{id:'guest',...guest.data}];}
      if(devices.length===0){if(job.event_type==='card_shared')throw new Error('NO_REGISTERED_DEVICE');pushDone=true;}
      else{
       googleAccess??=await createGoogleAccessToken(firebase);
@@ -120,11 +125,13 @@ Deno.serve(async request=>{
     }
    }}catch(error){pushError=error;}
    // Persist channel completion before a potentially unavailable mail provider.
-   await admin.from('notification_outbox').update({push_done:pushDone}).eq('id',job.id);
+   const checkpoint=await admin.from('notification_outbox').update({push_done:pushDone}).eq('id',job.id);
+   if(checkpoint.error)throw new Error('DATABASE_WRITE_FAILED');
    if(!emailDone){if(email)await sendMail(email,title,copy,staff,String(job.id),en);emailDone=true;}
    // A push-provider failure must not suppress an otherwise deliverable email.
    if(pushError)throw pushError;
-   await admin.from('notification_outbox').update({push_done:pushDone,email_done:emailDone,delivered_at:new Date().toISOString(),locked_until:null,last_error:null}).eq('id',job.id);
+   const delivered=await admin.from('notification_outbox').update({push_done:pushDone,email_done:emailDone,delivered_at:new Date().toISOString(),locked_until:null,last_error:null}).eq('id',job.id);
+   if(delivered.error)throw new Error('DATABASE_WRITE_FAILED');
    completed++;
   }catch(error){const reason=error instanceof Error&&/^(MAIL_NOT_CONFIGURED|NO_REGISTERED_DEVICE|PUSH_\d+)$/.test(error.message)?error.message:'DELIVERY_FAILED';await admin.from('notification_outbox').update({push_done:pushDone,email_done:emailDone,locked_until:null,last_error:reason,available_at:new Date(Date.now()+Math.min(3600,30*2**job.attempts)*1000).toISOString()}).eq('id',job.id);}
  }

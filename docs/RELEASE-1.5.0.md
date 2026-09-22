@@ -1,6 +1,6 @@
 # PasKluis 1.5.0 — overdracht voor live testen
 
-Status 22 september 2026: appkandidaten voor iOS en Android geslaagd. Vernieuwd beheer, database en serverfuncties zijn gepubliceerd. Nog geen vrijgave voor de officiële externe test of openbare lancering: SMTP, storekoppelingen, privacygegevens en toesteltests moeten worden afgerond.
+Status 22 september 2026: appkandidaten voor iOS en Android geslaagd. Vernieuwd beheer, database en serverfuncties zijn gepubliceerd. Nog geen vrijgave voor de officiële externe test of openbare lancering: serverrechten, SMTP, storekoppelingen, privacygegevens en toesteltests moeten worden afgerond.
 
 ## In deze update
 
@@ -22,18 +22,20 @@ Status 22 september 2026: appkandidaten voor iOS en Android geslaagd. Vernieuwd 
 ## Wat werkelijk gecontroleerd is
 
 - Beide definitieve appkandidaten op `f6ee355` geslaagd: [iOS Candidate Build #1](https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ab26e8f9dae708f39d82606) en [Android Candidate Build #1](https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ab26e90952c592617281d6d). Flutteranalyse en alle 23 Fluttertests geslaagd. Latere commits wijzigen alleen beheer, backend, tests en documentatie.
-- Elf tests van de echte serverhandlers met gesimuleerde aanbieders geslaagd: onafhankelijke push/mailkanalen, herhaalpogingen, ingetrokken deelrechten, geverifieerde terugbetalingen, paginering, accountcontrole en storingsgedrag. Dit bewijst geen echte mailbox-, push- of storebezorging.
+- Twaalf tests van de echte serverhandlers met gesimuleerde aanbieders geslaagd: onafhankelijke push/mailkanalen, herhaalpogingen, ingetrokken deelrechten, geverifieerde terugbetalingen, paginering, accountcontrole en storingsgedrag. Dit bewijst geen echte mailbox-, push- of storebezorging.
 - Dart-syntaxis en 692 NL/EN-berichten gecontroleerd; JavaScript en Edge-bronnen zonder syntaxisfouten.
 - Alle migraties 020–026 met SQL-regressies in een rollback-transactie beproefd, daarna atomair gepubliceerd. Sessieovername, oude sessie geweigerd, interne notities onleesbaar voor klanten, één automatische ontvangstbevestiging en een niet-herstartende antwoordtermijn: geslaagd. Twee storeaankopen achtereen terugbetalen laat geen oude Plus-toegang achter; onafhankelijke medewerkerstoegang blijft behouden.
 - Migratie 027 en de aanvullende planning eerst in een rollback-transactie gecontroleerd, daarna gepubliceerd. Alleen de server kan storecontrolewerk claimen en twee gelijktijdige workers kunnen hetzelfde werk niet claimen.
 - Gepubliceerd: dispatch-notifications, support-attachments, delete-account, verify-purchase, reconcile-purchases en updates aan send-shared-card-notification en nearest-brand-stores. Drie onderhouds-/meldingsjobs actief. De vierde job voor storecontrole is voorbereid maar wordt door een uitgeschakelde instelling tegengehouden.
 - Live smokecontrole: meldingsworker antwoordt HTTP 200 met lege wachtrij; onbevoegde account-/aankoop-/deelverzoeken worden geweigerd. De locatiefunctie accepteert de publieke app-sleutel en valideert de invoer. Geen echte klantberichten verstuurd tijdens deze controles.
 - Vernieuwd beheer online; publieke [hulppagina](https://ronaldb03.github.io/paskluis/support.html) en [verwijderpagina](https://ronaldb03.github.io/paskluis/delete-account.html) laden correct. Ingelogd beheer is nog niet visueel end-to-end getest.
-- Tussenversie `e166ae4` is eerder verspreid (iOS #64 / Android #62). De definitieve kandidaat is nog niet via de stores verspreid; de vrijgavestatus wordt hieronder bijgehouden.
+- Tussenversie `e166ae4` is eerder verspreid (iOS #64 / Android #62). De definitieve testdistributie is aangehouden vanwege de ontbrekende serverrechten. iOS Release #65 is vóór publiceren geannuleerd; een nieuwe Android-distributie is niet gestart. De geslaagde kandidaatbestanden blijven beschikbaar, maar zijn nog niet vrijgegeven voor de officiële test.
+- Live servercontrole ontdekte ontbrekende tabelrechten voor `service_role`. Migratie 028 geeft uitsluitend de door Edge Functions benodigde SELECT/INSERT/UPDATE/DELETE-rechten; geen wijziging aan klantrollen of RLS. De rollback-proef onder de echte serverrol slaagde. **De productie-uitvoering is door automatische goedkeuringscontrole geblokkeerd en vereist expliciet eigenaarakkoord.** Tot die toepassing werken servergestuurde meldingen, bijlagen, accountverwijdering, locatieopvraging en aankoopcontrole niet betrouwbaar.
 - Camera, biometrie, betalingen, mailboxbezorging, screenshots en push op twee echte telefoons zijn nog niet end-to-end getest.
 
 ## Wat nog nodig is voor vrijgave
 
+0. **Geblokkeerde serverrechten:** expliciet eigenaarakkoord nodig voor `supabase/migrations/028_edge_service_permissions.sql`, daarna uitvoeren en `supabase/tests/edge_service_permissions.sql` plus de live handlers opnieuw controleren. Risico: servercode met de beveiligde service-sleutel krijgt toegang tot de genoemde tabellen. De sleutel blijft uitsluitend op de server; gewone gebruikersrechten en RLS blijven intact.
 1. **Supportmail:** configureer in Supabase Edge Secrets `SUPPORT_SMTP_JSON` met `{host,port,user,password,from}` voor PasKluis. De bestaande Auth-SMTP is geen automatisch gedeelde Edge-secret. Standaard ontvangt `info@paskluis.nl` medewerkersmeldingen; `SUPPORT_INBOX_EMAIL` kan dit wijzigen. Voer wachtwoorden en sleutels uitsluitend in de beveiligde beheeromgeving in.
 2. **Storeaankopen:** configureer `APPLE_IAP_KEY_JSON` (`{privateKey,keyId,issuerId}`) en `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` met de benodigde PasKluis-rechten. Richt in beide stores het eenmalige, niet-verbruikbare product `paskluis_plus` in op € 1,99. `ALLOW_SANDBOX_PURCHASES=true` alleen bewust voor storetesters. `store_purchase_enabled` blijft uit totdat kopen, annuleren, herstellen en accountbinding zijn gecontroleerd.
 3. **Terugbetalingen:** `reconcile-purchases` gebruikt dezelfde bestaande workersecret. Apple-productieaankopen worden dagelijks gecontroleerd in kleine batches; Google wordt elke zes uur gepagineerd over zijn beschikbare 30-dagenvenster gecontroleerd. Alleen een geverifieerde terugbetaling wijzigt toegang; providerfouten behouden bestaande toegang. Controleer `purchase_reconciliation_state.last_success_at/last_error` en backlog. Activeer `store_reconciliation_enabled` pas na echte storeproeven. Een storing langer dan Googles 30-dagenvenster vereist handmatig onderzoek; Apple-sandboxtests gebruiken de aankoop-/herstelverificatie.
@@ -44,7 +46,7 @@ Status 22 september 2026: appkandidaten voor iOS en Android geslaagd. Vernieuwd 
 
 ## Uitrol en herstel
 
-De actieve Supabase-projectkoppeling is `ajldblvvlbvmgejrmhyj`. De uitgevoerde bestanden staan in `supabase/migrations/020*` t/m `027*`; bestaande bestanden niet opnieuw blind uitvoeren. Operaties: `enable_notification_worker.sql` en `enable_purchase_reconciliation.sql`. Workersecret staat zowel in Edge Secrets als in Vault onder `paskluis_notification_worker_secret`; de waarde staat nergens in Git. Firebase/Places-instellingen zijn behouden.
+De actieve Supabase-projectkoppeling is `ajldblvvlbvmgejrmhyj`. De uitgevoerde bestanden staan in `supabase/migrations/020*` t/m `027*`; 028 staat klaar maar is nog niet uitgevoerd. Bestaande bestanden niet opnieuw blind uitvoeren. Operaties: `enable_notification_worker.sql` en `enable_purchase_reconciliation.sql`. Workersecret staat zowel in Edge Secrets als in Vault onder `paskluis_notification_worker_secret`; de waarde staat nergens in Git. Firebase/Places-instellingen zijn behouden.
 
 Bij problemen: zet nieuwe storefuncties uit via de twee instellingen; pauzeer uitsluitend de bijbehorende cronjob. Migreer gegevens niet terug door tabellen te verwijderen. Migratie 020 verplaatste interne notities naar een aparte tabel: herstel niet alleen het oude beheer zonder passend databaseschema. Bewaar gebruikers, rollen, kaarten, logo’s en supportgegevens. Gebruik een gerichte voorwaartse herstelmigratie.
 

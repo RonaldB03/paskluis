@@ -9,7 +9,7 @@ import {stripTypeScriptTypes} from 'node:module';
 const source = stripTypeScriptTypes((await readFile(new URL('../functions/dispatch-notifications/index.ts', import.meta.url),'utf8'))
   .replace(/^import .*;\n/gm,''));
 
-function setup({pushFails=false,mailFails=false,jobPatch={},membershipRevoked=false}={}) {
+function setup({pushFails=false,mailFails=false,jobPatch={},membershipRevoked=false,readFails=false}={}) {
   const updates=[],mail=[],push=[];
   const job={id:'test-event',recipient_id:'test-user',thread_id:'test-thread',membership_id:'test-membership',
     event_type:'support_reply',attempts:1,push_done:false,email_done:false,...jobPatch};
@@ -21,7 +21,7 @@ function setup({pushFails=false,mailFails=false,jobPatch={},membershipRevoked=fa
     rpc:async()=>{claims++;return {data:[structuredClone(job)]};},
     from:table=>{
       let mutation;
-      const chain={select:()=>chain,eq:()=>chain,maybeSingle:async()=>({data:rows[table]}),
+      const chain={select:()=>chain,eq:()=>chain,maybeSingle:async()=>readFails?({data:null,error:{message:'Database unavailable'}}):({data:rows[table]}),
         update:value=>{mutation=value;return chain;},delete:()=>chain,
         then:resolve=>{if(mutation)updates.push(structuredClone(mutation));return Promise.resolve(resolve({data:rows[table]}));}};
       return chain;
@@ -71,4 +71,12 @@ test('revoked shared access sends neither a stale push nor an email',async()=>{
 test('unauthorized requests cannot claim work or contact providers',async()=>{
   const ctx=setup();const result=await ctx.run('wrong-secret');
   assert.equal(result.status,401);assert.equal(ctx.claims(),0);assert.equal(ctx.mail.length,0);assert.equal(ctx.push.length,0);
+});
+
+test('database lookup failure retains the job for retry instead of marking it delivered',async()=>{
+  const ctx=setup({readFails:true,jobPatch:{event_type:'card_shared'}});await ctx.run();
+  assert.equal(ctx.mail.length,0);assert.equal(ctx.push.length,0);
+  assert.equal(ctx.updates.at(-1).delivered_at,undefined);
+  assert.equal(ctx.updates.at(-1).push_done,false);
+  assert.ok(ctx.updates.at(-1).available_at);
 });
