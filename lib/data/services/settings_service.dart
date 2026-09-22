@@ -207,6 +207,8 @@ abstract final class SettingsService {
   static bool get cardSharingAvailable =>
       _remoteBool('feature_card_sharing', true);
 
+  static bool get storePurchaseEnabled => _remoteBool('store_purchase_enabled', false);
+
   static int get freeGiftCardLimit => _remoteInt('free_gift_card_limit', 1).clamp(1, 100);
 
   static String get privacyMessage => _remoteString(

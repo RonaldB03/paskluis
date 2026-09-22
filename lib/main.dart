@@ -1,3 +1,5 @@
+import 'features/support/support_thread_screen.dart';
+import 'data/services/support_service.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
@@ -17,6 +19,7 @@ import 'data/services/supabase_service.dart';
 import 'data/services/notification_service.dart';
 import 'data/services/card_share_service.dart';
 import 'data/services/account_service.dart';
+import 'data/services/purchase_service.dart';
 import 'data/services/device_session_service.dart';
 import 'data/services/push_notification_service.dart';
 import 'features/security/app_lock_gate.dart';
@@ -92,7 +95,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   }
 
   Future<void> _checkDeviceSession() async {
-    if (_checkingDeviceSession || DeviceSessionService.awaitingClaim ||
+    if (_checkingDeviceSession || AccountService.isSigningOut || DeviceSessionService.awaitingClaim ||
         AccountService.currentUser == null) return;
     _checkingDeviceSession = true;
     try {
@@ -160,12 +163,18 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     await NotificationService.init();
     await SupabaseService.init();
     await StorageService.reconcileAccount(AccountService.currentUser?.id);
+    PurchaseService.init();
     try {
-      await PushNotificationService.init(onSharedCardChanged: _syncSharedCards);
+      NotificationService.onOpen = (payload) async {
+        if(payload.startsWith('support_reply:')) await _openSupportThread(payload.substring(14));
+      };
+      await PushNotificationService.init(onSharedCardChanged: _syncSharedCards, onSupportOpened: _openSupportThread);
     } catch (_) {
       // Firebase Messaging may be unavailable on an unsupported device.
     }
     _authSubscription ??= AccountService.authChanges?.listen((state) async {
+      if(AccountService.isSigningOut && state.session != null) return;
+      if(state.event == AuthChangeEvent.passwordRecovery) DeviceSessionService.awaitingClaim = true;
       final accountId = state.session?.user.id;
       final previousId = StorageService.accountId;
       final changed = previousId != null && previousId != accountId;
@@ -205,6 +214,18 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     }
   }
 
+  Future<void> _openSupportThread(String id) async {
+    if(id.isEmpty)return;
+    try {
+      final threads=await SupportService.loadThreads();
+      final thread=threads.where((t)=>t.id==id).firstOrNull;
+      if(thread==null || !mounted)return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if(mounted) _navigatorKey.currentState?.push(MaterialPageRoute<void>(builder:(_)=>SupportThreadScreen(thread:thread)));
+      });
+    } catch (_) {}
+  }
+
   void _openPasswordRecovery() {
     if (_openingPasswordRecovery) return;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -242,7 +263,13 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
               : null,
         ),
         builder: (context, child) {
-          if (!extraClear || child == null) return child ?? const SizedBox();
+          Widget protectedChild = FutureBuilder<void>(
+            future: _initialization,
+            builder: (context, snapshot) => snapshot.connectionState == ConnectionState.done && !snapshot.hasError
+                ? AppLockGate(child: child ?? const SizedBox())
+                : child ?? const SizedBox(),
+          );
+          if (!extraClear || child == null) return protectedChild;
           final media = MediaQuery.of(context);
           final systemScale = media.textScaler.scale(1);
           final scale = (systemScale * 1.18).clamp(1.18, 1.6).toDouble();
@@ -251,7 +278,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
               textScaler: TextScaler.linear(scale),
               highContrast: true,
             ),
-            child: child,
+            child: protectedChild,
           );
         },
         home: FutureBuilder<void>(
@@ -267,7 +294,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
               onRetry: () => setState(() => _initialization = _initialize()),
             );
           }
-          return const AppLockGate(child: HomeScreen());
+          return const HomeScreen();
         },
         ),
       ),

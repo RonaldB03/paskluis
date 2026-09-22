@@ -13,13 +13,21 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
   static final Set<String> _sharedCardPushes = <String>{};
 
+  static Future<void> Function(String)? onOpen;
+
   static Future<void> init() async {
     tz_data.initializeTimeZones();
     const settings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(),
     );
-    await _plugin.initialize(settings);
+    await _plugin.initialize(settings, onDidReceiveNotificationResponse: (response) {
+      final payload = response.payload;
+      if(payload != null) onOpen?.call(payload);
+    });
+    final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await android?.createNotificationChannel(const AndroidNotificationChannel('support_replies', 'PasKluis support', importance: Importance.high));
+    await android?.createNotificationChannel(const AndroidNotificationChannel('shared_cards', 'PasKluis shared cards', importance: Importance.high));
   }
 
   static Future<bool> requestPermission() async {
@@ -101,8 +109,8 @@ class NotificationService {
         DateTime.now().millisecondsSinceEpoch.toString();
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
-        'shared_cards',
-        L10n.current.sharedCards,
+        isSharedCard ? 'shared_cards' : 'support_replies',
+        isSharedCard ? L10n.current.sharedCards : L10n.current.customerSupport,
         channelDescription: L10n.current.notificationsWhenSomeoneSharesACardWith,
         importance: Importance.high,
         priority: Priority.high,
@@ -114,7 +122,7 @@ class NotificationService {
       title,
       body,
       details,
-      payload: 'shared_card:$membershipId',
+      payload: isSharedCard ? 'shared_card:$membershipId' : 'support_reply:${message.data['thread_id'] ?? ''}',
     );
   }
 

@@ -41,6 +41,7 @@ class ManagedAccount {
 
 abstract final class AccountService {
   static const _secure = FlutterSecureStorage();
+  static bool isSigningOut = false;
   static SupabaseClient get _client {
     final client = SupabaseService.client;
     if (client == null) {
@@ -93,6 +94,8 @@ abstract final class AccountService {
   }
 
   static Future<void> signOut({bool releaseDevice = true}) async {
+    isSigningOut = true;
+    try {
     final previousUserId = currentUser?.id;
     await StorageService.reconcileAccount(null);
     if (previousUserId != null) await _secure.delete(key: 'plus_status_$previousUserId');
@@ -105,6 +108,7 @@ abstract final class AccountService {
       }
     }
     await _client.auth.signOut(scope: SignOutScope.local);
+    } finally { isSigningOut = false; }
   }
 
   static Future<UserResponse> updatePassword(String password) {

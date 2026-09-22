@@ -12,6 +12,8 @@ import '../../data/services/push_notification_service.dart';
 import '../premium/plus_information_screen.dart';
 import 'shared_cards_management_screen.dart';
 import 'delete_account_screen.dart';
+import '../../data/services/purchase_service.dart';
+import '../../data/services/settings_service.dart';
 
 class AccountScreen extends StatefulWidget {
   final bool startPasswordRecovery;
@@ -50,6 +52,8 @@ class _AccountScreenState extends State<AccountScreen> {
       _loadPlusStatus();
     });
     _loadPlusStatus();
+    PurchaseService.revision.addListener(_purchaseChanged);
+    unawaited(PurchaseService.loadProduct().catchError((_) {}));
     if (widget.startPasswordRecovery) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _finishPasswordRecovery(),
@@ -59,11 +63,18 @@ class _AccountScreenState extends State<AccountScreen> {
 
   @override
   void dispose() {
+    PurchaseService.revision.removeListener(_purchaseChanged);
     _authSubscription?.cancel();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _purchaseChanged() {
+    if(!mounted)return;
+    setState(() {});
+    if(PurchaseService.messageCode=='success') unawaited(_loadPlusStatus());
   }
 
   Future<void> _loadPlusStatus() async {
@@ -84,23 +95,12 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _restorePurchases() async {
-    if (_user == null) {
-      _showMessage(L10n.current.signInToRestoreYourPurchase);
-      return;
-    }
-    setState(() => _loadingStatus = true);
-    try {
-      final status = await AccountService.loadPlusStatus();
-      if (!mounted) return;
-      setState(() => _plusStatus = status);
-      _showMessage(status.isActive
-          ? L10n.current.yourPaskluisPlusAccessHasBeenRestored
-          : L10n.current.noPlusPurchaseIsLinkedToThis);
-    } catch (_) {
-      if (mounted) _showMessage(L10n.current.unableToRestoreYourPurchaseRightNow, error: true);
-    } finally {
-      if (mounted) setState(() => _loadingStatus = false);
-    }
+    if(_user==null){_showMessage(L10n.current.signInToRestoreYourPurchase);return;}
+    try{
+      await PurchaseService.restore();
+      await _loadPlusStatus();
+      if(mounted)_showMessage(L10n.current.restoreRequested);
+    }catch(_){if(mounted)_showMessage(L10n.current.unableToRestoreYourPurchaseRightNow,error:true);}
   }
 
   String? _validateEmail(String? value) {
@@ -221,6 +221,7 @@ class _AccountScreenState extends State<AccountScreen> {
       }
     } finally {
       _handlingPasswordRecovery = false;
+      DeviceSessionService.awaitingClaim = false;
     }
   }
 
@@ -528,6 +529,26 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           const SizedBox(height: 16),
           _StatusCard(status: _plusStatus, loading: _loadingStatus),
+          if(!_plusStatus.isActive) ...[
+            const SizedBox(height:12),
+            FilledButton.icon(
+              style:FilledButton.styleFrom(backgroundColor:const Color(0xFFD5A021)),
+              onPressed:PurchaseService.busy||PurchaseService.product==null||!SettingsService.storePurchaseEnabled?null:PurchaseService.buy,
+              icon:const Icon(Icons.workspace_premium),
+              label:Text(PurchaseService.busy?L10n.current.purchaseProcessing:'${L10n.current.buyPlus} · ${PurchaseService.product?.price??'€ 1,99'}'),
+            ),
+            if(PurchaseService.product==null||!SettingsService.storePurchaseEnabled)
+              Text(L10n.current.storePurchaseUnavailable,textAlign:TextAlign.center),
+          ],
+          if(PurchaseService.messageCode!=null)
+            Padding(padding:const EdgeInsets.all(12),child:Text(switch(PurchaseService.messageCode){
+              'success'=>L10n.current.purchaseSucceeded,
+              'pending'=>L10n.current.purchasePending,
+              'cancelled'=>L10n.current.purchaseCancelled,
+              'signIn'=>L10n.current.signInToRestoreYourPurchase,
+              'verification'=>L10n.current.purchaseVerificationPending,
+              _=>L10n.current.purchaseFailed,
+            },textAlign:TextAlign.center)),
           const SizedBox(height: 16),
           Card(
             elevation: 0,
@@ -576,7 +597,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   style: TextStyle(fontWeight: FontWeight.w900)),
               subtitle:  Text(L10n.current.checkYourLinkedPlusAccessAgain),
               trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: _loadingStatus ? null : _restorePurchases,
+              onTap: _loadingStatus || PurchaseService.busy ? null : _restorePurchases,
             ),
           ),
           const SizedBox(height: 10),

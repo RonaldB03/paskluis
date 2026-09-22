@@ -16,7 +16,7 @@
   "tapChooseALoyaltyCardQrCode": "Tap +. Choose a loyalty card, QR code or gift card. Scan the code, enter it manually or import a photo or screenshot.",
   "privacy": "Privacy",
   "whereAreMyCardsStored": "Where are my cards stored?",
-  "yourCardsBarcodesPinsAndImagesAre": "Your cards, barcodes, PINs and images are stored locally on your phone. They are not automatically uploaded to PasKluis or the admin portal.",
+  "yourCardsBarcodesPinsAndImagesAre": "Your own cards, barcodes, PINs and images stay on this device. Only cards you share, including the code and any PIN, are stored on the server for sharing. Your own cards have no automatic cloud backup.",
   "share": "Share",
   "whatDoIGetWithPaskluisPlus": "What do I get with PasKluis Plus?",
   "withPlusYouCanStoreUnlimitedGift": "With Plus you can store unlimited gift cards and share loyalty cards and gift cards. Plus is a one-time purchase, with no subscription.",
@@ -1013,5 +1013,14 @@
   "alsoDeleteLocalCards": "Also erase all my own cards on this device",
   "confirmDeleteAccount": "I understand this is permanent",
   "accountDeleted": "Your account has been deleted.",
-  "accountDeletionFailed": "Deletion failed. Check your password and connection. A staff account can only be deleted after its staff role has been removed."
+  "accountDeletionFailed": "Deletion failed. Check your password and connection. A staff account can only be deleted after its staff role has been removed.",
+  "restoreRequested": "The store has been asked to restore your purchases. Your Plus status updates after verification.",
+  "buyPlus": "Unlock PasKluis Plus",
+  "storePurchaseUnavailable": "Purchases are currently unavailable. Your existing cards and Plus access remain usable.",
+  "purchaseProcessing": "Processing purchase…",
+  "purchaseSucceeded": "PasKluis Plus is active. Enjoy!",
+  "purchasePending": "The purchase is awaiting confirmation from the store.",
+  "purchaseCancelled": "The purchase was cancelled.",
+  "purchaseVerificationPending": "The purchase could not yet be verified. Check your connection and use Restore purchases. Do not buy again. Use the same PasKluis account as for the original purchase.",
+  "purchaseFailed": "The purchase was not completed. Please try again later."
 }

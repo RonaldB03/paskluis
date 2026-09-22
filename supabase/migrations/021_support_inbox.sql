@@ -152,4 +152,24 @@ for each row execute function public.queue_shared_card_notification();
 -- Start the target timer for existing unanswered conversations without sending messages.
 update public.support_threads set response_due_at=updated_at+interval '12 hours'
 where status='open' and response_due_at is null;
+
+-- Guest push registration uses the same high-entropy conversation credential.
+create table public.guest_support_push_tokens(
+ guest_token_hash text primary key,token text not null unique,locale text not null default 'nl',updated_at timestamptz not null default now()
+);
+alter table public.guest_support_push_tokens enable row level security;
+revoke all on public.guest_support_push_tokens from anon,authenticated;
+create or replace function public.register_guest_support_push(p_token text,p_push_token text,p_locale text)
+returns void language plpgsql security definer set search_path='' as $$
+declare h text:=encode(extensions.digest(p_token,'sha256'),'hex');
+begin
+ if length(coalesce(p_token,'')) not between 32 and 256 or length(coalesce(p_push_token,'')) not between 20 and 4096 then raise exception 'INVALID_TOKEN';end if;
+ if not exists(select 1 from public.support_threads where guest_token_hash=h) then raise exception 'NO_CONVERSATION';end if;
+ delete from public.guest_support_push_tokens where token=p_push_token and guest_token_hash<>h;
+ insert into public.guest_support_push_tokens(guest_token_hash,token,locale) values(h,p_push_token,case when p_locale='en' then 'en' else 'nl' end)
+ on conflict(guest_token_hash) do update set token=excluded.token,locale=excluded.locale,updated_at=now();
+end; $$;
+revoke all on function public.register_guest_support_push(text,text,text) from public;
+grant execute on function public.register_guest_support_push(text,text,text) to anon,authenticated;
+
 commit;

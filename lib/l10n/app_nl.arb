@@ -16,7 +16,7 @@
   "tapChooseALoyaltyCardQrCode": "Tik op +. Kies daarna een klantenkaart, QR-code of cadeaukaart. Je kunt de code scannen, handmatig invoeren of een foto of screenshot importeren.",
   "privacy": "Privacy",
   "whereAreMyCardsStored": "Waar worden mijn kaarten bewaard?",
-  "yourCardsBarcodesPinsAndImagesAre": "Je kaarten, barcodes, pincodes en afbeeldingen worden lokaal op je telefoon bewaard. Ze worden niet automatisch naar PasKluis of het beheer geüpload.",
+  "yourCardsBarcodesPinsAndImagesAre": "Je eigen kaarten, barcodes, pincodes en afbeeldingen blijven op dit toestel. Alleen kaarten die je deelt, inclusief de code en eventuele pincode, worden voor het delen op de server opgeslagen. Er is geen automatische cloudback-up van je eigen kaarten.",
   "share": "Delen",
   "whatDoIGetWithPaskluisPlus": "Wat krijg ik met PasKluis Plus?",
   "withPlusYouCanStoreUnlimitedGift": "Met Plus bewaar je onbeperkt cadeaukaarten en kun je klanten- en cadeaukaarten delen. Plus is een eenmalige aankoop en geen abonnement.",
@@ -1013,5 +1013,14 @@
   "alsoDeleteLocalCards": "Ook alle eigen kaarten op dit toestel wissen",
   "confirmDeleteAccount": "Ik begrijp dat dit definitief is",
   "accountDeleted": "Je account is verwijderd.",
-  "accountDeletionFailed": "Verwijderen is niet gelukt. Controleer je wachtwoord en verbinding. Een medewerkersaccount kan pas weg nadat de beheerrol is verwijderd."
+  "accountDeletionFailed": "Verwijderen is niet gelukt. Controleer je wachtwoord en verbinding. Een medewerkersaccount kan pas weg nadat de beheerrol is verwijderd.",
+  "restoreRequested": "De store is gevraagd je aankopen te herstellen. Je Plus-status wordt bijgewerkt zodra de aankoop is gecontroleerd.",
+  "buyPlus": "Activeer PasKluis Plus",
+  "storePurchaseUnavailable": "Aankopen zijn op dit moment niet beschikbaar. Je bestaande kaarten en Plus-toegang blijven bruikbaar.",
+  "purchaseProcessing": "Aankoop verwerken…",
+  "purchaseSucceeded": "PasKluis Plus is actief. Veel plezier!",
+  "purchasePending": "De aankoop wacht op bevestiging van de store.",
+  "purchaseCancelled": "De aankoop is geannuleerd.",
+  "purchaseVerificationPending": "De aankoop kon nog niet worden bevestigd. Controleer je verbinding en gebruik Aankopen herstellen. Koop niet opnieuw. Gebruik hetzelfde PasKluis-account als bij je aankoop.",
+  "purchaseFailed": "De aankoop is niet afgerond. Probeer later opnieuw."
 }

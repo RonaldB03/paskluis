@@ -1,0 +1,29 @@
+name: Validate PasKluis release
+on:
+  push:
+    branches: [codex/search-and-premium-build-25]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-validation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Flutter from the official repository
+        run: |
+          git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+      - name: Resolve dependencies and translations
+        run: |
+          flutter --version
+          flutter pub get
+          flutter gen-l10n
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Regression tests
+        run: flutter test --reporter expanded

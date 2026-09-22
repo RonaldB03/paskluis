@@ -19,6 +19,7 @@ workflows:
         script: flutter pub get
       - name: Broncode controleren
         script: |
+          set -e
           flutter analyze --no-fatal-infos --no-fatal-warnings
           echo "Broncodecontrole voltooid."
       - name: Tests uitvoeren
@@ -59,6 +60,7 @@ workflows:
         script: flutter pub get
       - name: Broncode controleren
         script: |
+          set -e
           flutter analyze --no-fatal-infos --no-fatal-warnings
           echo "Broncodecontrole voltooid."
       - name: Tests uitvoeren

@@ -1,3 +1,5 @@
+import '../settings/help_center_screen.dart';
+import '../../data/services/locale_service.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
@@ -19,6 +21,7 @@ class _SupportScreenState extends State<SupportScreen> {
   List<SupportThread> _threads = const [];
   late Future<List<HelpFaq>> _faqs;
   Locale? _faqLocale;
+  List<Map<String,dynamic>> _incidents = [];
 
   @override
   void initState() {
@@ -44,7 +47,8 @@ class _SupportScreenState extends State<SupportScreen> {
     });
     try {
       final threads = await SupportService.loadThreads();
-      if (mounted) setState(() => _threads = threads);
+      final incidents = await SupportService.loadIncidents();
+      if (mounted) setState(() { _threads = threads; _incidents = incidents; });
     } catch (_) {
       if (mounted) {
         setState(() => _error = L10n.current.unableToLoadConversations);
@@ -112,6 +116,22 @@ class _SupportScreenState extends State<SupportScreen> {
     );
   }
 
+  Widget _supportTools() => Column(children:[
+    for(final incident in _incidents) Card(
+      color:const Color(0xFFFFF3CB),elevation:0,
+      child:ListTile(leading:const Icon(Icons.info_outline),
+        title:Text((LocaleService.languageCode=='en' && (incident['title_en'] as String).isNotEmpty ? incident['title_en'] : incident['title_nl']) as String),
+        subtitle:Text((LocaleService.languageCode=='en' && (incident['body_en'] as String).isNotEmpty ? incident['body_en'] : incident['body_nl']) as String),
+      ),
+    ),
+    Card(elevation:0,color:Colors.white,child:ListTile(
+      leading:const Icon(Icons.search_rounded),title:Text(L10n.current.searchQuestions),
+      trailing:const Icon(Icons.chevron_right),
+      onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const HelpCenterScreen())),
+    )),
+    const SizedBox(height:12),
+  ]);
+
   Widget _buildSupport() {
     if (_loading && _threads.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -129,6 +149,7 @@ class _SupportScreenState extends State<SupportScreen> {
       return ListView(
         padding: const EdgeInsets.fromLTRB(20, 22, 20, 110),
         children: [
+          _supportTools(),
           _SupportEmpty(
             icon: Icons.support_agent_rounded,
             title: L10n.current.weAreHereToHelp,
@@ -212,7 +233,7 @@ class _SupportScreenState extends State<SupportScreen> {
         itemCount: _threads.length + 1,
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
-          if (index == 0) return const _SupportHero();
+          if (index == 0) return Column(children:[_supportTools(), const _SupportHero()]);
           final thread = _threads[index - 1];
           return Card(
             elevation: 0,

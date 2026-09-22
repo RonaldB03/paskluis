@@ -13,11 +13,14 @@ abstract final class PushNotificationService {
   static StreamSubscription<RemoteMessage>? _messageSubscription;
   static StreamSubscription<RemoteMessage>? _openedSubscription;
   static Future<void> Function()? _onSharedCardChanged;
+  static Future<void> Function(String)? _onSupportOpened;
 
   static Future<void> init({
     Future<void> Function()? onSharedCardChanged,
+    Future<void> Function(String)? onSupportOpened,
   }) async {
     _onSharedCardChanged = onSharedCardChanged;
+    _onSupportOpened = onSupportOpened;
 
     await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
       alert: false,
@@ -140,6 +143,10 @@ abstract final class PushNotificationService {
   }
 
   static Future<void> _handleOpenedMessage(RemoteMessage message) async {
+    if(message.data['event']=='support_reply'){
+      await _onSupportOpened?.call(message.data['thread_id']?.toString() ?? '');
+      return;
+    }
     final membershipId = message.data['membership_id']?.toString() ?? '';
     if (membershipId.isNotEmpty) {
       NotificationService.markSharedCardPushReceived(membershipId);

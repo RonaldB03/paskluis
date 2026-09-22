@@ -2,6 +2,7 @@ import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:io';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'locale_service.dart';
 
@@ -84,6 +85,13 @@ abstract final class SupportService {
     return client;
   }
 
+  static Future<List<Map<String,dynamic>>> loadIncidents() async {
+    try {
+      final rows = await _client.from('service_incidents').select('title_nl,body_nl,title_en,body_en').eq('active',true).order('updated_at',ascending:false);
+      return rows;
+    } catch (_) { return []; }
+  }
+
   static Future<List<SupportThread>> loadThreads() async {
     final guestRows = await _client.rpc('guest_support_threads',
       params: {'p_token': await _guestToken()}) as List;
@@ -112,6 +120,7 @@ abstract final class SupportService {
       'p_context': {'platform': Platform.operatingSystem, 'version': '1.5.0'},
     });
     final threads = await loadThreads();
+    try { await registerGuestNotifications(); } catch (_) {}
     return threads.firstWhere((t) => t.id == id.toString());
   }
 
@@ -152,6 +161,15 @@ abstract final class SupportService {
       'sender_id': user.id,
       'message': message.trim(),
     });
+  }
+
+  static Future<void> registerGuestNotifications() async {
+    if(_guestThreadIds.isEmpty)return;
+    final permission=await FirebaseMessaging.instance.requestPermission();
+    if(permission.authorizationStatus==AuthorizationStatus.denied)return;
+    final push=await FirebaseMessaging.instance.getToken();
+    if(push==null)return;
+    await _client.rpc('register_guest_support_push',params:{'p_token':await _guestToken(),'p_push_token':push,'p_locale':LocaleService.languageCode});
   }
 
   static Future<String> _guestToken() async {

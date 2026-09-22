@@ -1,0 +1,12 @@
+# Each function performs its own caller validation. The worker uses a separate
+# server-only secret; user actions validate the JWT through Supabase Auth.
+[functions.dispatch-notifications]
+verify_jwt = false
+[functions.delete-account]
+verify_jwt = false
+[functions.verify-purchase]
+verify_jwt = false
+[functions.send-shared-card-notification]
+verify_jwt = false
+[functions.nearest-brand-stores]
+verify_jwt = false

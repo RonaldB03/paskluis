@@ -71,12 +71,19 @@ class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     L10n.watch(context);
-    if (_privacyCover) {
-      return const ColoredBox(color: Color(0xFFF4F4F6));
-    }
+    final visible = !_privacyCover && (_unlocked || !SettingsService.appLockEnabled);
+    // Cover the complete Navigator while retaining all routes and their state.
+    // A pushed card, dialog or notification route must not bypass app lock.
+    return Stack(fit: StackFit.expand, children: [
+      Offstage(offstage: !visible, child: ExcludeFocus(excluding: !visible,
+        child: TickerMode(enabled: visible, child: widget.child))),
+      if (!visible) _privacyCover
+          ? const ColoredBox(color: Color(0xFFF4F4F6))
+          : _lockScreen(),
+    ]);
+  }
 
-    if (_unlocked || !SettingsService.appLockEnabled) return widget.child;
-
+  Widget _lockScreen() {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
       body: SafeArea(
