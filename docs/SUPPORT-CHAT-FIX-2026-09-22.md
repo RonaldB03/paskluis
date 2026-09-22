@@ -23,6 +23,9 @@
 
 - 19 Node-tests geslaagd: notificaties/SMTP-herhaling, storecontrole en beheerchat (volgorde, rol, naam en HTML-escaping).
 - JavaScript syntaxcontroles en gelijke NL/EN-vertaalsleutels geslaagd.
-- 7 Flutter-regressietests toegevoegd, nog uit te voeren in de buildomgeving.
+- Flutter-analyse en alle 30 appregressietests geslaagd, waaronder 7 nieuwe supporttests. De eerste run ontdekte een onjuiste lifecycle-simulatie in de test; na correctie slaagt de volledige suite. [Verificatie](https://github.com/RonaldB03/paskluis/actions/runs/35744752065).
 - Database-regressie toegevoegd: gasttoken, eigenaar/ander account, vervangen sessie, onmogelijke afzendervervalsing, bewaarde medewerkersnaam en geen antwoordmail. Nog niet live uitgevoerd.
-- De browserverbinding voor Supabase/Codemagic reageerde niet tijdens deze correctie. Database-/Edge-publicatie en nieuwe distributie zijn daarom nog niet bevestigd. Broncode opslaan is geen bewijs dat de wijziging al op telefoons staat.
+- Beheer gepubliceerd op commit `7893b29`; [publicatieworkflow geslaagd](https://github.com/RonaldB03/paskluis/actions/runs/35744389547).
+- Appcode + gecorrigeerde tests staan op `7337179`. GitHub heeft nieuwe Codemagic-kandidaten gestart: [iOS](https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ab298fb08d49cdfa6141caf) en [Android](https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ab298fb63b018b798b210ae). Het starten is bevestigd; voltooiing en verspreiding naar TestFlight/Play zijn nog niet gecontroleerd.
+- De browserverbinding voor Supabase/Codemagic reageert niet. Migratie 029 en de nieuwe Edge-worker zijn nog NIET live toegepast. Klantantwoordmails zijn live dus nog niet gegarandeerd uitgeschakeld. Een beschikbare rechtstreekse Supabase-plugin is voorgesteld, maar nog niet verbonden; na verbinding eerst de SQL-proef uitvoeren en daarna toepassen/deployen.
+- Begin bij hervatten met migratie 029 + rollback-test; controleer daarna de echte push en het openen van het antwoord op beide telefoons. Geen nieuwe SMTP-inlog nodig.
