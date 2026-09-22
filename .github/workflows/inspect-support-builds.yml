@@ -1,0 +1,36 @@
+name: Inspect support test builds
+on:
+  push:
+    branches: [codex/support-chat-internal-test]
+    paths: [.github/workflows/inspect-support-builds.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read PasKluis build progress
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request
+          url = 'https://api.codemagic.io/builds?appId=69f36f732d8b59f24897933a'
+          request = urllib.request.Request(url, headers={'x-auth-token': os.environ['CODEMAGIC_API_TOKEN']})
+          with urllib.request.urlopen(request, timeout=45) as response:
+              data = json.load(response)
+          builds = data.get('builds', []) if isinstance(data, dict) else data
+          print('Build count:', len(builds))
+          for build in builds[:8]:
+              safe = {key: build.get(key) for key in ['_id', 'workflowId', 'status', 'branch', 'startedAt', 'finishedAt']}
+              print(json.dumps(safe))
+              # Only stage names/statuses; never environment, credentials or raw logs.
+              for key in ['steps', 'buildSteps', 'workflowSteps']:
+                  stages = build.get(key, [])
+                  if isinstance(stages, list):
+                      for stage in stages:
+                          if isinstance(stage, dict):
+                              print(json.dumps({'stage': stage.get('name'), 'status': stage.get('status')}))
+          PY
