@@ -12,10 +12,10 @@ abstract final class L10n {
       LocaleService.languageCode == 'nl' ? _dutch : _english;
 
   static String cardType(String? type) => switch (type) {
-    'Cadeaukaart' => current.giftCard,
+    'Cadeaukaart' => current.cardTypeGift,
     'QR-code' => current.qrCode,
     'QR-set' => current.qrSet,
-    _ => current.loyaltyCard,
+    _ => current.cardTypeLoyalty,
   };
 
   /// Register a locale dependency, including for widgets with const constructors.

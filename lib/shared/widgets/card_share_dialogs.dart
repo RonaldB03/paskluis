@@ -214,9 +214,9 @@ abstract final class CardShareDialogs {
   static String _typeLabel(Map<String, dynamic> card) => switch (
         card['type']?.toString()
       ) {
-        'Cadeaukaart' => L10n.current.giftCard,
+        'Cadeaukaart' => L10n.current.cardTypeGift,
         'QR-code' || 'QR-set' => L10n.current.qrCode,
-        _ => L10n.current.loyaltyCard,
+        _ => L10n.current.cardTypeLoyalty,
       };
 
   static void _showError(BuildContext context, Object error) {

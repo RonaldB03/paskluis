@@ -403,7 +403,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   Widget build(BuildContext context) {
     L10n.watch(context);
     final name = nameController.text.trim().isEmpty
-        ? L10n.current.giftCard
+        ? L10n.current.cardTypeGift
         : nameController.text.trim();
 
     return Scaffold(

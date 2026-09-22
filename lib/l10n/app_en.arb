@@ -272,7 +272,7 @@
   "addYourFirstLoyaltyCard": "Add your first loyalty card",
   "chooseAStoreScanTheBarcodeOr": "Choose a store, scan the barcode or import a photo. PasKluis stores your card safely on this device.",
   "noAccountNeeded": "No account needed",
-  "loyaltyCard": "Loyalty card",
+  "loyaltyCard": "{p0}, loyalty card{p1}{p2}",
   "@loyaltyCard": {
     "placeholders": {
       "p0": {
@@ -346,7 +346,7 @@
   "noBarcodeOrQrCodeFoundIn": "No barcode or QR code found in this photo.",
   "codeFoundCheckTheDetailsBeforeSaving": "Code found. Check the details before saving.",
   "codeAndPinFoundCheckThemBefore": "Code and PIN found. Check them before saving.",
-  "giftCard": "Gift card",
+  "giftCard": "{p0} gift card",
   "@giftCard": {
     "placeholders": {
       "p0": {
@@ -991,5 +991,8 @@
   "languageSettingsSubtitle": "Choose the language for PasKluis",
   "qrCode": "QR code",
   "qrSet": "QR set",
-  "pleaseTryAgain": "That did not work. Check your connection and try again."
+  "pleaseTryAgain": "That did not work. Check your connection and try again.",
+  "cardTypeGift": "Gift card",
+  "cardTypeLoyalty": "Loyalty card",
+  "codeTypeBarcode": "Barcode"
 }

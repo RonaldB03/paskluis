@@ -272,7 +272,7 @@
   "addYourFirstLoyaltyCard": "Voeg je eerste klantenkaart toe",
   "chooseAStoreScanTheBarcodeOr": "Kies een winkel, scan de barcode of importeer een foto. PasKluis bewaart je kaart veilig op dit toestel.",
   "noAccountNeeded": "Geen account nodig",
-  "loyaltyCard": "Klantenkaart",
+  "loyaltyCard": "{p0}, klantenkaart{p1}{p2}",
   "@loyaltyCard": {
     "placeholders": {
       "p0": {
@@ -335,7 +335,7 @@
   "aBarcodeIsRequired": "Barcode is verplicht.",
   "editCard": "Kaart bewerken",
   "cardDetails318": "Kaartgegevens",
-  "barcode": "Streepjescode",
+  "barcode": "Barcode",
   "scanBarcodeAgain": "Barcode opnieuw scannen",
   "logo": "Logo",
   "addNote": "Notitie toevoegen",
@@ -346,7 +346,7 @@
   "noBarcodeOrQrCodeFoundIn": "Geen barcode of QR-code gevonden in deze foto.",
   "codeFoundCheckTheDetailsBeforeSaving": "Code gevonden. Controleer de gegevens voor opslaan.",
   "codeAndPinFoundCheckThemBefore": "Code en pincode gevonden. Controleer ze voor opslaan.",
-  "giftCard": "Cadeaukaart",
+  "giftCard": "{p0} cadeaukaart",
   "@giftCard": {
     "placeholders": {
       "p0": {
@@ -991,5 +991,8 @@
   "languageSettingsSubtitle": "Kies de taal voor PasKluis",
   "qrCode": "QR-code",
   "qrSet": "QR-set",
-  "pleaseTryAgain": "Dat is niet gelukt. Controleer je verbinding en probeer het opnieuw."
+  "pleaseTryAgain": "Dat is niet gelukt. Controleer je verbinding en probeer het opnieuw.",
+  "cardTypeGift": "Cadeaukaart",
+  "cardTypeLoyalty": "Klantenkaart",
+  "codeTypeBarcode": "Streepjescode"
 }

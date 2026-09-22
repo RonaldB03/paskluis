@@ -820,7 +820,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
     final item = items[currentIndex];
 
-    final name = item['name']?.toString() ?? L10n.current.giftCard;
+    final name = item['name']?.toString() ?? L10n.current.cardTypeGift;
     final code = item['code']?.toString() ?? '';
     final note = item['note']?.toString() ?? '';
     final cardNumber = item['cardNumber']?.toString() ?? '';
@@ -1244,7 +1244,7 @@ class _GiftLandscapeBarcode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     L10n.watch(context);
-    final name = item['name']?.toString() ?? L10n.current.giftCard;
+    final name = item['name']?.toString() ?? L10n.current.cardTypeGift;
     final code = item['code']?.toString() ?? '';
     final isQr = item['codeFormat']?.toString() == 'qr';
     return Padding(
@@ -1359,7 +1359,7 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
   @override
   Widget build(BuildContext context) {
     L10n.watch(context);
-    final name = widget.item['name']?.toString() ?? L10n.current.giftCard;
+    final name = widget.item['name']?.toString() ?? L10n.current.cardTypeGift;
     final code = widget.item['code']?.toString() ?? '';
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final logoAsset = widget.item['logoAsset']?.toString() ?? '';

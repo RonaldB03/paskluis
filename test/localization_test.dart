@@ -55,6 +55,8 @@ void main() {
     expect(en.keys.where((key) => !key.toString().startsWith('@')).toSet(), keys);
     for (final key in keys) {
       final pattern = RegExp(r'\{p\d+\}');
+      final declared = (nl['@$key']?['placeholders'] as Map?)?.keys.toSet() ?? <String>{};
+      expect(declared, pattern.allMatches(nl[key] as String).map((m) => m[0]!.substring(1,m[0]!.length-1)).toSet(), reason: 'Unused placeholders: $key');
       expect(pattern.allMatches(en[key] as String).map((m) => m[0]).toSet(),
           pattern.allMatches(nl[key] as String).map((m) => m[0]).toSet(), reason: key.toString());
     }

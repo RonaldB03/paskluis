@@ -320,7 +320,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
   }
 
   void showGiftCardOptions(BuildContext context, Map<String, dynamic> item) {
-    final name = item['name']?.toString() ?? L10n.current.giftCard;
+    final name = item['name']?.toString() ?? L10n.current.cardTypeGift;
     final isShared = item['isShared'] == true;
 
     HapticFeedback.mediumImpact();
@@ -882,7 +882,7 @@ class _GiftCardTileState extends State<GiftCardTile> {
   @override
   Widget build(BuildContext context) {
     L10n.watch(context);
-    final title = widget.item['name']?.toString() ?? L10n.current.giftCard;
+    final title = widget.item['name']?.toString() ?? L10n.current.cardTypeGift;
     final logoAsset = widget.item['logoAsset']?.toString() ?? '';
     final customImage = widget.item['customImage']?.toString() ?? '';
     final balance = widget.item['currentBalance']?.toString() ?? '';

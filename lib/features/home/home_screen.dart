@@ -1404,10 +1404,10 @@ class _SearchResults extends StatelessWidget {
   }
 
   static String _labelFor(String type) {
-    if (type == 'Cadeaukaart') return L10n.current.giftCard;
+    if (type == 'Cadeaukaart') return L10n.current.cardTypeGift;
     if (type == 'QR-set') return L10n.current.qrSet;
     if (type == 'QR-code') return L10n.current.qrCode;
-    return L10n.current.loyaltyCard;
+    return L10n.current.cardTypeLoyalty;
   }
 
   @override

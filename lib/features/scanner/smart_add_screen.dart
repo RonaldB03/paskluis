@@ -57,9 +57,9 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
   }
 
   String get selectedLabel => switch (selectedType) {
-    SmartAddManualType.loyalty => L10n.current.loyaltyCard.toLowerCase(),
+    SmartAddManualType.loyalty => L10n.current.cardTypeLoyalty.toLowerCase(),
     SmartAddManualType.qr => L10n.current.qrCode,
-    SmartAddManualType.gift => L10n.current.giftCard.toLowerCase(),
+    SmartAddManualType.gift => L10n.current.cardTypeGift.toLowerCase(),
     null => 'kaart',
   };
 
@@ -113,7 +113,7 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
             if (selectedType == null) ...[
               _SmartChoice(
                 icon: Icons.card_membership_rounded,
-                title: L10n.current.loyaltyCard,
+                title: L10n.current.cardTypeLoyalty,
                 subtitle: L10n.current.addALoyaltyCardOrMembershipCard,
                 onTap: () => setState(
                   () => selectedType = SmartAddManualType.loyalty,
@@ -131,7 +131,7 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
               const SizedBox(height: 12),
               _SmartChoice(
                 icon: Icons.card_giftcard_rounded,
-                title: L10n.current.giftCard,
+                title: L10n.current.cardTypeGift,
                 subtitle: L10n.current.addAGiftCardWithAnOptional,
                 onTap: () => setState(
                   () => selectedType = SmartAddManualType.gift,

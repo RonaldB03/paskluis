@@ -190,7 +190,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
   Widget build(BuildContext context) {
     L10n.watch(context);
     final name = nameController.text.trim().isEmpty
-        ? L10n.current.loyaltyCard
+        ? L10n.current.cardTypeLoyalty
         : nameController.text.trim();
 
     return Scaffold(

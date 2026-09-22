@@ -593,7 +593,7 @@ class _CardViewScreenState extends State<CardViewScreen>
         leading: const BackButton(),
         centerTitle: true,
         title: Text(
-          currentItem['name']?.toString() ?? L10n.current.loyaltyCard,
+          currentItem['name']?.toString() ?? L10n.current.cardTypeLoyalty,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontWeight: FontWeight.w900),
@@ -691,7 +691,7 @@ class _LandscapeBarcodeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     L10n.watch(context);
-    final name = item['name']?.toString() ?? L10n.current.loyaltyCard;
+    final name = item['name']?.toString() ?? L10n.current.cardTypeLoyalty;
     final code = item['code']?.toString() ?? '';
     final isQr = item['codeFormat']?.toString() == 'qr';
     return Padding(

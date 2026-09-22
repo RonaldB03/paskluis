@@ -237,9 +237,9 @@ abstract final class SmartCardImportService {
           orElse: () => '',
         );
     if (line.isNotEmpty) return line;
-    if (type == 'Cadeaukaart') return L10n.current.giftCard;
+    if (type == 'Cadeaukaart') return L10n.current.cardTypeGift;
     if (type == 'QR-code') return L10n.current.qrCode;
-    return L10n.current.loyaltyCard;
+    return L10n.current.cardTypeLoyalty;
   }
 
   static String _normalize(String value) => value
