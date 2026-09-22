@@ -9,14 +9,14 @@ import {stripTypeScriptTypes} from 'node:module';
 const source = stripTypeScriptTypes((await readFile(new URL('../functions/dispatch-notifications/index.ts', import.meta.url),'utf8'))
   .replace(/^import .*;\n/gm,''));
 
-function setup({pushFails=false,mailFails=false,jobPatch={},membershipRevoked=false,readFails=false}={}) {
+function setup({pushFails=false,mailFails=false,mailErrorCode=null,invalidMailConfig=false,jobPatch={},membershipRevoked=false,readFails=false}={}) {
   const updates=[],mail=[],push=[];
   const job={id:'test-event',recipient_id:'test-user',thread_id:'test-thread',membership_id:'test-membership',
     event_type:'support_reply',attempts:1,push_done:false,email_done:false,...jobPatch};
   const rows={support_threads:{user_id:'test-user',guest_email:null,locale:'nl'},profiles:{email:'test@example.invalid'},
     account_device_sessions:{device_id:'test-device'},push_device_tokens:[{id:'test-push',token:'fake-push-token',locale:'nl'}],
     card_share_members:{revoked_at:membershipRevoked?'2026-01-01':null,removed_by_recipient_at:null}};
-  let handler,claims=0;
+  let handler,claims=0,mailClosed=0;
   const client={
     rpc:async()=>{claims++;return {data:[structuredClone(job)]};},
     from:table=>{
@@ -29,10 +29,10 @@ function setup({pushFails=false,mailFails=false,jobPatch={},membershipRevoked=fa
   };
   const env={NOTIFICATION_WORKER_SECRET:'test-worker-secret',SUPABASE_URL:'https://example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fake',
     FIREBASE_SERVICE_ACCOUNT_JSON:JSON.stringify({private_key:'-----BEGIN PRIVATE KEY-----\nYQ==\n-----END PRIVATE KEY-----',client_email:'test@example.invalid',project_id:'test'}),
-    SUPPORT_SMTP_JSON:JSON.stringify({host:'example.invalid',user:'test',password:'fake',from:'test@example.invalid'})};
+    SUPPORT_SMTP_JSON:invalidMailConfig?'invalid-json':JSON.stringify({host:'example.invalid',user:'test',password:'fake',from:'test@example.invalid'})};
   vm.runInNewContext(source,{
     Deno:{env:{get:key=>env[key]},serve:callback=>handler=callback},createClient:()=>client,
-    nodemailer:{createTransport:()=>({sendMail:async data=>{mail.push(data);if(mailFails)throw new Error('Provider unavailable');},close:()=>{}})},
+    nodemailer:{createTransport:()=>({sendMail:async data=>{mail.push(data);if(mailFails)throw Object.assign(new Error('Do not expose credentials or provider response'),{code:mailErrorCode});},close:()=>{mailClosed++;}})},
     crypto:{subtle:{importKey:async()=>({}),sign:async()=>new Uint8Array([1,2,3])}},
     fetch:async(url,options)=>{
       if(url==='https://oauth2.googleapis.com/token')return Response.json({access_token:'fake-access'});
@@ -41,7 +41,7 @@ function setup({pushFails=false,mailFails=false,jobPatch={},membershipRevoked=fa
       return Response.json(pushFails?{error:'Unavailable'}:{name:'accepted'},{status:pushFails?503:200});
     },Response,TextEncoder,URLSearchParams,Uint8Array,AbortSignal,btoa,atob,
   });
-  return {updates,mail,push,claims:()=>claims,run:secret=>handler(new Request('https://example.invalid/worker',{
+  return {updates,mail,push,claims:()=>claims,mailClosed:()=>mailClosed,run:secret=>handler(new Request('https://example.invalid/worker',{
     method:'POST',headers:{'x-job-secret':secret??env.NOTIFICATION_WORKER_SECRET},body:'{}'}))};
 }
 
@@ -79,4 +79,16 @@ test('database lookup failure retains the job for retry instead of marking it de
   assert.equal(ctx.updates.at(-1).delivered_at,undefined);
   assert.equal(ctx.updates.at(-1).push_done,false);
   assert.ok(ctx.updates.at(-1).available_at);
+});
+
+test('SMTP diagnostics expose only bounded codes and close failed connections',async()=>{
+  for(const code of ['EAUTH','ETIMEDOUT','credential-bearing-arbitrary-code']){
+    const ctx=setup({mailFails:true,mailErrorCode:code});await ctx.run();
+    assert.equal(ctx.updates.at(-1).last_error,code==='credential-bearing-arbitrary-code'?'MAIL_SEND_FAILED':`MAIL_${code}`);
+    assert.equal(ctx.updates.at(-1).email_done,false);
+    assert.equal(ctx.mailClosed(),1);
+  }
+  const malformed=setup({invalidMailConfig:true});await malformed.run();
+  assert.equal(malformed.updates.at(-1).last_error,'MAIL_INVALID_CONFIG');
+  assert.equal(malformed.mail.length,0);
 });

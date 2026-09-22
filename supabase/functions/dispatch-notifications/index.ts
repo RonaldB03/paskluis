@@ -58,15 +58,22 @@ async function createGoogleAccessToken(serviceAccount: Record<string, string>) {
 
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 async function sendMail(to:string,title:string,copy:string,staff:boolean,eventId:string,en:boolean){
- const config=JSON.parse(Deno.env.get('SUPPORT_SMTP_JSON')||'{}');
+ let config;
+ try{config=JSON.parse(Deno.env.get('SUPPORT_SMTP_JSON')||'{}');}catch{throw new Error('MAIL_INVALID_CONFIG');}
+ if(!config||typeof config!=='object')throw new Error('MAIL_INVALID_CONFIG');
  if(!config.host||!config.user||!config.password||!config.from)throw new Error('MAIL_NOT_CONFIGURED');
  const transport=nodemailer.createTransport({host:config.host,port:Number(config.port||465),secure:Number(config.port||465)===465,requireTLS:true,disableFileAccess:true,disableUrlAccess:true,auth:{user:config.user,pass:config.password},tls:{rejectUnauthorized:true},connectionTimeout:10000,socketTimeout:15000});
  const link=staff?'https://ronaldb03.github.io/paskluis/':'https://ronaldb03.github.io/paskluis/support.html';
- await transport.sendMail({from:{name:'PasKluis',address:config.from},to,subject:title,
+ try{await transport.sendMail({from:{name:'PasKluis',address:config.from},to,subject:title,
   messageId:`<paskluis-notification-${eventId}@${String(config.from).split('@')[1]}>`,
   text:`${copy}\n\n${link}\n\nTeam PasKluis`,
   html:`<!doctype html><html><body style="margin:0;background:#f5f3f6;font-family:Arial,sans-serif;color:#26242b"><table role="presentation" style="max-width:560px;width:100%;margin:32px auto;background:white;border-radius:24px"><tr><td style="padding:32px"><div style="font-weight:900;color:#d51b46;font-size:26px">PasKluis</div><h1 style="font-size:24px;margin-top:28px">${escape(title)}</h1><p style="line-height:1.6">${escape(copy)}</p><a href="${link}" style="display:inline-block;padding:15px 24px;background:#d51b46;color:white;text-decoration:none;border-radius:24px;margin:16px 0">${staff?'Open beheer':en?'Open PasKluis':'Open PasKluis'}</a><p style="color:#777;font-size:13px">Team PasKluis · ${staff?'Beantwoord de vraag in het beheer.':en?'Read and reply in the app. Never share PINs by email.':'Lees en beantwoord het bericht in de app. Deel geen pincodes via e-mail.'}</p></td></tr></table></body></html>`});
- transport.close();
+ }catch(error){
+  // Store only a bounded provider code, never a raw SMTP response or credentials.
+  const code=String((error as {code?:unknown})?.code||'');
+  const allowed=['EAUTH','EDNS','ECONNECTION','ETIMEDOUT','ETLS','ESOCKET','EENVELOPE','EMESSAGE','EPROTOCOL'];
+  throw new Error(allowed.includes(code)?`MAIL_${code}`:'MAIL_SEND_FAILED');
+ }finally{transport.close();}
 }
 Deno.serve(async request=>{
  // Only our scheduled worker or server-side notification entry point can claim jobs.
@@ -133,7 +140,7 @@ Deno.serve(async request=>{
    const delivered=await admin.from('notification_outbox').update({push_done:pushDone,email_done:emailDone,delivered_at:new Date().toISOString(),locked_until:null,last_error:null}).eq('id',job.id);
    if(delivered.error)throw new Error('DATABASE_WRITE_FAILED');
    completed++;
-  }catch(error){const reason=error instanceof Error&&/^(MAIL_NOT_CONFIGURED|NO_REGISTERED_DEVICE|PUSH_\d+)$/.test(error.message)?error.message:'DELIVERY_FAILED';await admin.from('notification_outbox').update({push_done:pushDone,email_done:emailDone,locked_until:null,last_error:reason,available_at:new Date(Date.now()+Math.min(3600,30*2**job.attempts)*1000).toISOString()}).eq('id',job.id);}
+  }catch(error){const reason=error instanceof Error&&/^(MAIL_(NOT_CONFIGURED|INVALID_CONFIG|SEND_FAILED|EAUTH|EDNS|ECONNECTION|ETIMEDOUT|ETLS|ESOCKET|EENVELOPE|EMESSAGE|EPROTOCOL)|NO_REGISTERED_DEVICE|PUSH_\d+)$/.test(error.message)?error.message:'DELIVERY_FAILED';await admin.from('notification_outbox').update({push_done:pushDone,email_done:emailDone,locked_until:null,last_error:reason,available_at:new Date(Date.now()+Math.min(3600,30*2**job.attempts)*1000).toISOString()}).eq('id',job.id);}
  }
  return Response.json({processed:claimed.data?.length||0,completed});
 });
