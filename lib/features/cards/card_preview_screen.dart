@@ -1,3 +1,4 @@
+import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
@@ -69,15 +70,10 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
     return const Color(0xFFD51B46);
   }
 
-  Barcode get barcodeType {
-    final code = item['code'] ?? '';
-    final onlyDigits = RegExp(r'^\d+$').hasMatch(code);
-
-    if (onlyDigits && code.length == 13) return Barcode.ean13();
-    if (onlyDigits && code.length == 8) return Barcode.ean8();
-
-    return Barcode.code128();
-  }
+  Barcode get barcodeType => cardBarcode(
+    item['code'] ?? '',
+    symbology: item['barcodeSymbology'],
+  );
 
   String get formattedCode {
     final code = item['code'] ?? '';

@@ -1,3 +1,4 @@
+import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:barcode_widget/barcode_widget.dart';
@@ -123,7 +124,8 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
                 border: Border.all(color: Colors.black12),
               ),
               child: BarcodeWidget(
-                barcode: isQrCode ? Barcode.qrCode() : Barcode.code128(),
+                barcode: isQrCode ? Barcode.qrCode() : cardBarcode(code,
+                  symbology: widget.item['barcodeSymbology']?.toString()),
                 data: code,
                 width: double.infinity,
                 height: isQrCode ? 260 : 155,

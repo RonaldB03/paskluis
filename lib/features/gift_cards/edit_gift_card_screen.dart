@@ -35,6 +35,7 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
   DateTime? expiryDate;
   bool expiryNotificationsEnabled = true;
   String codeFormat = 'barcode';
+  String? barcodeSymbology;
 
   bool get hasPresetLogo => logoAsset.isNotEmpty;
 
@@ -71,6 +72,7 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
     expiryNotificationsEnabled = widget.item['expiryNotificationsEnabled'] == true ||
         widget.item['expiryNotificationsEnabled']?.toString() == 'true';
     codeFormat = widget.item['codeFormat']?.toString() ?? 'barcode';
+    barcodeSymbology = widget.item['barcodeSymbology']?.toString();
   }
 
   @override
@@ -129,6 +131,7 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
     setState(() {
       codeController.text = result.code;
       codeFormat = result.codeFormat;
+      barcodeSymbology = result.barcodeSymbology;
     });
   }
 
@@ -147,6 +150,7 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
     updated['name'] = nameController.text.trim();
     updated['code'] = codeController.text.trim();
     updated['codeFormat'] = codeFormat;
+    updated['barcodeSymbology'] = barcodeSymbology ?? '';
     updated['note'] = noteController.text.trim();
 
     updated['cardNumber'] = cardNumberController.text.trim();

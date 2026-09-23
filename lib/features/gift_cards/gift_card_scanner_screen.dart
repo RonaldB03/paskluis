@@ -1,3 +1,5 @@
+import '../../data/services/barcode_image_service.dart';
+import '../../shared/widgets/scanner_camera.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
@@ -29,7 +31,8 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
       BarcodeFormat.codabar,
       BarcodeFormat.upcA,
       BarcodeFormat.upcE,
-      BarcodeFormat.itf,
+      BarcodeFormat.itf2of5,
+      BarcodeFormat.itf14,
       BarcodeFormat.qrCode,
     ],
   );
@@ -72,9 +75,9 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
   }
 
   void handleDetect(BarcodeCapture capture) {
-    if (scanned) return;
+    if (!mounted || scanned || importingImage) return;
 
-    final barcode = capture.barcodes.firstOrNull;
+    final barcode = capture.barcodes.where((b) => b.rawValue?.trim().isNotEmpty == true).firstOrNull;
     final value = barcode?.rawValue?.trim();
 
     if (value == null || value.isEmpty) return;
@@ -83,7 +86,7 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
   }
 
   void finishWithCode(String code) {
-    if (scanned) return;
+    if (!mounted || scanned) return;
 
     scanned = true;
     Navigator.pop(context, code);
@@ -129,16 +132,22 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
     setState(() => importingImage = true);
 
     try {
+      await controller.stop();
       final picker = ImagePicker();
-      final image = await picker.pickImage(source: ImageSource.gallery);
+      final image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 100,
+        requestFullMetadata: false,
+      );
+      if (!mounted) return;
 
       if (image == null) {
         if (mounted) setState(() => importingImage = false);
         return;
       }
 
-      final result = await controller.analyzeImage(image.path);
-      final barcode = result?.barcodes.firstOrNull;
+      final result = await BarcodeImageService.analyze(image.path, formats: controller.formats);
+      final barcode = result?.barcodes.where((b) => b.rawValue?.trim().isNotEmpty == true).firstOrNull;
       final value = barcode?.rawValue?.trim();
 
       if (value == null || value.isEmpty) {
@@ -161,6 +170,8 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
       ScaffoldMessenger.of(context).showSnackBar(
          SnackBar(content: Text(L10n.current.unableToReadImage)),
       );
+    } finally {
+      if (mounted) setState(() => importingImage = false);
     }
   }
 
@@ -174,12 +185,12 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          MobileScanner(controller: controller, onDetect: handleDetect),
-          const _ScannerOverlay(
+          ScannerCamera(controller: controller, onDetect: handleDetect, paused: importingImage || scanned),
+          const IgnorePointer(child: _ScannerOverlay(
             frameWidth: frameWidth,
             frameHeight: frameHeight,
-          ),
-          Center(
+          )),
+          IgnorePointer(child: Center(
             child: SizedBox(
               width: frameWidth,
               height: frameHeight,
@@ -244,7 +255,7 @@ class _GiftCardScannerScreenState extends State<GiftCardScannerScreen>
                 ],
               ),
             ),
-          ),
+          )),
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),

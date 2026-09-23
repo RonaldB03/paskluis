@@ -1,3 +1,4 @@
+import '../../shared/widgets/scanner_camera.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
@@ -45,25 +46,20 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
   }
 
   void handleDetect(BarcodeCapture capture) {
-    final barcode = capture.barcodes
+    if (!mounted) return;
+    final newCodes = capture.barcodes
         .where((candidate) => candidate.format == BarcodeFormat.qrCode)
-        .firstOrNull;
-    final value = barcode?.rawValue?.trim();
-
-    if (value == null || value.isEmpty) return;
-
-    if (scannedCodes.contains(value)) return;
-
+        .map((barcode) => barcode.rawValue?.trim() ?? '')
+        .where((value) => value.isNotEmpty && !scannedCodes.contains(value))
+        .toSet();
+    if (newCodes.isEmpty) return;
     HapticFeedback.mediumImpact();
-
-    setState(() {
-      scannedCodes.add(value);
-    });
+    setState(() => scannedCodes.addAll(newCodes));
   }
 
   Future<void> toggleTorch() async {
     await controller.toggleTorch();
-
+    if (!mounted) return;
     setState(() {
       torchEnabled = !torchEnabled;
     });
@@ -71,7 +67,7 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
 
   Future<void> switchCamera() async {
     await controller.switchCamera();
-
+    if (!mounted) return;
     setState(() {
       usingFrontCamera = !usingFrontCamera;
     });
@@ -96,10 +92,10 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          MobileScanner(controller: controller, onDetect: handleDetect),
+          ScannerCamera(controller: controller, onDetect: handleDetect),
 
           // Overlay
-          Center(
+          IgnorePointer(child: Center(
             child: SizedBox(
               width: frameWidth,
               height: frameHeight,
@@ -129,7 +125,7 @@ class _MultiQrScannerScreenState extends State<MultiQrScannerScreen>
                 ],
               ),
             ),
-          ),
+          )),
 
           // Top bar
           SafeArea(

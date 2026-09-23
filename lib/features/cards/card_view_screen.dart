@@ -1,3 +1,4 @@
+import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 import 'dart:io';
@@ -350,15 +351,10 @@ class _CardViewScreenState extends State<CardViewScreen>
     await markCurrentCardAsUsed();
   }
 
-  Barcode getBarcodeType(Map<String, dynamic> item) {
-    final code = item['code']?.toString() ?? '';
-    final onlyDigits = RegExp(r'^\d+$').hasMatch(code);
-
-    if (onlyDigits && code.length == 13) return Barcode.ean13();
-    if (onlyDigits && code.length == 8) return Barcode.ean8();
-
-    return Barcode.code128();
-  }
+  Barcode getBarcodeType(Map<String, dynamic> item) => cardBarcode(
+    item['code']?.toString() ?? '',
+    symbology: item['barcodeSymbology']?.toString(),
+  );
 
   void copyCurrentCode() {
     if (items.isEmpty) return;

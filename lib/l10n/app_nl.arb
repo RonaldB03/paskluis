@@ -1031,5 +1031,7 @@
   "screenshotUnavailable": "Afbeelding tijdelijk niet beschikbaar. Vernieuw het gesprek.",
   "close": "Sluiten",
   "supportYou": "Jij",
-  "supportMessagesLoadFailed": "Nieuwe berichten konden niet worden opgehaald. Probeer opnieuw."
+  "supportMessagesLoadFailed": "Nieuwe berichten konden niet worden opgehaald. Probeer opnieuw.",
+  "scannerCameraPermission": "Geef PasKluis toegang tot de camera via de instellingen van je iPhone of telefoon.",
+  "scannerCameraUnavailable": "De camera kon niet worden gestart. Probeer het opnieuw of importeer een foto."
 }

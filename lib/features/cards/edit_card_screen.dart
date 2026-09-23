@@ -1,3 +1,4 @@
+import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
@@ -29,6 +30,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
   String brandColor = '';
   String customImage = '';
   String codeFormat = 'barcode';
+  String? barcodeSymbology;
 
   bool get hasPresetLogo => logoAsset.isNotEmpty;
 
@@ -41,15 +43,10 @@ class _EditCardScreenState extends State<EditCardScreen> {
     return const Color(0xFFD51B46);
   }
 
-  Barcode get barcodeType {
-    final code = codeController.text.trim();
-    final onlyDigits = RegExp(r'^\d+$').hasMatch(code);
-
-    if (onlyDigits && code.length == 13) return Barcode.ean13();
-    if (onlyDigits && code.length == 8) return Barcode.ean8();
-
-    return Barcode.code128();
-  }
+  Barcode get barcodeType => cardBarcode(
+    codeController.text.trim(),
+    symbology: barcodeSymbology,
+  );
 
   String get formattedCode {
     final code = codeController.text.trim();
@@ -71,6 +68,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
     brandColor = widget.item['brandColor']?.toString() ?? '';
     customImage = widget.item['customImage']?.toString() ?? '';
     codeFormat = widget.item['codeFormat']?.toString() ?? 'barcode';
+    barcodeSymbology = widget.item['barcodeSymbology']?.toString();
 
     codeController.addListener(() {
       if (mounted) setState(() {});
@@ -145,6 +143,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
     setState(() {
       codeController.text = result.code.trim();
       codeFormat = result.codeFormat;
+      barcodeSymbology = result.barcodeSymbology;
     });
   }
 
@@ -170,6 +169,7 @@ class _EditCardScreenState extends State<EditCardScreen> {
     updated['name'] = name;
     updated['code'] = code;
     updated['codeFormat'] = codeFormat;
+    updated['barcodeSymbology'] = barcodeSymbology ?? '';
     updated['note'] = noteController.text.trim();
 
     updated['cardNumber'] = '';

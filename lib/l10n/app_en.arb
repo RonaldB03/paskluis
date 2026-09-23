@@ -1031,5 +1031,7 @@
   "screenshotUnavailable": "Image temporarily unavailable. Refresh the conversation.",
   "close": "Close",
   "supportYou": "You",
-  "supportMessagesLoadFailed": "New messages could not be loaded. Please try again."
+  "supportMessagesLoadFailed": "New messages could not be loaded. Please try again.",
+  "scannerCameraPermission": "Allow PasKluis to use the camera in your phone settings.",
+  "scannerCameraUnavailable": "The camera could not start. Try again or import a photo."
 }

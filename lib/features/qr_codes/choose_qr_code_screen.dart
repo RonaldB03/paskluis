@@ -1,3 +1,4 @@
+import '../../data/services/barcode_image_service.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,8 +8,15 @@ import 'add_qr_code_screen.dart';
 import 'multi_qr_scanner_screen.dart';
 import 'qr_scanner_screen.dart';
 
-class ChooseQrCodeScreen extends StatelessWidget {
+class ChooseQrCodeScreen extends StatefulWidget {
   const ChooseQrCodeScreen({super.key});
+
+  @override
+  State<ChooseQrCodeScreen> createState() => _ChooseQrCodeScreenState();
+}
+
+class _ChooseQrCodeScreenState extends State<ChooseQrCodeScreen> {
+  bool _importing = false;
 
   Future<void> openManual(BuildContext context) async {
     final result = await Navigator.push<Map<String, String>>(
@@ -54,40 +62,57 @@ class ChooseQrCodeScreen extends StatelessWidget {
   }
 
   Future<void> importImages(BuildContext context) async {
-    final images = await ImagePicker().pickMultiImage(imageQuality: 100);
-    if (!context.mounted || images.isEmpty) return;
-
-    final scanner = MobileScannerController(
-      formats: const [BarcodeFormat.qrCode],
-    );
-    final codes = <String>{};
+    if (_importing) return;
+    setState(() => _importing = true);
     try {
-      for (final image in images) {
-        final capture = await scanner.analyzeImage(image.path);
-        for (final barcode in capture?.barcodes ?? const <Barcode>[]) {
-          if (barcode.format != BarcodeFormat.qrCode) continue;
-          final value = barcode.rawValue?.trim() ?? '';
-          if (value.isNotEmpty) codes.add(value);
+      final codes = <String>{};
+      var failed = false;
+      try {
+        final images = await ImagePicker().pickMultiImage(
+          imageQuality: 100,
+          requestFullMetadata: false,
+        );
+        if (!context.mounted || images.isEmpty) return;
+        for (final image in images) {
+          try {
+            final capture = await BarcodeImageService.analyze(
+              image.path,
+              formats: const [BarcodeFormat.qrCode],
+            );
+            for (final barcode in capture?.barcodes ?? const <Barcode>[]) {
+              if (barcode.format != BarcodeFormat.qrCode) continue;
+              final value = barcode.rawValue?.trim() ?? '';
+              if (value.isNotEmpty) codes.add(value);
+            }
+          } catch (_) {
+            failed = true;
+          }
         }
+      } catch (_) {
+        failed = true;
       }
-    } finally {
-      await scanner.dispose();
-    }
 
-    if (!context.mounted) return;
-    if (codes.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(
-          content: Text(L10n.current.noQrCodeFoundInTheSelected),
-        ),
-      );
-      return;
+      if (!context.mounted) return;
+      if (codes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(
+            content: Text(
+              failed
+                  ? L10n.current.unableToReadImage
+                  : L10n.current.noQrCodeFoundInTheSelected,
+            ),
+          ),
+        );
+        return;
+      }
+      if (codes.length == 1) {
+        await _openCodeEditor(context, codes.first);
+        return;
+      }
+      await _finishCodes(context, codes.toList());
+    } finally {
+      if (mounted) setState(() => _importing = false);
     }
-    if (codes.length == 1) {
-      await _openCodeEditor(context, codes.first);
-      return;
-    }
-    await _finishCodes(context, codes.toList());
   }
 
   Future<void> _finishCodes(
@@ -174,7 +199,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => openManual(context),
+            onPressed: _importing ? null : () => openManual(context),
             child:  Text(
               L10n.current.manual,
               style: TextStyle(
@@ -208,7 +233,9 @@ class ChooseQrCodeScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 22),
+          if (_importing) const LinearProgressIndicator(),
           _QrChoiceTile(
+            isDisabled: _importing,
             icon: Icons.qr_code_scanner_rounded,
             title: L10n.current.scanOneQrCode,
             subtitle: L10n.current.useYourCameraToAddAQr,
@@ -216,6 +243,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _QrChoiceTile(
+            isDisabled: _importing,
             icon: Icons.confirmation_number_rounded,
             title: L10n.current.multipleQrCodes,
             subtitle:
@@ -224,6 +252,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _QrChoiceTile(
+            isDisabled: _importing,
             icon: Icons.edit_note_rounded,
             title: L10n.current.enterManually,
             subtitle: L10n.current.enterANameAndQrCodeContent,
@@ -231,6 +260,7 @@ class ChooseQrCodeScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           _QrChoiceTile(
+            isDisabled: _importing,
             icon: Icons.image_rounded,
             title: L10n.current.importPhotoOrScreenshot,
             subtitle: L10n.current.readOneOrMoreQrCodesFrom,
@@ -269,7 +299,7 @@ class _QrChoiceTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: onTap,
+        onTap: isDisabled ? null : onTap,
         child: Container(
           constraints: const BoxConstraints(minHeight: 82),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

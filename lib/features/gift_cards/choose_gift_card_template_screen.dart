@@ -56,6 +56,7 @@ class _ChooseGiftCardTemplateScreenState
           initialName: brand == null ? null : L10n.current.giftCard((brand.name).toString()),
           initialCode: importResult.code.trim(),
           initialCodeFormat: importResult.codeFormat,
+          initialBarcodeSymbology: importResult.barcodeSymbology,
           initialPinCode: importResult.pinCode,
           initialCurrentBalance: importResult.balance,
           initialExpiryDate: importResult.expiryDate,

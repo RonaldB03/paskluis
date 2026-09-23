@@ -57,6 +57,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
           initialName: brand?.name ?? suggestedName,
           initialCode: scan?.code,
           initialCodeFormat: scan?.codeFormat,
+          initialBarcodeSymbology: scan?.barcodeSymbology,
           initialBrandId: brand?.id,
           initialLogoAsset: brand?.logoAsset,
           initialBrandColor: brand?.color.value.toString(),
@@ -112,6 +113,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       'name': brand.name,
       'code': result.code.trim(),
       'codeFormat': result.codeFormat,
+      'barcodeSymbology': result.barcodeSymbology ?? '',
       'note': '',
       'cardNumber': '',
       'pinCode': '',
@@ -176,6 +178,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     final scan = ScannerResult(
       code: imported.code.trim(),
       codeFormat: imported.codeFormat,
+      barcodeSymbology: imported.barcodeSymbology,
     );
     final brand = imported.brand;
     if (brand != null && brand.supportedTypes.contains('Pasje')) {

@@ -16,6 +16,7 @@ abstract final class GiftCardShareService {
         'name': card['name']?.toString() ?? '',
         'code': card['code']?.toString() ?? '',
         'codeFormat': card['codeFormat']?.toString() ?? 'barcode',
+        'barcodeSymbology': card['barcodeSymbology']?.toString() ?? '',
         'cardNumber': card['cardNumber']?.toString() ?? '',
         'pinCode': card['pinCode']?.toString() ?? '',
         'initialBalance': card['initialBalance']?.toString() ?? '',

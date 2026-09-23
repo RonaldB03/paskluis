@@ -18,6 +18,7 @@ class AddCardScreen extends StatefulWidget {
   final String? initialBrandColor;
   final Map<String, String> initialLogoLayout;
   final String? initialCodeFormat;
+  final String? initialBarcodeSymbology;
 
   const AddCardScreen({
     super.key,
@@ -29,6 +30,7 @@ class AddCardScreen extends StatefulWidget {
     this.initialBrandColor,
     this.initialLogoLayout = const {},
     this.initialCodeFormat,
+    this.initialBarcodeSymbology,
   });
 
   @override
@@ -38,6 +40,7 @@ class AddCardScreen extends StatefulWidget {
 class _AddCardScreenState extends State<AddCardScreen> {
   late String selectedType;
   late ScannerMode selectedCodeMode;
+  String? barcodeSymbology;
 
   final nameController = TextEditingController();
   final codeController = TextEditingController();
@@ -59,6 +62,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
   void initState() {
     super.initState();
     selectedType = widget.initialType;
+    barcodeSymbology = widget.initialBarcodeSymbology;
     selectedCodeMode = switch (widget.initialCodeFormat) {
       'qr' => ScannerMode.qr,
       'barcode' => ScannerMode.barcode,
@@ -119,6 +123,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
 
     setState(() {
       codeController.text = result.code;
+      barcodeSymbology = result.barcodeSymbology;
       selectedCodeMode = result.codeFormat == 'qr'
           ? ScannerMode.qr
           : ScannerMode.barcode;
@@ -141,6 +146,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
       'name': nameController.text.trim(),
       'code': codeController.text.trim(),
       'codeFormat': selectedCodeMode == ScannerMode.qr ? 'qr' : 'barcode',
+      'barcodeSymbology': barcodeSymbology ?? '',
       'note': '',
       'cardNumber': '',
       'pinCode': '',

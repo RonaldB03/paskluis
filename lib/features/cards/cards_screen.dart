@@ -151,6 +151,7 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
       'name': result['name'] ?? '',
       'code': result['code'] ?? '',
       'codeFormat': result['codeFormat'] ?? 'barcode',
+      'barcodeSymbology': result['barcodeSymbology'] ?? '',
       'note': result['note'] ?? '',
       'cardNumber': result['cardNumber'] ?? '',
       'pinCode': result['pinCode'] ?? '',

@@ -1,3 +1,6 @@
+import 'barcode_image_service.dart';
+import 'card_image_signals.dart';
+import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
@@ -14,6 +17,7 @@ class SmartCardImportResult {
   final String pinCode;
   final String balance;
   final String codeFormat;
+  final String? barcodeSymbology;
   final String expiryDate;
   final CardBrandTemplate? brand;
 
@@ -24,6 +28,7 @@ class SmartCardImportResult {
     required this.pinCode,
     required this.balance,
     required this.codeFormat,
+    this.barcodeSymbology,
     required this.expiryDate,
     this.brand,
   });
@@ -35,7 +40,8 @@ abstract final class SmartCardImportService {
   }) async {
     final image = await ImagePicker().pickImage(
       source: source,
-      imageQuality: 95,
+      imageQuality: 100,
+      requestFullMetadata: false,
       preferredCameraDevice: CameraDevice.rear,
     );
     if (image == null) return null;
@@ -44,30 +50,20 @@ abstract final class SmartCardImportService {
   }
 
   static Future<SmartCardImportResult> analyzeImage(String imagePath) async {
-    final scanner = mobile.MobileScannerController(
-      formats: const [
-        mobile.BarcodeFormat.ean13,
-        mobile.BarcodeFormat.ean8,
-        mobile.BarcodeFormat.code128,
-        mobile.BarcodeFormat.code39,
-        mobile.BarcodeFormat.code93,
-        mobile.BarcodeFormat.codabar,
-        mobile.BarcodeFormat.upcA,
-        mobile.BarcodeFormat.upcE,
-        mobile.BarcodeFormat.itf,
-        mobile.BarcodeFormat.qrCode,
-      ],
-    );
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
     try {
-      final capture = await scanner.analyzeImage(imagePath);
-      final scanned = capture?.barcodes.firstOrNull;
-      final recognized = await recognizer.processImage(
-        InputImage.fromFilePath(imagePath),
+      final signals = await readCardImageSignals(
+        readBarcodes: () => BarcodeImageService.analyze(imagePath, formats: BarcodeImageService.cardFormats),
+        readText: () => recognizer.processImage(InputImage.fromFilePath(imagePath)),
       );
-      final text = recognized.text.trim();
-      final brands = await BrandCatalogService.load();
+      final scanned = selectCardBarcode(signals.barcodes?.barcodes ?? []);
+      final recognized = signals.text;
+      final text = recognized?.text.trim() ?? '';
+      final brands = await BrandCatalogService.load().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => cardBrandTemplates,
+      );
       final code = scanned?.rawValue?.trim().isNotEmpty == true
           ? scanned!.rawValue!.trim()
           : _findCardNumber(text);
@@ -92,12 +88,16 @@ abstract final class SmartCardImportService {
         pinCode: _findPin(text, recognized, code),
         balance: _findBalance(text),
         codeFormat: isQr ? 'qr' : 'barcode',
+        barcodeSymbology: scannedBarcodeSymbology(scanned?.format),
         expiryDate: _findExpiryDate(text),
         brand: brand,
       );
     } finally {
-      recognizer.close();
-      await scanner.dispose();
+      try {
+        await recognizer.close();
+      } catch (_) {
+        // OCR cleanup must not discard an otherwise usable barcode.
+      }
     }
   }
 
@@ -113,7 +113,7 @@ abstract final class SmartCardImportService {
 
   static String _findPin(
     String text,
-    RecognizedText recognized,
+    RecognizedText? recognized,
     String cardCode,
   ) {
     final match = RegExp(
@@ -121,9 +121,9 @@ abstract final class SmartCardImportService {
       caseSensitive: false,
     ).firstMatch(text);
     final labelled = match?.group(1)?.trim() ?? '';
-    if (labelled.isNotEmpty) return labelled;
+    if (labelled.isNotEmpty && RegExp(r'\d').hasMatch(labelled)) return labelled;
 
-    final boxes = recognized.blocks.expand((block) => block.lines).toList();
+    final boxes = recognized?.blocks.expand((block) => block.lines).toList() ?? <TextLine>[];
     if (boxes.isEmpty) return '';
 
     final left = boxes.map((line) => line.boundingBox.left).reduce((a, b) => a < b ? a : b);
@@ -134,8 +134,8 @@ abstract final class SmartCardImportService {
     final candidates = <({String value, double score})>[];
     for (final line in boxes) {
       final raw = line.text.trim();
-      final value = raw.replaceAll(RegExp(r'\D'), '');
-      if (value.length < 4 || value.length > 10) continue;
+      if (!RegExp(r'^\d{4,8}$').hasMatch(raw)) continue;
+      final value = raw;
       if (compactCardCode.contains(value)) continue;
 
       var score = 0.0;

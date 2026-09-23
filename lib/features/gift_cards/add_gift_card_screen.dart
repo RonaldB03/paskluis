@@ -1,3 +1,4 @@
+import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
@@ -34,6 +35,7 @@ class AddGiftCardScreen extends StatefulWidget {
   final String? initialExpiryDate;
   final bool initialExpiryNotificationsEnabled;
   final String? initialCodeFormat;
+  final String? initialBarcodeSymbology;
   final Map<String, double> initialLogoLayout;
 
   const AddGiftCardScreen({
@@ -53,6 +55,7 @@ class AddGiftCardScreen extends StatefulWidget {
     this.initialExpiryDate,
     this.initialExpiryNotificationsEnabled = true,
     this.initialCodeFormat,
+    this.initialBarcodeSymbology,
     this.initialLogoLayout = const {},
   });
 
@@ -75,6 +78,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
   DateTime? expiryDate;
   late bool expiryNotificationsEnabled;
   late ScannerMode selectedCodeMode;
+  String? barcodeSymbology;
   bool customBrandSelected = false;
   bool _saving = false;
 
@@ -89,15 +93,10 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     return const Color(0xFFD51B46);
   }
 
-  Barcode get barcodeType {
-    final code = codeController.text.trim();
-    final onlyDigits = RegExp(r'^\d+$').hasMatch(code);
-
-    if (onlyDigits && code.length == 13) return Barcode.ean13();
-    if (onlyDigits && code.length == 8) return Barcode.ean8();
-
-    return Barcode.code128();
-  }
+  Barcode get barcodeType => cardBarcode(
+    codeController.text.trim(),
+    symbology: barcodeSymbology,
+  );
 
   String get formattedCode {
     final code = codeController.text.trim();
@@ -126,6 +125,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     customImage = widget.initialCustomImage ?? '';
     expiryDate = DateTime.tryParse(widget.initialExpiryDate ?? '');
     expiryNotificationsEnabled = widget.initialExpiryNotificationsEnabled;
+    barcodeSymbology = widget.initialBarcodeSymbology;
     selectedCodeMode = switch (widget.initialCodeFormat) {
       'qr' => ScannerMode.qr,
       'barcode' => ScannerMode.barcode,
@@ -171,6 +171,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
 
     setState(() {
       codeController.text = result.code.trim();
+      barcodeSymbology = result.barcodeSymbology;
       selectedCodeMode = result.codeFormat == 'qr'
           ? ScannerMode.qr
           : ScannerMode.barcode;
@@ -211,6 +212,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
           logoLayout = result.brand!.logoLayout;
           customBrandSelected = false;
         }
+        barcodeSymbology = result.barcodeSymbology;
         selectedCodeMode = result.codeFormat == 'qr'
             ? ScannerMode.qr
             : ScannerMode.barcode;
@@ -347,6 +349,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       'name': name,
       'code': code,
       'codeFormat': selectedCodeMode == ScannerMode.qr ? 'qr' : 'barcode',
+      'barcodeSymbology': barcodeSymbology ?? '',
       'cardNumber': code,
       'pinCode': pinCodeController.text.trim(),
       'initialBalance': balance,

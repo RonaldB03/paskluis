@@ -22,6 +22,7 @@ abstract final class CardShareService {
         'codes': card['codes']?.toString() ?? '',
         'used': card['used']?.toString() ?? '',
         'codeFormat': card['codeFormat']?.toString() ?? 'barcode',
+        'barcodeSymbology': card['barcodeSymbology']?.toString() ?? '',
         'cardNumber': card['cardNumber']?.toString() ?? '',
         // The owner explicitly chose to share the complete gift card.
         'pinCode': card['pinCode']?.toString() ?? '',
