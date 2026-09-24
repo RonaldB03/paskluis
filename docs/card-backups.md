@@ -1,6 +1,6 @@
 # PasKluis account backups
 
-Status: closed-test rollout only. The production app does not upload existing cards without consent.
+Status: backup access is open to every existing and new account. Device uploads remain opt-in; no existing cards are uploaded without consent.
 
 ## User behavior
 
@@ -24,16 +24,16 @@ The 10,000,000-byte quota covers all unique retained ciphertext objects across a
 
 Migration: `supabase/migrations/20260924205628_card_backups.sql`.
 Functions: `card-backups` and updated `delete-account`.
-The migration enables only accounts existing at migration time. New accounts default to disabled. Before broad rollout, replace the allowlist deliberately; do not assume all registered users have backup access.
+The initial migration admitted existing testers only. Migration `20260924221508_enable_backups_for_all_accounts.sql` opens access to all existing and new accounts, as requested by the owner. New backup records default to available and are created on the first authenticated backup request. Explicit disabled records used during account deletion remain disabled. This server setting does not enable automatic uploads on any device.
 
 Run Flutter tests, Node tests, and the rollback-only `supabase/tests/backup_database.sql`. That SQL inserts synthetic users and sessions inside a transaction and rolls it back; it must never return keys or real account content.
 
 Admin > backup summary in the app displays counts, used bytes and failures without card content. Review capacity at 50 backed-up users or 70% of relevant storage/transfer quotas. Total organizational transfer must be checked in Supabase Billing > Usage; database object bytes alone are not a traffic meter.
 
-## Independent recovery copy — required before broad rollout
+## Independent recovery copy — required before public app launch
 
 NOT CONFIGURED by this feature. Three versions within Supabase are not an independent disaster-recovery copy, and a provider database backup does not contain Storage file contents.
 
-Before opening beyond the test group, provision an independently secured destination and retention policy. Export the `backup_private` schema (including account keys, generations and version metadata) AND the referenced `card-backups` objects as a consistent set. Encrypt the complete export with a separate recovery key stored outside both the export destination and Supabase. Restrict operator access and log only counts/checksums. Pause uploads during export or use a checkpoint that retains every referenced object until export completes. Do not place plaintext keys, database dumps or card exports in GitHub or CI artifacts.
+Before the public app launch, provision an independently secured destination and retention policy. Export the `backup_private` schema (including account keys, generations and version metadata) AND the referenced `card-backups` objects as a consistent set. Encrypt the complete export with a separate recovery key stored outside both the export destination and Supabase. Restrict operator access and log only counts/checksums. Pause uploads during export or use a checkpoint that retains every referenced object until export completes. Do not place plaintext keys, database dumps or card exports in GitHub or CI artifacts.
 
 Test recovery into an isolated environment with synthetic cards: restore metadata and keys, copy objects, validate checksums, confirm account ownership and restore on both platforms. Define deletion propagation and maximum retention for disaster-recovery copies before creating any copies of user data. Existing test uploads have no independent recovery guarantee until this is implemented.
