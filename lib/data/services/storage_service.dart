@@ -13,11 +13,12 @@ class StorageService {
   static const String cardsBoxName = 'cards';
   static const String encryptionKeyName = 'paskluis_hive_key';
   static String? accountId;
+  static String? backupOwner;
   static int accountRevision = 0;
 
   /// Invalidate in-flight sync before removing account-bound records.
   static Future<void> reconcileAccount(String? userId) async {
-    if (accountId != userId) accountRevision++;
+    if (accountId != userId) { accountRevision++; backupOwner = null; }
     accountId = userId;
     for (final key in cardsBox.keys.toList()) {
       final card = cardsBox.get(key);
@@ -61,6 +62,8 @@ class StorageService {
     if (!CardAccessPolicy.mayKeep(value, accountId)) {
       throw StateError('Account changed during synchronization');
     }
+    value = Map<dynamic,dynamic>.from(value);
+    if (!CardAccessPolicy.isReceived(value) && value['backupOwnerId']==null && backupOwner==accountId && backupOwner!=null) value['backupOwnerId']=backupOwner;
     final key = await cardsBox.add(value);
     // Especially on Android, do not close the add flow until Hive has flushed
     // the encrypted box and the written record can be read back.

@@ -1,7 +1,7 @@
 name: Validate PasKluis release
 on:
   push:
-    branches: [codex/search-and-premium-build-25]
+    branches: [codex/search-and-premium-build-25, codex/cloud-backups]
   workflow_dispatch:
 permissions:
   contents: read

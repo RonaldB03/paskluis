@@ -14,6 +14,7 @@ import '../admin/admin_tools_screen.dart';
 import '../support/support_screen.dart';
 import 'help_center_screen.dart';
 import 'privacy_screen.dart';
+import 'backup_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -283,6 +284,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 18, 14, 32),
         children: [
+          _SettingsSection(
+            title: LocaleService.languageCode=='nl'?'Back-up':'Backup',
+            children: [ListTile(
+              leading: const Icon(Icons.cloud_outlined),
+              title: Text(LocaleService.languageCode=='nl'?'Back-up van mijn kaarten':'Back up my cards'),
+              subtitle: Text(LocaleService.languageCode=='nl'?'Bewaren en herstellen op een andere telefoon':'Save and restore on another phone'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: ()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const BackupScreen())),
+            )],
+          ),
           _SettingsSection(
             title: L10n.current.language,
             children: [

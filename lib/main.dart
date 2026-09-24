@@ -14,6 +14,7 @@ import 'l10n/generated/app_localizations.dart';
 import 'features/home/home_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'data/services/storage_service.dart';
+import 'data/services/backup_service.dart';
 import 'data/services/settings_service.dart';
 import 'data/services/supabase_service.dart';
 import 'data/services/notification_service.dart';
@@ -164,6 +165,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     await SupabaseService.init();
     await StorageService.reconcileAccount(AccountService.currentUser?.id);
     PurchaseService.init();
+    await BackupService.init();
     try {
       NotificationService.onOpen = (payload) async {
         if(payload.startsWith('support_reply:')) await _openSupportThread(payload.substring(14));
@@ -179,6 +181,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
       final previousId = StorageService.accountId;
       final changed = previousId != null && previousId != accountId;
       await StorageService.reconcileAccount(accountId);
+      BackupService.accountChanged();
       if (changed && mounted) {
         _navigatorKey.currentState?.popUntil((route) => route.isFirst);
       }
@@ -207,6 +210,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
       await _registerPushToken();
       await _syncLanguage();
       await _syncSharedCards();
+      await BackupService.refresh();
     } catch (_) {
       // A retry follows on resume; local cards remain usable.
     } finally {

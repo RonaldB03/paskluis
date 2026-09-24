@@ -14,3 +14,7 @@ verify_jwt = true
 verify_jwt = false
 [functions.reconcile-purchases]
 verify_jwt = false
+
+# Validates the caller with Auth and checks the active session in backup_service.
+[functions.card-backups]
+verify_jwt = false

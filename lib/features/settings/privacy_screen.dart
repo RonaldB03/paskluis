@@ -1,5 +1,6 @@
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
+import '../../data/services/locale_service.dart';
 
 class PrivacyScreen extends StatelessWidget {
   const PrivacyScreen({super.key});
@@ -39,6 +40,7 @@ class PrivacyScreen extends StatelessWidget {
             color: Color(0xFF286DC8),
             points: [
               L10n.current.yourAccountNameEmailAddressAndPlus,
+              LocaleService.languageCode=='nl' ? 'Als je back-up inschakelt: een versleutelde kopie van je eigen kaarten, pincodes en afbeeldingen. Maximaal drie versies en 10 MB. PasKluis beheert de herstelsleutels; dit is geen end-to-endversleuteling.' : 'If you enable backup: an encrypted copy of your own cards, PINs and images. Up to three versions and 10 MB. PasKluis manages recovery keys; this is not end-to-end encryption.',
               L10n.current.aCardYouDeliberatelyShareWithSomeone,
               L10n.current.questionsAndMessagesYouSendToCustomer,
               L10n.current.publicStoreInformationAndLogosRetrievedBy,

@@ -8,6 +8,7 @@ import 'supabase_service.dart';
 import 'device_session_service.dart';
 import 'push_notification_service.dart';
 import 'storage_service.dart';
+import 'backup_service.dart';
 
 class PlusStatus {
   final bool isActive;
@@ -95,6 +96,7 @@ abstract final class AccountService {
 
   static Future<void> signOut({bool releaseDevice = true}) async {
     isSigningOut = true;
+    BackupService.pause();
     try {
     final previousUserId = currentUser?.id;
     await StorageService.reconcileAccount(null);

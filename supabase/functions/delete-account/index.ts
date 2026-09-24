@@ -19,6 +19,16 @@ Deno.serve(async request=>{
   const profile=await admin.from('profiles').select('role').eq('id',user.id).single();
   if(profile.error)throw new Error('PROFILE_UNAVAILABLE');
   if(profile.data.role!=='user')return Response.json({error:'STAFF_ROLE_MUST_BE_REMOVED_FIRST'},{status:409,headers:cors});
+  // Block new backup requests before deleting account-owned ciphertext.
+  const paused=await admin.rpc('backup_disable_for_deletion',{p_user:user.id});
+  if(paused.error)throw new Error('BACKUP_CLEANUP_FAILED');
+  while(true){
+   const files=await admin.storage.from('card-backups').list(user.id,{limit:100});
+   if(files.error)throw new Error('BACKUP_CLEANUP_FAILED');
+   if(!files.data.length)break;
+   const removed=await admin.storage.from('card-backups').remove(files.data.map(f=>user.id+'/'+f.name));
+   if(removed.error)throw new Error('BACKUP_CLEANUP_FAILED');
+  }
   // Remove private support files before their database references are cascaded.
   const ownThreads=await admin.from('support_threads').select('id').eq('user_id',user.id);
   const guestThreads=await admin.from('support_threads').select('id').is('user_id',null).eq('guest_email',user.email.toLowerCase());
