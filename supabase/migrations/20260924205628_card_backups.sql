@@ -11,7 +11,7 @@ create table backup_private.accounts (
 );
 create table backup_private.versions (
  user_id uuid not null references backup_private.accounts(user_id) on delete cascade,
- id uuid not null, created_at timestamptz not null default now(),
+ id uuid not null, created_at timestamptz not null default clock_timestamp(),
  card_count integer not null check(card_count between 0 and 5000),
  manifest text not null, objects jsonb not null,
  primary key(user_id,id)
@@ -44,7 +44,7 @@ begin
  if p_action='commit' then
   insert into backup_private.versions(user_id,id,card_count,manifest,objects)
   values(p_user,(p_data->>'id')::uuid,(p_data->>'cardCount')::integer,p_data->>'manifest',p_data->'objects');
-  delete from backup_private.versions where user_id=p_user and id in (select id from backup_private.versions where user_id=p_user order by created_at desc,id desc offset 3);
+  delete from backup_private.versions where user_id=p_user and id in (select id from backup_private.versions where user_id=p_user and id<>(p_data->>'id')::uuid order by created_at desc,id desc offset 2);
   select coalesce(sum(bytes),0) into total from (select (o->>'id') id,max((o->>'size')::bigint) bytes from backup_private.versions b cross join lateral jsonb_array_elements(b.objects) o where b.user_id=p_user group by o->>'id') objects;
   if total>10000000 then raise exception 'BACKUP_QUOTA'; end if;
   update backup_private.accounts set last_success=now(),last_error=null where user_id=p_user;

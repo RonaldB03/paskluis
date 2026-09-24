@@ -12,6 +12,7 @@ import 'card_access_policy.dart';
 import 'media_storage_service.dart';
 import 'storage_service.dart';
 import 'supabase_service.dart';
+import 'notification_service.dart';
 
 abstract final class BackupService {
   static final revision=ValueNotifier(0);
@@ -19,6 +20,9 @@ abstract final class BackupService {
   static String? error;
   static Map<String,dynamic>? status;
   static Timer? _timer;
+  static Timer? _retry;
+  static bool _foreground=true;
+  static int _change=0;
   static StreamSubscription? _changes;
   static SharedPreferences? _prefs;
   static String? _user;
@@ -31,15 +35,17 @@ abstract final class BackupService {
   static Future<void> init() async {
     _prefs=await SharedPreferences.getInstance();_user=user;
     StorageService.backupOwner=enabled?user:null;
-    _changes??=StorageService.cardsBox.watch().listen((_) {if(!_suppress) schedule();});
+    _changes??=StorageService.cardsBox.watch().listen((_) {if(!_suppress){_change++;schedule();}});
+    _retry??=Timer.periodic(const Duration(minutes:2),(_){if(_foreground && error!=null && enabled && !busy)schedule();});
   }
   static void accountChanged() {
     if(_user==user)return;
     _user=user;StorageService.backupOwner=enabled?user:null;status=null;error=null;_timer?.cancel();_notify();
   }
   static void pause() {_timer?.cancel();StorageService.backupOwner=null;status=null;_notify();}
+  static void setForeground(bool value){_foreground=value;if(!value)_timer?.cancel();}
   static void schedule() {
-    if(!enabled || _suppress)return;
+    if(!_foreground || !enabled || _suppress)return;
     _timer?.cancel();_timer=Timer(const Duration(seconds:15),()=>upload(automatic:true));
   }
   static void _check(String id,int epoch) {
@@ -92,7 +98,7 @@ abstract final class BackupService {
   }
   static Future<void> upload({bool automatic=false}) async {
     if(user==null || busy || (automatic&&!enabled))return;
-    final id=user!;final epoch=StorageService.accountRevision;
+    final id=user!;final epoch=StorageService.accountRevision;final startedChange=_change;
     busy=true;error=null;_timer?.cancel();_notify();
     try {
       final state=await _call('status',id,epoch);
@@ -124,7 +130,7 @@ abstract final class BackupService {
       await _prefs!.setString('backup_reviewed_$id',state['generation']);
       status=await _call('status',id,epoch);status!.remove('key');
     }catch(e){error=_code(e);}
-    finally{busy=false;_notify();}
+    finally{busy=false;_notify();if(_change!=startedChange)schedule();}
   }
   static Future<BackupRestore?> prepareRestore(String version) async {
     if(user==null||busy)return null;
@@ -173,6 +179,7 @@ abstract final class BackupService {
       await StorageService.cardsBox.putAll(changes);await StorageService.cardsBox.flush();
       _check(restore.user,restore.epoch);
       await _prefs!.setString('backup_reviewed_${restore.user}',restore.generation);
+      for(final card in changes.values){try{await NotificationService.syncGiftCard(card as Map);}catch(_){/* Cards remain restored without notification permission. */}}
       // Keep images referenced by either old or new cards, delete only unused staged files.
       final used=StorageService.cardsBox.values.whereType<Map>().map((c)=>c['customImage']).toSet();
       for(final file in created)if(!used.contains(file))await File(file).delete();
@@ -180,10 +187,10 @@ abstract final class BackupService {
     finally{busy=false;_suppress=false;_notify();}
   }
   static Future<void> deleteCloud() async {
-    if(user==null||busy)return;final id=user!;final epoch=StorageService.accountRevision;
+    if(user==null||busy)return;final id=user!;final epoch=StorageService.accountRevision;final startedChange=_change;
     busy=true;error=null;_timer?.cancel();_notify();
     try {
-      await _prefs!.setBool('backup_enabled_$id',false);
+      await _prefs!.setBool('backup_enabled_$id',false);StorageService.backupOwner=null;
       await _call('delete',id,epoch,{'confirm':'DELETE_BACKUPS'});
       await _prefs!.remove('backup_reviewed_$id');status=await _call('status',id,epoch);status!.remove('key');
     }catch(e){error=_code(e);}

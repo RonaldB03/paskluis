@@ -70,6 +70,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    BackupService.setForeground(state == AppLifecycleState.resumed);
     if (state == AppLifecycleState.resumed) {
       unawaited(_refreshOnline());
     }

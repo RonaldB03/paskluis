@@ -33,6 +33,12 @@ jobs:
           flutter --version
           flutter pub get
           flutter gen-l10n
+      - name: Capture resolved dependency lockfile
+        run: |
+          echo LOCKFILE_BEGIN
+          base64 -w0 pubspec.lock
+          echo
+          echo LOCKFILE_END
       - name: Analyze
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
       - name: Regression tests
