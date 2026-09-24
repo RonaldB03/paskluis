@@ -45,6 +45,7 @@ abstract final class BackupCodec {
     if(info==null || info.width*info.height>40000000) throw const FormatException('IMAGE_INVALID');
     var image=decoder!.decodeFrame(0);
     if(image==null) throw const FormatException('IMAGE_INVALID');
+    image=img.bakeOrientation(image);
     if(image.width>1600 || image.height>1600) {
       image=img.copyResize(image,width:image.width>=image.height?1600:null,height:image.height>image.width?1600:null,interpolation:img.Interpolation.average);
     }

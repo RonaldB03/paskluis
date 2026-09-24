@@ -30,9 +30,9 @@ jobs:
       matrix:
         include:
           - platform: iOS
-            workflow: ios-candidate
+            workflow: ios-release
           - platform: Android
-            workflow: android-candidate
+            workflow: android-test
     steps:
       - name: Start build through Codemagic API
         env:

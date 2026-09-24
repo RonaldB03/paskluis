@@ -187,7 +187,7 @@ abstract final class BackupService {
     finally{busy=false;_suppress=false;_notify();}
   }
   static Future<void> deleteCloud() async {
-    if(user==null||busy)return;final id=user!;final epoch=StorageService.accountRevision;final startedChange=_change;
+    if(user==null||busy)return;final id=user!;final epoch=StorageService.accountRevision;
     busy=true;error=null;_timer?.cancel();_notify();
     try {
       await _prefs!.setBool('backup_enabled_$id',false);StorageService.backupOwner=null;
