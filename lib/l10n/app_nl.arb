@@ -319,6 +319,7 @@
     }
   },
   "myLoyaltyCard": "Mijn klantenkaart",
+  "enterBarcodeManually": "Handmatig barcode invoeren",
   "manual": "Handmatig",
   "codeDetectedChooseTheStoreBelow": "Code herkend. Kies hieronder de winkel.",
   "quickAdd": "Snel toevoegen",

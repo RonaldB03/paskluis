@@ -18,41 +18,55 @@ class ScannerResult {
   const ScannerResult({required this.code, required this.codeFormat, this.barcodeSymbology});
 }
 
-Future<ScannerMode?> showCodeTypeDialog(BuildContext context) {
+Future<ScannerMode?> showCodeTypeDialog(
+  BuildContext context, {
+  VoidCallback? onManualEntry,
+}) {
   return showModalBottomSheet<ScannerMode>(
     context: context,
     showDragHandle: true,
     builder: (context) => SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-             Text(
-              L10n.current.whatTypeOfCodeIsOnThe,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-             Text(L10n.current.automaticDetectionWorksForMostCards),
-            const SizedBox(height: 16),
-            _CodeTypeTile(
-              icon: Icons.auto_awesome,
-              title: L10n.current.detectAutomatically,
-              subtitle: L10n.current.recommended,
-              onTap: () => Navigator.pop(context, ScannerMode.auto),
-            ),
-            _CodeTypeTile(
-              icon: Icons.view_week_outlined,
-              title: L10n.current.barcode,
-              onTap: () => Navigator.pop(context, ScannerMode.barcode),
-            ),
-            _CodeTypeTile(
-              icon: Icons.qr_code,
-              title: L10n.current.qrCode,
-              onTap: () => Navigator.pop(context, ScannerMode.qr),
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+               Text(
+                L10n.current.whatTypeOfCodeIsOnThe,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+               Text(L10n.current.automaticDetectionWorksForMostCards),
+              const SizedBox(height: 16),
+              _CodeTypeTile(
+                icon: Icons.auto_awesome,
+                title: L10n.current.detectAutomatically,
+                subtitle: L10n.current.recommended,
+                onTap: () => Navigator.pop(context, ScannerMode.auto),
+              ),
+              _CodeTypeTile(
+                icon: Icons.view_week_outlined,
+                title: L10n.current.barcode,
+                onTap: () => Navigator.pop(context, ScannerMode.barcode),
+              ),
+              _CodeTypeTile(
+                icon: Icons.qr_code,
+                title: L10n.current.qrCode,
+                onTap: () => Navigator.pop(context, ScannerMode.qr),
+              ),
+              if (onManualEntry != null)
+                _CodeTypeTile(
+                  icon: Icons.keyboard_outlined,
+                  title: L10n.current.enterBarcodeManually,
+                  onTap: () {
+                    onManualEntry();
+                    Navigator.pop(context);
+                  },
+                ),
+            ],
+          ),
         ),
       ),
     ),

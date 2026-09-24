@@ -1,3 +1,4 @@
+import '../../shared/widgets/home_section_prompt.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import '../../shared/widgets/language_picker.dart';
 import 'dart:io';
@@ -1145,7 +1146,7 @@ class _FavoritesSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         if (items.isEmpty)
-           _HomeSectionPrompt(
+           HomeSectionPrompt(
             icon: Icons.star_border_rounded,
             title: L10n.current.noFavouritesYet,
             subtitle: L10n.current.markYourMostImportantCardsWithA,
@@ -1195,14 +1196,14 @@ class _NearbySection extends StatelessWidget {
         onItemLongPress: onItemLongPress,
       );
     } else if (state == LocationAccessState.ready) {
-      content =  _HomeSectionPrompt(
+      content =  HomeSectionPrompt(
         icon: Icons.location_history_rounded,
         title: L10n.current.noCardAtThisLocationYet,
         subtitle:
             L10n.current.openACardAtAStorePaskluis,
       );
     } else if (state == LocationAccessState.servicesDisabled) {
-      content = _HomeSectionPrompt(
+      content = HomeSectionPrompt(
         icon: Icons.location_disabled_rounded,
         title: L10n.current.locationServicesAreOff,
         subtitle: L10n.current.enableLocationToShowPreviouslyUsedCards,
@@ -1210,7 +1211,7 @@ class _NearbySection extends StatelessWidget {
         onAction: onAction,
       );
     } else if (state == LocationAccessState.permissionDeniedForever) {
-      content = _HomeSectionPrompt(
+      content = HomeSectionPrompt(
         icon: Icons.location_off_rounded,
         title: L10n.current.locationIsOffForPaskluis,
         subtitle: L10n.current.youCanChangeThisInYourPhone,
@@ -1218,7 +1219,7 @@ class _NearbySection extends StatelessWidget {
         onAction: onAction,
       );
     } else if (state == LocationAccessState.permissionNeeded) {
-      content = _HomeSectionPrompt(
+      content = HomeSectionPrompt(
         icon: Icons.near_me_outlined,
         title: L10n.current.showCardsYouUseHere,
         subtitle: L10n.current.yourLocationStaysOnYourPhoneAnd,
@@ -1226,7 +1227,7 @@ class _NearbySection extends StatelessWidget {
         onAction: onAction,
       );
     } else {
-      content = _HomeSectionPrompt(
+      content = HomeSectionPrompt(
         icon: Icons.location_searching_rounded,
         title: L10n.current.locationUnavailable,
         subtitle: L10n.current.tryAgainWhenYouHaveAConnection,
@@ -1340,63 +1341,6 @@ class _HomeCardStrip extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _HomeSectionPrompt extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  const _HomeSectionPrompt({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    L10n.watch(context);
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 92),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: const Color(0xFFF8E3EA),
-            child: Icon(icon, color: const Color(0xFFD51B46)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: const TextStyle(fontSize: 12.5, color: Colors.black54),
-                ),
-              ],
-            ),
-          ),
-          if (actionLabel != null && onAction != null) ...[
-            const SizedBox(width: 8),
-            TextButton(onPressed: onAction, child: Text(actionLabel!)),
-          ],
-        ],
-      ),
     );
   }
 }

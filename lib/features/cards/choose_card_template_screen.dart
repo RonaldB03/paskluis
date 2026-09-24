@@ -48,6 +48,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
     CardBrandTemplate? brand,
     ScannerResult? scan,
     String? suggestedName,
+    String? codeFormat,
   }) async {
     final result = await Navigator.push<Map<String, String>>(
       context,
@@ -56,7 +57,7 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
           initialType: widget.type,
           initialName: brand?.name ?? suggestedName,
           initialCode: scan?.code,
-          initialCodeFormat: scan?.codeFormat,
+          initialCodeFormat: scan?.codeFormat ?? codeFormat,
           initialBarcodeSymbology: scan?.barcodeSymbology,
           initialBrandId: brand?.id,
           initialLogoAsset: brand?.logoAsset,
@@ -80,8 +81,17 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
       return;
     }
 
-    final mode = await showCodeTypeDialog(context);
-    if (!mounted || mode == null) return;
+    var manualEntry = false;
+    final mode = await showCodeTypeDialog(
+      context,
+      onManualEntry: () => manualEntry = true,
+    );
+    if (!mounted) return;
+    if (manualEntry) {
+      await openManualForm(brand: brand, codeFormat: 'barcode');
+      return;
+    }
+    if (mode == null) return;
 
     final result = await Navigator.push<ScannerResult>(
       context,

@@ -319,6 +319,7 @@
     }
   },
   "myLoyaltyCard": "My loyalty card",
+  "enterBarcodeManually": "Enter barcode manually",
   "manual": "Manual",
   "codeDetectedChooseTheStoreBelow": "Code detected. Choose the store below.",
   "quickAdd": "Quick add",
