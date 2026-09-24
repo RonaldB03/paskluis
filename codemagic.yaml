@@ -127,3 +127,13 @@ workflows:
     <<: *android_test
     name: Android Candidate Build
     publishing: {}
+
+  testflight-promote-102:
+    name: Submit build 102 to Paskluis Testers
+    instance_type: mac_mini_m2
+    max_build_duration: 20
+    integrations:
+      app_store_connect: Codemagic
+    scripts:
+      - name: Koppel build 102 aan externe TestFlight-groep
+        script: python3 scripts/submit_testflight_102.py
