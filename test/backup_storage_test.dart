@@ -11,6 +11,8 @@ void main(){
    for(final type in ['Pasje','QR-code','QR-set','Cadeaukaart']){
     final key=await StorageService.addCard({'id':type,'type':type});
     expect((StorageService.cardsBox.get(key) as Map)['backupOwnerId'],'a');
+    await StorageService.saveCard(key,{'id':type,'type':type,'name':'Edited'});
+    expect((StorageService.cardsBox.get(key) as Map)['backupOwnerId'],'a');
    }
    StorageService.accountId='b';
    final key=await StorageService.addCard({'id':'new-b','type':'Pasje'});
