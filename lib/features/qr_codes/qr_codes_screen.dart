@@ -118,7 +118,7 @@ class QrCodesScreen extends StatelessWidget {
           .where((code) => code.trim().isNotEmpty)
           .toList();
 
-      await StorageService.cardsBox.add({
+      await StorageService.addCard({
         'id': result['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
         'type': 'QR-set',
         'name': result['name'] ?? L10n.current.qrCodes((codeList.length).toString()),
@@ -145,7 +145,7 @@ class QrCodesScreen extends StatelessWidget {
       return;
     }
 
-    await StorageService.cardsBox.add({
+    await StorageService.addCard({
       'id': result['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
       'type': 'QR-code',
       'name': result['name'] ?? '',

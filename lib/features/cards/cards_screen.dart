@@ -174,7 +174,7 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
       'balanceHistory': result['balanceHistory'] ?? '[]',
     };
 
-    await StorageService.cardsBox.add(card);
+    await StorageService.addCard(card);
     return card;
   }
 
