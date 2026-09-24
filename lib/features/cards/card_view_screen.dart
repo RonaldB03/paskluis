@@ -11,6 +11,9 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/storage_service.dart';
+import '../../data/services/brand_catalog_service.dart';
+import '../../data/templates/card_templates.dart';
+import '../../shared/utils/brand_display_name.dart';
 import '../../data/services/location_service.dart';
 import '../../data/services/card_share_service.dart';
 import '../../data/services/settings_service.dart';
@@ -399,6 +402,11 @@ class _CardViewScreenState extends State<CardViewScreen>
     final name = item['name']?.toString() ?? L10n.current.card;
     final note = item['note']?.toString() ?? '';
     final brandId = item['brandId']?.toString() ?? '';
+    final brandNames = brandId.isEmpty
+        ? null
+        : BrandCatalogService.load().then((brands) => {
+            for (final brand in brands) brand.id: brand.name,
+          });
     final isFavorite = item['isFavorite'] == true;
     final isShared = item['isShared'] == true;
     final canEditShared = item['canEditShared'] == true;
@@ -435,7 +443,17 @@ class _CardViewScreenState extends State<CardViewScreen>
                 _DetailRow(label: L10n.current.code, value: code, showCopy: true),
                 if (brandId.isNotEmpty) ...[
                   const SizedBox(height: 16),
-                  _DetailRow(label: L10n.current.brand, value: brandId),
+                  FutureBuilder<Map<String, String>>(
+                    future: brandNames,
+                    builder: (context, snapshot) => _DetailRow(
+                      label: L10n.current.brand,
+                      value: brandDisplayName(brandId, {
+                        for (final brand in cardBrandTemplates)
+                          brand.id: brand.name,
+                        ...?snapshot.data,
+                      }),
+                    ),
+                  ),
                 ],
                 if (note.isNotEmpty) ...[
                   const SizedBox(height: 16),
