@@ -115,13 +115,14 @@ class _FolderEditor extends StatefulWidget {
 
 class _FolderEditorState extends State<_FolderEditor> {
   late final TextEditingController name = TextEditingController(text: widget.folder ?? '');
-  late final int revision = StorageService.accountRevision;
+  late final int revision;
   final Set<dynamic> selected = {};
   bool saving = false;
   String? error;
   @override
   void initState() {
     super.initState();
+    revision = StorageService.accountRevision;
     if (widget.folder != null) {
       for (final key in StorageService.cardsBox.keys) {
         final card = StorageService.cardsBox.get(key);

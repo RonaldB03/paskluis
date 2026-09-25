@@ -6,12 +6,16 @@ import 'package:paskluis_v1/data/services/storage_service.dart';
 import 'package:paskluis_v1/features/folders/folders_screen.dart';
 
 void main() {
-  testWidgets('optional folder creation works on a narrow screen with enlarged text', (tester) async {
-    final dir = await Directory.systemTemp.createTemp('folder-ui-');
+  late Directory dir;
+  setUp(() async {
+    dir = await Directory.systemTemp.createTemp('folder-ui-');
     Hive.init(dir.path); await Hive.openBox(StorageService.cardsBoxName);
     await StorageService.addCard({'id': 'a', 'name': 'Test shop', 'type': 'Pasje'});
+  });
+  tearDown(() async { await Hive.close(); await dir.delete(recursive: true); });
+  testWidgets('optional folder creation works on a narrow screen with enlarged text', (tester) async {
     await tester.binding.setSurfaceSize(const Size(360, 780));
-    addTearDown(() async { await tester.binding.setSurfaceSize(null); await Hive.close(); await dir.delete(recursive: true); });
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(MaterialApp(builder: (context, child) => MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.5)), child: child!),
       home: const FoldersScreen()));
@@ -21,7 +25,13 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Family');
     await tester.tap(find.byType(CheckboxListTile));
     await tester.ensureVisible(find.byType(FilledButton));
-    await tester.tap(find.byType(FilledButton));
+    await tester.runAsync(() async {
+      final saved = StorageService.cardsBox.watch().firstWhere((event) =>
+        event.value is Map && (event.value as Map)['folderName'] == 'Family');
+      await tester.tap(find.byType(FilledButton));
+      await saved.timeout(const Duration(seconds: 5));
+      await StorageService.cardsBox.flush();
+    });
     await tester.pumpAndSettle();
     expect(find.text('Family'), findsOneWidget);
     expect(find.text('Test shop'), findsOneWidget);
