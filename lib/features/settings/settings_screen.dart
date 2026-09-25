@@ -1,3 +1,4 @@
+import '../folders/folders_screen.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import '../../shared/widgets/language_picker.dart';
 import '../../data/services/locale_service.dart';
@@ -284,6 +285,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(14, 18, 14, 32),
         children: [
+          _SettingsSection(
+            title: LocaleService.languageCode == 'nl' ? 'Kaarten ordenen' : 'Organize cards',
+            children: [ListTile(
+              leading: const Icon(Icons.folder_outlined),
+              title: Text(LocaleService.languageCode == 'nl' ? 'Mijn mappen' : 'My folders'),
+              subtitle: Text(LocaleService.languageCode == 'nl' ? 'Optioneel: deel je kaarten in zoals jij wilt' : 'Optional: organize your cards your way'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FoldersScreen())),
+            )],
+          ),
           _SettingsSection(
             title: LocaleService.languageCode=='nl'?'Back-up':'Backup',
             children: [ListTile(

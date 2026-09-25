@@ -1,3 +1,5 @@
+import '../../shared/utils/money_input.dart';
+import '../../data/services/locale_service.dart';
 import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
@@ -677,16 +679,22 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                   height: 56,
                   child: FilledButton.icon(
                     onPressed: () async {
-                      final entered = double.tryParse(controller.text.trim().replaceAll(',', '.'));
-                      if (entered == null || entered < 0) return;
-                      final oldBalance = _balanceOf(items[currentIndex]);
-                      if (spentMode && entered > oldBalance) {
+                      final enteredCents = parseMoneyCents(controller.text);
+                      final oldCents = parseMoneyCents(items[currentIndex]['currentBalance']?.toString() ?? '');
+                      if (enteredCents == null || (spentMode && (enteredCents == 0 || oldCents == null))) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+                          LocaleService.languageCode == 'nl'
+                            ? 'Vul een geldig bedrag in met maximaal twee decimalen. Stel eerst het saldo in voordat je een uitgave afboekt.'
+                            : 'Enter a valid amount with up to two decimal places. Set the balance before recording spending.')));
+                        return;
+                      }
+                      if (spentMode && enteredCents > oldCents!) {
                         ScaffoldMessenger.of(context).showSnackBar(
                            SnackBar(content: Text(L10n.current.theAmountIsHigherThanTheCurrent)),
                         );
                         return;
                       }
-                      final newBalance = spentMode ? oldBalance - entered : entered;
+                      final newBalance = (spentMode ? oldCents! - enteredCents : enteredCents) / 100;
                       await _saveBalance(newBalance, kind: spentMode ? 'spent' : 'adjusted');
 
                       if (!mounted) return;
@@ -926,7 +934,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                         const SizedBox(height: 16),
                         _DetailRow(
                           label: L10n.current.startingBalance,
-                          value: '€ $initialBalance',
+                          value: '€ ${formatAmountValue(initialBalance)}',
                         ),
                       ],
 

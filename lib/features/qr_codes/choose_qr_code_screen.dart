@@ -1,3 +1,4 @@
+import '../../shared/widgets/duplicate_card_warning.dart';
 import '../../data/services/barcode_image_service.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
@@ -165,6 +166,9 @@ class _ChooseQrCodeScreenState extends State<ChooseQrCodeScreen> {
     nameController.dispose();
 
     if (!context.mounted || setName == null || setName.trim().isEmpty) return;
+
+    if (!await confirmDuplicateCard(context, {'type': 'QR-set', 'codes': codes.join('|||')})) return;
+    if (!mounted) return;
 
     final now = DateTime.now().toIso8601String();
 

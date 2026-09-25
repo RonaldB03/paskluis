@@ -1,3 +1,4 @@
+import '../../shared/widgets/duplicate_card_warning.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
@@ -130,7 +131,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
     });
   }
 
-  void saveCard() {
+  Future<void> saveCard() async {
     FocusManager.instance.primaryFocus?.unfocus();
 
     if (codeController.text.trim().isEmpty ||
@@ -140,6 +141,9 @@ class _AddCardScreenState extends State<AddCardScreen> {
       );
       return;
     }
+
+    if (!await confirmDuplicateCard(context, {'code': codeController.text.trim()})) return;
+    if (!mounted) return;
 
     Navigator.pop(context, {
       'type': selectedType,

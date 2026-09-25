@@ -1,3 +1,6 @@
+import 'dart:convert';
+import '../../shared/utils/money_input.dart';
+import '../../data/services/locale_service.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
@@ -144,6 +147,11 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
       return;
     }
 
+    if ((initialBalanceController.text.trim().isNotEmpty && parseMoneyCents(initialBalanceController.text) == null) || (currentBalanceController.text.trim().isNotEmpty && parseMoneyCents(currentBalanceController.text) == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+        LocaleService.languageCode == 'nl' ? 'Vul een geldig bedrag in met maximaal twee decimalen.' : 'Enter a valid amount with up to two decimal places.')));
+      return;
+    }
     final updated = Map<String, dynamic>.from(widget.item);
 
     updated['type'] = 'Cadeaukaart';
@@ -159,6 +167,25 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
         normalizeAmountValue(initialBalanceController.text);
     updated['currentBalance'] =
         normalizeAmountValue(currentBalanceController.text);
+
+    if (updated['currentBalance'] != (widget.item['currentBalance']?.toString() ?? '')) {
+      List<dynamic> history;
+      try {
+        final decoded = jsonDecode(widget.item['balanceHistory']?.toString() ?? '[]');
+        history = decoded is List ? List<dynamic>.from(decoded) : [];
+      } catch (_) { history = []; }
+      final before = parseMoneyCents(widget.item['currentBalance']?.toString() ?? '');
+      final after = parseMoneyCents(updated['currentBalance'].toString());
+      history.add({
+        'id': DateTime.now().microsecondsSinceEpoch.toString(),
+        'createdAt': DateTime.now().toIso8601String(),
+        'type': 'adjusted',
+        'oldBalance': widget.item['currentBalance']?.toString() ?? '',
+        'newBalance': updated['currentBalance'],
+        'amount': before != null && after != null ? ((before - after).abs() / 100).toStringAsFixed(2) : '',
+      });
+      updated['balanceHistory'] = jsonEncode(history);
+    }
 
     updated['logoAsset'] = logoAsset;
     updated['brandColor'] = brandColor;

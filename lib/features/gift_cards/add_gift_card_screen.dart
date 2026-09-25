@@ -1,3 +1,6 @@
+import '../../shared/utils/money_input.dart';
+import '../../data/services/locale_service.dart';
+import '../../shared/widgets/duplicate_card_warning.dart';
 import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
@@ -326,6 +329,11 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
     if (_saving) return;
     final name = nameController.text.trim();
     final code = codeController.text.trim();
+    if ((balanceController.text.trim().isNotEmpty && parseMoneyCents(balanceController.text) == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+        LocaleService.languageCode == 'nl' ? 'Vul een geldig bedrag in met maximaal twee decimalen.' : 'Enter a valid amount with up to two decimal places.')));
+      return;
+    }
     final balance = normalizeAmount(balanceController.text);
 
     if (name.isEmpty) {
@@ -340,6 +348,9 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       );
       return;
     }
+
+    if (!widget.isEditing && !await confirmDuplicateCard(context, {'code': code})) return;
+    if (!mounted) return;
 
     final now = DateTime.now().toIso8601String();
 

@@ -84,6 +84,7 @@ class StorageService {
     // Editing screens can hold an older card map from before backup enrollment.
     // Keep the persisted owner so an edit cannot silently drop or reassign it.
     if (oldItem is Map && oldItem['backupOwnerId'] != null) value['backupOwnerId'] = oldItem['backupOwnerId'];
+    if (oldItem is Map && !value.containsKey('folderName') && oldItem.containsKey('folderName')) value['folderName'] = oldItem['folderName'];
     final oldImage = oldItem is Map ? oldItem['customImage']?.toString() : null;
     final newImage = value['customImage']?.toString();
 

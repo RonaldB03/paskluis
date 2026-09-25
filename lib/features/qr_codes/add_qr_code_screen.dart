@@ -1,3 +1,4 @@
+import '../../shared/widgets/duplicate_card_warning.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
@@ -138,7 +139,7 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
     });
   }
 
-  void saveQrCode() {
+  Future<void> saveQrCode() async {
     final name = nameController.text.trim();
     final code = codeController.text.trim();
 
@@ -154,6 +155,9 @@ class _AddQrCodeScreenState extends State<AddQrCodeScreen> {
       );
       return;
     }
+
+    if (!widget.isEditing && !await confirmDuplicateCard(context, {'code': code})) return;
+    if (!mounted) return;
 
     final now = DateTime.now().toIso8601String();
 
