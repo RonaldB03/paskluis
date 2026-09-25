@@ -36,10 +36,14 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Family');
     await tester.tap(find.byType(CheckboxListTile));
     await tester.ensureVisible(find.byType(FilledButton));
-    await tester.runAsync(() async {
-      await tester.tap(find.byType(FilledButton));
-      await navigation.saved.future.timeout(const Duration(seconds: 5));
-    });
+    await tester.tap(find.byType(FilledButton));
+    // Hive completes real I/O while Flutter navigation schedules fake-zone
+    // microtasks. Advance both until the actual save closes the editor.
+    for (var attempt = 0; attempt < 100 && !navigation.saved.isCompleted; attempt++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    expect(navigation.saved.isCompleted, isTrue, reason: 'Saving must close the folder editor');
     await tester.pumpAndSettle();
     expect(find.text('Family'), findsOneWidget);
     expect(find.text('Test shop'), findsOneWidget);
