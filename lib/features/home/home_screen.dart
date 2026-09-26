@@ -56,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _searchQuery = '';
   LocationAccessState _locationState = LocationAccessState.checking;
   DeviceLocation? _currentLocation;
+  int _nearbyRequest = 0;
   Map<String, NearbyStoreMatch> _nearbyStoreMatches = const {};
 
   @override
@@ -83,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadNearbyLocation({bool requestPermission = false}) async {
+    final request = ++_nearbyRequest;
     if (!SettingsService.locationCardsEnabled || !SettingsService.showNearbySection) {
       if (mounted) {
         setState(() {
@@ -99,7 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final snapshot = await LocationService.resolve(
       requestPermission: requestPermission,
     );
-    if (!mounted) return;
+    if (!mounted || request != _nearbyRequest) return;
     setState(() {
       _locationState = snapshot.state;
       _currentLocation = snapshot.location;
@@ -112,7 +114,9 @@ class _HomeScreenState extends State<HomeScreen> {
           .map((item) => Map<String, dynamic>.from(item as Map))
           .toList();
       final matches = await NearbyStoreService.resolveForCards(cards, location);
-      if (mounted) setState(() => _nearbyStoreMatches = matches);
+      if (mounted && request == _nearbyRequest) {
+        setState(() => _nearbyStoreMatches = matches);
+      }
     }
   }
 

@@ -6,9 +6,8 @@ import 'dart:io';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:screen_brightness/screen_brightness.dart';
+import '../../data/services/card_screen_session.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../data/services/brand_catalog_service.dart';
@@ -43,7 +42,7 @@ class _CardViewScreenState extends State<CardViewScreen>
   late List<Map<String, dynamic>> items;
   late int currentIndex;
 
-  double? previousBrightness;
+  late final CardScreenSession _screenSession;
 
   @override
   void initState() {
@@ -71,7 +70,7 @@ class _CardViewScreenState extends State<CardViewScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     pageController.dispose();
-    restoreScreen();
+    _screenSession.close();
     super.dispose();
   }
 
@@ -84,30 +83,13 @@ class _CardViewScreenState extends State<CardViewScreen>
     });
   }
 
-  Future<void> setupScreen() async {
-    if (SettingsService.autoBrightnessEnabled) {
-      try {
-        previousBrightness = await ScreenBrightness().current;
-        await ScreenBrightness().setScreenBrightness(1.0);
-      } catch (_) {}
-    }
-
-    if (SettingsService.keepScreenAwakeEnabled) {
-      await WakelockPlus.enable();
-    }
+  void setupScreen() {
+    _screenSession = CardScreenSession(
+      brighten: SettingsService.autoBrightnessEnabled,
+      keepAwake: SettingsService.keepScreenAwakeEnabled,
+    );
   }
 
-  Future<void> restoreScreen() async {
-    try {
-      if (previousBrightness != null) {
-        await ScreenBrightness().setScreenBrightness(previousBrightness!);
-      }
-    } catch (_) {}
-
-    if (SettingsService.keepScreenAwakeEnabled) {
-      await WakelockPlus.disable();
-    }
-  }
 
   dynamic findKeyById(String id) {
     for (final key in StorageService.cardsBox.keys) {

@@ -2,8 +2,7 @@ import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:barcode_widget/barcode_widget.dart';
-import 'package:screen_brightness/screen_brightness.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
+import '../../data/services/card_screen_session.dart';
 
 import '../../data/services/security_service.dart';
 import '../../data/services/settings_service.dart';
@@ -19,7 +18,7 @@ class CardDetailScreen extends StatefulWidget {
 
 class _CardDetailScreenState extends State<CardDetailScreen> {
   late bool showPin;
-  double? oldBrightness;
+  late final CardScreenSession _screenSession;
 
   @override
   void initState() {
@@ -28,28 +27,16 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
     _prepareScreen();
   }
 
-  Future<void> _prepareScreen() async {
-    if (SettingsService.keepScreenAwakeEnabled) {
-      await WakelockPlus.enable();
-    }
-
-    if (SettingsService.autoBrightnessEnabled) {
-      try {
-        oldBrightness = await ScreenBrightness().current;
-        await ScreenBrightness().setScreenBrightness(1.0);
-      } catch (_) {}
-    }
+  void _prepareScreen() {
+    _screenSession = CardScreenSession(
+      brighten: SettingsService.autoBrightnessEnabled,
+      keepAwake: SettingsService.keepScreenAwakeEnabled,
+    );
   }
 
   @override
   void dispose() {
-    if (SettingsService.keepScreenAwakeEnabled) {
-      WakelockPlus.disable();
-    }
-
-    if (oldBrightness != null) {
-      ScreenBrightness().setScreenBrightness(oldBrightness!);
-    }
+    _screenSession.close();
 
     super.dispose();
   }

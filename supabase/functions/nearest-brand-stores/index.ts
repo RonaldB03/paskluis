@@ -52,11 +52,19 @@ Deno.serve(async (request) => {
     const now = new Date();
     const matches: Record<string, unknown> = {};
 
-    for (const brand of brands) {
-      if(!allowedNames.has(normalize(brand)))continue;
+    const eligible = brands.filter(brand => allowedNames.has(normalize(brand)));
+    if (!eligible.length) return Response.json({ matches }, { headers: corsHeaders });
+    // One read for the complete batch, including when all stores are cached.
+    const { data: cacheRows, error: cacheError } = await admin
+      .from('nearby_store_cache').select('*')
+      .in('cache_key', eligible.map(brand => `${normalize(brand)}:${gridLat}:${gridLon}`))
+      .gt('expires_at', now.toISOString());
+    if (cacheError) throw new Error('Store cache unavailable');
+    const cacheByKey = new Map((cacheRows || []).map(row => [row.cache_key, row]));
+
+    async function resolveBrand(brand: string) {
       const cacheKey = `${normalize(brand)}:${gridLat}:${gridLon}`;
-      const { data: cached } = await admin.from('nearby_store_cache').select('*')
-        .eq('cache_key', cacheKey).gt('expires_at', now.toISOString()).maybeSingle();
+      const cached = cacheByKey.get(cacheKey);
       if (cached && Array.isArray(cached.candidates) && cached.candidates.length) {
         const nearest=[...cached.candidates].sort((a,b)=>distanceMeters(latitude,longitude,a.latitude,a.longitude)-distanceMeters(latitude,longitude,b.latitude,b.longitude))[0];
         cached.store_latitude=nearest.latitude;cached.store_longitude=nearest.longitude;
@@ -70,14 +78,15 @@ Deno.serve(async (request) => {
           distance_meters: Math.round(actualDistance),
           cached: true,
         };
-        continue;
+        return;
       }
 
       const budget=await admin.rpc('reserve_places_request');
-      if(budget.error||budget.data!==true)continue;
+      if(budget.error||budget.data!==true)return;
 
       const placesResponse = await fetch('https://places.googleapis.com/v1/places:searchText', {
         method: 'POST',
+        signal: AbortSignal.timeout(6000),
         headers: {
           'Content-Type': 'application/json',
           'X-Goog-Api-Key': apiKey,
@@ -96,7 +105,7 @@ Deno.serve(async (request) => {
       });
       if (!placesResponse.ok) {
         console.error('[places]', placesResponse.status);
-        continue;
+        return;
       }
       const result = await placesResponse.json();
       const candidates=(result.places||[]).filter(p=>Number.isFinite(p.location?.latitude)&&Number.isFinite(p.location?.longitude)).map(p=>({latitude:p.location.latitude,longitude:p.location.longitude,name:String(p.displayName?.text||brand),address:String(p.formattedAddress||'')}));
@@ -105,7 +114,7 @@ Deno.serve(async (request) => {
       const place=nearest?{location:{latitude:nearest.latitude,longitude:nearest.longitude},displayName:{text:nearest.name},formattedAddress:nearest.address}:null;
       const storeLat = Number(place?.location?.latitude);
       const storeLon = Number(place?.location?.longitude);
-      if (!Number.isFinite(storeLat) || !Number.isFinite(storeLon)) continue;
+      if (!Number.isFinite(storeLat) || !Number.isFinite(storeLon)) return;
       const distance = distanceMeters(latitude, longitude, storeLat, storeLon);
       const row = {
         cache_key: cacheKey,
@@ -129,6 +138,20 @@ Deno.serve(async (request) => {
         cached: false,
       };
     }
+    // Bound concurrency: one slow store must not serialize the entire wallet.
+    // Each paid lookup still requires its own atomic budget reservation.
+    let next = 0;
+    await Promise.all(Array.from({ length: Math.min(4, eligible.length) }, async () => {
+      while (next < eligible.length) {
+        const brand = eligible[next++];
+        try {
+          await resolveBrand(brand);
+        } catch (_) {
+          // Return the successful stores even if one provider request fails.
+          console.error('[nearest-brand-stores] Store lookup unavailable');
+        }
+      }
+    }));
     return Response.json({ matches }, { headers: corsHeaders });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

@@ -9,8 +9,7 @@ import 'dart:io';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:screen_brightness/screen_brightness.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
+import '../../data/services/card_screen_session.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/security_service.dart';
@@ -46,7 +45,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
   late List<Map<String, dynamic>> items;
   late int currentIndex;
 
-  double? previousBrightness;
+  late final CardScreenSession _screenSession;
   late bool showPin;
 
   @override
@@ -70,21 +69,11 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     markCurrentGiftCardAsUsed();
   }
 
-  Future<void> _setupScreen() async {
-    if (SettingsService.autoBrightnessEnabled) {
-      try {
-        previousBrightness = await ScreenBrightness().current;
-
-        for (final value in [0.65, 0.8, 1.0]) {
-          await Future.delayed(const Duration(milliseconds: 90));
-          await ScreenBrightness().setScreenBrightness(value);
-        }
-      } catch (_) {}
-    }
-
-    if (SettingsService.keepScreenAwakeEnabled) {
-      await WakelockPlus.enable();
-    }
+  void _setupScreen() {
+    _screenSession = CardScreenSession(
+      brighten: SettingsService.autoBrightnessEnabled,
+      keepAwake: SettingsService.keepScreenAwakeEnabled,
+    );
   }
 
   @override
@@ -92,13 +81,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     WidgetsBinding.instance.removeObserver(this);
     pageController.dispose();
 
-    if (previousBrightness != null) {
-      ScreenBrightness().setScreenBrightness(previousBrightness!);
-    }
-
-    if (SettingsService.keepScreenAwakeEnabled) {
-      WakelockPlus.disable();
-    }
+    _screenSession.close();
     super.dispose();
   }
 

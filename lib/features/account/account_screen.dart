@@ -1,3 +1,5 @@
+import '../../data/services/locale_service.dart';
+import '../../shared/utils/device_description.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
@@ -239,7 +241,7 @@ class _AccountScreenState extends State<AccountScreen> {
         icon: const Icon(Icons.devices_rounded, size: 42),
         title:  Text(L10n.current.alreadySignedInOnAnotherDevice),
         content: Text(
-          L10n.current.thisAccountIsActiveOnIfYou((status.activeDeviceName.isEmpty ? L10n.current.anotherDevice151 : status.activeDeviceName).toString()),
+          L10n.current.thisAccountIsActiveOnIfYou(deviceDescription(status.activeDeviceName, dutch: LocaleService.languageCode == 'nl')),
         ),
         actions: [
           TextButton(

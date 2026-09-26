@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import 'location_resolver.dart';
 
 import 'storage_service.dart';
 import 'locale_service.dart';
@@ -28,6 +29,15 @@ class LocationSnapshot {
 }
 
 abstract final class LocationService {
+  static final _resolver = LocationResolver(
+    lastKnown: Geolocator.getLastKnownPosition,
+    current: () => Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 8),
+      ),
+    ),
+  );
   static double get nearbyRadiusMeters =>
       SettingsService.nearbyRadiusMeters.toDouble();
 
@@ -52,19 +62,8 @@ abstract final class LocationService {
         );
       }
 
-      Position? position;
-      try {
-        position = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(
-            accuracy: LocationAccuracy.high,
-            timeLimit: Duration(seconds: 8),
-          ),
-        );
-      } catch (_) {
-        position = await Geolocator.getLastKnownPosition();
-      }
-      if (position == null || DateTime.now().difference(position.timestamp).abs() > const Duration(minutes: 2) ||
-          !position.accuracy.isFinite || position.accuracy > 100) {
+      final position = await _resolver.resolve();
+      if (position == null) {
         return const LocationSnapshot(LocationAccessState.unavailable);
       }
       return LocationSnapshot(
