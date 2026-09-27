@@ -94,6 +94,10 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Back-up en herstel').hitTestable());await tester.pumpAndSettle();
       expect(find.text('Automatische back-up'), findsOneWidget);
+      // ListView may dispose off-screen sections; scroll back before checking
+      // that PageStorage preserved the other section's expanded state.
+      await tester.scrollUntilVisible(find.text('Beveiliging en privacy'), -300, scrollable: find.byType(Scrollable).first);
+      await tester.pumpAndSettle();
       expect(find.text('Privacy en gegevens'), findsOneWidget);
       expect(tester.takeException(),isNull);
       await tester.pumpWidget(const SizedBox.shrink());await tester.pumpAndSettle();
