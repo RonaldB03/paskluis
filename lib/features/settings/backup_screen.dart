@@ -1,3 +1,4 @@
+import 'backup_actions.dart';
 import 'package:flutter/material.dart';
 import '../../data/services/account_service.dart';
 import '../../data/services/backup_service.dart';
@@ -31,10 +32,7 @@ class _BackupScreenState extends State<BackupScreen> {
   'NOT_AVAILABLE'=>t('Back-up is voorlopig beschikbaar voor de testgroep.','Backup is currently available to the test group.'),
   _=>t('De actie is niet gelukt. Controleer je internetverbinding en probeer opnieuw.','The action failed. Check your connection and try again.'),
  };
- Future<void> _enable(bool value) async {
-  if(value && !await _confirm(t('Automatische back-up inschakelen?','Enable automatic backup?'),t('Je eigen kaarten, pincodes en afbeeldingen worden versleuteld bij je account opgeslagen. Niet-gekoppelde kaarten op dit toestel worden aan dit back-upaccount gekoppeld. Ontvangen gedeelde kaarten worden niet meegenomen. Maximaal 10 MB en drie versies.','Your own cards, PINs and images will be encrypted and saved to your account. Unassigned cards on this device will be linked to this backup account. Received shared cards are excluded. Maximum 10 MB and three versions.')))return;
-  try{await BackupService.setEnabled(value);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(message(e.toString().split(': ').last))));}
- }
+ Future<void> _enable(bool value) => BackupActions.enable(context,value).then((_) {});
  Future<void> _restore(Map version) async {
   if(!await _confirm(t('Back-up herstellen?','Restore backup?'),t('Deze versie bevat ${version['cardCount']} kaarten. Ontbrekende kaarten worden toegevoegd. Je huidige kaarten worden niet verwijderd. Een opgeslagen cadeaukaartsaldo kan verouderd zijn.','This version contains ${version['cardCount']} cards. Missing cards will be added. Current cards will not be deleted. Saved gift card balances may be outdated.')))return;
   final prepared=await BackupService.prepareRestore(version['id']);if(prepared==null||!mounted)return;
@@ -65,13 +63,7 @@ class _BackupScreenState extends State<BackupScreen> {
      Text(BackupService.lastSuccess==null?t('Nog geen geslaagde back-up','No successful backup yet'):t('Laatste back-up: ${_date(BackupService.lastSuccess!)}','Last backup: ${_date(BackupService.lastSuccess!)}')),
      if(available)Text(t('${((BackupService.status?['usedBytes']??0)/1000000).toStringAsFixed(2)} van 10 MB gebruikt · maximaal drie versies','${((BackupService.status?['usedBytes']??0)/1000000).toStringAsFixed(2)} of 10 MB used · up to three versions')),
      if(BackupService.error!=null)Padding(padding:const EdgeInsets.symmetric(vertical:12),child:Text(message(BackupService.error!),style:TextStyle(color:Theme.of(context).colorScheme.error))),
-     const SizedBox(height:12),FilledButton.icon(onPressed:busy||!available?null:()async{
-      if(!BackupService.enabled){
-        if(!await _confirm(t('Eenmalige back-up maken?','Create a one-time backup?'),t('Je eigen kaarten, pincodes en afbeeldingen worden aan dit back-upaccount gekoppeld en versleuteld opgeslagen. Automatische back-up blijft uit.','Your own cards, PINs and images will be linked to this backup account and stored encrypted. Automatic backup stays off.')))return;
-        try{await BackupService.setEnabled(true);await BackupService.setEnabled(false);}catch(e){if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(message(e.toString().split(': ').last))));return;}
-      }
-      await BackupService.upload();
-     },icon:const Icon(Icons.backup_outlined),label:Text(t('Nu back-up maken','Back up now'))),
+     const SizedBox(height:12),FilledButton.icon(onPressed:busy||!available?null:()=>BackupActions.upload(context),icon:const Icon(Icons.backup_outlined),label:Text(t('Nu back-up maken','Back up now'))),
      const SizedBox(height:20),Text(t('Beschikbare back-ups','Available backups'),style:Theme.of(context).textTheme.titleMedium),
      for(final v in BackupService.versions)ListTile(contentPadding:EdgeInsets.zero,title:Text(_date(v['createdAt'])),subtitle:Text(t('${v['cardCount']} kaarten','${v['cardCount']} cards')),trailing:IconButton(tooltip:t('Herstellen','Restore'),onPressed:busy?null:()=>_restore(v),icon:const Icon(Icons.restore))),
      const SizedBox(height:16),TextButton(onPressed:busy||BackupService.versions.isEmpty?null:()async{if(await _confirm(t('Alle cloudback-ups verwijderen?','Delete all cloud backups?'),t('Alle drie de versies worden definitief verwijderd en automatische back-up gaat uit. Je kaarten op dit toestel blijven staan.','All versions will be permanently deleted and automatic backup will turn off. Cards on this device remain.')))await BackupService.deleteCloud();},child:Text(t('Alle cloudback-ups verwijderen','Delete all cloud backups'))),

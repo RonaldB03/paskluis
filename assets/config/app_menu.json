@@ -1,0 +1,572 @@
+{
+  "schemaVersion": 1,
+  "share": {
+    "text": {
+      "nl": "Ik gebruik PasKluis voor mijn klantenkaarten, QR-codes en cadeaukaarten. Bekijk de app hier:",
+      "en": "I use PasKluis for my loyalty cards, QR codes and gift cards. Discover the app here:"
+    },
+    "url": "https://paskluis.com"
+  },
+  "sections": [
+    {
+      "id": "help",
+      "title": {
+        "nl": "Hulp",
+        "en": "Help"
+      },
+      "description": {
+        "nl": "",
+        "en": ""
+      },
+      "icon": "help",
+      "collapsed": false,
+      "hidden": false,
+      "items": [
+        {
+          "id": "help",
+          "action": "help",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "support",
+          "action": "support",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "id": "share",
+      "title": {
+        "nl": "Deel PasKluis",
+        "en": "Share PasKluis"
+      },
+      "description": {
+        "nl": "",
+        "en": ""
+      },
+      "icon": "share",
+      "collapsed": false,
+      "hidden": false,
+      "items": [
+        {
+          "id": "share",
+          "action": "share",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "title": {
+        "nl": "Beveiliging en privacy",
+        "en": "Security and privacy"
+      },
+      "description": {
+        "nl": "",
+        "en": ""
+      },
+      "icon": "security",
+      "collapsed": true,
+      "hidden": false,
+      "items": [
+        {
+          "id": "lock",
+          "action": "lock",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "hidePins",
+          "action": "hidePins",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "privacy",
+          "action": "privacy",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "id": "backup",
+      "title": {
+        "nl": "Back-up en herstel",
+        "en": "Backup and restore"
+      },
+      "description": {
+        "nl": "",
+        "en": ""
+      },
+      "icon": "backup",
+      "collapsed": true,
+      "hidden": false,
+      "items": [
+        {
+          "id": "backupAuto",
+          "action": "backupAuto",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "backupNow",
+          "action": "backupNow",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "restore",
+          "action": "restore",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "id": "cards",
+      "title": {
+        "nl": "Kaarten en weergave",
+        "en": "Cards and display"
+      },
+      "description": {
+        "nl": "",
+        "en": ""
+      },
+      "icon": "cards",
+      "collapsed": true,
+      "hidden": false,
+      "items": [
+        {
+          "id": "folders",
+          "action": "folders",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "favoritesFirst",
+          "action": "favoritesFirst",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "favoritesHome",
+          "action": "favoritesHome",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "sorting",
+          "action": "sorting",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "start",
+          "action": "start",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "clarity",
+          "action": "clarity",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "device",
+          "action": "device",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "id": "location",
+      "title": {
+        "nl": "Locatie en winkels",
+        "en": "Location and stores"
+      },
+      "description": {
+        "nl": "",
+        "en": ""
+      },
+      "icon": "location",
+      "collapsed": true,
+      "hidden": false,
+      "items": [
+        {
+          "id": "location",
+          "action": "location",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "radius",
+          "action": "radius",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "distances",
+          "action": "distances",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "nearbyFirst",
+          "action": "nearbyFirst",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "nearbyHome",
+          "action": "nearbyHome",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "id": "screen",
+      "title": {
+        "nl": "Scherm en meldingen",
+        "en": "Screen and notifications"
+      },
+      "description": {
+        "nl": "",
+        "en": ""
+      },
+      "icon": "display",
+      "collapsed": true,
+      "hidden": false,
+      "items": [
+        {
+          "id": "brightness",
+          "action": "brightness",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "awake",
+          "action": "awake",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        },
+        {
+          "id": "notifications",
+          "action": "notifications",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "id": "language",
+      "title": {
+        "nl": "Taal",
+        "en": "Language"
+      },
+      "description": {
+        "nl": "",
+        "en": ""
+      },
+      "icon": "language",
+      "collapsed": true,
+      "hidden": false,
+      "items": [
+        {
+          "id": "language",
+          "action": "language",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "all",
+          "hidden": false,
+          "url": ""
+        }
+      ]
+    },
+    {
+      "id": "plus",
+      "title": {
+        "nl": "PasKluis Plus",
+        "en": "PasKluis Plus"
+      },
+      "description": {
+        "nl": "",
+        "en": ""
+      },
+      "icon": "star",
+      "collapsed": false,
+      "hidden": false,
+      "items": [
+        {
+          "id": "plus",
+          "action": "plus",
+          "title": {
+            "nl": "",
+            "en": ""
+          },
+          "description": {
+            "nl": "",
+            "en": ""
+          },
+          "icon": "",
+          "audience": "free",
+          "hidden": false,
+          "url": ""
+        }
+      ]
+    }
+  ]
+}

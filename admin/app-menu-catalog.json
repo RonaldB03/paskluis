@@ -1,0 +1,191 @@
+{
+  "help": {
+    "title": {
+      "nl": "Hulp en uitleg",
+      "en": "Help and guidance"
+    },
+    "icon": "help"
+  },
+  "support": {
+    "title": {
+      "nl": "Klantenservice",
+      "en": "Support"
+    },
+    "icon": "help"
+  },
+  "share": {
+    "title": {
+      "nl": "Deel PasKluis",
+      "en": "Share PasKluis"
+    },
+    "icon": "share"
+  },
+  "lock": {
+    "title": {
+      "nl": "PasKluis vergrendelen",
+      "en": "Lock PasKluis"
+    },
+    "icon": "security"
+  },
+  "hidePins": {
+    "title": {
+      "nl": "Pincodes verbergen",
+      "en": "Hide PINs"
+    },
+    "icon": "security"
+  },
+  "privacy": {
+    "title": {
+      "nl": "Privacy en gegevens",
+      "en": "Privacy and data"
+    },
+    "icon": "security"
+  },
+  "backupAuto": {
+    "title": {
+      "nl": "Automatische back-up",
+      "en": "Automatic backup"
+    },
+    "icon": "backup"
+  },
+  "backupNow": {
+    "title": {
+      "nl": "Nu back-up maken",
+      "en": "Back up now"
+    },
+    "icon": "backup"
+  },
+  "restore": {
+    "title": {
+      "nl": "Back-up herstellen en beheren",
+      "en": "Restore and manage backups"
+    },
+    "icon": "backup"
+  },
+  "folders": {
+    "title": {
+      "nl": "Mijn mappen",
+      "en": "My folders"
+    },
+    "icon": "folder"
+  },
+  "favoritesFirst": {
+    "title": {
+      "nl": "Favorieten bovenaan",
+      "en": "Favourites first"
+    },
+    "icon": "star"
+  },
+  "favoritesHome": {
+    "title": {
+      "nl": "Favorieten op Home",
+      "en": "Favourites on Home"
+    },
+    "icon": "star"
+  },
+  "sorting": {
+    "title": {
+      "nl": "Standaard sortering",
+      "en": "Default sorting"
+    },
+    "icon": "cards"
+  },
+  "start": {
+    "title": {
+      "nl": "Startscherm",
+      "en": "Start screen"
+    },
+    "icon": "home"
+  },
+  "clarity": {
+    "title": {
+      "nl": "Extra leesbaarheid",
+      "en": "Extra clarity"
+    },
+    "icon": "display"
+  },
+  "location": {
+    "title": {
+      "nl": "Locatie gebruiken",
+      "en": "Use location"
+    },
+    "icon": "location"
+  },
+  "radius": {
+    "title": {
+      "nl": "Afstand tot winkels",
+      "en": "Distance to stores"
+    },
+    "icon": "location"
+  },
+  "distances": {
+    "title": {
+      "nl": "Afstanden op klantenkaarten",
+      "en": "Distances on loyalty cards"
+    },
+    "icon": "location"
+  },
+  "nearbyFirst": {
+    "title": {
+      "nl": "Dichtstbijzijnde klantenkaarten bovenaan",
+      "en": "Nearest loyalty cards first"
+    },
+    "icon": "location"
+  },
+  "nearbyHome": {
+    "title": {
+      "nl": "In de buurt op Home",
+      "en": "Nearby on Home"
+    },
+    "icon": "location"
+  },
+  "brightness": {
+    "title": {
+      "nl": "Helderheid verhogen",
+      "en": "Increase brightness"
+    },
+    "icon": "display"
+  },
+  "awake": {
+    "title": {
+      "nl": "Scherm aanhouden",
+      "en": "Keep screen awake"
+    },
+    "icon": "display"
+  },
+  "notifications": {
+    "title": {
+      "nl": "Cadeaukaartmeldingen",
+      "en": "Gift card reminders"
+    },
+    "icon": "notifications"
+  },
+  "language": {
+    "title": {
+      "nl": "Taal",
+      "en": "Language"
+    },
+    "icon": "language"
+  },
+  "plus": {
+    "title": {
+      "nl": "Ontdek PasKluis Plus",
+      "en": "Discover PasKluis Plus"
+    },
+    "icon": "star"
+  },
+  "device": {
+    "title": {
+      "nl": "Gegevens op dit toestel",
+      "en": "Data on this device"
+    },
+    "icon": "cards"
+  },
+  "external": {
+    "title": {
+      "nl": "Website",
+      "en": "Website"
+    },
+    "icon": "link"
+  }
+}

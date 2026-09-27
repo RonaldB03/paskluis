@@ -142,6 +142,14 @@ abstract final class SettingsService {
     _notify();
   }
 
+  static bool get showCardDistances =>
+      _preferences.getBool('show_card_distances') ?? true;
+
+  static Future<void> setShowCardDistances(bool enabled) async {
+    await _preferences.setBool('show_card_distances', enabled);
+    _notify();
+  }
+
   static bool get nearbyLoyaltyCardsFirst =>
       _preferences.getBool(_nearbyCardsFirstKey) ??
       _remoteBool('default_nearby_loyalty_cards_first', false);

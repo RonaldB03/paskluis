@@ -43,7 +43,7 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
   bool _refreshing = false;
 
   bool get _nearbyEnabled => SettingsService.locationCardsEnabled &&
-      SettingsService.nearbyLoyaltyCardsFirst;
+      (SettingsService.showCardDistances || SettingsService.nearbyLoyaltyCardsFirst);
 
   @override
   void initState() {
@@ -119,7 +119,7 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
       .toList();
 
   double? _nearbyDistance(Map<String, dynamic> item) {
-    if (!_nearbyEnabled) return null;
+    if (!_nearbyEnabled || !SettingsService.showCardDistances) return null;
     final distance = _nearbyStoreMatches[item['id']?.toString()]?.distanceMeters;
     return distance != null && distance.isFinite && distance >= 0 &&
             distance <= LocationService.nearbyRadiusMeters
@@ -132,7 +132,7 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
       _storedCards(),
       favoritesFirst: SettingsService.favoritesFirst,
       sortOrder: SettingsService.cardSortOrder,
-      nearbyFirst: _nearbyEnabled,
+      nearbyFirst: SettingsService.locationCardsEnabled && SettingsService.nearbyLoyaltyCardsFirst,
       nearbyRadiusMeters: LocationService.nearbyRadiusMeters,
       distances: _nearbyStoreMatches.map(
         (id, match) => MapEntry(id, match.distanceMeters),

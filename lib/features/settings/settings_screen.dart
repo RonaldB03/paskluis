@@ -1,3 +1,10 @@
+import 'dart:async';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import '../../data/services/app_menu_service.dart';
+import '../../data/services/backup_service.dart';
+import 'backup_actions.dart';
 import '../folders/folders_screen.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import '../../shared/widgets/language_picker.dart';
@@ -41,6 +48,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _giftExpiryNotificationsEnabled;
   bool _savingLock = false;
   bool _isAdmin = false;
+  bool _plus = false;
+  String _version = SettingsService.appVersion;
+  StreamSubscription? _auth;
+  int _accountRequest = 0;
+  String t(String nl, String en) => LocaleService.languageCode == 'nl' ? nl : en;
+  void _changed() { if (mounted) setState(_readSettings); }
+  Future<void> _open(Widget page) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+    if (mounted) { _changed(); await _loadAccount(); }
+  }
+  Future<void> _loadAccount() async {
+    final request = ++_accountRequest;
+    final id = AccountService.currentUser?.id;
+    if (mounted) setState(() { _plus = false; _isAdmin = false; });
+    final plus = await AccountService.loadPlusStatus().catchError((Object _) => PlusStatus.inactive);
+    final admin = await AccountService.isCurrentUserAdmin().catchError((Object _) => false);
+    if (mounted && request == _accountRequest && id == AccountService.currentUser?.id) {
+      setState(() { _plus = plus.isActive; _isAdmin = admin; });
+    }
+  }
+  @override
+  void dispose() {
+    _auth?.cancel();
+    BackupService.revision.removeListener(_changed);
+    AppMenuService.revision.removeListener(_changed);
+    SettingsService.settingsRevision.removeListener(_changed);
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -50,16 +85,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       setState(_readSettings);
     });
-    _loadAdminStatus();
-  }
-
-  Future<void> _loadAdminStatus() async {
-    try {
-      final isAdmin = await AccountService.isCurrentUserAdmin();
-      if (mounted) setState(() => _isAdmin = isAdmin);
-    } catch (_) {
-      if (mounted) setState(() => _isAdmin = false);
-    }
+    BackupService.revision.addListener(_changed);
+    AppMenuService.revision.addListener(_changed);
+    SettingsService.settingsRevision.addListener(_changed);
+    _auth = AccountService.authChanges?.listen((_) { _loadAccount(); BackupService.refresh(); });
+    _loadAccount();
+    BackupService.refresh();
+    AppMenuService.init().then((_) { _changed(); AppMenuService.refresh(); });
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) setState(() => _version = '${info.version} (${info.buildNumber})');
+    }).catchError((Object _) {});
   }
 
   void _readSettings() {
@@ -272,61 +307,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _ => L10n.current.home,
       };
 
-  @override
-  Widget build(BuildContext context) {
-    L10n.watch(context);
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F2F7),
-      appBar: AppBar(
-        title:  Text(L10n.current.settings),
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF28242C),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(14, 18, 14, 32),
-        children: [
-          _SettingsSection(
-            title: LocaleService.languageCode == 'nl' ? 'Kaarten ordenen' : 'Organize cards',
-            children: [ListTile(
-              leading: const Icon(Icons.folder_outlined),
-              title: Text(LocaleService.languageCode == 'nl' ? 'Mijn mappen' : 'My folders'),
-              subtitle: Text(LocaleService.languageCode == 'nl' ? 'Optioneel: deel je kaarten in zoals jij wilt' : 'Optional: organize your cards your way'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FoldersScreen())),
-            )],
-          ),
-          _SettingsSection(
-            title: LocaleService.languageCode=='nl'?'Back-up':'Backup',
-            children: [ListTile(
-              leading: const Icon(Icons.cloud_outlined),
-              title: Text(LocaleService.languageCode=='nl'?'Back-up van mijn kaarten':'Back up my cards'),
-              subtitle: Text(LocaleService.languageCode=='nl'?'Bewaren en herstellen op een andere telefoon':'Save and restore on another phone'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: ()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const BackupScreen())),
-            )],
-          ),
-          _SettingsSection(
-            title: L10n.current.language,
-            children: [
-              ValueListenableBuilder<String>(
-                valueListenable: LocaleService.preference,
-                builder: (context, choice, _) => _SettingsTile(
-                  icon: Icons.language_rounded,
-                  iconColor: const Color(0xFF286DC8),
-                  iconBackground: const Color(0xFFE7F0FF),
-                  title: L10n.current.language,
-                  subtitle: L10n.current.languageSettingsSubtitle,
-                  value: choice == 'system' ? L10n.current.followPhoneLanguage : choice == 'nl' ? 'Nederlands' : 'English',
-                  onTap: () => showLanguagePicker(context),
-                ),
-              ),
-            ],
-          ),
-          if (SettingsService.locationCardsAvailable)
-            _SettingsSection(
-              title: L10n.current.smartCards,
-              children: [
-                _SettingsSwitchTile(
+  Future<void> _share(BuildContext anchor) async {
+    final menu = AppMenuService.current;
+    if (menu == null) return;
+    try {
+      final box = anchor.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(ShareParams(
+        text: menu.shareText(LocaleService.languageCode), subject: 'PasKluis',
+        sharePositionOrigin: box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+      ));
+    } catch (_) { _failure(); }
+  }
+  void _failure() {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t('De actie is niet gelukt. Probeer opnieuw.', 'The action failed. Please try again.'))));
+  }
+  Future<void> _external(String value) async {
+    if (!AppMenu.safeUrl(value)) return;
+    try { if (!await launchUrl(Uri.parse(value), mode: LaunchMode.externalApplication)) _failure(); }
+    catch (_) { _failure(); }
+  }
+  String get _backupSummary {
+    if (AccountService.currentUser == null) return t('Log in voor back-up', 'Sign in to back up');
+    if (BackupService.busy) return t('Back-upstatus bijwerken…', 'Updating backup status…');
+    if (BackupService.error != null) return t('Back-up heeft aandacht nodig', 'Backup needs attention');
+    final date = DateTime.tryParse(BackupService.lastSuccess ?? '')?.toLocal();
+    if (date == null) return t('Nog geen geslaagde back-up', 'No successful backup yet');
+    return t('Laatste back-up: ', 'Last backup: ') + '${date.day}-${date.month}-${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+  Widget _plain(Map item, String title, IconData icon, VoidCallback onTap, {String? subtitle}) =>
+    _SettingsTile(menuItem: item, icon: icon, iconColor: const Color(0xFFD51B46),
+      iconBackground: const Color(0xFFFFE5E9), title: title, subtitle: subtitle, onTap: onTap);
+
+  Widget? _action(Map item) {
+    final action = item['action'];
+    if (const {'location','radius','distances','nearbyFirst','nearbyHome'}.contains(action) && !SettingsService.locationCardsAvailable) return null;
+    if (action == 'radius' && !_locationCardsEnabled) return null;
+    if (action == 'notifications' && !SettingsService.giftExpiryNotificationsAvailable) return null;
+    if (item['audience'] == 'locked' && !_plus) {
+      final original = _action({...item, 'audience': 'all'});
+      final title = original is _SettingsTile ? original.title : original is _SettingsSwitchTile ? original.title : 'PasKluis Plus';
+      return _plain(item, title, Icons.lock_outline,
+        () => _open(const AccountScreen()), subtitle: t('Beschikbaar met Plus', 'Available with Plus'));
+    }
+    switch (action) {
+      case 'location': return _SettingsSwitchTile(menuItem: item, 
                   icon: Icons.location_on_outlined,
                   iconColor: const Color(0xFF286DC8),
                   iconBackground: const Color(0xFFE7F0FF),
@@ -334,9 +358,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: L10n.current.showTheRightCardAtANearby,
                   value: _locationCardsEnabled,
                   onChanged: _changeLocationCards,
-                ),
-                if (_locationCardsEnabled)
-                  _SettingsTile(
+                );
+      case 'radius': return _SettingsTile(menuItem: item, 
                     icon: Icons.radar_rounded,
                     iconColor: const Color(0xFF7046B8),
                     iconBackground: const Color(0xFFEFE8FF),
@@ -344,8 +367,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     subtitle: L10n.current.howCloseAStoreNeedsToBe,
                     value: _radiusLabel,
                     onTap: _chooseRadius,
-                  ),
-                _SettingsSwitchTile(
+                  );
+      case 'nearbyFirst': return _SettingsSwitchTile(menuItem: item, 
                   icon: Icons.near_me_outlined,
                   iconColor: const Color(0xFF286DC8),
                   iconBackground: const Color(0xFFE7F0FF),
@@ -360,13 +383,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       setState(() => _nearbyLoyaltyCardsFirst = value);
                     }
                   },
-                ),
-              ],
-            ),
-          _SettingsSection(
-            title: L10n.current.cardsAndDisplay,
-            children: [
-              _SettingsSwitchTile(
+                );
+      case 'favoritesFirst': return _SettingsSwitchTile(menuItem: item, 
                 icon: Icons.star_outline_rounded,
                 iconColor: const Color(0xFFA26D00),
                 iconBackground: const Color(0xFFFFF2CC),
@@ -379,8 +397,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   await SettingsService.setFavoritesFirst(value);
                   if (mounted) setState(() => _favoritesFirst = value);
                 },
-              ),
-              _SettingsSwitchTile(
+              );
+      case 'favoritesHome': return _SettingsSwitchTile(menuItem: item, 
                 icon: Icons.dashboard_customize_outlined,
                 iconColor: const Color(0xFFD51B46),
                 iconBackground: const Color(0xFFFFE5E9),
@@ -391,9 +409,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   await SettingsService.setShowFavoritesSection(value);
                   if (mounted) setState(() => _showFavoritesSection = value);
                 },
-              ),
-              if (SettingsService.locationCardsAvailable)
-                _SettingsSwitchTile(
+              );
+      case 'nearbyHome': return _SettingsSwitchTile(menuItem: item, 
                   icon: Icons.near_me_outlined,
                   iconColor: const Color(0xFF286DC8),
                   iconBackground: const Color(0xFFE7F0FF),
@@ -406,8 +423,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     await SettingsService.setShowNearbySection(value);
                     if (mounted) setState(() => _showNearbySection = value);
                   },
-                ),
-              _SettingsTile(
+                );
+      case 'sorting': return _SettingsTile(menuItem: item, 
                 icon: Icons.swap_vert_rounded,
                 iconColor: const Color(0xFF23814A),
                 iconBackground: const Color(0xFFDDF5E5),
@@ -415,8 +432,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: L10n.current.orderInYourCardOverview,
                 value: _sortLabel,
                 onTap: _chooseSorting,
-              ),
-              _SettingsTile(
+              );
+      case 'start': return _SettingsTile(menuItem: item, 
                 icon: Icons.home_outlined,
                 iconColor: const Color(0xFF286DC8),
                 iconBackground: const Color(0xFFE7F0FF),
@@ -424,8 +441,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: L10n.current.openPaskluisInYourFavouriteSection,
                 value: _startTabLabel,
                 onTap: _chooseStartTab,
-              ),
-              _SettingsSwitchTile(
+              );
+      case 'clarity': return _SettingsSwitchTile(menuItem: item, 
                 icon: Icons.visibility_outlined,
                 iconColor: const Color(0xFF7046B8),
                 iconBackground: const Color(0xFFEFE8FF),
@@ -433,13 +450,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: L10n.current.largerTextHigherContrastAndLargerCards,
                 value: _extraClearEnabled,
                 onChanged: _changeExtraClear,
-              ),
-            ],
-          ),
-          _SettingsSection(
-            title: L10n.current.whileUsingCards,
-            children: [
-              _SettingsSwitchTile(
+              );
+      case 'brightness': return _SettingsSwitchTile(menuItem: item, 
                 icon: Icons.light_mode_outlined,
                 iconColor: const Color(0xFFA26D00),
                 iconBackground: const Color(0xFFFFF2CC),
@@ -450,8 +462,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   await SettingsService.setAutoBrightnessEnabled(value);
                   if (mounted) setState(() => _autoBrightnessEnabled = value);
                 },
-              ),
-              _SettingsSwitchTile(
+              );
+      case 'awake': return _SettingsSwitchTile(menuItem: item, 
                 icon: Icons.timer_outlined,
                 iconColor: const Color(0xFF7046B8),
                 iconBackground: const Color(0xFFEFE8FF),
@@ -462,9 +474,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   await SettingsService.setKeepScreenAwakeEnabled(value);
                   if (mounted) setState(() => _keepScreenAwakeEnabled = value);
                 },
-              ),
-              if (SettingsService.giftExpiryNotificationsAvailable)
-                _SettingsSwitchTile(
+              );
+      case 'notifications': return _SettingsSwitchTile(menuItem: item, 
                   icon: Icons.notifications_active_outlined,
                   iconColor: const Color(0xFFD51B46),
                   iconBackground: const Color(0xFFFFE5E9),
@@ -472,13 +483,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: L10n.current.notificationsBeforeTheExpiryDate,
                   value: _giftExpiryNotificationsEnabled,
                   onChanged: _changeExpiryNotifications,
-                ),
-            ],
-          ),
-          _SettingsSection(
-            title: L10n.current.securityAndPrivacy,
-            children: [
-              _SettingsSwitchTile(
+                );
+      case 'lock': return _SettingsSwitchTile(menuItem: item, 
                 icon: Icons.face_rounded,
                 iconColor: const Color(0xFF23814A),
                 iconBackground: const Color(0xFFDDF5E5),
@@ -486,8 +492,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: L10n.current.useFaceIdBiometricsOrYourDevice,
                 value: _appLockEnabled,
                 onChanged: _savingLock ? null : _changeAppLock,
-              ),
-              _SettingsSwitchTile(
+              );
+      case 'hidePins': return _SettingsSwitchTile(menuItem: item, 
                 icon: Icons.visibility_off_outlined,
                 iconColor: const Color(0xFFD51B46),
                 iconBackground: const Color(0xFFFFE5E9),
@@ -498,8 +504,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   await SettingsService.setHideSensitiveCodes(value);
                   if (mounted) setState(() => _hideSensitiveCodes = value);
                 },
-              ),
-              _SettingsTile(
+              );
+      case 'privacy': return _SettingsTile(menuItem: item, 
                 icon: Icons.shield_outlined,
                 iconColor: const Color(0xFF286DC8),
                 iconBackground: const Color(0xFFE7F0FF),
@@ -509,24 +515,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   context,
                   MaterialPageRoute(builder: (_) => const PrivacyScreen()),
                 ),
-              ),
-            ],
-          ),
-          _SettingsSection(
-            title: L10n.current.accountAndHelp,
-            children: [
-              _SettingsTile(
-                icon: Icons.workspace_premium_outlined,
-                iconColor: const Color(0xFFA26D00),
-                iconBackground: const Color(0xFFFFF2CC),
-                title: L10n.current.accountAndPaskluisPlus,
-                subtitle: L10n.current.signInPlusStatusAndAccountManagement,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AccountScreen()),
-                ),
-              ),
-              _SettingsTile(
+              );
+      case 'support': return _SettingsTile(menuItem: item, 
                 icon: Icons.support_agent_rounded,
                 iconColor: const Color(0xFFD51B46),
                 iconBackground: const Color(0xFFFFE5E9),
@@ -536,8 +526,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   context,
                   MaterialPageRoute(builder: (_) => const SupportScreen()),
                 ),
-              ),
-              _SettingsTile(
+              );
+      case 'help': return _SettingsTile(menuItem: item, 
                 icon: Icons.help_outline_rounded,
                 iconColor: const Color(0xFF7046B8),
                 iconBackground: const Color(0xFFEFE8FF),
@@ -547,93 +537,122 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   context,
                   MaterialPageRoute(builder: (_) => const HelpCenterScreen()),
                 ),
-              ),
-              if (_isAdmin)
-                _SettingsTile(
-                  icon: Icons.admin_panel_settings_rounded,
-                  iconColor: const Color(0xFFD51B46),
-                  iconBackground: const Color(0xFFFFE5E9),
-                  title: L10n.current.administrator,
-                  subtitle: L10n.current.separateAdministrationToolsForPaskluis,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AdminToolsScreen()),
-                  ),
-                ),
-              _SettingsTile(
+              );
+      case 'device': return _SettingsTile(menuItem: item, 
                 icon: Icons.phone_iphone_rounded,
                 iconColor: const Color(0xFF286DC8),
                 iconBackground: const Color(0xFFE7F0FF),
                 title: L10n.current.dataOnThisDevice,
                 subtitle: L10n.current.cardsStoredLocally((StorageService.cardsBox.length).toString()),
-              ),
-            ],
-          ),
-           Center(
-            child: Padding(
-              padding: EdgeInsets.only(top: 2),
-              child: Text(
-                L10n.current.paskluisVersion14140,
-                style: TextStyle(color: Color(0xFF77717D), fontSize: 12),
-              ),
-            ),
-          ),
-        ],
-      ),
+              );
+      case 'folders': return _plain(item, t('Mijn mappen', 'My folders'), Icons.folder_outlined, () => _open(const FoldersScreen()), subtitle: t('Optioneel: orden je kaarten op jouw manier', 'Optional: organize your cards your way'));
+      case 'language': return _plain(item, L10n.current.language, Icons.language, () => showLanguagePicker(context), subtitle: LocaleService.preference.value == 'system' ? L10n.current.followPhoneLanguage : LocaleService.languageCode == 'nl' ? 'Nederlands' : 'English');
+      case 'share': return Builder(builder: (anchor) => _plain(item, t('Deel PasKluis', 'Share PasKluis'), Icons.share_outlined, () => _share(anchor), subtitle: t('Stuur de app door naar vrienden of familie', 'Share the app with friends or family')));
+      case 'external': return _plain(item, AppMenu.text(item['title'], LocaleService.languageCode), Icons.open_in_new, () => _external(item['url']));
+      case 'plus': return _plain(item, t('Ontdek PasKluis Plus', 'Discover PasKluis Plus'), Icons.workspace_premium_outlined, () => _open(const AccountScreen()), subtitle: t('Meer eigen cadeaukaarten en delen', 'More gift cards and sharing'));
+      case 'distances': return _SettingsSwitchTile(menuItem: item, icon: Icons.place_outlined, iconColor: const Color(0xFF286DC8), iconBackground: const Color(0xFFE7F0FF), title: t('Afstanden op klantenkaarten', 'Distances on loyalty cards'), subtitle: t('Toon afstanden binnen je gekozen straal; behoud je eigen sortering', 'Show distances within your chosen radius; keep your sorting'), value: SettingsService.showCardDistances, onChanged: !_locationCardsEnabled ? null : (value) => SettingsService.setShowCardDistances(value));
+      case 'backupAuto': return _SettingsSwitchTile(menuItem: item, icon: Icons.cloud_sync_outlined, iconColor: const Color(0xFF286DC8), iconBackground: const Color(0xFFE7F0FF), title: t('Automatische back-up', 'Automatic backup'), subtitle: t('Bij wijzigingen, met internet en terwijl de app actief is', 'After changes, while online and the app is active'), value: BackupService.enabled, onChanged: BackupService.busy ? null : (value) async {
+        if (AccountService.currentUser == null) { await _open(const AccountScreen()); if (mounted) await BackupService.refresh(); return; }
+        await BackupActions.enable(context, value);
+      });
+      case 'backupNow': return _plain(item, t('Nu back-up maken', 'Back up now'), Icons.backup_outlined, () async {
+        if (AccountService.currentUser == null) { await _open(const AccountScreen()); if (mounted) await BackupService.refresh(); return; }
+        if (!BackupService.busy) await BackupActions.upload(context);
+      }, subtitle: _backupSummary);
+      case 'restore': return _plain(item, t('Herstellen en beheren', 'Restore and manage'), Icons.restore, () => _open(const BackupScreen()));
+    }
+    return null;
+  }
+  String _summary(Map section) {
+    final custom = AppMenu.text(section['description'], LocaleService.languageCode);
+    if (custom.isNotEmpty) return custom;
+    return switch (section['id']) {
+      'backup' => _backupSummary,
+      'security' => _appLockEnabled ? t('Appvergrendeling aan', 'App lock on') : t('Appvergrendeling uit', 'App lock off'),
+      'cards' => '$_sortLabel · $_startTabLabel',
+      'location' => _locationCardsEnabled ? _radiusLabel : t('Locatie uit', 'Location off'),
+      'screen' => t('Helderheid, scherm en herinneringen', 'Brightness, screen and reminders'),
+      'language' => LocaleService.preference.value == 'system' ? L10n.current.followPhoneLanguage : LocaleService.languageCode == 'nl' ? 'Nederlands' : 'English',
+      _ => '',
+    };
+  }
+  Widget _section(Map section) {
+    if (section['hidden'] == true) return const SizedBox.shrink();
+    final children = <Widget>[];
+    for (final item in section['items']) {
+      if (!AppMenu.visible(item, _plus)) continue;
+      final child = _action(item);
+      if (child != null) children.add(child);
+    }
+    if (children.isEmpty) return const SizedBox.shrink();
+    return _SettingsSection(
+      key: ValueKey(section['id']), title: AppMenu.text(section['title'], LocaleService.languageCode),
+      summary: _summary(section), icon: menuIcon(section['icon'], Icons.tune),
+      collapsed: section['collapsed'] == true, children: children,
     );
   }
-}
-
-class _SettingsSection extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-
-  const _SettingsSection({required this.title, required this.children});
-
   @override
   Widget build(BuildContext context) {
     L10n.watch(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(11, 0, 0, 7),
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: Color(0xFF77717D),
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          Card(
-            margin: EdgeInsets.zero,
-            elevation: 0,
-            color: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              children: [
-                for (var index = 0; index < children.length; index++) ...[
-                  children[index],
-                  if (index < children.length - 1)
-                    const Divider(height: 1, indent: 58),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
+    final user = AccountService.currentUser;
+    final name = user?.userMetadata?['display_name']?.toString();
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F2F7),
+      appBar: AppBar(title: Text(L10n.current.settings)),
+      body: ListView(padding: const EdgeInsets.fromLTRB(14, 18, 14, 32), children: [
+        Card(color: Colors.white, elevation: 0, child: ListTile(
+          contentPadding: const EdgeInsets.all(16),
+          leading: const CircleAvatar(child: Icon(Icons.person_outline)),
+          title: Text(user == null ? t('Mijn account', 'My account') : (name?.isNotEmpty == true ? name! : t('Mijn account', 'My account')), style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text(user == null ? t('Log in of maak een account voor back-up', 'Sign in or create an account for backup') : '${user.email ?? ''}\n${_plus ? 'PasKluis Plus' : t('Gratis', 'Free')}\n$_backupSummary'),
+          trailing: const Icon(Icons.chevron_right), onTap: () => _open(const AccountScreen()),
+        )),
+        if (BackupService.error != null && user != null) Card(color: Theme.of(context).colorScheme.errorContainer, child: ListTile(
+          leading: const Icon(Icons.cloud_off_outlined), title: Text(t('Je back-up heeft aandacht nodig', 'Your backup needs attention')),
+          subtitle: Text(t('Tik om de status te controleren en opnieuw te proberen', 'Tap to check the status and retry')),
+          onTap: () => _open(const BackupScreen()),
+        )),
+        const SizedBox(height: 12),
+        if (AppMenuService.current == null) const Center(child: CircularProgressIndicator())
+        else for (final section in AppMenuService.current!.sections) _section(section),
+        if (_isAdmin) _plain(const {}, L10n.current.administrator, Icons.admin_panel_settings_outlined, () => _open(const AdminToolsScreen())),
+        Center(child: Padding(padding: const EdgeInsets.only(top: 12), child: Text('PasKluis $_version', style: const TextStyle(color: Color(0xFF77717D), fontSize: 12)))),
+      ]),
     );
   }
 }
 
+IconData menuIcon(Object? id, IconData fallback) => switch (id) {
+  'help' => Icons.help_outline, 'share' => Icons.share_outlined, 'security' => Icons.shield_outlined,
+  'backup' => Icons.cloud_outlined, 'folder' => Icons.folder_outlined, 'star' => Icons.star_outline,
+  'cards' => Icons.credit_card, 'home' => Icons.home_outlined, 'display' => Icons.brightness_6_outlined,
+  'location' => Icons.place_outlined, 'notifications' => Icons.notifications_outlined,
+  'language' => Icons.language, 'link' => Icons.open_in_new, _ => fallback,
+};
+
+class _SettingsSection extends StatelessWidget {
+  final String title;
+  final String summary;
+  final IconData icon;
+  final bool collapsed;
+  final List<Widget> children;
+  const _SettingsSection({super.key, required this.title, required this.summary, required this.icon, required this.collapsed, required this.children});
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Card(margin: EdgeInsets.zero, elevation: 0, color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), clipBehavior: Clip.antiAlias,
+      child: ExpansionTile(
+        initiallyExpanded: !collapsed,
+        key: PageStorageKey(key), leading: Icon(icon, color: const Color(0xFFD51B46)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: summary.isEmpty ? null : Text(summary), children: children,
+      ),
+    ),
+  );
+}
 class _SettingsTile extends StatelessWidget {
+  final Map menuItem;
   final IconData icon;
   final Color iconColor;
   final Color iconBackground;
@@ -643,6 +662,7 @@ class _SettingsTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _SettingsTile({
+    this.menuItem = const {},
     required this.icon,
     required this.iconColor,
     required this.iconBackground,
@@ -659,30 +679,20 @@ class _SettingsTile extends StatelessWidget {
       minTileHeight: 62,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       leading: _SettingsIcon(
-        icon: icon,
+        icon: menuIcon(menuItem['icon'], icon),
         color: iconColor,
         background: iconBackground,
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      subtitle: subtitle == null ? null : Text(subtitle!),
-      trailing: onTap == null
-          ? value == null
-              ? null
-              : Text(value!, style: const TextStyle(color: Color(0xFF77717D)))
-          : Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (value != null)
-                  Text(value!, style: const TextStyle(color: Color(0xFF77717D))),
-                const Icon(Icons.chevron_right_rounded, color: Color(0xFF8A858F)),
-              ],
-            ),
+      title: Text(AppMenu.text(menuItem['title'], LocaleService.languageCode, title), style: const TextStyle(fontWeight: FontWeight.w700)),
+      subtitle: Text([AppMenu.text(menuItem['description'], LocaleService.languageCode, subtitle ?? ''), if (value != null) value!].where((s) => s.isNotEmpty).join('\n')),
+      trailing: onTap == null ? null : const Icon(Icons.chevron_right_rounded, color: Color(0xFF8A858F)),
       onTap: onTap,
     );
   }
 }
 
 class _SettingsSwitchTile extends StatelessWidget {
+  final Map menuItem;
   final IconData icon;
   final Color iconColor;
   final Color iconBackground;
@@ -692,6 +702,7 @@ class _SettingsSwitchTile extends StatelessWidget {
   final ValueChanged<bool>? onChanged;
 
   const _SettingsSwitchTile({
+    this.menuItem = const {},
     required this.icon,
     required this.iconColor,
     required this.iconBackground,
@@ -707,12 +718,12 @@ class _SettingsSwitchTile extends StatelessWidget {
     return SwitchListTile.adaptive(
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       secondary: _SettingsIcon(
-        icon: icon,
+        icon: menuIcon(menuItem['icon'], icon),
         color: iconColor,
         background: iconBackground,
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      subtitle: subtitle == null ? null : Text(subtitle!),
+      title: Text(AppMenu.text(menuItem['title'], LocaleService.languageCode, title), style: const TextStyle(fontWeight: FontWeight.w700)),
+      subtitle: Text(AppMenu.text(menuItem['description'], LocaleService.languageCode, subtitle ?? '')),
       value: value,
       activeColor: const Color(0xFFD51B46),
       onChanged: onChanged,
