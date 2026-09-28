@@ -23,7 +23,7 @@ function splitValues(value){return value.split(/[\n,]/).map((v)=>v.trim()).filte
 const menuEditor=createMenuEditor({client:supabase,root:$('#page-appmenu'),toast,confirmAction});
 
 async function boot(){const{data:{session}}=await supabase.auth.getSession();if(!session)return showLogin();await authorize(session.user)}
-async function authorize(user){state.user=user;const{data:profile,error}=await supabase.from('profiles').select('id,display_name,email,role').eq('id',user.id).single();if(error||!['admin','support'].includes(profile?.role)){await supabase.auth.signOut();return showDenied()}try{await adminMfa.enroll()}catch(error){await supabase.auth.signOut();showLogin();$('#login-error').textContent=error.message;return}state.profile=profile;$('#admin-name').textContent=profile.display_name||roleLabel(profile.role);$('#admin-email').textContent=profile.email||user.email;$('#admin-role').textContent=roleLabel(profile.role);$('#login-view').classList.add('hidden');$('#denied-view').classList.add('hidden');$('#app-view').classList.remove('hidden');applyPermissions();try{await supabase.rpc('touch_last_seen')}catch(error){console.warn('[PasKluis Beheer] Laatste activiteit kon niet worden bijgewerkt.',error)}await refreshAll()}
+async function authorize(user){state.user=user;const{data:profile,error}=await supabase.from('profiles').select('id,display_name,email,role').eq('id',user.id).single();if(error||!['admin','support'].includes(profile?.role)){await supabase.auth.signOut();return showDenied()}try{await adminMfa.enroll()}catch(error){await supabase.auth.signOut();showLogin();$('#login-error').textContent=error.message;return}state.profile=profile;$('#admin-name').textContent=profile.display_name||roleLabel(profile.role);$('#admin-email').textContent=profile.email||user.email;$('#admin-role').textContent=roleLabel(profile.role);$('#login-view').classList.add('hidden');$('#denied-view').classList.add('hidden');$('#app-view').classList.remove('hidden');applyPermissions();try{await supabase.rpc('touch_last_seen')}catch(error){console.warn('[PasKluis Beheer] Laatste activiteit kon niet worden bijgewerkt.',error)}await refreshAll();let page;try{page=sessionStorage.getItem('paskluis-admin-page')}catch(_){}if(['dashboard','users','team','support','brands','faqs','appmenu','settings','activity'].includes(page))showPage(page)}
 function showLogin(){$('#login-view').classList.remove('hidden');$('#app-view').classList.add('hidden');$('#denied-view').classList.add('hidden')}
 function showDenied(){$('#denied-view').classList.remove('hidden');$('#login-view').classList.add('hidden');$('#app-view').classList.add('hidden')}
 function applyPermissions(){const admin=state.profile.role==='admin';$$('.admin-nav,.admin-only').forEach((n)=>n.classList.toggle('hidden',!admin));const pages=admin?[['dashboard','Overzicht'],['users','Gebruikers & Plus'],['team','Medewerkers'],['support','Klantenservice'],['brands','Winkels & herkenning'],['faqs','Hulp & FAQ'],['appmenu','Appmenu'],['settings','App-instellingen'],['activity','Activiteitenlog']]:[['dashboard','Overzicht'],['support','Klantenservice']];$('#mobile-nav').innerHTML=pages.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
@@ -87,17 +87,92 @@ function auditTitle(item){const names={profiles:'Medewerker',entitlements:'Plus-
 function activityMarkup(items){return items.map((item)=>{const actor=profileFor(item.actor_id);return `<div class="timeline-item"><span class="timeline-dot"></span><div class="timeline-copy"><strong>${escapeHtml(auditTitle(item))}</strong><span>${escapeHtml(actor?.display_name||actor?.email||'Systeem')}</span></div><time>${formatDate(item.created_at)}</time></div>`}).join('')||'<div class="empty-text">Nog geen wijzigingen geregistreerd.</div>'}
 function renderActivity(){if(!$('#activity-list'))return;const filter=$('#activity-filter').value;$('#activity-list').innerHTML=activityMarkup(state.audit.filter((a)=>filter==='all'||a.entity_type===filter))}
 
-function showPage(page){if(state.profile.role!=='admin'&&!['dashboard','support'].includes(page))page='dashboard';$$('.page').forEach((n)=>n.classList.remove('active-page'));$$('.nav-button').forEach((n)=>n.classList.toggle('active',n.dataset.page===page));$(`#page-${page}`).classList.add('active-page');$('#mobile-nav').value=page;if(page==='appmenu')menuEditor.load()}
+function showPage(page){if(state.profile.role!=='admin'&&!['dashboard','support'].includes(page))page='dashboard';$$('.page').forEach((n)=>n.classList.remove('active-page'));$$('.nav-button').forEach((n)=>n.classList.toggle('active',n.dataset.page===page));$(`#page-${page}`).classList.add('active-page');$('#mobile-nav').value=page;if(page==='appmenu')menuEditor.load();try{sessionStorage.setItem('paskluis-admin-page',page)}catch(_){}if(page==='support')refreshSupport()}
 function confirmAction(title,message){return new Promise((resolve)=>{const d=$('#confirm-dialog');$('#confirm-title').textContent=title;$('#confirm-message').textContent=message;const done=()=>{d.removeEventListener('close',done);resolve(d.returnValue==='confirm')};d.addEventListener('close',done);d.showModal()})}
 
 $('#login-form').addEventListener('submit',async(e)=>{e.preventDefault();$('#login-error').textContent='';const{data,error}=await supabase.auth.signInWithPassword({email:$('#login-email').value.trim(),password:$('#login-password').value});if(error)return $('#login-error').textContent='E-mailadres of wachtwoord klopt niet.';await authorize(data.user)});$('#logout-button').addEventListener('click',async()=>{await supabase.auth.signOut();location.reload()});$('#denied-logout').addEventListener('click',async()=>{await supabase.auth.signOut();location.reload()});
 $$('.nav-button').forEach((b)=>b.addEventListener('click',()=>showPage(b.dataset.page)));$('#mobile-nav').addEventListener('change',(e)=>showPage(e.target.value));document.addEventListener('click',(e)=>{const go=e.target.closest('[data-go]');if(go)showPage(go.dataset.go);const close=e.target.closest('.dialog-close');if(close)close.closest('dialog').close()});$$('.refresh-all').forEach((b)=>b.addEventListener('click',refreshAll));
 $('#user-search').addEventListener('input',renderUsers);$('#user-filter').addEventListener('change',renderUsers);$('#users-body').addEventListener('click',(e)=>{const b=e.target.closest('[data-view-user]');if(b)openUser(b.dataset.viewUser)});$('#user-detail').addEventListener('click',(e)=>{const b=e.target.closest('[data-plus-user]');if(b)changePlus(b.dataset.plusUser,b.dataset.plusAction)});
 $('#new-staff').addEventListener('click',()=>{$('#staff-form').reset();$('#staff-error').textContent='';updateRoleExplanation();$('#staff-dialog').showModal()});$('#staff-role').addEventListener('change',updateRoleExplanation);$('#staff-form').addEventListener('submit',(e)=>{e.preventDefault();inviteStaff()});$('#team-grid').addEventListener('change',async(e)=>{const select=e.target.closest('[data-staff-role]');if(!select)return;const ok=await confirmAction('Rol aanpassen?',`${select.dataset.staffRole} wordt ${roleLabel(select.value).toLowerCase()}.`);if(ok)await setStaffRole(select.dataset.staffRole,select.value);else renderTeam()});$('#team-grid').addEventListener('click',async(e)=>{const b=e.target.closest('[data-remove-staff]');if(!b)return;const ok=await confirmAction('Medewerkerstoegang verwijderen?',`${b.dataset.removeStaff} wordt weer een normaal gebruikersaccount.`);if(ok)await setStaffRole(b.dataset.removeStaff,'user')});
-$('#support-filter').addEventListener('change',renderThreads);$('#refresh-support').addEventListener('click',refreshAll);$('#thread-list').addEventListener('click',(e)=>{const b=e.target.closest('[data-thread]');if(b)openThread(b.dataset.thread)});$('#save-thread-meta').addEventListener('click',saveThreadMeta);$('#reply-form').addEventListener('submit',(e)=>{e.preventDefault();const text=$('#reply-message').value.trim();if(text)sendReply(text)});$('#toggle-thread-status').addEventListener('click',toggleThreadStatus);
+$('#support-filter').addEventListener('change',renderThreads);$('#refresh-support').addEventListener('click',refreshSupport);$('#thread-list').addEventListener('click',(e)=>{const b=e.target.closest('[data-thread]');if(b)openThread(b.dataset.thread)});$('#save-thread-meta').addEventListener('click',saveThreadMeta);$('#reply-form').addEventListener('submit',(e)=>{e.preventDefault();const text=$('#reply-message').value.trim();if(text)sendReply(text)});$('#toggle-thread-status').addEventListener('click',toggleThreadStatus);
 $('#brand-search').addEventListener('input',renderBrands);$('#new-brand').addEventListener('click',()=>openBrandDialog());$('#brands-body').addEventListener('click',(e)=>{const b=e.target.closest('[data-edit-brand]');if(b)openBrandDialog(state.brands.find((x)=>x.id===b.dataset.editBrand))});$('#cancel-brand').addEventListener('click',()=>$('#brand-dialog').close());$('#brand-form').addEventListener('submit',(e)=>{e.preventDefault();saveBrand()});$('#brand-logo-file').addEventListener('change',(e)=>{const file=e.target.files[0];if(file)renderLogoPreview(URL.createObjectURL(file))});$('#brand-logo').addEventListener('input',(e)=>renderLogoPreview(e.target.value.trim()));
 $('#new-faq').addEventListener('click',()=>openFaqDialog());$('#faqs-body').addEventListener('click',(e)=>{const b=e.target.closest('[data-edit-faq]');if(b)openFaqDialog(state.faqs.find((x)=>x.id===b.dataset.editFaq))});$('#faq-form').addEventListener('submit',(e)=>{e.preventDefault();saveFaq()});
 $('#save-settings').addEventListener('click',saveSettings);$('#activity-filter').addEventListener('change',renderActivity);$('#refresh-activity').addEventListener('click',refreshAll);
+
+const SUPPORT_REFRESH_MS = 10000;
+let supportRefreshing = false;
+function supportVisible() {
+  return !!state.profile && !document.hidden &&
+    !$('#app-view').classList.contains('hidden') &&
+    $('#page-support').classList.contains('active-page');
+}
+function supportRefreshStatus(message) {
+  $('#support-refresh-status').textContent = message;
+}
+async function refreshSupport() {
+  if (supportRefreshing || !supportVisible()) return;
+  supportRefreshing = true;
+  const userId = state.user?.id;
+  const threadId = state.selectedThread?.id;
+  const request = supportRequest;
+  const stillVisible = () => supportVisible() && state.user?.id === userId;
+  try {
+    const result = await supabase.from('support_threads').select('*')
+      .order('updated_at', {ascending: false});
+    if (!stillVisible()) return;
+    if (result.error) throw result.error;
+    const threads = result.data || [];
+    if (JSON.stringify(threads) !== JSON.stringify(state.threads)) {
+      state.threads = threads;
+      renderThreads();
+      renderStats();
+    }
+    if (threadId && state.selectedThread?.id === threadId && request === supportRequest &&
+        !$('#conversation').classList.contains('hidden')) {
+      const thread = state.threads.find(t => t.id === threadId);
+      if (!thread) {
+        ++supportRequest;
+        state.selectedThread = null;
+        $('#conversation').classList.add('hidden');
+        $('#conversation-empty').classList.remove('hidden');
+        renderThreads();
+      } else {
+        const messages = await supabase.from('support_messages').select('*')
+          .eq('thread_id', threadId).order('created_at', {ascending: true})
+          .order('id', {ascending: true});
+        if (!stillVisible() || state.selectedThread?.id !== threadId || request !== supportRequest) return;
+        if (messages.error) throw messages.error;
+        state.selectedThread = thread;
+        $('#conversation-subject').textContent = thread.subject;
+        $('#toggle-thread-status').textContent = thread.status === 'closed' ? 'Heropenen' : 'Sluiten';
+        $('#reply-form').classList.toggle('hidden', thread.status === 'closed');
+        // Never replace the reply, note, category, priority or assignee inputs here.
+        const next = orderedSupportMessages(messages.data || []);
+        if (JSON.stringify(next) !== JSON.stringify(state.messages)) {
+          const list = $('#message-list');
+          const scrollTop = list.scrollTop;
+          const atBottom = list.scrollHeight - list.clientHeight - scrollTop < 60;
+          state.messages = next;
+          list.innerHTML = next.map(m => supportMessageMarkup(m, {
+            staffName: profileFor(m.sender_id)?.display_name,
+            customerName: profileFor(thread.user_id)?.display_name || thread.guest_name || 'Klant',
+          })).join('');
+          list.scrollTop = atBottom ? list.scrollHeight : scrollTop;
+          await loadSupportAttachments(threadId, ++supportRequest);
+        }
+      }
+    }
+    if (stillVisible()) supportRefreshStatus('Automatisch elke 10 seconden · Bijgewerkt om ' +
+      new Date().toLocaleTimeString('nl-NL'));
+  } catch (_) {
+    if (stillVisible()) supportRefreshStatus('Bijwerken niet gelukt. We proberen het over 10 seconden opnieuw.');
+  } finally {
+    supportRefreshing = false;
+  }
+}
+setInterval(refreshSupport, SUPPORT_REFRESH_MS);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshSupport(); });
+
 boot();
 
 async function loadSupportExtras(){const results=await Promise.all([supabase.from('support_canned_replies').select('*').eq('active',true).order('title'),supabase.from('service_incidents').select('*').order('updated_at',{ascending:false}),supabase.from('notification_outbox').select('id,event_type,attempts,last_error,delivered_at').is('delivered_at',null).order('created_at',{ascending:false}).limit(50)]);state.canned=results[0].data||[];state.incidents=results[1].data||[];state.deliveries=results[2].data||[];const failed=state.deliveries.filter(d=>d.attempts>=8);$('#support-delivery-status').textContent=results[2].error?'Verzendstatus niet beschikbaar. Controleer de verbinding en serverconfiguratie.':failed.length?`Minstens ${failed.length} meldingen vereisen aandacht. Controleer de mail- en pushkoppeling.`:state.deliveries.length?'Er staan meldingen klaar voor verzending.':'Geen vastgelopen meldingen.';$('#retry-notifications').classList.toggle('hidden',!!results[2].error||failed.length===0);$('#incident-list').innerHTML=state.incidents.map(i=>`<div class="action-item"><div><strong>${escapeHtml(i.title_nl)}</strong><small>${escapeHtml(i.body_nl)}</small></div><button class="secondary small-button" data-resolve-incident="${i.id}">${i.active?'Oplossen':'Verwijderen'}</button></div>`).join('')||'<p>Geen bekende storingen.</p>';$('#canned-list').innerHTML=state.canned.map(r=>`<div class="action-item"><div><strong>${escapeHtml(r.title)}</strong><small>${escapeHtml(r.body_nl)}</small></div><button class="secondary small-button" data-remove-canned="${r.id}">Verwijderen</button></div>`).join('')}
