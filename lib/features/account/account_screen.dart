@@ -542,7 +542,8 @@ class _AccountScreenState extends State<AccountScreen> {
             if(PurchaseService.product==null||!SettingsService.storePurchaseEnabled)
               Text(L10n.current.storePurchaseUnavailable,textAlign:TextAlign.center),
           ],
-          if(PurchaseService.messageCode!=null)
+          if(PurchaseService.messageCode!=null &&
+              !(PurchaseService.messageCode=='success' && _plusStatus.isActive))
             Padding(padding:const EdgeInsets.all(12),child:Text(switch(PurchaseService.messageCode){
               'success'=>L10n.current.purchaseSucceeded,
               'pending'=>L10n.current.purchasePending,
@@ -861,7 +862,7 @@ class _StatusCard extends StatelessWidget {
                   Text(
                     status.isActive
                         ? status.expiresAt == null
-                              ? L10n.current.youHaveUnlimitedAccess((_source(status.source)).toString())
+                              ? L10n.current.youHaveUnlimitedAccess
                               : L10n.current.yourAccessIsActiveUntil((_date(status.expiresAt!)).toString())
                         : L10n.current.storeOneGiftCardForFreeLoyalty,
                   ),
@@ -877,12 +878,6 @@ class _StatusCard extends StatelessWidget {
   static String _date(DateTime value) =>
       '${value.day.toString().padLeft(2, '0')}-${value.month.toString().padLeft(2, '0')}-${value.year}';
 
-  static String _source(String? source) {
-    if (source == 'complimentary') return L10n.current.activatedManuallyByAnAdministrator;
-    if (source == 'apple') return L10n.current.activatedThroughApple;
-    if (source == 'google') return L10n.current.activatedThroughGooglePlay;
-    return '';
-  }
 }
 
 class _OfflineAccountCard extends StatelessWidget {

@@ -139,14 +139,7 @@
   "checkingPlusStatus": "Checking Plus status…",
   "paskluisPlusIsActive": "PasKluis Plus is active",
   "freeVersion": "Free version",
-  "youHaveUnlimitedAccess": "You have unlimited access.{p0}",
-  "@youHaveUnlimitedAccess": {
-    "placeholders": {
-      "p0": {
-        "type": "Object"
-      }
-    }
-  },
+  "youHaveUnlimitedAccess": "You have permanent access to all Plus features.",
   "yourAccessIsActiveUntil": "Your access is active until {p0}.",
   "@yourAccessIsActiveUntil": {
     "placeholders": {
@@ -1019,7 +1012,7 @@
   "buyPlus": "Unlock PasKluis Plus",
   "storePurchaseUnavailable": "Purchases are currently unavailable. Your existing cards and Plus access remain usable.",
   "purchaseProcessing": "Processing purchase…",
-  "purchaseSucceeded": "PasKluis Plus is active. Enjoy!",
+  "purchaseSucceeded": "Your purchase is confirmed.",
   "purchasePending": "The purchase is awaiting confirmation from the store.",
   "purchaseCancelled": "The purchase was cancelled.",
   "purchaseVerificationPending": "The purchase could not yet be verified. Check your connection and use Restore purchases. Do not buy again. Use the same PasKluis account as for the original purchase.",

@@ -139,14 +139,7 @@
   "checkingPlusStatus": "Plus-status controleren…",
   "paskluisPlusIsActive": "PasKluis Plus is actief",
   "freeVersion": "Gratis versie",
-  "youHaveUnlimitedAccess": "Je hebt onbeperkt toegang.{p0}",
-  "@youHaveUnlimitedAccess": {
-    "placeholders": {
-      "p0": {
-        "type": "Object"
-      }
-    }
-  },
+  "youHaveUnlimitedAccess": "Je hebt blijvend toegang tot alle Plus-functies.",
   "yourAccessIsActiveUntil": "Je toegang is actief tot {p0}.",
   "@yourAccessIsActiveUntil": {
     "placeholders": {
@@ -1019,7 +1012,7 @@
   "buyPlus": "Activeer PasKluis Plus",
   "storePurchaseUnavailable": "Aankopen zijn op dit moment niet beschikbaar. Je bestaande kaarten en Plus-toegang blijven bruikbaar.",
   "purchaseProcessing": "Aankoop verwerken…",
-  "purchaseSucceeded": "PasKluis Plus is actief. Veel plezier!",
+  "purchaseSucceeded": "Je aankoop is bevestigd.",
   "purchasePending": "De aankoop wacht op bevestiging van de store.",
   "purchaseCancelled": "De aankoop is geannuleerd.",
   "purchaseVerificationPending": "De aankoop kon nog niet worden bevestigd. Controleer je verbinding en gebruik Aankopen herstellen. Koop niet opnieuw. Gebruik hetzelfde PasKluis-account als bij je aankoop.",
