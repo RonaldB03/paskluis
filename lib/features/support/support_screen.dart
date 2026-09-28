@@ -58,6 +58,32 @@ class _SupportScreenState extends State<SupportScreen> {
     }
   }
 
+  Future<void> _hideConversations(List<SupportThread> threads) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(threads.length == 1 ? L10n.current.supportHideTitle : L10n.current.supportCleanTitle),
+        content: Text(L10n.current.supportHideBody),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(L10n.current.cancel)),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(L10n.current.supportHide)),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _loading = true);
+    try {
+      for (final thread in threads) {
+        await SupportService.hideThread(thread.id);
+      }
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(L10n.current.supportHideFailed)));
+    } finally {
+      if (mounted) await _loadThreads();
+    }
+  }
+
   Future<void> _newConversation() async {
     final result = await showModalBottomSheet<_NewSupportQuestion>(
       context: context,
@@ -102,6 +128,13 @@ class _SupportScreenState extends State<SupportScreen> {
       backgroundColor: const Color(0xFFF5F3F6),
       appBar: AppBar(
         title:  Text(L10n.current.customerSupport),
+        actions: [
+          if (_threads.any((t) => t.status == 'closed' && !t.hasUnreadReply))
+            IconButton(tooltip: L10n.current.supportCleanClosed,
+              icon: const Icon(Icons.cleaning_services_outlined),
+              onPressed: _loading ? null : () => _hideConversations(
+                _threads.where((t) => t.status == 'closed' && !t.hasUnreadReply).toList())),
+        ],
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF333333),
       ),
@@ -129,6 +162,8 @@ class _SupportScreenState extends State<SupportScreen> {
       trailing:const Icon(Icons.chevron_right),
       onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const HelpCenterScreen())),
     )),
+    const SizedBox(height:12),
+    Text(L10n.current.supportRetentionInfo, style: const TextStyle(fontSize: 12, color: Colors.black54)),
     const SizedBox(height:12),
   ]);
 
@@ -259,8 +294,12 @@ class _SupportScreenState extends State<SupportScreen> {
                 thread.subject,
                 style: const TextStyle(fontWeight: FontWeight.w800),
               ),
-              subtitle: Text(_statusLabel(thread.status)),
-              trailing: const Icon(Icons.chevron_right_rounded),
+              subtitle: Text(thread.hasUnreadReply ? L10n.current.supportNewReply : _statusLabel(thread.status)),
+              trailing: IconButton(
+                tooltip: L10n.current.supportHide,
+                icon: const Icon(Icons.delete_outline),
+                onPressed: _loading ? null : () => _hideConversations([thread]),
+              ),
               onTap: () async {
                 await Navigator.push(
                   context,

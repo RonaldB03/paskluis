@@ -1,3 +1,4 @@
+import '../support/support_home_card.dart';
 import '../../shared/widgets/home_section_prompt.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import '../../shared/widgets/language_picker.dart';
@@ -1037,6 +1038,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                const SupportHomeCard(),
                 if (normalizedQuery.isNotEmpty)
                   _SearchResults(
                     query: _searchQuery.trim(),

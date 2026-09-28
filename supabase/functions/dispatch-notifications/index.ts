@@ -84,6 +84,21 @@ Deno.serve(async request=>{
  if(!secret||request.headers.get('x-job-secret')!==secret)return Response.json({error:'UNAUTHORIZED'},{status:401});
  if(request.method!=='POST')return new Response('',{status:405});
  const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false,autoRefreshToken:false}});
+
+ // Storage objects must be removed through the Storage API, not SQL metadata.
+ // Failed removals stay queued for the next scheduled run.
+ try {
+  const cleanup=await admin.from('support_storage_cleanup').select('storage_path').order('created_at').limit(50);
+  if(cleanup.error)throw cleanup.error;
+  const paths=(cleanup.data||[]).map(row=>row.storage_path);
+  if(paths.length){
+   const removed=await admin.storage.from('support-attachments').remove(paths);
+   if(removed.error)throw removed.error;
+   const cleared=await admin.from('support_storage_cleanup').delete().in('storage_path',paths);
+   if(cleared.error)throw cleared.error;
+  }
+ } catch (_) { console.error('SUPPORT_STORAGE_CLEANUP_RETRY'); }
+
  const claimed=await admin.rpc('claim_notification_jobs');
  if(claimed.error)return Response.json({error:'QUEUE_UNAVAILABLE'},{status:500});
  let completed=0;let googleAccess:string|undefined;

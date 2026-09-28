@@ -401,7 +401,6 @@
   "actionImport": "Import",
   "useRearCamera": "Use rear camera",
   "switchCamera": "Switch camera",
-  "enterBarcodeManually": "Enter barcode manually",
   "enterTheNumberBelowTheBarcode": "Enter the number below the barcode.",
   "eG8712345678901": "E.g. 8712345678901",
   "actionContinue": "Continue",
@@ -1027,5 +1026,18 @@
   "supportYou": "You",
   "supportMessagesLoadFailed": "New messages could not be loaded. Please try again.",
   "scannerCameraPermission": "Allow PasKluis to use the camera in your phone settings.",
-  "scannerCameraUnavailable": "The camera could not start. Try again or import a photo."
+  "scannerCameraUnavailable": "The camera could not start. Try again or import a photo.",
+  "supportHomeUnread": "You have a new reply",
+  "supportHomeOpen": "Your support conversation",
+  "supportHomeWaiting": "Your question is with our team",
+  "supportHomeView": "View your conversation",
+  "supportHomeMultiple": "View your conversations",
+  "supportHide": "Remove from my overview",
+  "supportHideTitle": "Remove conversation from your overview?",
+  "supportHideBody": "This only hides the conversation for you. Support keeps it for up to 6 months after closure; attachments for 30 days. A new reply makes it reappear. Necessary retention exceptions are explained in our privacy policy.",
+  "supportCleanClosed": "Clear closed conversations",
+  "supportCleanTitle": "Remove closed conversations from your overview?",
+  "supportHideFailed": "Could not finish clearing conversations. Please try again.",
+  "supportNewReply": "New reply",
+  "supportRetentionInfo": "We keep conversations for up to 6 months after closure and attachments for 30 days. See our privacy policy for exceptions."
 }

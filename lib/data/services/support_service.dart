@@ -21,6 +21,10 @@ class SupportThread {
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool hasUnreadReply;
+  final DateTime? lastStaffReplyAt;
+
+  bool get showOnHome => status != 'closed' || hasUnreadReply;
 
   const SupportThread({
     required this.id,
@@ -28,6 +32,8 @@ class SupportThread {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    this.hasUnreadReply = false,
+    this.lastStaffReplyAt,
   });
 
   factory SupportThread.fromJson(Map<String, dynamic> json) {
@@ -35,6 +41,8 @@ class SupportThread {
         DateTime.tryParse(json['created_at']?.toString() ?? '') ??
         DateTime.now();
     return SupportThread(
+      hasUnreadReply: json['has_unread_reply'] == true,
+      lastStaffReplyAt: DateTime.tryParse(json['last_staff_reply_at']?.toString() ?? ''),
       id: json['id']?.toString() ?? '',
       subject: json['subject']?.toString() ?? L10n.current.question,
       status: json['status']?.toString() ?? 'open',
@@ -115,16 +123,26 @@ abstract final class SupportService {
   }
 
   static Future<List<SupportThread>> loadThreads() async {
-    final guestRows = await _client.rpc('guest_support_threads',
+    final rows = await _client.rpc('support_inbox',
       params: {'p_token': await _guestToken()}) as List;
-    final guest = guestRows.map((row) => SupportThread.fromJson(Map<String,dynamic>.from(row))).toList();
-    _guestThreadIds..clear()..addAll(guest.map((t) => t.id));
-    final own = AccountService.currentUser == null ? <SupportThread>[] :
-      (await _client.from('support_threads').select('id, subject, status, created_at, updated_at')
-        .eq('user_id', AccountService.currentUser!.id)).map(SupportThread.fromJson).toList();
-    final all = {...{for(final t in guest) t.id:t}, ...{for(final t in own) t.id:t}}.values.toList();
-    all.sort((a,b) => b.updatedAt.compareTo(a.updatedAt));
-    return all;
+    _guestThreadIds..clear()..addAll(rows.where((r) => r['is_guest'] == true)
+      .map((r) => r['id'].toString()));
+    return rows.map((r) => SupportThread.fromJson(Map<String, dynamic>.from(r))).toList();
+  }
+
+  static Future<void> hideThread(String id) async {
+    await _client.rpc('support_customer_action', params: {
+      'p_thread_id': id, 'p_action': 'hide', 'p_token': await _guestToken(),
+    });
+    notifyConversationChanged(id);
+  }
+
+  static Future<void> markRead(String id, DateTime readAt) async {
+    await _client.rpc('support_customer_action', params: {
+      'p_thread_id': id, 'p_action': 'read', 'p_token': await _guestToken(),
+      'p_read_at': readAt.toUtc().toIso8601String(),
+    });
+    notifyConversationChanged(id);
   }
 
   static Future<SupportThread> createThread({

@@ -28,6 +28,8 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> with WidgetsB
   StreamSubscription<String>? _conversationSubscription;
   int _requestVersion = 0;
   bool _fetching = false;
+  bool _markingRead = false;
+  DateTime? _lastMarkedRead;
   bool _loadFailed = false;
   List<SupportMessage> _messages = const [];
   bool _loading = true;
@@ -39,6 +41,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> with WidgetsB
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_markReadIfVisible);
     WidgetsBinding.instance.addObserver(this);
     _conversationSubscription = SupportService.conversationChanges.listen((id) {
       if (id == widget.thread.id) _loadMessages();
@@ -91,6 +94,7 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> with WidgetsB
         _loadFailed = false;
       });
       if (scroll || (changed && nearBottom)) _scrollToBottom();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _markReadIfVisible());
       if (_attachmentRefresh == null || changed ||
           DateTime.now().difference(_attachmentRefresh!).inSeconds > 180) {
         unawaited(_loadAttachments(request));
@@ -110,6 +114,22 @@ class _SupportThreadScreenState extends State<SupportThreadScreen> with WidgetsB
     } finally {
       if (request == _requestVersion) _fetching = false;
     }
+  }
+
+  Future<void> _markReadIfVisible() async {
+    if (!mounted || _markingRead || widget.loadConversation != null ||
+        ModalRoute.of(context)?.isCurrent != true ||
+        WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed ||
+        !_scrollController.hasClients || _scrollController.position.extentAfter > 40) return;
+    final last = _messages.where((m) => m.senderKind == 'staff').lastOrNull;
+    if (last == null || (_lastMarkedRead != null && !last.createdAt.isAfter(_lastMarkedRead!))) return;
+    _markingRead = true;
+    try {
+      await SupportService.markRead(widget.thread.id, last.createdAt);
+      _lastMarkedRead = last.createdAt;
+    } catch (_) {
+      // Keep the unread indicator until acknowledgement succeeds.
+    } finally { _markingRead = false; }
   }
 
   Future<void> _loadAttachments(int request) async {

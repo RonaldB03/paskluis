@@ -312,7 +312,7 @@
     }
   },
   "myLoyaltyCard": "Mijn klantenkaart",
-  "enterBarcodeManually": "Handmatig barcode invoeren",
+  "enterBarcodeManually": "Barcode handmatig invoeren",
   "manual": "Handmatig",
   "codeDetectedChooseTheStoreBelow": "Code herkend. Kies hieronder de winkel.",
   "quickAdd": "Snel toevoegen",
@@ -401,7 +401,6 @@
   "actionImport": "Importeren",
   "useRearCamera": "Gebruik achtercamera",
   "switchCamera": "Camera wisselen",
-  "enterBarcodeManually": "Barcode handmatig invoeren",
   "enterTheNumberBelowTheBarcode": "Voer het nummer onder de barcode in.",
   "eG8712345678901": "Bijv. 8712345678901",
   "actionContinue": "Verder",
@@ -1027,5 +1026,18 @@
   "supportYou": "Jij",
   "supportMessagesLoadFailed": "Nieuwe berichten konden niet worden opgehaald. Probeer opnieuw.",
   "scannerCameraPermission": "Geef PasKluis toegang tot de camera via de instellingen van je iPhone of telefoon.",
-  "scannerCameraUnavailable": "De camera kon niet worden gestart. Probeer het opnieuw of importeer een foto."
+  "scannerCameraUnavailable": "De camera kon niet worden gestart. Probeer het opnieuw of importeer een foto.",
+  "supportHomeUnread": "Je hebt een nieuw antwoord",
+  "supportHomeOpen": "Je gesprek met de klantenservice",
+  "supportHomeWaiting": "Je vraag staat bij ons open",
+  "supportHomeView": "Bekijk je gesprek",
+  "supportHomeMultiple": "Bekijk je gesprekken",
+  "supportHide": "Verwijderen uit mijn overzicht",
+  "supportHideTitle": "Gesprek uit je overzicht verwijderen?",
+  "supportHideBody": "Dit verbergt het gesprek alleen voor jou. De klantenservice bewaart het tot 6 maanden na afsluiten; bijlagen tot 30 dagen. Komt er een nieuw antwoord, dan verschijnt het gesprek weer. Bij een noodzakelijke langere bewaartermijn gelden de uitzonderingen in ons privacybeleid.",
+  "supportCleanClosed": "Afgeronde gesprekken opruimen",
+  "supportCleanTitle": "Afgeronde gesprekken uit je overzicht verwijderen?",
+  "supportHideFailed": "Het opruimen is niet volledig gelukt. Probeer het opnieuw.",
+  "supportNewReply": "Nieuw antwoord",
+  "supportRetentionInfo": "We bewaren gesprekken tot 6 maanden na afsluiten en bijlagen tot 30 dagen. Zie ons privacybeleid voor uitzonderingen."
 }
