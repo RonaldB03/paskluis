@@ -30,7 +30,7 @@
 - Production function definitions match the tested definitions.
 - GitHub CI: Flutter analysis completed; all 79 Flutter tests pass. Existing
   unused-element warnings remain unrelated to these changes.
-- All 36 local Node tests pass, including six new admin MFA tests.
+- All 42 local Node tests pass, including six admin MFA UI tests and six Edge authorization tests.
 - Source commit for mobile release: 2b815890a54491a91e8682c7146b199bc596883f.
 - Admin MFA publication: fdb43ec087d1b54cfd2c91330e1c82d71a3aeb9f.
 
@@ -39,22 +39,38 @@
 Mobile release builds target TestFlight and the Google Play closed Alpha track.
 Starting a build is not proof that store processing/review has completed.
 
-**MFA is not yet enforced by the database or privileged Edge Functions.** Staff
-must first enroll authenticators using the new portal button. A frontend challenge
-alone is not sufficient authorization. Before enforcing AAL2:
+**MFA is now enforced by the database and privileged Edge Functions.**
+- Staff portal login requires enrollment or an existing-factor challenge before
+  loading management data. Staff without a factor must enroll on next login.
+- `is_admin` / `is_staff` require JWT AAL2, a live unexpired AAL2 Auth session and
+  its matching verified factor. Database policies, Storage logo writes and
+  privileged RPCs use these helpers; backup-admin access also checks `is_admin`.
+- `invite-staff`, legacy `clever-endpoint` and `support-attachments` use the caller
+  JWT through the same RPC checks, never a service-role authorization shortcut.
+- Isolated tests cover AAL1 denial, valid AAL2 admin/support access, role isolation,
+  expired/deleted/downgraded sessions, revoked factors, RPCs and Storage writes.
+- Production read-only checks confirm the enrolled owner session is allowed and
+  the equivalent password-only claims are denied. No real account was modified
+  or impersonated for a write test.
+- Live Edge source was read back and matches the tested implementation.
 
-1. Have the owner and other staff enroll and verify their authenticators.
-2. Verify a recovery route using an independently secured Supabase owner account.
-3. Implement/test AAL2 enforcement across database role checks, privileged RPCs,
-   Storage policies and all privileged Edge Function handlers.
-4. Confirm an AAL1 staff session is rejected server-side and AAL2 succeeds.
+Recovery must use an independently secured Supabase project-owner account and
+Supabase's administrative MFA-factor removal API after identity verification.
+Do not add an unauthenticated reset endpoint or temporarily disable MFA globally.
+A real lost-authenticator recovery drill is still pending; protect the owner
+account and retain an independent recovery method.
+
+Build rollout verified: Android version code 83 was uploaded to closed Alpha.
+iOS build processing completed, the build was added to Paskluis Testers and was
+submitted for beta review (WAITING_FOR_REVIEW at submission). Neither statement
+implies that a later store review has already finished.
 
 Enrollment may sign out other sessions of the same account. Never put TOTP
 secrets, recovery codes or production credentials in source, reports or logs.
 
 ## Remaining work / limits
 
-- MFA server enforcement and recovery drill as above.
+- Independent owner-account recovery setup and a controlled recovery drill.
 - Independent encrypted disaster backups plus a restore drill, separate from
   users' card backups. No VPS job has been configured by this change.
 - Managed local card images are not yet encrypted at application level. Existing

@@ -32,8 +32,8 @@ Deno.serve(async request=>{
   const auth=await caller.auth.getUser();const user=auth.data.user;
   const thread=(await admin.from('support_threads').select('id,user_id,guest_token_hash,status,locale').eq('id',id).maybeSingle()).data;
   if(!thread)throw new Error('ACCESS_DENIED');
-  const profile=user?(await admin.from('profiles').select('role').eq('id',user.id).maybeSingle()).data:null;
-  const staff=profile&&['support','admin'].includes(profile.role);
+  const staffAccess=user?await caller.rpc('is_staff'):null;
+  const staff=staffAccess?.error==null&&staffAccess?.data===true;
   let guest=false;
   if(!thread.user_id&&typeof body.guest_token==='string'&&body.guest_token.length>=32&&body.guest_token.length<=256){
    const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(body.guest_token));

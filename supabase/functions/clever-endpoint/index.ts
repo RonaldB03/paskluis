@@ -27,8 +27,7 @@ Deno.serve(async (request) => {
     const { data: { user }, error: userError } = await callerClient.auth.getUser();
     if (userError || !user) throw new Error('Sessie is verlopen.');
 
-    // Uses the caller JWT, never the service-role client: the database checks
-    // role, AAL2, live session and verified factor in one authorization decision.
+    // Staff access is verified with the caller JWT, including MFA and session validity.
     const permission = await callerClient.rpc('is_admin');
     if (permission.error || permission.data !== true) {
       return Response.json({error:'MFA_REQUIRED'}, {status:403,headers:corsHeaders});
@@ -72,10 +71,8 @@ Deno.serve(async (request) => {
 
     return Response.json({ invited: true, email, role }, { headers: corsHeaders });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error('[invite-staff]', { message, error });
     return Response.json(
-      { error: message || 'Uitnodigen is niet gelukt.' },
+      { error: error instanceof Error ? error.message : 'Uitnodigen is niet gelukt.' },
       { status: 400, headers: corsHeaders },
     );
   }
