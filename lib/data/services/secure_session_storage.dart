@@ -46,3 +46,45 @@ class SecureSessionStorage extends LocalStorage {
     await secure.delete(key: key);
   }
 }
+
+/// Keeps the short-lived login-link verifier in secure storage as well.
+/// Pending login links from an older app migrate on first read.
+class SecurePkceStorage extends GotrueAsyncStorage {
+  final FlutterSecureStorage secure;
+  final GotrueAsyncStorage legacy;
+
+  SecurePkceStorage({
+    this.secure = const FlutterSecureStorage(),
+    GotrueAsyncStorage? legacy,
+  }) : legacy = legacy ?? SharedPreferencesGotrueAsyncStorage();
+
+  String _secureKey(String key) => 'paskluis-pkce-$key';
+
+  @override
+  Future<String?> getItem({required String key}) async {
+    final current = await secure.read(key: _secureKey(key));
+    if (current != null) {
+      await legacy.removeItem(key: key);
+      return current;
+    }
+    final previous = await legacy.getItem(key: key);
+    if (previous != null) await setItem(key: key, value: previous);
+    return previous;
+  }
+
+  @override
+  Future<void> setItem({required String key, required String value}) async {
+    final storageKey = _secureKey(key);
+    await secure.write(key: storageKey, value: value);
+    if (await secure.read(key: storageKey) != value) {
+      throw StateError('Secure login verifier persistence failed');
+    }
+    await legacy.removeItem(key: key);
+  }
+
+  @override
+  Future<void> removeItem({required String key}) async {
+    await legacy.removeItem(key: key);
+    await secure.delete(key: _secureKey(key));
+  }
+}

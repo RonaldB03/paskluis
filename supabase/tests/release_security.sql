@@ -1,4 +1,4 @@
--- Run after migrations 020–026 in a test database. Everything rolls back.
+-- Run after all schema/security migrations in an isolated test database. Everything rolls back.
 begin;
 -- Temporary identities are rolled back; these tests send no email or push.
 insert into auth.users(id,email,raw_user_meta_data) values
@@ -58,14 +58,39 @@ do $$declare u uuid:='ee220000-0000-4000-8000-000000000002';begin
 end$$;
 select 'PASS: multi-store refund reconciliation and independent staff-granted access' as purchase_verification;
 
+-- Valid backup access works, but its service RPC stays inaccessible to clients.
+do $$declare b jsonb; begin
+ if has_function_privilege('authenticated','public.backup_service(uuid,uuid,text,jsonb)','execute') then raise exception 'BACKUP_SERVICE_EXPOSED'; end if;
+ b:=public.backup_service('ee220000-0000-4000-8000-000000000001','ee220000-0000-4000-8000-000000000012','lock');
+ if (b->>'available')::boolean is not true then raise exception 'VALID_BACKUP_ACCESS_FAILED'; end if;
+ perform public.backup_service('ee220000-0000-4000-8000-000000000001','ee220000-0000-4000-8000-000000000012','finish',jsonb_build_object('lease',b->>'lease'));
+end$$;
 select set_config('request.jwt.claims','{"sub":"ee220000-0000-4000-8000-000000000001","role":"authenticated","session_id":"ee220000-0000-4000-8000-000000000012"}',true);
 update auth.sessions set not_after=now()-interval '1 minute' where id='ee220000-0000-4000-8000-000000000012';
 do $$begin
  if public.has_active_device_session() then raise exception 'EXPIRED_SESSION_HAS_ACCESS'; end if;
+ if public.validate_device_session('release-device-b') then raise exception 'EXPIRED_SESSION_VALIDATES'; end if;
+ begin
+  perform public.claim_device_session('release-device-b','Expired device',true);
+  raise exception 'EXPIRED_SESSION_CAN_CLAIM';
+ exception when insufficient_privilege then null; end;
+ begin
+  perform public.backup_service('ee220000-0000-4000-8000-000000000001','ee220000-0000-4000-8000-000000000012','lock');
+  raise exception 'EXPIRED_SESSION_CAN_BACKUP';
+ exception when raise_exception then if SQLERRM<>'SESSION_REPLACED' then raise; end if; end;
 end$$;
 delete from auth.sessions where id='ee220000-0000-4000-8000-000000000012';
 do $$begin
  if public.has_active_device_session() then raise exception 'DELETED_SESSION_HAS_ACCESS'; end if;
+ if public.validate_device_session('release-device-b') then raise exception 'DELETED_SESSION_VALIDATES'; end if;
+ begin
+  perform public.claim_device_session('release-device-b','Deleted device',true);
+  raise exception 'DELETED_SESSION_CAN_CLAIM';
+ exception when insufficient_privilege then null; end;
+ begin
+  perform public.backup_service('ee220000-0000-4000-8000-000000000001','ee220000-0000-4000-8000-000000000012','lock');
+  raise exception 'DELETED_SESSION_CAN_BACKUP';
+ exception when raise_exception then if SQLERRM<>'SESSION_REPLACED' then raise; end if; end;
  if has_function_privilege('anon','public.set_staff_role_by_email(text,public.paskluis_role)','execute') then raise exception 'ANON_STAFF_RPC'; end if;
  if not has_function_privilege('authenticated','public.share_gift_card_by_email(text,text,jsonb)','execute') then raise exception 'SHARING_GRANT_LOST'; end if;
 end$$;

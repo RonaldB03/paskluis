@@ -18,6 +18,18 @@ class MemoryLegacy extends LocalStorage {
   Future<void> removePersistedSession() async { value = null; }
 }
 
+class MemoryPkce extends GotrueAsyncStorage {
+  final values = <String, String>{};
+  @override
+  Future<String?> getItem({required String key}) async => values[key];
+  @override
+  Future<void> setItem({required String key, required String value}) async {
+    values[key] = value;
+  }
+  @override
+  Future<void> removeItem({required String key}) async { values.remove(key); }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const key = 'test-session';
@@ -48,5 +60,22 @@ void main() {
     await storage.removePersistedSession();
     await SecureSessionStorage(key: key, legacy: legacy).initialize();
     expect(await storage.hasAccessToken(), isFalse);
+  });
+  test('pending login verifier migrates and is removed after use', () async {
+    final legacy = MemoryPkce();
+    await legacy.setItem(key: 'verifier', value: 'pending-link');
+    final storage = SecurePkceStorage(legacy: legacy);
+    expect(await storage.getItem(key: 'verifier'), 'pending-link');
+    expect(legacy.values, isEmpty);
+    await storage.removeItem(key: 'verifier');
+    expect(await storage.getItem(key: 'verifier'), isNull);
+  });
+  test('new verifier stays secure and takes precedence over old values', () async {
+    final legacy = MemoryPkce();
+    final storage = SecurePkceStorage(legacy: legacy);
+    await storage.setItem(key: 'verifier', value: 'new-link');
+    await legacy.setItem(key: 'verifier', value: 'stale-link');
+    expect(await storage.getItem(key: 'verifier'), 'new-link');
+    expect(legacy.values, isEmpty);
   });
 }

@@ -22,6 +22,7 @@ abstract final class SupabaseService {
         url: SupabaseConfig.url,
         publishableKey: SupabaseConfig.publishableKey,
         authOptions: FlutterAuthClientOptions(
+          pkceAsyncStorage: SecurePkceStorage(),
           localStorage: SecureSessionStorage(
             key: 'sb-${Uri.parse(SupabaseConfig.url).host.split('.').first}-auth-token',
           ),
