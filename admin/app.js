@@ -1,3 +1,4 @@
+import {createAdminMfa} from './admin-mfa.js?v=security-1';
 import {createMenuEditor} from './app-menu.js?v=menu-1';
 import {orderedSupportMessages, supportMessageMarkup} from './support-conversation.js?v=chat-1';
 let supportRequest = 0;
@@ -6,6 +7,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL='https://ajldblvvlbvmgejrmhyj.supabase.co';
 const SUPABASE_KEY='sb_publishable_D22GtKy7nDvnLv7LeBL1SA_1_ZGbN7d';
 const supabase=createClient(SUPABASE_URL,SUPABASE_KEY);
+const adminMfa=createAdminMfa({client:supabase});
 const state={user:null,profile:null,profiles:[],entitlements:[],threads:[],messages:[],brands:[],settings:[],faqs:[],audit:[],selectedThread:null,loadErrors:[],canned:[],incidents:[],deliveries:[]};
 const $=(s)=>document.querySelector(s);const $$=(s)=>[...document.querySelectorAll(s)];
 
@@ -21,7 +23,7 @@ function splitValues(value){return value.split(/[\n,]/).map((v)=>v.trim()).filte
 const menuEditor=createMenuEditor({client:supabase,root:$('#page-appmenu'),toast,confirmAction});
 
 async function boot(){const{data:{session}}=await supabase.auth.getSession();if(!session)return showLogin();await authorize(session.user)}
-async function authorize(user){state.user=user;const{data:profile,error}=await supabase.from('profiles').select('id,display_name,email,role').eq('id',user.id).single();if(error||!['admin','support'].includes(profile?.role)){await supabase.auth.signOut();return showDenied()}state.profile=profile;$('#admin-name').textContent=profile.display_name||roleLabel(profile.role);$('#admin-email').textContent=profile.email||user.email;$('#admin-role').textContent=roleLabel(profile.role);$('#login-view').classList.add('hidden');$('#denied-view').classList.add('hidden');$('#app-view').classList.remove('hidden');applyPermissions();try{await supabase.rpc('touch_last_seen')}catch(error){console.warn('[PasKluis Beheer] Laatste activiteit kon niet worden bijgewerkt.',error)}await refreshAll()}
+async function authorize(user){state.user=user;const{data:profile,error}=await supabase.from('profiles').select('id,display_name,email,role').eq('id',user.id).single();if(error||!['admin','support'].includes(profile?.role)){await supabase.auth.signOut();return showDenied()}try{await adminMfa.requireExistingFactor()}catch(error){await supabase.auth.signOut();showLogin();$('#login-error').textContent=error.message;return}state.profile=profile;$('#admin-name').textContent=profile.display_name||roleLabel(profile.role);$('#admin-email').textContent=profile.email||user.email;$('#admin-role').textContent=roleLabel(profile.role);$('#login-view').classList.add('hidden');$('#denied-view').classList.add('hidden');$('#app-view').classList.remove('hidden');applyPermissions();try{await supabase.rpc('touch_last_seen')}catch(error){console.warn('[PasKluis Beheer] Laatste activiteit kon niet worden bijgewerkt.',error)}await refreshAll()}
 function showLogin(){$('#login-view').classList.remove('hidden');$('#app-view').classList.add('hidden');$('#denied-view').classList.add('hidden')}
 function showDenied(){$('#denied-view').classList.remove('hidden');$('#login-view').classList.add('hidden');$('#app-view').classList.add('hidden')}
 function applyPermissions(){const admin=state.profile.role==='admin';$$('.admin-nav,.admin-only').forEach((n)=>n.classList.toggle('hidden',!admin));const pages=admin?[['dashboard','Overzicht'],['users','Gebruikers & Plus'],['team','Medewerkers'],['support','Klantenservice'],['brands','Winkels & herkenning'],['faqs','Hulp & FAQ'],['appmenu','Appmenu'],['settings','App-instellingen'],['activity','Activiteitenlog']]:[['dashboard','Overzicht'],['support','Klantenservice']];$('#mobile-nav').innerHTML=pages.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
@@ -122,3 +124,5 @@ async function loadSupportAttachments(threadId,request=supportRequest){
 }
 
 $('#retry-notifications').addEventListener('click',async e=>{const button=e.currentTarget;button.disabled=true;try{const {data,error}=await supabase.rpc('retry_failed_notifications');if(error){toast('Opnieuw proberen is niet gelukt.');return;}toast(`${data||0} meldingen opnieuw klaargezet.`);await loadSupportExtras();}finally{button.disabled=false;}});
+
+$('#mfa-button').addEventListener('click',async()=>{try{await adminMfa.enroll();toast('Tweestapsverificatie is actief voor dit account.')}catch(error){toast(error.message)}});
