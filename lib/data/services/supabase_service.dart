@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/supabase_config.dart';
+import 'secure_session_storage.dart';
 
 /// Initializes the optional online PasKluis services.
 ///
@@ -20,6 +21,11 @@ abstract final class SupabaseService {
       await Supabase.initialize(
         url: SupabaseConfig.url,
         publishableKey: SupabaseConfig.publishableKey,
+        authOptions: FlutterAuthClientOptions(
+          localStorage: SecureSessionStorage(
+            key: 'sb-${Uri.parse(SupabaseConfig.url).host.split('.').first}-auth-token',
+          ),
+        ),
       );
       _isAvailable = true;
     } catch (_) {

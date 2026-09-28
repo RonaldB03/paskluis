@@ -6,6 +6,9 @@ insert into auth.users(id,email,raw_user_meta_data) values
 ('ee220000-0000-4000-8000-000000000002','release-recipient@example.invalid','{}'),
 ('ee220000-0000-4000-8000-000000000003','release-staff@example.invalid','{}');
 update public.profiles set role='support' where id='ee220000-0000-4000-8000-000000000003';
+insert into auth.sessions(id,user_id,created_at,updated_at,aal) values
+('ee220000-0000-4000-8000-000000000011','ee220000-0000-4000-8000-000000000001',now(),now(),'aal1'),
+('ee220000-0000-4000-8000-000000000012','ee220000-0000-4000-8000-000000000001',now(),now(),'aal1');
 select set_config('request.jwt.claims','{"sub":"ee220000-0000-4000-8000-000000000001","role":"authenticated","session_id":"ee220000-0000-4000-8000-000000000011"}',true);
 set local role authenticated;
 do $$begin
@@ -55,4 +58,16 @@ do $$declare u uuid:='ee220000-0000-4000-8000-000000000002';begin
 end$$;
 select 'PASS: multi-store refund reconciliation and independent staff-granted access' as purchase_verification;
 
+select set_config('request.jwt.claims','{"sub":"ee220000-0000-4000-8000-000000000001","role":"authenticated","session_id":"ee220000-0000-4000-8000-000000000012"}',true);
+update auth.sessions set not_after=now()-interval '1 minute' where id='ee220000-0000-4000-8000-000000000012';
+do $$begin
+ if public.has_active_device_session() then raise exception 'EXPIRED_SESSION_HAS_ACCESS'; end if;
+end$$;
+delete from auth.sessions where id='ee220000-0000-4000-8000-000000000012';
+do $$begin
+ if public.has_active_device_session() then raise exception 'DELETED_SESSION_HAS_ACCESS'; end if;
+ if has_function_privilege('anon','public.set_staff_role_by_email(text,public.paskluis_role)','execute') then raise exception 'ANON_STAFF_RPC'; end if;
+ if not has_function_privilege('authenticated','public.share_gift_card_by_email(text,text,jsonb)','execute') then raise exception 'SHARING_GRANT_LOST'; end if;
+end$$;
+select 'PASS: expired/deleted sessions denied; anonymous admin RPC denied; sharing retained' as hardening_verification;
 rollback;

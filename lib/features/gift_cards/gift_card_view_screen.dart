@@ -94,6 +94,13 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     });
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed && mounted && showPin) {
+      setState(() => showPin = false);
+    }
+  }
+
   dynamic _findKeyById(String id) {
     for (final key in StorageService.cardsBox.keys) {
       final item = StorageService.cardsBox.get(key);

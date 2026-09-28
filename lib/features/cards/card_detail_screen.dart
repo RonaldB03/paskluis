@@ -16,13 +16,14 @@ class CardDetailScreen extends StatefulWidget {
   State<CardDetailScreen> createState() => _CardDetailScreenState();
 }
 
-class _CardDetailScreenState extends State<CardDetailScreen> {
+class _CardDetailScreenState extends State<CardDetailScreen> with WidgetsBindingObserver {
   late bool showPin;
   late final CardScreenSession _screenSession;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     showPin = !SettingsService.hideSensitiveCodes;
     _prepareScreen();
   }
@@ -36,9 +37,17 @@ class _CardDetailScreenState extends State<CardDetailScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _screenSession.close();
 
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed && mounted && showPin) {
+      setState(() => showPin = false);
+    }
   }
 
   Future<void> revealPin() async {
