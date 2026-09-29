@@ -1,3 +1,5 @@
+import '../../data/services/settings_service.dart';
+import '../../data/services/card_screen_session.dart';
 import '../folders/folders_screen.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
@@ -478,11 +480,13 @@ class QrCodesScreen extends StatelessWidget {
 class QrCodeViewScreen extends StatefulWidget {
   final List<Map<String, dynamic>> items;
   final int initialIndex;
+  final CardScreenController? screenController;
 
   const QrCodeViewScreen({
     super.key,
     required this.items,
     required this.initialIndex,
+    this.screenController,
   });
 
   @override
@@ -492,6 +496,24 @@ class QrCodeViewScreen extends StatefulWidget {
 class _QrCodeViewScreenState extends State<QrCodeViewScreen>
     with WidgetsBindingObserver {
   late final PageController pageController;
+  CardScreenSession? _screenSession;
+
+  void _startScreenSession() {
+    _screenSession ??= (widget.screenController ?? CardScreenSession.controller).open(
+      brighten: SettingsService.autoBrightnessEnabled,
+      keepAwake: SettingsService.keepScreenAwakeEnabled,
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _startScreenSession();
+    } else {
+      _screenSession?.close();
+      _screenSession = null;
+    }
+  }
   late int currentIndex;
   late int ticketIndex;
 
@@ -532,6 +554,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _startScreenSession();
     currentIndex = widget.initialIndex;
     ticketIndex = 0;
     pageController = PageController(initialPage: widget.initialIndex);
@@ -541,6 +564,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _screenSession?.close();
     pageController.dispose();
     super.dispose();
   }

@@ -1,3 +1,5 @@
+import 'data/services/terms_service.dart';
+import 'features/legal/terms_gate.dart';
 import 'data/services/app_menu_service.dart';
 import 'features/support/support_thread_screen.dart';
 import 'data/services/support_service.dart';
@@ -166,6 +168,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     await AppMenuService.init();
     await NotificationService.init();
     await SupabaseService.init();
+    await TermsService.init();
     await StorageService.reconcileAccount(AccountService.currentUser?.id);
     PurchaseService.init();
     await BackupService.init();
@@ -185,6 +188,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
       final changed = previousId != null && previousId != accountId;
       await StorageService.reconcileAccount(accountId);
       BackupService.accountChanged();
+      TermsService.accountChanged();
       if (changed && mounted) {
         _navigatorKey.currentState?.popUntil((route) => route.isFirst);
       }
@@ -210,6 +214,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     unawaited(AppMenuService.refresh());
     try {
       await _checkDeviceSession();
+      await TermsService.sync();
       await SettingsService.refreshRemoteConfig();
       await _registerPushToken();
       await _syncLanguage();
@@ -279,7 +284,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
           Widget protectedChild = FutureBuilder<void>(
             future: _initialization,
             builder: (context, snapshot) => snapshot.connectionState == ConnectionState.done && !snapshot.hasError
-                ? AppLockGate(child: child ?? const SizedBox())
+                ? AppLockGate(child: TermsGate(child: child ?? const SizedBox()))
                 : child ?? const SizedBox(),
           );
           if (!extraClear || child == null) return protectedChild;

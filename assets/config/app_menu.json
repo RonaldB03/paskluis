@@ -149,6 +149,22 @@
           "audience": "all",
           "hidden": false,
           "url": ""
+        },
+        {
+          "id": "terms",
+          "action": "external",
+          "title": {
+            "nl": "Gebruiksvoorwaarden",
+            "en": "Terms of use"
+          },
+          "description": {
+            "nl": "Afspraken over kaarten, codes en gebruik",
+            "en": "Agreements about cards, codes and use"
+          },
+          "icon": "link",
+          "audience": "all",
+          "hidden": false,
+          "url": "https://ronaldb03.github.io/paskluis/terms.html"
         }
       ]
     },
