@@ -36,6 +36,13 @@ abstract final class TermsService {
     if (!saved) throw StateError('Receipt could not be saved');
     revision.value++;
   }
+  static Future<void> forgetAccount(String accountId) async {
+    if (accountId == 'guest') return;
+    for (final key in _prefs!.getKeys().where((key) =>
+        key.startsWith('terms_receipt_') && key.endsWith('_$accountId')).toList()) {
+      await _prefs!.remove(key);
+    }
+  }
   static Future<void> sync() async {
     if (_syncing) return;
     final client = SupabaseService.client;
@@ -51,7 +58,9 @@ abstract final class TermsService {
         'accepted_at': receipt['accepted_at'], 'language': receipt['language'],
       }, onConflict: 'user_id,version', ignoreDuplicates: true)
           .timeout(const Duration(seconds: 8));
-      await _prefs!.setString(keyFor(id), jsonEncode({...receipt, 'synced': true}));
+      if (receiptFor(id) != null) {
+        await _prefs!.setString(keyFor(id), jsonEncode({...receipt, 'synced': true}));
+      }
     } catch (_) {
       // Local acceptance remains valid; retry only for this account.
     } finally { _syncing = false; }

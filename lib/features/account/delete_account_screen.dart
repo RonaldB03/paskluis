@@ -1,3 +1,4 @@
+import '../../data/services/terms_service.dart';
 import 'package:flutter/material.dart';
 import '../../l10n/l10n.dart';
 import '../../data/services/account_service.dart';
@@ -17,8 +18,10 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   if(!_confirmed||_password.text.isEmpty||_busy)return;
   setState((){_busy=true;_error=null;});
   try {
+   final accountId=SupabaseService.client!.auth.currentUser!.id;
    final response=await SupabaseService.client!.functions.invoke('delete-account',body:{'password':_password.text,'confirm':'DELETE_MY_ACCOUNT'});
    if(response.data is! Map||response.data['deleted']!=true)throw StateError('Deletion failed');
+   await TermsService.forgetAccount(accountId);
    if(_eraseLocal){for(final key in StorageService.cardsBox.keys.toList()){await StorageService.deleteCard(key);}}
    await AccountService.signOut(releaseDevice:false);
    if(mounted){Navigator.of(context).popUntil((route)=>route.isFirst);ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(L10n.current.accountDeleted)));}
