@@ -28,13 +28,17 @@ void main() {
     await expectLater(TermsService.accept('another-user', 'nl'), throwsStateError);
   });
   testWidgets('explicit checkbox is required, then navigation is available', (tester) async {
-    // Asset I/O runs outside Flutter's fake clock before exercising the UI.
-    await tester.runAsync(() => rootBundle.loadString('assets/config/terms.json'));
     // Same builder position as the real app: outside the root Navigator.
-    await tester.pumpWidget(MaterialApp(
-      builder: (context, child) => TermsGate(child: child!),
-      home: const Scaffold(body: Text('Vault')),
-    ));
+    await tester.runAsync(() async {
+      await tester.pumpWidget(MaterialApp(
+        builder: (context, child) => TermsGate(child: child!),
+        home: const Scaffold(body: Text('Vault')),
+      ));
+      // Let the actual asset channel finish before advancing the fake clock.
+      await rootBundle.loadString('assets/config/terms.json');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await tester.pump();
+    });
     await tester.pumpAndSettle();
     expect(find.text('Vault'), findsNothing);
     await tester.scrollUntilVisible(find.byType(CheckboxListTile), 600,
