@@ -1,5 +1,4 @@
 import 'data/services/terms_service.dart';
-import 'features/legal/terms_gate.dart';
 import 'data/services/app_menu_service.dart';
 import 'features/support/support_thread_screen.dart';
 import 'data/services/support_service.dart';
@@ -284,7 +283,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
           Widget protectedChild = FutureBuilder<void>(
             future: _initialization,
             builder: (context, snapshot) => snapshot.connectionState == ConnectionState.done && !snapshot.hasError
-                ? AppLockGate(child: TermsGate(child: child ?? const SizedBox()))
+                ? AppLockGate(child: child ?? const SizedBox())
                 : child ?? const SizedBox(),
           );
           if (!extraClear || child == null) return protectedChild;
