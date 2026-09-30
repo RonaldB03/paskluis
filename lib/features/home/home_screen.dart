@@ -1,3 +1,4 @@
+import '../../shared/widgets/premium_app_title.dart';
 import '../support/support_home_card.dart';
 import '../../shared/widgets/home_section_prompt.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
@@ -953,32 +954,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: _showAddHelp,
                   icon: const Icon(Icons.info_outline_rounded),
                 ),
-                IconButton(
-                  tooltip: L10n.current.add,
-                  onPressed: showAddChoices,
-                  icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
-                ),
+                const LanguageButton(),
               ],
             ),
-            flexibleSpace: const SafeArea(
-              child: IgnorePointer(
-                child: Center(
-                  child: Text(
-                    'PasKluis',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 20,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            centerTitle: true,
+            titleSpacing: 0,
+            title: const PremiumAppTitle('PasKluis'),
             backgroundColor: Colors.white,
             elevation: 0,
             foregroundColor: const Color(0xFF333333),
             actions: [
-              const LanguageButton(),
               IconButton(
                 tooltip: L10n.current.settings,
                 onPressed: () async {
@@ -988,6 +973,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   await _loadNearbyLocation();
                 },
                 icon: const Icon(Icons.settings_outlined),
+              ),
+              IconButton(
+                tooltip: L10n.current.add,
+                onPressed: showAddChoices,
+                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
               ),
             ],
           ),

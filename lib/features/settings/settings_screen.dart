@@ -5,7 +5,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../data/services/app_menu_service.dart';
 import '../../data/services/backup_service.dart';
 import 'backup_actions.dart';
-import '../folders/folders_screen.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import '../../shared/widgets/language_picker.dart';
 import '../../data/services/locale_service.dart';
@@ -545,7 +544,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: L10n.current.dataOnThisDevice,
                 subtitle: L10n.current.cardsStoredLocally((StorageService.cardsBox.length).toString()),
               );
-      case 'folders': return _plain(item, t('Mijn mappen', 'My folders'), Icons.folder_outlined, () => _open(const FoldersScreen()), subtitle: t('Optioneel: orden je kaarten op jouw manier', 'Optional: organize your cards your way'));
       case 'language': return _plain(item, L10n.current.language, Icons.language, () => showLanguagePicker(context), subtitle: LocaleService.preference.value == 'system' ? L10n.current.followPhoneLanguage : LocaleService.languageCode == 'nl' ? 'Nederlands' : 'English');
       case 'share': return Builder(builder: (anchor) => _plain(item, t('Deel PasKluis', 'Share PasKluis'), Icons.share_outlined, () => _share(anchor), subtitle: t('Stuur de app door naar vrienden of familie', 'Share the app with friends or family')));
       case 'external': return _plain(item, AppMenu.text(item['title'], LocaleService.languageCode), Icons.open_in_new, () => _external(item['url']));

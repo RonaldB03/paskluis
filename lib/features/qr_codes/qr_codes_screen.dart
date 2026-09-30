@@ -1,6 +1,5 @@
 import '../../data/services/settings_service.dart';
 import '../../data/services/card_screen_session.dart';
-import '../folders/folders_screen.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 
@@ -434,7 +433,6 @@ class QrCodesScreen extends StatelessWidget {
             foregroundColor: const Color(0xFF333333),
             elevation: 0,
             actions: [
-              const FoldersButton(),
               IconButton(
                 icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
                 onPressed: () => openAddQrCode(context),

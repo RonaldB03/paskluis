@@ -1,4 +1,3 @@
-import '../folders/folders_screen.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
@@ -457,7 +456,6 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
             centerTitle: true,
             title:  PremiumAppTitle(L10n.current.loyaltyCards),
             actions: [
-              const FoldersButton(),
               IconButton(
                 icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
                 onPressed: () => openAddCard(context),

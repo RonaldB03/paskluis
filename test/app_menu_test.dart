@@ -30,6 +30,11 @@ void main() {
     expect(AppMenu.parse(duplicate), isNull);
     expect(AppMenu.parse({'schemaVersion':1,'sections':'bad'}), isNull);
   });
+  test('legacy remote folders entry stays hidden for free and Plus users', () {
+    for (final plus in [false, true]) {
+      expect(AppMenu.visible({'action': 'folders', 'hidden': false, 'audience': 'all'}, plus), isFalse);
+    }
+  });
   test('unsafe links are rejected', () {
     for (final url in ['javascript:alert(1)', 'http://paskluis.com', 'https://user:secret@paskluis.com', 'https://paskluis.com/ unsafe']) {
       expect(AppMenu.safeUrl(url), isFalse);

@@ -1,4 +1,3 @@
-import '../folders/folders_screen.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
@@ -520,7 +519,6 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
             foregroundColor: const Color(0xFF333333),
             elevation: 0,
             actions: [
-              const FoldersButton(),
               IconButton(
                 constraints: const BoxConstraints.tightFor(
                   width: 44,

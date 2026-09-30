@@ -64,7 +64,8 @@ class AppMenu {
     final s = value[language];
     return s is String && s.trim().isNotEmpty ? s : fallback;
   }
-  static bool visible(Map item, bool plus) => item['hidden'] != true &&
+  // Accept legacy menu payloads, but never expose the retired folders action.
+  static bool visible(Map item, bool plus) => item['action'] != 'folders' && item['hidden'] != true &&
       (item['audience'] != 'plus' || plus) && (item['audience'] != 'free' || !plus);
   List<Map<String, dynamic>> get sections => (json['sections'] as List).map((s) => Map<String, dynamic>.from(s)).toList();
   String shareText(String language) => '${text(json['share']['text'], language)}\n${json['share']['url']}';

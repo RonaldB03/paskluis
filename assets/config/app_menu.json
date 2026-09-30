@@ -247,22 +247,6 @@
       "hidden": false,
       "items": [
         {
-          "id": "folders",
-          "action": "folders",
-          "title": {
-            "nl": "",
-            "en": ""
-          },
-          "description": {
-            "nl": "",
-            "en": ""
-          },
-          "icon": "",
-          "audience": "all",
-          "hidden": false,
-          "url": ""
-        },
-        {
           "id": "favoritesFirst",
           "action": "favoritesFirst",
           "title": {
