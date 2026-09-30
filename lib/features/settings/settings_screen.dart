@@ -17,6 +17,7 @@ import '../../data/services/settings_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/account_service.dart';
 import '../account/account_screen.dart';
+import '../premium/plus_information_screen.dart';
 import '../admin/admin_tools_screen.dart';
 import '../support/support_screen.dart';
 import 'help_center_screen.dart';
@@ -605,6 +606,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
           subtitle: Text(user == null ? t('Log in of maak een account voor back-up', 'Sign in or create an account for backup') : '${user.email ?? ''}\n${_plus ? 'PasKluis Plus' : t('Gratis', 'Free')}\n$_backupSummary'),
           trailing: const Icon(Icons.chevron_right), onTap: () => _open(const AccountScreen()),
         )),
+        if (_plus) Card(
+          color: const Color(0xFFFFF1C8), elevation: 0,
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16),
+            leading: const Icon(Icons.verified_rounded, color: Color(0xFF785500)),
+            title: Text(t('PasKluis Plus · Actief', 'PasKluis Plus · Active'),
+                style: const TextStyle(color: Color(0xFF513900), fontWeight: FontWeight.w800)),
+            subtitle: Text(t('Je hebt onbeperkt toegang tot alle Plus-functies.',
+                'You have unlimited access to all Plus features.')),
+            trailing: const Icon(Icons.chevron_right, color: Color(0xFF785500)),
+            onTap: () => _open(const PlusInformationScreen(isActive: true)),
+          ),
+        ),
         if (BackupService.error != null && user != null) Card(color: Theme.of(context).colorScheme.errorContainer, child: ListTile(
           leading: const Icon(Icons.cloud_off_outlined), title: Text(t('Je back-up heeft aandacht nodig', 'Your backup needs attention')),
           subtitle: Text(t('Tik om de status te controleren en opnieuw te proberen', 'Tap to check the status and retry')),

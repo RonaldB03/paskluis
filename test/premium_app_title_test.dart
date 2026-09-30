@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:paskluis_v1/shared/widgets/premium_app_title.dart';
+import 'package:paskluis_v1/features/premium/plus_information_screen.dart';
 
 void main() {
   testWidgets('Plus status fits narrow headers with enlarged text', (tester) async {
@@ -25,10 +26,24 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('PLUS'), plus ? findsOneWidget : findsNothing);
         expect(tester.takeException(), isNull);
+        if (plus) {
+          expect(tester.getSize(find.text('PLUS')).height, greaterThanOrEqualTo(13));
+        }
         final titleRect = tester.getRect(find.text(title));
         final settingsRect = tester.getRect(find.byIcon(Icons.settings));
         expect(titleRect.right, lessThan(settingsRect.left));
       }
     }
+  });
+  testWidgets('Plus badge opens active benefits without purchase offer', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: Scaffold(
+      appBar: AppBar(title: const AppTitleWithPlus(title: 'PasKluis', plus: true)),
+    )));
+    await tester.tap(find.text('PLUS'));
+    await tester.pumpAndSettle();
+    expect(find.byType(PlusInformationScreen), findsOneWidget);
+    expect(tester.widget<PlusInformationScreen>(find.byType(PlusInformationScreen)).isActive, isTrue);
+    expect(find.textContaining('€'), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 }

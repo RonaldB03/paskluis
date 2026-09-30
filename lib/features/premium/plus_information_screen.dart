@@ -2,11 +2,13 @@ import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
 import '../account/account_screen.dart';
+import '../../data/services/locale_service.dart';
 
 class PlusInformationScreen extends StatelessWidget {
   final bool showAccountButton;
+  final bool isActive;
 
-  const PlusInformationScreen({super.key, this.showAccountButton = true});
+  const PlusInformationScreen({super.key, this.showAccountButton = true, this.isActive = false});
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +50,7 @@ class PlusInformationScreen extends StatelessWidget {
                     color: Color(0xFFFFF2BE), size: 42),
                 SizedBox(height: 14),
                 Text(
-                  L10n.current.moreFreedomForever,
+                  isActive ? 'PasKluis Plus · ${LocaleService.languageCode == 'nl' ? 'Actief' : 'Active'}' : L10n.current.moreFreedomForever,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 28,
@@ -58,7 +60,11 @@ class PlusInformationScreen extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 Text(
-                  L10n.current.unlockAllGiftCardAndSharingFeatures,
+                  isActive
+                      ? (LocaleService.languageCode == 'nl'
+                          ? 'Je hebt onbeperkt toegang tot alle Plus-functies.'
+                          : 'You have unlimited access to all Plus features.')
+                      : L10n.current.unlockAllGiftCardAndSharingFeatures,
                   style: TextStyle(
                     color: Color(0xFFFFF8DE),
                     fontSize: 16,
@@ -66,7 +72,7 @@ class PlusInformationScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 18),
-                _PricePill(),
+                if (!isActive) _PricePill(),
               ],
             ),
           ),
@@ -97,7 +103,7 @@ class PlusInformationScreen extends StatelessWidget {
             subtitle: L10n.current.seeWhoYouShareCardsWithAnd,
           ),
           const SizedBox(height: 10),
-          Container(
+          if (!isActive) Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: const Color(0xFFFFF7D9),
