@@ -959,7 +959,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             centerTitle: true,
             titleSpacing: 0,
-            title: const PremiumAppTitle('PasKluis'),
+            title: PremiumAppTitle('PasKluis'),
             backgroundColor: Colors.white,
             elevation: 0,
             foregroundColor: const Color(0xFF333333),
