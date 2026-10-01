@@ -132,7 +132,7 @@ abstract final class SupportModeService {
     'privacy' => L10n.current.seeWhatPaskluisDoesAndDoesNot,
     'support' => L10n.current.askAQuestionOrViewPreviousConversations,
     'help' => L10n.current.guidanceAndFrequentlyAskedQuestions,
-    'device' => L10n.current.cardsStoredLocally,
+    'device' => '',
     _ => '',
   };
 
