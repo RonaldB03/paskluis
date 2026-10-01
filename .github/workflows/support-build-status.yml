@@ -1,0 +1,23 @@
+name: Current live-support build status
+on:
+  push:
+    branches: [codex/managed-content-support-mode]
+    paths: [.github/workflows/support-build-status.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Read original iOS and Android status
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          for build_id in 6abe6b77eb7066dd56390b11 6abe6b79c6faa033af52c8e7; do
+            response=$(curl --fail --silent --show-error --max-time 30 -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" "https://codemagic.io/api/v3/builds/${build_id}")
+            jq -c '.data | {id: .id, status: .status, workflowId: .workflowId, startedAt: .startedAt, finishedAt: .finishedAt}' <<< "$response"
+            echo "Build ${build_id}: $(jq -er '.data.status' <<< "$response")"
+          done
