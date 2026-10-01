@@ -13,12 +13,13 @@ on:
       - codex/plus-header-no-folders
       - codex/managed-content-support-mode
     paths-ignore:
-      - .github/workflows/trigger-codemagic.yml
+      - .github/workflows/**
       - .github/workflows/admin-pages.yml
       - .github/workflows/release-validation.yml
       - admin/**
       - supabase/**
       - docs/**
+      - deploy/**
 
 permissions:
   contents: read

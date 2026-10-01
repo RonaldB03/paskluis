@@ -1,0 +1,49 @@
+name: Verify live-support builds
+on:
+  push:
+    branches: [codex/managed-content-support-mode]
+    paths: [.github/workflows/support-build-verification.yml]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Stop duplicate publication-only builds
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          for build_id in 6abe6d174974a416fc9817a6 6abe6d18ea2403087579be72; do
+            http_status=$(curl --silent --show-error --output /tmp/cancel-response --write-out '%{http_code}' --request POST -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" "https://api.codemagic.io/builds/${build_id}/cancel")
+            case "$http_status" in
+              2??) echo "Duplicate ${build_id}: cancellation HTTP ${http_status}" ;;
+              *) echo "Cancellation failed: HTTP ${http_status}"; exit 1 ;;
+            esac
+          done
+      - name: Verify original app builds
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            completed=0
+            for build_id in 6abe6b77eb7066dd56390b11 6abe6b79c6faa033af52c8e7; do
+              response=$(curl --fail --silent --show-error -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" "https://codemagic.io/api/v3/builds/${build_id}")
+              status=$(jq -er '.data.status' <<< "$response")
+              echo "Build ${build_id}: ${status}"
+              case "$status" in
+                finished) completed=$((completed + 1)) ;;
+                failed|canceled|timeout|skipped) echo "Build did not complete successfully"; exit 1 ;;
+                initializing|queued|preparing|fetching|testing|building|publishing|finishing) ;;
+                *) echo "Unknown build state"; exit 1 ;;
+              esac
+            done
+            if [ "$completed" -eq 2 ]; then
+              echo "Both original live-support builds finished successfully."
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "Build verification timed out"; exit 1
