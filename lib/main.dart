@@ -1,5 +1,6 @@
 import 'data/services/terms_service.dart';
 import 'data/services/app_menu_service.dart';
+import 'data/services/managed_content_service.dart';
 import 'features/support/support_thread_screen.dart';
 import 'data/services/support_service.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
@@ -165,6 +166,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     await LocaleService.init(hasSavedCards: StorageService.cardsBox.isNotEmpty);
     await SettingsService.init();
     await AppMenuService.init();
+    await ManagedContentService.init();
     await NotificationService.init();
     await SupabaseService.init();
     await TermsService.init();
@@ -211,6 +213,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     if (_refreshingOnline) return;
     _refreshingOnline = true;
     unawaited(AppMenuService.refresh());
+    unawaited(ManagedContentService.refresh());
     try {
       await _checkDeviceSession();
       await TermsService.sync();

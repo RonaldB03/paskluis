@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - codex/admin-control-center
+      - codex/plus-header-no-folders
+      - codex/managed-content-support-mode
     paths:
       - 'admin/**'
       - '.github/workflows/admin-pages.yml'

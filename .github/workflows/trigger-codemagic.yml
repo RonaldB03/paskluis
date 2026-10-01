@@ -10,6 +10,8 @@ on:
   push:
     branches:
       - codex/search-and-premium-build-25
+      - codex/plus-header-no-folders
+      - codex/managed-content-support-mode
     paths-ignore:
       - .github/workflows/trigger-codemagic.yml
       - .github/workflows/admin-pages.yml

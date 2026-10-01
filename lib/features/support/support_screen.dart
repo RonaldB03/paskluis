@@ -7,6 +7,7 @@ import '../../data/services/account_service.dart';
 import '../../data/services/help_service.dart';
 import '../../data/services/support_service.dart';
 import 'support_thread_screen.dart';
+import 'support_mode_screen.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -161,6 +162,15 @@ class _SupportScreenState extends State<SupportScreen> {
       leading:const Icon(Icons.search_rounded),title:Text(L10n.current.searchQuestions),
       trailing:const Icon(Icons.chevron_right),
       onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const HelpCenterScreen())),
+    )),
+    Card(elevation:0,color:Colors.white,child:ListTile(
+      leading:const Icon(Icons.admin_panel_settings_outlined,color:Color(0xFFD51B46)),
+      title:Text(LocaleService.languageCode=='nl'?'Veilige Supportmodus':'Secure Support Mode'),
+      subtitle:Text(LocaleService.languageCode=='nl'
+        ?'Tijdelijke, alleen-lezen hulp zonder toegang tot kaartcodes.'
+        :'Temporary read-only help without access to card codes.'),
+      trailing:const Icon(Icons.chevron_right),
+      onTap:()=>Navigator.push(context,MaterialPageRoute<void>(builder:(_)=>const SupportModeScreen())),
     )),
     const SizedBox(height:12),
     Text(L10n.current.supportRetentionInfo, style: const TextStyle(fontSize: 12, color: Colors.black54)),
