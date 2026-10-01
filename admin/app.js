@@ -1,3 +1,4 @@
+import {supportMenuMarkup, settingPatch} from './support-settings.js?v=live-1';
 import {createAdminMfa} from './admin-mfa.js?v=security-2';
 import {createMenuEditor} from './app-menu.js?v=menu-1';
 import {orderedSupportMessages, supportMessageMarkup} from './support-conversation.js?v=chat-1';
@@ -218,12 +219,56 @@ async function activateSupportMode(){
   }catch(error){toast(error.message?.includes('INVALID')?'Code is ongeldig of verlopen.':'Supportmodus kon niet worden geopend.');}
   finally{button.disabled=false;}
 }
+let supportModeLoading=false;
+let supportModeWriting=false;
 function renderSupportMode(data){
   const box=$('#support-mode-result');box.classList.remove('hidden');
-  const labels={platform:'Platform',osVersion:'Besturingssysteem',appVersion:'Appversie',buildNumber:'Build',locale:'Taal',accountState:'Account',plusState:'Plus',backupEnabled:'Back-up actief',backupStatus:'Back-upstatus',backupLastSuccess:'Laatste back-up',notificationPermission:'Meldingen',locationPermission:'Locatietoestemming',appLockEnabled:'Appslot',biometricsAvailable:'Biometrie beschikbaar',brightnessMode:'Helderheid',keepScreenAwake:'Scherm wakker houden',hideSensitiveCodes:'Gevoelige codes verbergen',defaultStartTab:'Starttab',sortOrder:'Sortering',capturedAt:'Momentopname'};
-  const rows=Object.entries(data.diagnostics||{}).map(([key,value])=>`<div class="detail-box"><span>${escapeHtml(labels[key]||key)}</span><strong>${escapeHtml(value===true?'Ja':value===false?'Nee':value??'–')}</strong></div>`).join('');
-  box.innerHTML=`<div class="panel-heading"><div><h3>${escapeHtml(data.user?.name||'Gebruiker')}</h3><p>${escapeHtml(data.user?.email||'')} · toegang tot ${formatDate(data.expiresAt)}</p></div><span class="pill active">Alleen-lezen</span></div><div class="detail-grid">${rows}</div><p class="permission-note"><strong>Privacygrens actief</strong><span>Alleen bovenstaande, vooraf toegestane technische velden zijn beschikbaar. De inhoud van kaarten is niet opvraagbaar.</span></p>`;
+  const openSections=[...box.querySelectorAll('details[open][data-section]')].map(x=>x.dataset.section);
+  const hadMenu=!!box.querySelector('.support-settings-menu');
+  state.supportSession={...state.supportSession,...data};
+  const hasLive=!!data.updatedAt;
+  const online=hasLive&&Date.now()-new Date(data.updatedAt).getTime()<15000;
+  const pending=data.revision>data.appliedRevision;
+  const status=!hasLive?'Voor live instellingen heeft deze gebruiker de nieuwe appversie nodig.':pending?(online?'Wijziging wordt toegepast…':'Wacht op verbinding met de app…'):online?'Verbonden · instellingen bijgewerkt':'App offline of op de achtergrond · laatste bekende instellingen';
+  const diagnostics=Object.entries(data.diagnostics||{}).map(([key,value])=>`<div class="detail-box"><span>${escapeHtml(key)}</span><strong>${escapeHtml(value===true?'Ja':value===false?'Nee':value??'–')}</strong></div>`).join('');
+  box.innerHTML=`<div class="panel-heading"><div><h3>${escapeHtml(data.user?.name||'Gebruiker')}</h3><p>${escapeHtml(data.user?.email||'')} · toegang tot ${formatDate(data.expiresAt)}</p></div><button class="secondary" data-close-support>Meekijken sluiten</button></div><p class="support-settings-status" role="status">${escapeHtml(status)}</p>${hasLive?`<div class="support-settings-menu"><h2>Instellingen</h2><div class="support-setting-row"><div><strong>Mijn account</strong><small>${escapeHtml(data.user?.email||'')} · ${data.diagnostics?.plusState==='active'?'PasKluis Plus':'Gratis'}</small></div></div>${supportMenuMarkup(data)}<small>PasKluis ${escapeHtml(data.diagnostics?.appVersion)} (${escapeHtml(data.diagnostics?.buildNumber)})</small></div>`:''}<details><summary>Technische informatie</summary><div class="detail-grid">${diagnostics}</div></details>`;
+  if(hadMenu)box.querySelectorAll('details[data-section]').forEach(x=>x.open=openSections.includes(x.dataset.section));
 }
+async function refreshSupportMode(){
+ const session=state.supportSession;
+ if(!session||supportModeLoading||supportModeWriting||document.hidden||(document.activeElement?.matches('select[data-support-setting]')))return;
+ supportModeLoading=true;
+ try{
+  const result=await supabase.rpc('view_support_session',{p_session_id:session.id});
+  if(state.supportSession?.id!==session.id)return;
+  if(result.error){
+   if(/SESSION_NOT_ACTIVE/.test(result.error.message)){state.supportSession=null;$('#support-mode-result').innerHTML='<p>De supporttoegang is verlopen of ingetrokken.</p>';}
+   return;
+  }
+  renderSupportMode(result.data);
+ }finally{supportModeLoading=false;}
+}
+setInterval(refreshSupportMode,3000);
+$('#support-mode-result').addEventListener('click',e=>{
+ if(e.target.closest('[data-close-support]')){state.supportSession=null;$('#support-mode-result').innerHTML='';$('#support-mode-result').classList.add('hidden');}
+});
+$('#support-mode-result').addEventListener('change',async e=>{
+ if(!e.target.matches('[data-support-setting]')||supportModeWriting||!state.supportSession)return;
+ const session=state.supportSession;
+ supportModeWriting=true;
+ try{
+  const patch=settingPatch(e.target);
+  const result=await supabase.rpc('update_support_settings',{p_session_id:session.id,p_patch:patch,p_expected_revision:session.revision});
+  if(result.error)throw result.error;
+  if(state.supportSession?.id!==session.id)return;
+  renderSupportMode({...session,revision:result.data});
+  $('#support-mode-result').querySelectorAll('[data-support-setting]').forEach(x=>x.disabled=true);
+  toast('Wijziging verstuurd. Wachten op bevestiging van de app.');
+ }catch(error){
+  toast(/CONFLICT|PENDING/.test(error.message)?'Instellingen zijn veranderd. Wacht op vernieuwen en probeer opnieuw.':/SESSION_NOT_ACTIVE/.test(error.message)?'De supporttoegang is beëindigd.':'Instelling kon niet worden aangepast.');
+  if(state.supportSession?.id===session.id)renderSupportMode(session);
+ }finally{supportModeWriting=false;}
+});
 $('#activate-support-mode').addEventListener('click',activateSupportMode);
 $('#support-mode-code').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();activateSupportMode();}});
 

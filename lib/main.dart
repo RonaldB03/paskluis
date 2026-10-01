@@ -1,3 +1,4 @@
+import 'data/services/support_mode_service.dart';
 import 'data/services/terms_service.dart';
 import 'data/services/app_menu_service.dart';
 import 'data/services/managed_content_service.dart';
@@ -74,6 +75,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     BackupService.setForeground(state == AppLifecycleState.resumed);
+    SupportModeService.setForeground(state == AppLifecycleState.resumed);
     if (state == AppLifecycleState.resumed) {
       unawaited(_refreshOnline());
     }
@@ -173,6 +175,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     await StorageService.reconcileAccount(AccountService.currentUser?.id);
     PurchaseService.init();
     await BackupService.init();
+    await SupportModeService.init();
     try {
       NotificationService.onOpen = (payload) async {
         if(payload.startsWith('support_reply:')) await _openSupportThread(payload.substring(14));

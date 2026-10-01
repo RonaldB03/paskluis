@@ -1,0 +1,73 @@
+import {PGlite} from '../../admin/node_modules/@electric-sql/pglite/dist/index.js';
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+// Local-only Postgres engine. Auth/MFA and digest are stubs; these tests cover
+// the RPC contract and SQL authorization branches, not cryptographic strength.
+const db = new PGlite();
+await db.exec(`create schema auth; create schema extensions;
+create role anon; create role authenticated;
+create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.uid',true),'')::uuid $$;
+create function auth.jwt() returns jsonb language sql as $$ select coalesce(nullif(current_setting('request.jwt',true),''),'{}')::jsonb $$;
+create function extensions.digest(text,text) returns bytea language sql as $$select convert_to($1,'UTF8')$$;
+create table public.profiles(id uuid primary key,display_name text,email text);
+create table public.admin_audit_log(actor_id uuid,action text,entity_type text,entity_id text,summary text);
+create function public.has_active_device_session() returns boolean language sql as $$ select auth.uid() is not null $$;
+create function public.is_staff() returns boolean language sql as $$ select auth.jwt()->>'role'='staff' $$;
+`);
+const original=fs.readFileSync(new URL('../migrations/20261001083055_managed_content_and_support_mode.sql',import.meta.url),'utf8');
+await db.exec(original.slice(original.indexOf('create table public.support_sessions'),original.indexOf('insert into public.managed_content(key',original.indexOf('create table public.support_sessions'))));
+await db.exec(fs.readFileSync(new URL('../migrations/20261001133636_live_support_settings.sql',import.meta.url),'utf8'));
+const uid='11111111-1111-4111-8111-111111111111',staff='22222222-2222-4222-8222-222222222222',other='33333333-3333-4333-8333-333333333333',sid='44444444-4444-4444-8444-444444444444';
+await db.query('insert into profiles(id) values ($1),($2),($3)',[uid,staff,other]);
+async function identity(id,role='user',session=sid){await db.query("select set_config('request.uid',$1,false),set_config('request.jwt',$2,false)",[id,JSON.stringify({role,session_id:session})]);}
+async function rpc(sql,params=[]){return (await db.query(sql,params)).rows[0].value;}
+async function rejects(sql,params,pattern){await assert.rejects(()=>db.query(sql,params),pattern);}
+await identity(uid);
+const created=await rpc('select create_support_session($1) value',[{platform:'ios',cardCodes:'SECRET'}]);
+const id=created.id;
+const settings={language:'nl',nearbyRadiusMeters:250};
+const menu=[{id:'language',title:'Taal',items:[{action:'language',title:'Taal',password:'SECRET'}],cardCodes:'SECRET'}];
+const syncParams=[id,settings,menu,{platform:'ios',pin:'SECRET'},0];
+await rpc('select sync_support_settings($1,$2,$3,$4,$5) value',syncParams);
+await identity(staff,'staff');
+await rpc('select activate_support_session($1) value',[created.code]);
+let view=await rpc('select view_support_session($1) value',[id]);
+assert.ok(!JSON.stringify(view).includes('SECRET'));
+assert.equal(view.settings.language,'nl');
+await rejects('select update_support_settings($1,$2,$3)',[id,{cardCodes:'BAD'},0],/SETTING_NOT_ALLOWED/);
+await rejects('select update_support_settings($1,$2,$3)',[id,{nearbyRadiusMeters:999},0],/INVALID_SETTING_VALUE/);
+await rpc('select update_support_settings($1,$2,$3) value',[id,{language:'en'},0]);
+await rejects('select update_support_settings($1,$2,$3)',[id,{language:'nl'},0],/SETTINGS_CONFLICT/);
+await rejects('select update_support_settings($1,$2,$3)',[id,{language:'nl'},1],/CHANGE_PENDING/);
+await identity(other,'staff');
+await rejects('select view_support_session($1)',[id],/SESSION_NOT_ACTIVE/);
+await rejects('select update_support_settings($1,$2,$3)',[id,{language:'nl'},1],/SESSION_NOT_ACTIVE/);
+await identity(uid,'user','55555555-5555-4555-8555-555555555555');
+await rejects('select sync_support_settings($1,$2,$3,$4,$5)',syncParams,/SESSION_NOT_FOUND/);
+await identity(uid);
+let response=await rpc('select sync_support_settings($1,$2,$3,$4,$5) value',syncParams);
+assert.deepEqual(response.patch,{language:'en'});
+await rpc('select sync_support_settings($1,$2,$3,$4,$5) value',[id,{...settings,language:'en'},menu,{},1]);
+await identity(staff,'staff');
+view=await rpc('select view_support_session($1) value',[id]);
+assert.equal(view.appliedRevision,1);assert.equal(view.settings.language,'en');
+await identity(uid);await db.query('select revoke_support_session($1)',[id]);
+response=await rpc('select sync_support_settings($1,$2,$3,$4,$5) value',syncParams);assert.equal(response.status,'ended');
+await identity(staff,'staff');await rejects('select update_support_settings($1,$2,$3)',[id,{language:'nl'},1],/SESSION_NOT_ACTIVE/);
+// New session and expiry discard queued changes instead of applying them late.
+await identity(uid);
+const second=await rpc('select create_support_session($1) value',[{}]);
+await rpc('select sync_support_settings($1,$2,$3,$4,$5) value',[second.id,settings,menu,{},0]);
+await identity(staff,'staff');await rpc('select activate_support_session($1) value',[second.code]);
+await rejects('select update_support_settings($1,$2,$3)',[second.id,{language:'en'},null],/SETTINGS_CONFLICT/);
+await rpc('select update_support_settings($1,$2,$3) value',[second.id,{language:'en'},0]);
+await db.query("update support_sessions set expires_at=now()-interval '1 second' where id=$1",[second.id]);
+await identity(uid);
+response=await rpc('select sync_support_settings($1,$2,$3,$4,$5) value',[second.id,settings,menu,{},0]);
+assert.equal(response.status,'ended');assert.equal(response.patch,undefined);
+await identity(staff,'staff');await rejects('select view_support_session($1)',[second.id],/SESSION_NOT_ACTIVE/);
+await identity(other,'user');await rejects('select view_support_session($1)',[second.id],/STAFF_REQUIRED/);
+await identity('');await rejects('select update_support_settings($1,$2,$3)',[second.id,{language:'nl'},1],/STAFF_REQUIRED/);
+const privileges=(await db.query("select has_function_privilege('anon','public.update_support_settings(uuid,jsonb,bigint)','EXECUTE') allowed")).rows[0];assert.equal(privileges.allowed,false);
+console.log('Passed: privacy allowlists, typed values, session binding, staff scope, revision conflicts, acknowledgement and revocation.');
+await db.close();
