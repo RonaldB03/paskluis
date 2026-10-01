@@ -2,28 +2,42 @@ import {createClient} from 'https://esm.sh/@supabase/supabase-js@2';
 import {SignJWT,importPKCS8,decodeJwt} from 'https://esm.sh/jose@5.9.6';
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info'};
 const PRODUCT='paskluis_plus', PACKAGE='nl.paskluis.app';
-async function apple(transactionId:string,userId:string){
+async function apple(transactionId:string,userId:string,diagnostic:Diagnostic){
+ diagnostic.stage='apple_configuration';
  const cfg=JSON.parse(Deno.env.get('APPLE_IAP_KEY_JSON')||'{}');
  if(!cfg.privateKey||!cfg.keyId||!cfg.issuerId)throw new Error('STORE_NOT_CONFIGURED');
+ diagnostic.stage='apple_signing';
  const key=await importPKCS8(cfg.privateKey,'ES256');
  const jwt=await new SignJWT({bid:PACKAGE}).setProtectedHeader({alg:'ES256',kid:cfg.keyId,typ:'JWT'}).setIssuer(cfg.issuerId).setAudience('appstoreconnect-v1').setIssuedAt().setExpirationTime('5m').sign(key);
  let environment='production';
+ diagnostic.stage='apple_production_lookup';
  let response=await fetch(`https://api.storekit.itunes.apple.com/inApps/v1/transactions/${encodeURIComponent(transactionId)}`,{headers:{Authorization:`Bearer ${jwt}`}});
- if(response.status===404&&Deno.env.get('ALLOW_SANDBOX_PURCHASES')==='true'){
+ // Some apps not yet released return 401 from production even for sandbox purchases.
+ // A fallback is only a second authenticated lookup: all identity checks below remain mandatory.
+ if([401,404].includes(response.status)&&Deno.env.get('ALLOW_SANDBOX_PURCHASES')==='true'){
   environment='sandbox';
+  diagnostic.stage='apple_sandbox_lookup';
   response=await fetch(`https://api.storekit-sandbox.itunes.apple.com/inApps/v1/transactions/${encodeURIComponent(transactionId)}`,{headers:{Authorization:`Bearer ${jwt}`}});
  }
- if(!response.ok)throw new Error('STORE_VERIFICATION_FAILED');
+ if(!response.ok){
+  diagnostic.status=response.status;
+  const failure=await response.json().catch(()=>null);
+  if(Number.isSafeInteger(failure?.errorCode))diagnostic.storeCode=failure.errorCode;
+  throw new Error('STORE_VERIFICATION_FAILED');
+ }
+ diagnostic.stage='apple_transaction_payload';
  const result=await response.json();
  // Decode only the transaction obtained directly from Apple's authenticated HTTPS API.
  // Client-supplied signed data is never trusted or decoded here.
  const tx=decodeJwt(result.signedTransactionInfo);
+ diagnostic.stage='apple_account_product_check';
  if(tx.bundleId!==PACKAGE||tx.productId!==PRODUCT||tx.type!=='Non-Consumable'||tx.appAccountToken!==userId)throw new Error('PURCHASE_ACCOUNT_MISMATCH');
  if(tx.inAppOwnershipType==='FAMILY_SHARED')throw new Error('PURCHASE_ACCOUNT_MISMATCH');
+ diagnostic.stage='apple_environment_check';
  if((tx.environment==='Sandbox')!==(environment==='sandbox'))throw new Error('INVALID_ENVIRONMENT');
  return {id:String(tx.originalTransactionId||tx.transactionId),environment,revoked:!!tx.revocationDate};
 }
-type Diagnostic={stage:string;status?:number};
+type Diagnostic={stage:string;status?:number;storeCode?:number};
 async function google(purchaseToken:string,userId:string,diagnostic:Diagnostic){
  diagnostic.stage='google_configuration';
  const cfg=JSON.parse(Deno.env.get('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON')||'{}');
@@ -68,7 +82,7 @@ Deno.serve(async request=>{
   const body=await request.json();
   if(body.productId!==PRODUCT||!['apple','google'].includes(body.platform)||typeof body.proof!=='string'||body.proof.length>12000)throw new Error('INVALID_PURCHASE');
   diagnostic.stage='apple_verification';
-  const verified=body.platform==='apple'?await apple(body.proof,user.id):await google(body.proof,user.id,diagnostic);
+  const verified=body.platform==='apple'?await apple(body.proof,user.id,diagnostic):await google(body.proof,user.id,diagnostic);
   diagnostic.stage='purchase_persistence';
   const admin=createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false}});
   const saved=await admin.rpc('record_verified_purchase',{p_user_id:user.id,p_platform:body.platform,p_transaction_id:verified.id,p_environment:verified.environment,p_revoked:verified.revoked});
@@ -76,6 +90,6 @@ Deno.serve(async request=>{
   return Response.json({verified:saved.data===true},{headers:cors});
  }catch(error){const allowed=['STORE_NOT_CONFIGURED','PURCHASE_PENDING','PURCHASE_ACCOUNT_MISMATCH','PURCHASE_LINKED_TO_ANOTHER_ACCOUNT','TEST_PURCHASE_NOT_ALLOWED'];const code=error instanceof Error&&allowed.includes(error.message)?error.message:'PURCHASE_VERIFICATION_FAILED';
  // Only fixed stage names, HTTP status and allowlisted error codes; never log proofs, keys or user data.
- console.error(JSON.stringify({event:'purchase_verification_failed',stage:diagnostic.stage,status:diagnostic.status,code}));
+ console.error(JSON.stringify({event:'purchase_verification_failed',stage:diagnostic.stage,status:diagnostic.status,storeCode:diagnostic.storeCode,code}));
  return Response.json({error:code},{status:400,headers:cors});}
 });
