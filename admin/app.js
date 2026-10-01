@@ -1,6 +1,7 @@
 import {createAdminMfa} from './admin-mfa.js?v=security-2';
 import {createMenuEditor} from './app-menu.js?v=menu-1';
 import {orderedSupportMessages, supportMessageMarkup} from './support-conversation.js?v=chat-1';
+import {collectContentEditor,renderContentEditor,updateImagePreview} from './content-editor.js?v=content-2';
 let supportRequest = 0;
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
@@ -238,11 +239,11 @@ function renderContentList(){
 }
 function openContent(item){
   state.selectedContent=item;renderContentList();$('#content-empty').classList.add('hidden');$('#content-form').classList.remove('hidden');
-  $('#content-key').value=item.key;$('#content-revision').value=item.revision;$('#content-label').value=item.label;$('#content-channel').value=item.channel;$('#content-json').value=JSON.stringify(item.draft,null,2);$('#content-error').textContent='';
+  $('#content-key').value=item.key;$('#content-revision').value=item.revision;$('#content-label').value=item.label;$('#content-channel').value=item.channel;renderContentEditor($('#content-fields'),item.key,item.draft);$('#content-error').textContent='';
 }
 function contentPayload(){
-  let content;try{content=JSON.parse($('#content-json').value);}catch(_){throw new Error('De inhoud bevat ongeldige JSON.');}
-  if(!content||Array.isArray(content)||typeof content!=='object')throw new Error('De inhoud moet een JSON-object zijn.');
+  const content=collectContentEditor($('#content-fields'),state.selectedContent?.draft||{});
+  if(!content||Array.isArray(content)||typeof content!=='object')throw new Error('De inhoud kon niet worden samengesteld.');
   return {p_key:$('#content-key').value,p_channel:$('#content-channel').value,p_label:$('#content-label').value.trim(),p_content:content,p_expected_revision:Number($('#content-revision').value)};
 }
 async function saveContent(publish=false){
@@ -258,9 +259,22 @@ $('#content-list').addEventListener('click',e=>{const button=e.target.closest('[
 $('#refresh-content').addEventListener('click',loadContent);
 $('#save-content').addEventListener('click',()=>saveContent(false));
 $('#content-form').addEventListener('submit',e=>{e.preventDefault();saveContent(true);});
-$('#content-image-file').addEventListener('change',async e=>{
-  const file=e.target.files?.[0];if(!file)return;if(file.size>2097152)return toast('Afbeelding is groter dan 2 MB.');
-  const safe=file.name.toLowerCase().replace(/[^a-z0-9._-]/g,'-');const path=`${Date.now()}-${safe}`;
-  const upload=await supabase.storage.from('public-content').upload(path,file,{contentType:file.type,upsert:false});if(upload.error)return toast('Uploaden is niet gelukt.');
-  const url=supabase.storage.from('public-content').getPublicUrl(path).data.publicUrl;$('#content-image-url').innerHTML=`Afbeeldings-URL: <button type="button" class="text-button" id="copy-content-url">${escapeHtml(url)}</button>`;$('#copy-content-url').addEventListener('click',async()=>{await navigator.clipboard.writeText(url);toast('URL gekopieerd.');});
+$('#content-fields').addEventListener('input',e=>{
+  const input=e.target.closest('[data-content-type="image"]');if(input)updateImagePreview($('#content-fields'),input.dataset.contentField,input.value.trim());
+});
+$('#content-fields').addEventListener('change',async e=>{
+  const picker=e.target.closest('[data-content-upload]');if(!picker)return;
+  const file=picker.files?.[0];if(!file)return;
+  if(file.size>2097152){picker.value='';return toast('Afbeelding is groter dan 2 MB.');}
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type)){picker.value='';return toast('Gebruik een PNG-, JPG- of WebP-bestand.');}
+  picker.disabled=true;
+  try{
+    const safe=file.name.toLowerCase().replace(/[^a-z0-9._-]/g,'-');const path=`website/${Date.now()}-${safe}`;
+    const upload=await supabase.storage.from('public-content').upload(path,file,{contentType:file.type,upsert:false});if(upload.error)throw upload.error;
+    const url=supabase.storage.from('public-content').getPublicUrl(path).data.publicUrl;
+    const input=[...$('#content-fields').querySelectorAll('[data-content-field]')].find(node=>node.dataset.contentField===picker.dataset.contentUpload);
+    if(input){input.value=url;updateImagePreview($('#content-fields'),picker.dataset.contentUpload,url);}
+    toast('Afbeelding geüpload. Publiceer de wijzigingen om hem zichtbaar te maken.');
+  }catch(_){toast('Uploaden is niet gelukt.');}
+  finally{picker.disabled=false;picker.value='';}
 });
