@@ -9,6 +9,7 @@ import smtplib
 import ssl
 import subprocess
 import sys
+import warnings
 from datetime import datetime, timezone
 
 ROOT = Path('/opt/paskluis-supabase')
@@ -26,8 +27,10 @@ def configure():
     if not (ROOT / '.paskluis-functions-staged').is_file():
         raise RuntimeError('Complete Functions staging first.')
     # No fallback to visible stdin if this is accidentally run without a terminal.
-    with open('/dev/tty', 'r+') as terminal:
-        password = getpass.getpass('Mailbox password for info@paskluis.com (hidden): ', stream=terminal)
+    with warnings.catch_warnings():
+        warnings.simplefilter('error', getpass.GetPassWarning)
+        with open('/dev/tty', 'w') as terminal:
+            password = getpass.getpass('Mailbox password for info@paskluis.com (hidden): ', stream=terminal)
     if not password or '\n' in password or '\r' in password:
         raise RuntimeError('Invalid password input; configuration unchanged.')
     print('Checking TLS connection and mailbox login; no mail will be sent...', flush=True)
