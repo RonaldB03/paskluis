@@ -1,0 +1,50 @@
+{
+  "source_project": "ajldblvvlbvmgejrmhyj",
+  "source_revision": "3cb2e350041f43173eacf5c5a41494b054af17d1",
+  "files": [
+    {
+      "path": "clever-endpoint/index.ts",
+      "sha256": "b69e08a1da7330682494aed43cce5788ef84ce2e885e9e574c4aadea48cb0c36"
+    },
+    {
+      "path": "invite-staff/index.ts",
+      "sha256": "fb4bdfecd6e449213e8e29120ee73ac09d5b9be882fb92cb60688b5a1234787f"
+    },
+    {
+      "path": "send-shared-card-notification/index.ts",
+      "sha256": "3e7b7b0827762315259e0c1c439cfd2f21acc217937421332557d22a110d942c"
+    },
+    {
+      "path": "nearest-brand-stores/index.ts",
+      "sha256": "cb6608e3432a755f3697aca4f15634e486fdab216a56fcdc12d1d6dace2d24e7"
+    },
+    {
+      "path": "dispatch-notifications/index.ts",
+      "sha256": "69c7601ed7df0074ddc5e856fc9b3250217ed02c9f7e5ed89374eb0377413494"
+    },
+    {
+      "path": "support-attachments/index.ts",
+      "sha256": "584a75850928a2ee0beb84ebcb89a76e4b3f5b817e78539c9b756c9c8274be1e"
+    },
+    {
+      "path": "delete-account/index.ts",
+      "sha256": "0846502ba78a483853500f38df7493f3144e95fa1f5b5b308822b34a5d363db4"
+    },
+    {
+      "path": "verify-purchase/index.ts",
+      "sha256": "93e9852b496682b32b5afe39323cc79a253abf7dc691c05fa36faf3eab289290"
+    },
+    {
+      "path": "reconcile-purchases/index.ts",
+      "sha256": "91b82ff37e1f84ff6d73a57bdff8008e1b64fa5813405c5849585bbe845555b9"
+    },
+    {
+      "path": "card-backups/index.ts",
+      "sha256": "3d3d1ccaf2e76d3e4018fb1098ca18a00455beec4c9afe984ea16926a7a6d987"
+    },
+    {
+      "path": "card-backups/protocol.ts",
+      "sha256": "78289aae1d3cb2777436d85b4ab446f7b3431309804b7bfafb0fcec25eb8b940"
+    }
+  ]
+}
