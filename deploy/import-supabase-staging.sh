@@ -91,7 +91,11 @@ END $$;
 RESET session_replication_role;
 SQL
 } >"$WORK/restore.sql"
-if ! db --single-transaction -v VERBOSITY=sqlstate -f /dev/stdin <"$WORK/restore.sql" >"$WORK/restore.log" 2>&1; then
+# Restoring roles requires the existing local superuser. Keep routine checks and
+# Studio on postgres; do not grant postgres additional privileges.
+if ! docker compose exec -T db psql -X -U supabase_admin -d postgres \
+  -v ON_ERROR_STOP=1 --single-transaction -v VERBOSITY=sqlstate -f /dev/stdin \
+  <"$WORK/restore.sql" >"$WORK/restore.log" 2>&1; then
   echo 'Import failed; transaction rolled back. Do not share the SQL files or full logs.'
   # Only SQLSTATE codes are shared, never row contents or account information.
   python3 - "$WORK/restore.log" <<'PY'
