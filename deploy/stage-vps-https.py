@@ -119,6 +119,10 @@ def https():
     backup.mkdir(mode=0o700)
     shutil.copytree('/etc/nginx', backup / 'nginx', symlinks=True)
     WEBROOT.mkdir(exist_ok=True, mode=0o755)
+    WEBROOT.chmod(0o755)
+    for directory in [WEBROOT / '.well-known', WEBROOT / '.well-known/acme-challenge']:
+        directory.mkdir(exist_ok=True, mode=0o755)
+        directory.chmod(0o755)
     http = '''server {
     listen 80;
     listen [::]:80;
