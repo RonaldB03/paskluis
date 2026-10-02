@@ -78,6 +78,7 @@ services:
   functions:
     profiles: [migration-pending]
   auth:
+    image: supabase/gotrue:v2.197.0
     environment:
       GOTRUE_MFA_TOTP_ENROLL_ENABLED: "true"
       GOTRUE_MFA_TOTP_VERIFY_ENABLED: "true"
