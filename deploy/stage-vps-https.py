@@ -178,7 +178,8 @@ server {
 '''
     install_nginx(MARKER + http + tls)
     for path, expected in [('/health', {'200'}), ('/auth/v1/user', {'401', '403'}), ('/', {'404'})]:
-        code = run(['curl', '-sS', '--max-time', '15', '--resolve', DOMAIN + ':443:127.0.0.1',
+        code = run(['curl', '-sS', '--max-time', '15', '--retry', '4', '--retry-all-errors',
+                    '--retry-delay', '1', '--resolve', DOMAIN + ':443:127.0.0.1',
                     '-o', '/dev/null', '-w', '%{http_code}', 'https://' + DOMAIN + path], label='https-check').strip()
         if code not in expected:
             raise RuntimeError('Unexpected HTTPS response for ' + path + ': ' + code)
