@@ -1,5 +1,18 @@
 {
   "@@locale": "nl",
+  "accountMfaRequired": "Bevestig eerst je tweestapsverificatie om je wachtwoord te wijzigen.",
+  "accountReauthenticationRequired": "Bevestig de code uit je e-mail om je wachtwoord te wijzigen.",
+  "accountPasswordMustDiffer": "Kies een ander wachtwoord dan je huidige wachtwoord.",
+  "accountPleaseWait": "Wacht even voordat je opnieuw een herstelmail aanvraagt.",
+  "accountVerificationTitle": "Verifieer je account",
+  "accountVerificationCode": "Zescijferige code",
+  "accountVerify": "Verifiëren",
+  "accountMfaInstructions": "Vul de code uit je authenticator-app in voor dit PasKluis-account.",
+  "accountVerificationFailed": "De verificatie is niet gelukt. Controleer de code en probeer opnieuw.",
+  "accountMfaUnavailable": "De tweestapsverificatie van dit account kan niet in de app worden voltooid. Neem contact op met support.",
+  "accountSessionNotReady": "Je apparaatsessie is nog niet bevestigd.",
+  "accountPlusUnavailable": "Plus-status tijdelijk niet beschikbaar",
+  "accountPlusRetry": "Je Plus-status kon niet worden gecontroleerd. Probeer het opnieuw.",
   "onlineServicesAreCurrentlyUnavailable": "De online diensten zijn momenteel niet beschikbaar.",
   "onlineServicesAreUnavailable": "De online diensten zijn niet beschikbaar.",
   "noStoresFound": "Er zijn geen winkels gevonden.",
@@ -1041,3 +1054,4 @@
   "supportNewReply": "Nieuw antwoord",
   "supportRetentionInfo": "We bewaren gesprekken tot 6 maanden na afsluiten en bijlagen tot 30 dagen. Zie ons privacybeleid voor uitzonderingen."
 }
+
