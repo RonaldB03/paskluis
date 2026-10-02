@@ -16,14 +16,13 @@ import 'shared_cards_management_screen.dart';
 import 'delete_account_screen.dart';
 import '../../data/services/purchase_service.dart';
 import '../../data/services/settings_service.dart';
+import 'auth_error_message.dart';
+import 'account_verification_dialog.dart';
 
 class AccountScreen extends StatefulWidget {
   final bool startPasswordRecovery;
 
-  const AccountScreen({
-    super.key,
-    this.startPasswordRecovery = false,
-  });
+  const AccountScreen({super.key, this.startPasswordRecovery = false});
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
@@ -42,6 +41,10 @@ class _AccountScreenState extends State<AccountScreen> {
   bool _loadingStatus = false;
   bool _hidePassword = true;
   bool _handlingPasswordRecovery = false;
+  bool _statusKnown = false;
+  bool _statusFailed = false;
+  int _statusRequest = 0;
+  String? _statusUserId;
 
   User? get _user => AccountService.currentUser;
 
@@ -74,35 +77,66 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   void _purchaseChanged() {
-    if(!mounted)return;
+    if (!mounted) return;
     setState(() {});
-    if(PurchaseService.messageCode=='success') unawaited(_loadPlusStatus());
+    if (PurchaseService.messageCode == 'success') unawaited(_loadPlusStatus());
   }
 
   Future<void> _loadPlusStatus() async {
+    final request = ++_statusRequest;
+    final userId = _user?.id;
+    if (_statusUserId != userId) {
+      _statusUserId = userId;
+      _statusKnown = false;
+      _statusFailed = false;
+      _plusStatus = PlusStatus.inactive;
+    }
     if (_user == null) {
-      if (mounted) setState(() => _plusStatus = PlusStatus.inactive);
+      if (mounted)
+        setState(() {
+          _plusStatus = PlusStatus.inactive;
+          _statusKnown = false;
+          _statusFailed = false;
+          _loadingStatus = false;
+        });
       return;
     }
+    if (DeviceSessionService.awaitingClaim) return;
 
     setState(() => _loadingStatus = true);
     try {
       final status = await AccountService.loadPlusStatus();
-      if (mounted) setState(() => _plusStatus = status);
+      if (mounted && request == _statusRequest && _user?.id == userId)
+        setState(() {
+          _plusStatus = status;
+          _statusKnown = true;
+          _statusFailed = false;
+        });
     } catch (_) {
-      // Account access still works when the status cannot be refreshed.
+      if (mounted && request == _statusRequest && _user?.id == userId)
+        setState(() => _statusFailed = true);
     } finally {
-      if (mounted) setState(() => _loadingStatus = false);
+      if (mounted && request == _statusRequest)
+        setState(() => _loadingStatus = false);
     }
   }
 
   Future<void> _restorePurchases() async {
-    if(_user==null){_showMessage(L10n.current.signInToRestoreYourPurchase);return;}
-    try{
+    if (_user == null) {
+      _showMessage(L10n.current.signInToRestoreYourPurchase);
+      return;
+    }
+    try {
       await PurchaseService.restore();
       await _loadPlusStatus();
-      if(mounted)_showMessage(L10n.current.restoreRequested);
-    }catch(_){if(mounted)_showMessage(L10n.current.unableToRestoreYourPurchaseRightNow,error:true);}
+      if (mounted) _showMessage(L10n.current.restoreRequested);
+    } catch (_) {
+      if (mounted)
+        _showMessage(
+          L10n.current.unableToRestoreYourPurchaseRightNow,
+          error: true,
+        );
+    }
   }
 
   String? _validateEmail(String? value) {
@@ -126,6 +160,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
     setState(() => _busy = true);
     DeviceSessionService.awaitingClaim = true;
+    var deviceActivated = false;
     try {
       if (_registering) {
         final response = await AccountService.signUp(
@@ -135,11 +170,10 @@ class _AccountScreenState extends State<AccountScreen> {
         );
         if (!mounted) return;
         if (response.session == null) {
-          _showMessage(
-            L10n.current.yourAccountHasBeenCreatedCheckYour,
-          );
+          _showMessage(L10n.current.yourAccountHasBeenCreatedCheckYour);
         } else {
           if (!await _activateDeviceSession()) return;
+          deviceActivated = true;
           _showMessage(L10n.current.welcomeToPaskluis);
         }
       } else {
@@ -147,7 +181,12 @@ class _AccountScreenState extends State<AccountScreen> {
           email: _emailController.text,
           password: _passwordController.text,
         );
+        if (!await _verifyMfa()) {
+          await AccountService.signOut(releaseDevice: false);
+          return;
+        }
         if (!await _activateDeviceSession()) return;
+        deviceActivated = true;
         await PushNotificationService.registerForCurrentUser();
         try {
           await CardShareService.syncAllToLocal();
@@ -156,15 +195,22 @@ class _AccountScreenState extends State<AccountScreen> {
         }
         if (mounted) _showMessage(L10n.current.youAreSignedIn);
       }
+      DeviceSessionService.awaitingClaim = false;
       await _loadPlusStatus();
       _passwordController.clear();
     } on AuthException catch (error) {
-      if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
+      if (mounted) _showMessage(authErrorMessage(error), error: true);
     } catch (_) {
       if (mounted) {
-        _showMessage(L10n.current.somethingWentWrongPleaseTryAgainLater, error: true);
+        _showMessage(
+          L10n.current.somethingWentWrongPleaseTryAgainLater,
+          error: true,
+        );
       }
     } finally {
+      if (!deviceActivated && AccountService.currentUser != null) {
+        await AccountService.signOut(releaseDevice: false);
+      }
       DeviceSessionService.awaitingClaim = false;
       if (mounted) setState(() => _busy = false);
     }
@@ -182,12 +228,10 @@ class _AccountScreenState extends State<AccountScreen> {
     try {
       await AccountService.resetPassword(_emailController.text);
       if (mounted) {
-        _showMessage(
-          L10n.current.ifThisEmailAddressIsRegisteredWith,
-        );
+        _showMessage(L10n.current.ifThisEmailAddressIsRegisteredWith);
       }
     } on AuthException catch (error) {
-      if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
+      if (mounted) _showMessage(authErrorMessage(error), error: true);
     } catch (_) {
       if (mounted) {
         _showMessage(L10n.current.thePasswordResetEmailCouldNotBe, error: true);
@@ -201,6 +245,11 @@ class _AccountScreenState extends State<AccountScreen> {
     if (!mounted || _handlingPasswordRecovery) return;
     _handlingPasswordRecovery = true;
     try {
+      if (!await _verifyMfa()) {
+        await AccountService.signOut(releaseDevice: false);
+        return;
+      }
+      if (!mounted) return;
       final password = await showModalBottomSheet<String>(
         context: context,
         isScrollControlled: true,
@@ -208,16 +257,22 @@ class _AccountScreenState extends State<AccountScreen> {
         enableDrag: false,
         backgroundColor: Colors.white,
         showDragHandle: true,
-        builder: (_) => const _ChangePasswordSheet(),
+        builder: (_) => ChangePasswordSheet(save: _savePassword),
       );
-      if (password == null || !mounted) return;
-      await AccountService.updatePassword(password);
-      await _activateDeviceSession();
+      if (password == null) {
+        await AccountService.signOut(releaseDevice: false);
+        return;
+      }
+      if (!mounted || !await _activateDeviceSession()) return;
+      DeviceSessionService.awaitingClaim = false;
+      await _loadPlusStatus();
       await PushNotificationService.registerForCurrentUser();
       if (mounted) _showMessage(L10n.current.yourNewPasswordHasBeenSaved);
     } on AuthException catch (error) {
-      if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
+      await AccountService.signOut(releaseDevice: false);
+      if (mounted) _showMessage(authErrorMessage(error), error: true);
     } catch (_) {
+      await AccountService.signOut(releaseDevice: false);
       if (mounted) {
         _showMessage(L10n.current.unableToChangeYourPassword, error: true);
       }
@@ -239,18 +294,23 @@ class _AccountScreenState extends State<AccountScreen> {
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         icon: const Icon(Icons.devices_rounded, size: 42),
-        title:  Text(L10n.current.alreadySignedInOnAnotherDevice),
+        title: Text(L10n.current.alreadySignedInOnAnotherDevice),
         content: Text(
-          L10n.current.thisAccountIsActiveOnIfYou(deviceDescription(status.activeDeviceName, dutch: LocaleService.languageCode == 'nl')),
+          L10n.current.thisAccountIsActiveOnIfYou(
+            deviceDescription(
+              status.activeDeviceName,
+              dutch: LocaleService.languageCode == 'nl',
+            ),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child:  Text(L10n.current.cancel),
+            child: Text(L10n.current.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child:  Text(L10n.current.signInHere),
+            child: Text(L10n.current.signInHere),
           ),
         ],
       ),
@@ -280,16 +340,15 @@ class _AccountScreenState extends State<AccountScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       showDragHandle: true,
-      builder: (_) => const _ChangePasswordSheet(),
+      builder: (_) => ChangePasswordSheet(save: _savePassword),
     );
     if (password == null || !mounted || _busy) return;
 
     setState(() => _busy = true);
     try {
-      await AccountService.updatePassword(password);
       if (mounted) _showMessage(L10n.current.yourPasswordHasBeenChanged);
     } on AuthException catch (error) {
-      if (mounted) _showMessage(_friendlyAuthError(error.message), error: true);
+      if (mounted) _showMessage(authErrorMessage(error), error: true);
     } catch (_) {
       if (mounted) {
         _showMessage(L10n.current.unableToChangeYourPassword, error: true);
@@ -299,21 +358,58 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
-  String _friendlyAuthError(String message) {
-    final normalized = message.toLowerCase();
-    if (normalized.contains('invalid login credentials')) {
-      return L10n.current.theEmailAddressOrPasswordIsIncorrect;
+  Future<bool> _verifyMfa() async {
+    final auth = SupabaseService.client!.auth;
+    final assurance = auth.mfa.getAuthenticatorAssuranceLevel();
+    if (assurance.currentLevel == AuthenticatorAssuranceLevels.aal2 ||
+        assurance.nextLevel != AuthenticatorAssuranceLevels.aal2)
+      return true;
+    final factors = await auth.mfa.listFactors();
+    final factor = factors.totp
+        .where((f) => f.status == FactorStatus.verified)
+        .firstOrNull;
+    if (factor == null) throw AuthException(L10n.current.accountMfaUnavailable);
+    if (!mounted) return false;
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => AccountVerificationDialog(
+            instructions: L10n.current.accountMfaInstructions,
+            verify: (code) async {
+              await auth.mfa.challengeAndVerify(
+                factorId: factor.id,
+                code: code,
+              );
+            },
+          ),
+        ) ==
+        true;
+  }
+
+  Future<void> _savePassword(String password) async {
+    if (!await _verifyMfa())
+      throw AuthException(
+        L10n.current.accountMfaRequired,
+        code: 'insufficient_aal',
+      );
+    try {
+      await AccountService.updatePassword(password);
+    } on AuthException catch (error) {
+      if (error.code != 'reauthentication_needed') rethrow;
+      await SupabaseService.client!.auth.reauthenticate();
+      if (!mounted) rethrow;
+      final verified = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AccountVerificationDialog(
+          instructions: L10n.current.accountReauthenticationRequired,
+          verify: (code) async {
+            await AccountService.updatePassword(password, nonce: code);
+          },
+        ),
+      );
+      if (verified != true) rethrow;
     }
-    if (normalized.contains('already registered')) {
-      return L10n.current.anAccountWithThisEmailAddressAlready;
-    }
-    if (normalized.contains('email not confirmed')) {
-      return L10n.current.confirmYourEmailAddressUsingTheEmail;
-    }
-    if (normalized.contains('password')) {
-      return L10n.current.thePasswordDoesNotMeetTheSecurity;
-    }
-    return L10n.current.pleaseTryAgain;
   }
 
   void _showMessage(String message, {bool error = false}) {
@@ -331,7 +427,7 @@ class _AccountScreenState extends State<AccountScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),
       appBar: AppBar(
-        title:  Text(L10n.current.accountPaskluisPlus),
+        title: Text(L10n.current.accountPaskluisPlus),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF333333),
       ),
@@ -354,7 +450,7 @@ class _AccountScreenState extends State<AccountScreen> {
             elevation: 0,
             child: ListTile(
               leading: const Icon(Icons.logout_rounded),
-              title:  Text(
+              title: Text(
                 L10n.current.signedOutOnThisDevice,
                 style: TextStyle(fontWeight: FontWeight.w900),
               ),
@@ -375,7 +471,9 @@ class _AccountScreenState extends State<AccountScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    _registering ? L10n.current.createAccount : L10n.current.signIn,
+                    _registering
+                        ? L10n.current.createAccount
+                        : L10n.current.signIn,
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -392,7 +490,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     TextFormField(
                       controller: _nameController,
                       textInputAction: TextInputAction.next,
-                      decoration:  InputDecoration(
+                      decoration: InputDecoration(
                         labelText: L10n.current.name,
                         prefixIcon: Icon(Icons.person_outline_rounded),
                         border: OutlineInputBorder(),
@@ -408,7 +506,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
                     autocorrect: false,
-                    decoration:  InputDecoration(
+                    decoration: InputDecoration(
                       labelText: L10n.current.emailAddress,
                       prefixIcon: Icon(Icons.mail_outline_rounded),
                       border: OutlineInputBorder(),
@@ -426,9 +524,8 @@ class _AccountScreenState extends State<AccountScreen> {
                       prefixIcon: const Icon(Icons.lock_outline_rounded),
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
-                        onPressed: () => setState(
-                          () => _hidePassword = !_hidePassword,
-                        ),
+                        onPressed: () =>
+                            setState(() => _hidePassword = !_hidePassword),
                         icon: Icon(
                           _hidePassword
                               ? Icons.visibility_outlined
@@ -443,7 +540,7 @@ class _AccountScreenState extends State<AccountScreen> {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: _busy ? null : _forgotPassword,
-                        child:  Text(L10n.current.forgotPassword),
+                        child: Text(L10n.current.forgotPassword),
                       ),
                     )
                   else
@@ -461,7 +558,9 @@ class _AccountScreenState extends State<AccountScreen> {
                                 : Icons.login_rounded,
                           ),
                     label: Text(
-                      _registering ? L10n.current.createAccount : L10n.current.signIn,
+                      _registering
+                          ? L10n.current.createAccount
+                          : L10n.current.signIn,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -514,7 +613,9 @@ class _AccountScreenState extends State<AccountScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          name?.isNotEmpty == true ? name! : L10n.current.paskluisAccount,
+                          name?.isNotEmpty == true
+                              ? name!
+                              : L10n.current.paskluisAccount,
                           style: const TextStyle(
                             fontSize: 19,
                             fontWeight: FontWeight.w900,
@@ -530,44 +631,79 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _StatusCard(status: _plusStatus, loading: _loadingStatus),
-          if(!_plusStatus.isActive) ...[
-            const SizedBox(height:12),
-            FilledButton.icon(
-              style:FilledButton.styleFrom(backgroundColor:const Color(0xFFD5A021)),
-              onPressed:PurchaseService.busy||PurchaseService.product==null||!SettingsService.storePurchaseEnabled?null:PurchaseService.buy,
-              icon:const Icon(Icons.workspace_premium),
-              label:Text(PurchaseService.busy?L10n.current.purchaseProcessing:'${L10n.current.buyPlus} · ${PurchaseService.product?.price??'€ 1,99'}'),
+          AccountPlusStatusCard(
+            status: _plusStatus,
+            loading: _loadingStatus || (!_statusKnown && !_statusFailed),
+            failed: _statusFailed,
+          ),
+          if (_statusFailed)
+            TextButton(
+              onPressed: _loadPlusStatus,
+              child: Text(L10n.current.accountPlusRetry),
             ),
-            if(PurchaseService.product==null||!SettingsService.storePurchaseEnabled)
-              Text(L10n.current.storePurchaseUnavailable,textAlign:TextAlign.center),
+          if (_statusKnown &&
+              !_statusFailed &&
+              !_loadingStatus &&
+              !_plusStatus.isActive) ...[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFD5A021),
+              ),
+              onPressed:
+                  PurchaseService.busy ||
+                      PurchaseService.product == null ||
+                      !SettingsService.storePurchaseEnabled
+                  ? null
+                  : PurchaseService.buy,
+              icon: const Icon(Icons.workspace_premium),
+              label: Text(
+                PurchaseService.busy
+                    ? L10n.current.purchaseProcessing
+                    : '${L10n.current.buyPlus} · ${PurchaseService.product?.price ?? '€ 1,99'}',
+              ),
+            ),
+            if (PurchaseService.product == null ||
+                !SettingsService.storePurchaseEnabled)
+              Text(
+                L10n.current.storePurchaseUnavailable,
+                textAlign: TextAlign.center,
+              ),
           ],
-          if(PurchaseService.messageCode!=null &&
-              !(PurchaseService.messageCode=='success' && _plusStatus.isActive))
-            Padding(padding:const EdgeInsets.all(12),child:Text(switch(PurchaseService.messageCode){
-              'success'=>L10n.current.purchaseSucceeded,
-              'pending'=>L10n.current.purchasePending,
-              'cancelled'=>L10n.current.purchaseCancelled,
-              'signIn'=>L10n.current.signInToRestoreYourPurchase,
-              'verification'=>L10n.current.purchaseVerificationPending,
-              _=>L10n.current.purchaseFailed,
-            },textAlign:TextAlign.center)),
+          if (PurchaseService.messageCode != null &&
+              PurchaseService.messageCode != 'signIn' &&
+              !(PurchaseService.messageCode == 'success' &&
+                  _plusStatus.isActive))
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(switch (PurchaseService.messageCode) {
+                'success' => L10n.current.purchaseSucceeded,
+                'pending' => L10n.current.purchasePending,
+                'cancelled' => L10n.current.purchaseCancelled,
+                'signIn' => L10n.current.signInToRestoreYourPurchase,
+                'verification' => L10n.current.purchaseVerificationPending,
+                _ => L10n.current.purchaseFailed,
+              }, textAlign: TextAlign.center),
+            ),
           const SizedBox(height: 16),
           Card(
             elevation: 0,
             child: ListTile(
-              leading: const Icon(Icons.workspace_premium_rounded,
-                  color: Color(0xFFD5A021)),
-              title:  Text(L10n.current.allAboutPaskluisPlus,
-                  style: TextStyle(fontWeight: FontWeight.w900)),
-              subtitle:  Text(L10n.current.exploreAllBenefitsAndLearnHowSharing),
+              leading: const Icon(
+                Icons.workspace_premium_rounded,
+                color: Color(0xFFD5A021),
+              ),
+              title: Text(
+                L10n.current.allAboutPaskluisPlus,
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+              subtitle: Text(L10n.current.exploreAllBenefitsAndLearnHowSharing),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const PlusInformationScreen(
-                    showAccountButton: false,
-                  ),
+                  builder: (_) =>
+                      const PlusInformationScreen(showAccountButton: false),
                 ),
               ),
             ),
@@ -576,11 +712,15 @@ class _AccountScreenState extends State<AccountScreen> {
           Card(
             elevation: 0,
             child: ListTile(
-              leading: const Icon(Icons.people_alt_outlined,
-                  color: Color(0xFF7046B8)),
-              title:  Text(L10n.current.manageSharedCards,
-                  style: TextStyle(fontWeight: FontWeight.w900)),
-              subtitle:  Text(L10n.current.viewSharedAccessAndStopItWhenever),
+              leading: const Icon(
+                Icons.people_alt_outlined,
+                color: Color(0xFF7046B8),
+              ),
+              title: Text(
+                L10n.current.manageSharedCards,
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+              subtitle: Text(L10n.current.viewSharedAccessAndStopItWhenever),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.push(
                 context,
@@ -594,13 +734,19 @@ class _AccountScreenState extends State<AccountScreen> {
           Card(
             elevation: 0,
             child: ListTile(
-              leading: const Icon(Icons.restore_rounded,
-                  color: Color(0xFF286DC8)),
-              title:  Text(L10n.current.restorePurchases,
-                  style: TextStyle(fontWeight: FontWeight.w900)),
-              subtitle:  Text(L10n.current.checkYourLinkedPlusAccessAgain),
+              leading: const Icon(
+                Icons.restore_rounded,
+                color: Color(0xFF286DC8),
+              ),
+              title: Text(
+                L10n.current.restorePurchases,
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+              subtitle: Text(L10n.current.checkYourLinkedPlusAccessAgain),
               trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: _loadingStatus || PurchaseService.busy ? null : _restorePurchases,
+              onTap: _loadingStatus || PurchaseService.busy
+                  ? null
+                  : _restorePurchases,
             ),
           ),
           const SizedBox(height: 10),
@@ -611,19 +757,17 @@ class _AccountScreenState extends State<AccountScreen> {
                 Icons.password_rounded,
                 color: Color(0xFFD51B46),
               ),
-              title:  Text(
+              title: Text(
                 L10n.current.changePassword,
                 style: TextStyle(fontWeight: FontWeight.w900),
               ),
-              subtitle:  Text(
-                L10n.current.chooseANewPasswordWithAtLeast,
-              ),
+              subtitle: Text(L10n.current.chooseANewPasswordWithAtLeast),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: _busy ? null : _changePassword,
             ),
           ),
           const SizedBox(height: 16),
-           Card(
+          Card(
             elevation: 0,
             child: ListTile(
               leading: Icon(Icons.cloud_off_outlined),
@@ -631,19 +775,30 @@ class _AccountScreenState extends State<AccountScreen> {
                 L10n.current.yourCardsStayLocal,
                 style: TextStyle(fontWeight: FontWeight.w800),
               ),
-              subtitle: Text(
-                L10n.current.signingInDoesNotMoveYourCards,
-              ),
+              subtitle: Text(L10n.current.signingInDoesNotMoveYourCards),
             ),
           ),
           const SizedBox(height: 16),
-          ListTile(leading: const Icon(Icons.person_remove_outlined, color: Color(0xFFD51B46)),
-            title: Text(L10n.current.deleteAccount), trailing: const Icon(Icons.chevron_right),
-            onTap: _busy ? null : () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DeleteAccountScreen()))),
+          ListTile(
+            leading: const Icon(
+              Icons.person_remove_outlined,
+              color: Color(0xFFD51B46),
+            ),
+            title: Text(L10n.current.deleteAccount),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _busy
+                ? null
+                : () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DeleteAccountScreen(),
+                    ),
+                  ),
+          ),
           OutlinedButton.icon(
             onPressed: _busy ? null : _signOut,
             icon: const Icon(Icons.logout_rounded),
-            label:  Text(L10n.current.signOut),
+            label: Text(L10n.current.signOut),
           ),
         ],
       ),
@@ -651,18 +806,21 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 }
 
-class _ChangePasswordSheet extends StatefulWidget {
-  const _ChangePasswordSheet();
+class ChangePasswordSheet extends StatefulWidget {
+  final Future<void> Function(String password) save;
+  const ChangePasswordSheet({required this.save});
 
   @override
-  State<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
+  State<ChangePasswordSheet> createState() => ChangePasswordSheetState();
 }
 
-class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
+class ChangePasswordSheetState extends State<ChangePasswordSheet> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmationController = TextEditingController();
   bool _hidePassword = true;
+  bool _saving = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -671,10 +829,24 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
     super.dispose();
   }
 
-  void _submit() {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _submit() async {
+    if (_saving || !_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    Navigator.pop(context, _passwordController.text);
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await widget.save(_passwordController.text);
+      if (mounted) Navigator.pop(context, _passwordController.text);
+    } on AuthException catch (error) {
+      if (mounted) setState(() => _error = authErrorMessage(error));
+    } catch (_) {
+      if (mounted)
+        setState(() => _error = L10n.current.unableToChangeYourPassword);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -695,13 +867,13 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-               Text(
+              Text(
                 L10n.current.changePassword,
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
               ),
               const SizedBox(height: 8),
-               Text(
+              Text(
                 L10n.current.useAtLeast8CharactersYouWill,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.black54),
@@ -717,9 +889,8 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                   prefixIcon: const Icon(Icons.lock_outline_rounded),
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
-                    onPressed: () => setState(
-                      () => _hidePassword = !_hidePassword,
-                    ),
+                    onPressed: () =>
+                        setState(() => _hidePassword = !_hidePassword),
                     icon: Icon(
                       _hidePassword
                           ? Icons.visibility_outlined
@@ -737,7 +908,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                 obscureText: _hidePassword,
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: (_) => _submit(),
-                decoration:  InputDecoration(
+                decoration: InputDecoration(
                   labelText: L10n.current.repeatNewPassword,
                   prefixIcon: Icon(Icons.lock_reset_rounded),
                   border: OutlineInputBorder(),
@@ -747,13 +918,25 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
                     : null,
               ),
               const SizedBox(height: 18),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Color(0xFFB42318)),
+                  ),
+                ),
               SizedBox(
                 height: 52,
                 child: FilledButton.icon(
-                  onPressed: _submit,
+                  onPressed: _saving ? null : _submit,
                   icon: const Icon(Icons.check_rounded),
-                  label:  Text(L10n.current.savePassword),
+                  label: Text(L10n.current.savePassword),
                 ),
+              ),
+              TextButton(
+                onPressed: _saving ? null : () => Navigator.pop(context),
+                child: Text(L10n.current.cancel),
               ),
             ],
           ),
@@ -779,7 +962,7 @@ class _PlusHero extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(24),
       ),
-      child:  Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 38),
@@ -803,11 +986,16 @@ class _PlusHero extends StatelessWidget {
   }
 }
 
-class _StatusCard extends StatelessWidget {
+class AccountPlusStatusCard extends StatelessWidget {
   final PlusStatus status;
   final bool loading;
+  final bool failed;
 
-  const _StatusCard({required this.status, required this.loading});
+  const AccountPlusStatusCard({
+    required this.status,
+    required this.loading,
+    this.failed = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -820,9 +1008,7 @@ class _StatusCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
         side: BorderSide(
-          color: status.isActive
-              ? const Color(0xFFD5A021)
-              : Colors.transparent,
+          color: status.isActive ? const Color(0xFFD5A021) : Colors.transparent,
           width: 1.4,
         ),
       ),
@@ -847,6 +1033,8 @@ class _StatusCard extends StatelessWidget {
                   Text(
                     loading
                         ? L10n.current.checkingPlusStatus
+                        : failed
+                        ? L10n.current.accountPlusUnavailable
                         : status.isActive
                         ? L10n.current.paskluisPlusIsActive
                         : L10n.current.freeVersion,
@@ -860,10 +1048,16 @@ class _StatusCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    status.isActive
+                    failed
+                        ? L10n.current.accountPlusRetry
+                        : loading
+                        ? L10n.current.checkingPlusStatus
+                        : status.isActive
                         ? status.expiresAt == null
                               ? L10n.current.youHaveUnlimitedAccess
-                              : L10n.current.yourAccessIsActiveUntil((_date(status.expiresAt!)).toString())
+                              : L10n.current.yourAccessIsActiveUntil(
+                                  (_date(status.expiresAt!)).toString(),
+                                )
                         : L10n.current.storeOneGiftCardForFreeLoyalty,
                   ),
                 ],
@@ -877,7 +1071,6 @@ class _StatusCard extends StatelessWidget {
 
   static String _date(DateTime value) =>
       '${value.day.toString().padLeft(2, '0')}-${value.month.toString().padLeft(2, '0')}-${value.year}';
-
 }
 
 class _OfflineAccountCard extends StatelessWidget {
@@ -886,7 +1079,7 @@ class _OfflineAccountCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     L10n.watch(context);
-    return  Center(
+    return Center(
       child: Padding(
         padding: EdgeInsets.all(28),
         child: Card(
@@ -916,3 +1109,4 @@ class _OfflineAccountCard extends StatelessWidget {
     );
   }
 }
+

@@ -1,5 +1,18 @@
 {
   "@@locale": "en",
+  "accountMfaRequired": "Complete two-step verification before changing your password.",
+  "accountReauthenticationRequired": "Confirm the code from your email to change your password.",
+  "accountPasswordMustDiffer": "Choose a password that differs from your current password.",
+  "accountPleaseWait": "Wait a moment before requesting another recovery email.",
+  "accountVerificationTitle": "Verify your account",
+  "accountVerificationCode": "Six-digit code",
+  "accountVerify": "Verify",
+  "accountMfaInstructions": "Enter the code from your authenticator app for this PasKluis account.",
+  "accountVerificationFailed": "Verification failed. Check the code and try again.",
+  "accountMfaUnavailable": "This account's two-step verification cannot be completed in the app. Contact support.",
+  "accountSessionNotReady": "Your device session has not been confirmed yet.",
+  "accountPlusUnavailable": "Plus status temporarily unavailable",
+  "accountPlusRetry": "Your Plus status could not be checked. Please try again.",
   "onlineServicesAreCurrentlyUnavailable": "Online services are currently unavailable.",
   "onlineServicesAreUnavailable": "Online services are unavailable.",
   "noStoresFound": "No stores found.",
@@ -1041,3 +1054,4 @@
   "supportNewReply": "New reply",
   "supportRetentionInfo": "We keep conversations for up to 6 months after closure and attachments for 30 days. See our privacy policy for exceptions."
 }
+
