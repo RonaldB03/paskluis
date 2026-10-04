@@ -13,6 +13,28 @@ import tempfile
 FOLDER = '1K7mPH9sEAsTLTalN92QPZkrSoh6w7Off'
 BACKUPS = pathlib.Path('/var/backups/paskluis-supabase/daily')
 STATE = pathlib.Path('/var/lib/paskluis-offsite/status.json')
+RETENTION_DAYS = 14
+
+
+def expired_names(entries, current_archive, now=None):
+    """Only dated backup files in this dedicated folder are eligible."""
+    cutoff = (now or dt.datetime.now(dt.timezone.utc)) - dt.timedelta(days=RETENTION_DAYS)
+    protected = {current_archive, pathlib.PurePosixPath(current_archive).stem + '.json', 'latest.json'}
+    result = []
+    for entry in entries:
+        name = entry.get('Path', '')
+        if entry.get('IsDir') or name in protected:
+            continue
+        match = re.fullmatch(r'(?:paskluis-server-)?(\d{8}T\d{6}Z)\.(pkb|json)', name)
+        if not match:
+            continue
+        try:
+            created = dt.datetime.strptime(match[1], '%Y%m%dT%H%M%SZ').replace(tzinfo=dt.timezone.utc)
+        except ValueError:
+            continue
+        if created < cutoff:
+            result.append(name)
+    return sorted(set(result))
 
 
 def validate(folder, now=None):
@@ -57,6 +79,7 @@ def upload(folder, config, runner=subprocess.run):
         raise ValueError('Google Drive checksum verification failed')
     # Publish a manifest only after the encrypted object has been verified.
     manifest = {**report, 'archive': archive.name, 'automatic_offsite': True,
+                'offsite_retention_days': RETENTION_DAYS,
                 'offsite_verified_at': dt.datetime.now(dt.timezone.utc).isoformat()}
     with tempfile.TemporaryDirectory(prefix='paskluis-offsite-') as temp:
         source = pathlib.Path(temp) / 'manifest.json'
@@ -64,6 +87,12 @@ def upload(folder, config, runner=subprocess.run):
         source.chmod(0o600)
         rclone('copyto', str(source), 'paskluis-drive:' + archive.stem + '.json', '--checksum')
         rclone('copyto', str(source), 'paskluis-drive:latest.json', '--checksum')
+    # Enforce the owner's 14-day policy only after verifying a fresh recovery copy.
+    entries = json.loads(rclone('lsjson', 'paskluis-drive:', '--files-only', '--max-depth', '1'))
+    expired = expired_names(entries, archive.name)
+    for name in expired:
+        rclone('deletefile', 'paskluis-drive:' + name, '--drive-use-trash=false')
+    manifest['offsite_expired_files_removed'] = len(expired)
     return manifest
 
 
@@ -89,13 +118,15 @@ def main():
     try:
         manifest = upload(BACKUPS, config)
         record({'ok': True, 'archive': manifest['archive'], 'sha256': manifest['sha256'],
-                'last_success': manifest['offsite_verified_at'], 'folder_id': FOLDER})
+                'last_success': manifest['offsite_verified_at'], 'folder_id': FOLDER,
+                'retention_days': RETENTION_DAYS,
+                'expired_files_removed': manifest['offsite_expired_files_removed']})
         print('Encrypted backup uploaded and remote checksum verified.')
     except Exception as error:
         # Do not log OAuth credentials, process output or plaintext contents.
         record({**previous, 'ok': False, 'last_attempt': dt.datetime.now(dt.timezone.utc).isoformat(),
                 'error': type(error).__name__})
-        raise SystemExit('Offsite backup failed; previous copies have been retained.') from None
+        raise SystemExit('Offsite upload or retention check failed; inspect the status file.') from None
 
 
 if __name__ == '__main__':

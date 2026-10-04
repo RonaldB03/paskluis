@@ -51,13 +51,38 @@ class Backups(unittest.TestCase):
         md5 = hashlib.md5(self.archive.read_bytes(), usedforsecurity=False).hexdigest()
         def run(command, **kwargs):
             calls.append(command)
-            return type('Result', (), {'stdout': md5 + '  file\n'})()
+            return type('Result', (), {'stdout': '[]' if command[1] == 'lsjson' else md5 + '  file\n'})()
         result = drive_backup.upload(self.folder, 'config', runner=run)
         self.assertTrue(result['automatic_offsite'])
-        self.assertEqual(len(calls), 4)
+        self.assertEqual(len(calls), 5)
         self.assertIn('--immutable', calls[0])
-        self.assertEqual(calls[-1][3], 'paskluis-drive:latest.json')
+        self.assertEqual(calls[3][3], 'paskluis-drive:latest.json')
         self.assertTrue(all(drive_backup.FOLDER in c for c in calls))
+
+    def test_retention_is_scoped_and_preserves_boundary_and_latest(self):
+        names = ['20260919T120000Z.pkb', '20260919T120000Z.json',
+                 'paskluis-server-20260919T120000Z.pkb', '20260920T120000Z.pkb',
+                 '20261004T120000Z.pkb', 'latest.json', 'recovery-key.pem',
+                 '../20260919T120000Z.pkb', 'sub/20260919T120000Z.pkb',
+                 '20261301T120000Z.pkb']
+        entries = [{'Path': name, 'IsDir': False} for name in names]
+        entries.append({'Path': '20260918T120000Z.pkb', 'IsDir': True})
+        self.assertEqual(drive_backup.expired_names(entries, '20261004T120000Z.pkb',
+            dt.datetime(2026, 10, 4, 12, tzinfo=dt.timezone.utc)), sorted(names[:3]))
+        self.assertEqual(drive_backup.expired_names(entries[:2], '20260919T120000Z.pkb',
+            dt.datetime(2026, 10, 4, 12, tzinfo=dt.timezone.utc)), [])
+
+    def test_prune_only_after_successful_upload(self):
+        calls = []
+        md5 = hashlib.md5(self.archive.read_bytes(), usedforsecurity=False).hexdigest()
+        def run(command, **kwargs):
+            calls.append(command)
+            output = json.dumps([{'Path': '20000101T000000Z.pkb'}]) if command[1] == 'lsjson' else md5 + '  file\n'
+            return type('Result', (), {'stdout': output})()
+        result = drive_backup.upload(self.folder, 'config', runner=run)
+        self.assertEqual(result['offsite_expired_files_removed'], 1)
+        self.assertEqual(calls[-1][1:3], ['deletefile', 'paskluis-drive:20000101T000000Z.pkb'])
+        self.assertIn('--drive-use-trash=false', calls[-1])
 
 
 if __name__ == '__main__':

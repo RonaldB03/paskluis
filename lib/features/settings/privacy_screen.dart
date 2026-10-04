@@ -1,6 +1,7 @@
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 import '../../data/services/locale_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PrivacyScreen extends StatelessWidget {
   const PrivacyScreen({super.key});
@@ -85,6 +86,24 @@ class PrivacyScreen extends StatelessWidget {
           _PrivacySection(icon: Icons.save_outlined,
             title: L10n.current.staysOnYourPhone, color: Color(0xFF23814A),
             points: [L10n.current.localStorageWarning]),
+          _PrivacySection(icon: Icons.support_agent,
+            title: LocaleService.languageCode == 'nl' ? 'Tijdelijke supporttoegang' : 'Temporary support access',
+            color: Color(0xFF286DC8),
+            points: [LocaleService.languageCode == 'nl'
+              ? 'Alleen met jouw tijdelijke code kan een bevoegde medewerker maximaal 30 minuten beperkte technische instellingen bekijken en aanpassen. Kaartcodes, pincodes, afbeeldingen en je exacte locatie vallen hier niet onder. Je kunt de toegang intrekken.'
+              : 'Only with your temporary code can an authorised employee view and change limited technical settings for up to 30 minutes. Card codes, PINs, images and your precise location are excluded. You can revoke access.']),
+          TextButton.icon(
+            icon: const Icon(Icons.open_in_new),
+            label: Text(LocaleService.languageCode == 'nl' ? 'Volledige privacyverklaring' : 'Full privacy notice'),
+            onPressed: () async {
+              try {
+                final opened = await launchUrl(Uri.parse('https://paskluis.com/privacy.html'), mode: LaunchMode.externalApplication);
+                if (!opened) throw StateError('Browser unavailable');
+              } catch (_) {
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('https://paskluis.com/privacy.html')));
+              }
+            },
+          ),
           Padding(
             padding: EdgeInsets.fromLTRB(8, 8, 8, 0),
             child: Text(

@@ -12,7 +12,7 @@ Status 4 oktober 2026: de dagelijkse koppeling is geïnstalleerd en actief op de
 - Configuratiemap mode 0700; rclone-configuratie mode 0600. Tien productiecontainers blijven healthy; geen herstart of wijziging van productiegegevens.
 - Na expliciete toestemming is ook de logische databaseherstelproef geslaagd, op 4 oktober om 19:23 CEST: rollen en complete dump hersteld met foutcontrole, 15 accounts, 189 opslagverwijzingen, 190 opslagbestanden, 36 publieke tabellen met RLS, geen ongeldige indexen en de Vault-secret ontsleutelbaar. Container had geen netwerk, gepubliceerde poorten of productievolumes; cron stond uit. Testcontainer en alle tijdelijke ontsleutelde bestanden zijn daarna verwijderd. Bewijs: `audit-results/restore-result-20261004.json`.
 
-De onderstaande eerste handmatige kopie blijft eveneens behouden:
+De onderstaande eerste handmatige kopie valt eveneens onder de bewaartermijn van 14 dagen:
 
 - Map: https://drive.google.com/drive/folders/1K7mPH9sEAsTLTalN92QPZkrSoh6w7Off
 - Kopie: `paskluis-server-20261002T204126Z.pkb`, 10.092.663 bytes.
@@ -53,7 +53,7 @@ systemctl list-timers paskluis-offsite.timer
 
 De timer draait om 05:00, 11:00, 17:00 en 23:00 Europe/Amsterdam, met maximaal tien minuten spreiding. Hij herhaalt zo een mislukte overdracht. De bestaande versleutelde dagelijkse serverback-up van 04:15 blijft de bron. Een bron ouder dan dertig uur wordt geweigerd. Alleen `.pkb` plus een kleine manifestbeschrijving worden verzonden. Het script vergelijkt de lokale SHA-256 met het bestaande manifest en de externe MD5 met de lokale bytes. MD5 is hier transportcontrole; de herstelverificatie gebruikt SHA-256 en geauthenticeerde AES-GCM-ontsleuteling.
 
-Er is geen `sync`, geen verwijderactie en geen upload van de private sleutel. Externe kopieën worden voorlopig bewaard; bepaal na de eerste herstelproef een expliciete bewaartermijn en bewaak Drive-capaciteit. Vier lokale unit-tests controleren onder andere dat een verkeerde externe checksum de publicatie van `latest.json` verhindert. Deze tests vervangen geen echte OAuth-/VPS-proef.
+De eigenaar heeft op 4 oktober 2026 gekozen voor 14 dagen bewaring. Na een geslaagde upload en checksumcontrole verwijdert het script verlopen gedateerde `.pkb`-kopieën en bijbehorende manifesten permanent uit uitsluitend de genoemde Drive-map. Dit omvat de eerste handmatige kopie; onbekende namen, submappen en de huidige herstelkopie blijven beschermd. De controle draait bij iedere geplande upload. Er is geen `sync` en geen upload van de private sleutel. Zes lokale unit-tests controleren onder andere de leeftijdsgrens, de beperkte bestandsselectie en dat een verkeerde externe checksum publicatie en opschoning verhindert. Deze tests vervangen geen echte OAuth-/VPS-proef.
 
 ## Herstelprocedure en uitgevoerde proef
 
