@@ -1,3 +1,5 @@
+import '../../shared/widgets/shared_card_save.dart';
+import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
@@ -297,7 +299,10 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
     var savedCard = Map<String, dynamic>.from(newCard);
     if (savedCard['isShared'] == true ||
         (savedCard['sharedCardId']?.toString() ?? '').isNotEmpty) {
-      savedCard = await CardShareService.updateSharedCard(savedCard);
+      if (!context.mounted) return;
+      final remote = await saveSharedCardWithFeedback(context, savedCard);
+      if (remote == null) return;
+      savedCard = remote;
     }
 
     await StorageService.saveCard(key, savedCard);
@@ -642,7 +647,7 @@ class _StoredCardTileState extends State<StoredCardTile> {
                       ? Transform.scale(
                           scale: hasCustomLogo ? 1.55 : 1.0,
                           child: hasCustomLogo
-                              ? Image.file(
+                              ? SecureCardImage(
                                   File(customImage),
                                   fit: BoxFit.contain,
                                   height: 92,

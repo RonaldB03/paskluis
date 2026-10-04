@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
@@ -394,7 +395,7 @@ class _LiveCardPreview extends StatelessWidget {
                     child: hasCustomLogo
                         ? Transform.scale(
                             scale: 1.55,
-                            child: Image.file(
+                            child: SecureCardImage(
                               File(customImage),
                               fit: BoxFit.contain,
                             ),
@@ -633,7 +634,7 @@ class _LogoEditor extends StatelessWidget {
             child: hasCustomLogo
                 ? Transform.scale(
                     scale: 1.45,
-                    child: Image.file(
+                    child: SecureCardImage(
                       File(customImage),
                       fit: BoxFit.contain,
                     ),

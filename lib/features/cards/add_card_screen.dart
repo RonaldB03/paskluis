@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/widgets/duplicate_card_warning.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
@@ -248,7 +249,7 @@ class _AddCardScreenState extends State<AddCardScreen> {
                   border: Border.all(color: Colors.grey.shade300),
                 ),
                 child: customImage != null
-                    ? Image.file(
+                    ? SecureCardImage(
                         customImage!,
                         fit: BoxFit.contain,
                         width: double.infinity,

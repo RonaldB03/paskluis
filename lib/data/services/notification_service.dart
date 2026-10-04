@@ -14,6 +14,7 @@ class NotificationService {
   static final Set<String> _sharedCardPushes = <String>{};
 
   static Future<void> Function(String)? onOpen;
+  static String? initialPayload;
 
   static Future<void> init() async {
     tz_data.initializeTimeZones();
@@ -28,6 +29,8 @@ class NotificationService {
     final android = _plugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     await android?.createNotificationChannel(const AndroidNotificationChannel('support_replies', 'PasKluis support', importance: Importance.high));
     await android?.createNotificationChannel(const AndroidNotificationChannel('shared_cards', 'PasKluis shared cards', importance: Importance.high));
+    final launch = await _plugin.getNotificationAppLaunchDetails();
+    if (launch?.didNotificationLaunchApp == true) initialPayload = launch?.notificationResponse?.payload;
   }
 
   static Future<bool> requestPermission() async {
@@ -89,6 +92,7 @@ class NotificationService {
       L10n.current.newCardInPaskluis,
       L10n.current.hasBeenSharedWithYou((name).toString()),
       details,
+      payload: 'shared_card:$id',
     );
   }
 
@@ -165,7 +169,7 @@ class NotificationService {
 
     for (var i = 0; i < reminders.length; i++) {
       final reminder = reminders[i];
-      final moment = localExpiry.subtract(Duration(days: reminder.days));
+      final moment = DateTime(localExpiry.year, localExpiry.month, localExpiry.day - reminder.days, 9);
       if (!moment.isAfter(DateTime.now())) continue;
       await _plugin.zonedSchedule(
         base + i,
@@ -174,6 +178,7 @@ class NotificationService {
         tz.TZDateTime.from(moment.toUtc(), tz.UTC),
         details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: 'gift_card:$id',
       );
     }
   }

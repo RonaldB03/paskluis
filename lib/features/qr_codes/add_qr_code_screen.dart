@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/widgets/duplicate_card_warning.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
@@ -391,7 +392,7 @@ class _QrLivePreview extends StatelessWidget {
                 children: [
                   Expanded(
                     child: hasCustomLogo
-                        ? Image.file(File(customImage), fit: BoxFit.contain)
+                        ? SecureCardImage(File(customImage), fit: BoxFit.contain)
                         : hasAssetLogo
                         ? BrandLogo(source: logoAsset)
                         : const Icon(
@@ -606,7 +607,7 @@ class _LogoEditor extends StatelessWidget {
           ),
           child: Center(
             child: hasCustomLogo
-                ? Image.file(File(customImage), fit: BoxFit.contain)
+                ? SecureCardImage(File(customImage), fit: BoxFit.contain)
                 : hasPresetLogo
                 ? BrandLogo(source: logoAsset)
                 : const Icon(

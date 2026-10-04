@@ -1,3 +1,5 @@
+import '../../shared/widgets/shared_card_save.dart';
+import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/utils/money_input.dart';
 import '../../data/services/locale_service.dart';
 import '../../shared/utils/card_barcode.dart';
@@ -157,14 +159,17 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     var savedItem = Map<String, dynamic>.from(newItem);
     final isReadOnlyShare = savedItem['isShared'] == true &&
         savedItem['canEditShared'] != true;
-    if (!isReadOnlyShare &&
+    if (!isReadOnlyShare && oldItem is Map && CardShareService.contentChanged(oldItem, savedItem) &&
         (savedItem['isShared'] == true ||
             (savedItem['sharedCardId']?.toString() ?? '').isNotEmpty)) {
-      savedItem = await CardShareService.updateSharedCard(savedItem);
+      if (!context.mounted) return;
+      final remote = await saveSharedCardWithFeedback(context, savedItem);
+      if (remote == null) return;
+      savedItem = remote;
     }
 
     await StorageService.saveCard(key, savedItem);
-    await NotificationService.syncGiftCard(savedItem);
+    try { await NotificationService.syncGiftCard(savedItem); } catch (_) { /* Saving remains successful without reminders. */ }
 
     if (!mounted) return;
 
@@ -536,6 +541,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     });
     updated['currentBalance'] = _money(newBalance);
     updated['balanceHistory'] = jsonEncode(history);
+    updated['balanceUpdatedAt'] = DateTime.now().toIso8601String();
     await updateCurrentItem(updated);
     HapticFeedback.mediumImpact();
   }
@@ -785,6 +791,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                                   });
                                   updated['currentBalance'] = _money(restored);
                                   updated['balanceHistory'] = jsonEncode(all);
+                                  updated['balanceUpdatedAt'] = DateTime.now().toIso8601String();
                                   await updateCurrentItem(updated);
                                   if (context.mounted) Navigator.pop(context);
                                 },
@@ -1392,7 +1399,7 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
                           vertical: 18,
                         ),
                         child: hasCustomLogo
-                            ? Image.file(
+                            ? SecureCardImage(
                                 File(customImage),
                                 fit: BoxFit.contain,
                               )

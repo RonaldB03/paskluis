@@ -1,5 +1,6 @@
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 
 import 'account_service.dart';
 import 'notification_service.dart';
@@ -7,37 +8,64 @@ import 'storage_service.dart';
 import 'supabase_service.dart';
 
 abstract final class CardShareService {
+  /// Personal organisation does not require an online write or shared version.
+  static bool contentChanged(
+    Map<dynamic, dynamic> before,
+    Map<dynamic, dynamic> after,
+  ) => !mapEquals(
+    safePayload(Map<String, dynamic>.from(before)),
+    safePayload(Map<String, dynamic>.from(after)),
+  );
+
+  static Map<String, dynamic> keepLocalPreferences(
+    Map<String, dynamic> remote,
+    Map local,
+  ) => {
+    ...remote,
+    for (final key in [
+      'isFavorite',
+      'isArchived',
+      'archivedAt',
+      'folderName',
+      'lastUsedAt',
+      'lastUsedLatitude',
+      'lastUsedLongitude',
+      'locationRecordedAt',
+    ])
+      if (local.containsKey(key)) key: local[key],
+  };
   static SupabaseClient get _client {
     final client = SupabaseService.client;
     if (client == null) {
-      throw  AuthException(L10n.current.onlineServicesAreUnavailable);
+      throw AuthException(L10n.current.onlineServicesAreUnavailable);
     }
     return client;
   }
 
   static Map<String, dynamic> safePayload(Map<String, dynamic> card) => {
-        'name': card['name']?.toString() ?? '',
-        'type': card['type']?.toString() ?? 'Pasje',
-        'code': card['code']?.toString() ?? '',
-        'codes': card['codes']?.toString() ?? '',
-        'used': card['used']?.toString() ?? '',
-        'codeFormat': card['codeFormat']?.toString() ?? 'barcode',
-        'barcodeSymbology': card['barcodeSymbology']?.toString() ?? '',
-        'cardNumber': card['cardNumber']?.toString() ?? '',
-        // The owner explicitly chose to share the complete gift card.
-        'pinCode': card['pinCode']?.toString() ?? '',
-        'initialBalance': card['initialBalance']?.toString() ?? '',
-        'currentBalance': card['currentBalance']?.toString() ?? '',
-        'note': card['note']?.toString() ?? '',
-        'brandId': card['brandId']?.toString() ?? '',
-        'logoAsset': card['logoAsset']?.toString() ?? '',
-        'brandColor': card['brandColor']?.toString() ?? '',
-        'expiryDate': card['expiryDate']?.toString() ?? '',
-        'expiryNotificationsEnabled':
-            card['expiryNotificationsEnabled'] == true ||
-                card['expiryNotificationsEnabled']?.toString() == 'true',
-        'balanceHistory': card['balanceHistory']?.toString() ?? '[]',
-      };
+    'name': card['name']?.toString() ?? '',
+    'type': card['type']?.toString() ?? 'Pasje',
+    'code': card['code']?.toString() ?? '',
+    'codes': card['codes']?.toString() ?? '',
+    'used': card['used']?.toString() ?? '',
+    'codeFormat': card['codeFormat']?.toString() ?? 'barcode',
+    'barcodeSymbology': card['barcodeSymbology']?.toString() ?? '',
+    'cardNumber': card['cardNumber']?.toString() ?? '',
+    // The owner explicitly chose to share the complete gift card.
+    'pinCode': card['pinCode']?.toString() ?? '',
+    'initialBalance': card['initialBalance']?.toString() ?? '',
+    'currentBalance': card['currentBalance']?.toString() ?? '',
+    'note': card['note']?.toString() ?? '',
+    'brandId': card['brandId']?.toString() ?? '',
+    'logoAsset': card['logoAsset']?.toString() ?? '',
+    'brandColor': card['brandColor']?.toString() ?? '',
+    'expiryDate': card['expiryDate']?.toString() ?? '',
+    'expiryNotificationsEnabled':
+        card['expiryNotificationsEnabled'] == true ||
+        card['expiryNotificationsEnabled']?.toString() == 'true',
+    'balanceHistory': card['balanceHistory']?.toString() ?? '[]',
+    'balanceUpdatedAt': card['balanceUpdatedAt']?.toString() ?? '',
+  };
 
   static Future<Map<String, dynamic>> shareWithEmail(
     Map<String, dynamic> card,
@@ -45,13 +73,11 @@ abstract final class CardShareService {
   ) async {
     final user = AccountService.currentUser;
     if (user == null) {
-      throw  AuthException(L10n.current.signInToShareACard);
+      throw AuthException(L10n.current.signInToShareACard);
     }
     final status = await AccountService.loadPlusStatus();
     if (!status.isActive) {
-      throw  AuthException(
-        L10n.current.paskluisPlusIsRequiredToShareCards,
-      );
+      throw AuthException(L10n.current.paskluisPlusIsRequiredToShareCards);
     }
     final result = await _client.rpc(
       'share_card_by_email',
@@ -116,9 +142,7 @@ abstract final class CardShareService {
     final members = cards['card_share_members'];
     if (members is! List) return [];
     return members
-        .where(
-          (member) => member is Map && member['revoked_at'] == null,
-        )
+        .where((member) => member is Map && member['revoked_at'] == null)
         .map((member) => Map<String, dynamic>.from(member as Map))
         .toList();
   }
@@ -159,7 +183,8 @@ abstract final class CardShareService {
     final user = AccountService.currentUser;
     if (user == null) return;
     final revision = StorageService.accountRevision;
-    bool current() => AccountService.currentUser?.id == user.id &&
+    bool current() =>
+        AccountService.currentUser?.id == user.id &&
         StorageService.accountId == user.id &&
         StorageService.accountRevision == revision;
     final plus = await AccountService.loadPlusStatus();
@@ -184,7 +209,7 @@ abstract final class CardShareService {
       final payload = sharedCard['card_payload'];
       if (payload is! Map) continue;
       activeMembershipIds.add(membershipId);
-      final local = <String, dynamic>{
+      var local = <String, dynamic>{
         ...Map<String, dynamic>.from(payload),
         'id': 'shared:$membershipId',
         'type': sharedCard['card_type']?.toString() ?? 'Pasje',
@@ -198,9 +223,11 @@ abstract final class CardShareService {
         'isFavorite': false,
         'isArchived': false,
         'customImage': '',
-        'createdAt': sharedCard['updated_at']?.toString() ??
+        'createdAt':
+            sharedCard['updated_at']?.toString() ??
             DateTime.now().toIso8601String(),
-        'updatedAt': sharedCard['updated_at']?.toString() ??
+        'updatedAt':
+            sharedCard['updated_at']?.toString() ??
             DateTime.now().toIso8601String(),
       };
       dynamic existingKey;
@@ -209,7 +236,7 @@ abstract final class CardShareService {
         if (existing is Map &&
             existing['shareMembershipId']?.toString() == membershipId) {
           existingKey = key;
-          local['isFavorite'] = existing['isFavorite'] == true;
+          local = keepLocalPreferences(local, existing);
           break;
         }
       }
@@ -250,13 +277,16 @@ abstract final class CardShareService {
     final revision = StorageService.accountRevision;
     final rows = await _client
         .from('shared_cards')
-        .select('id, card_external_id, card_type, card_payload, version, updated_at')
+        .select(
+          'id, card_external_id, card_type, card_payload, version, updated_at',
+        )
         .eq('owner_id', user.id)
         .isFilter('deleted_at', null);
     for (final rawRow in rows) {
       if (AccountService.currentUser?.id != user.id ||
           StorageService.accountId != user.id ||
-          StorageService.accountRevision != revision) return;
+          StorageService.accountRevision != revision)
+        return;
       final row = Map<String, dynamic>.from(rawRow);
       final externalId = row['card_external_id']?.toString() ?? '';
       final payload = row['card_payload'];

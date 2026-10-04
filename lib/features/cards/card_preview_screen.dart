@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
@@ -186,7 +187,7 @@ class _CardPreviewScreenState extends State<CardPreviewScreen>
                                     customImage.existsSync()
                                 ? Transform.scale(
                                     scale: 1.7,
-                                    child: Image.file(
+                                    child: SecureCardImage(
                                       customImage,
                                       fit: BoxFit.contain,
                                     ),

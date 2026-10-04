@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {stripTypeScriptTypes} from 'node:module';
 import vm from 'node:vm';
-const source=stripTypeScriptTypes((await readFile(new URL('../functions/verify-purchase/index.ts',import.meta.url),'utf8')).replace(/^import .*;\n/gm,''));
+const source=stripTypeScriptTypes((await readFile(new URL('../functions/verify-purchase/index.ts',import.meta.url),'utf8')).replace(/^import .*;\r?\n/gm,''));
 class JWT{setProtectedHeader(){return this}setIssuer(){return this}setAudience(){return this}setIssuedAt(){return this}setExpirationTime(){return this}async sign(){return 'fake'}}
 function setup({status=401,allow=true,sandboxStatus=200,mismatch=false,wrongEnvironment=false}={}){
  const calls=[];const diag={stage:''};

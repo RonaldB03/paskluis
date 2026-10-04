@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import 'dart:convert';
 import '../../shared/utils/money_input.dart';
 import '../../data/services/locale_service.dart';
@@ -185,6 +186,7 @@ class _EditGiftCardScreenState extends State<EditGiftCardScreen> {
         'amount': before != null && after != null ? ((before - after).abs() / 100).toStringAsFixed(2) : '',
       });
       updated['balanceHistory'] = jsonEncode(history);
+      updated['balanceUpdatedAt'] = DateTime.now().toIso8601String();
     }
 
     updated['logoAsset'] = logoAsset;
@@ -393,7 +395,7 @@ class _LogoPreview extends StatelessWidget {
             height: 110,
             child: Center(
               child: hasCustomLogo
-                  ? Image.file(
+                  ? SecureCardImage(
                       File(customImage),
                       fit: BoxFit.contain,
                       height: 90,

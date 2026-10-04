@@ -18,7 +18,10 @@ class StorageService {
 
   /// Invalidate in-flight sync before removing account-bound records.
   static Future<void> reconcileAccount(String? userId) async {
-    if (accountId != userId) { accountRevision++; backupOwner = null; }
+    if (accountId != userId) {
+      accountRevision++;
+      backupOwner = null;
+    }
     accountId = userId;
     for (final key in cardsBox.keys.toList()) {
       final card = cardsBox.get(key);
@@ -38,6 +41,33 @@ class StorageService {
     await Hive.openBox(
       cardsBoxName,
       encryptionCipher: HiveAesCipher(encryptionKey),
+    );
+    await migrateImages();
+  }
+
+  static Future<void> migrateImages() async {
+    // Commit new references before removing legacy plaintext. Interrupted
+    // migrations retain either the original or the verified encrypted copy.
+    final converted = <String, String>{};
+    for (final key in cardsBox.keys.toList()) {
+      final raw = cardsBox.get(key);
+      if (raw is! Map) continue;
+      final oldPath = raw['customImage']?.toString() ?? '';
+      if (oldPath.isEmpty || oldPath.endsWith('.pkimg')) continue;
+      final source = await MediaStorageService.resolveManagedImage(oldPath);
+      if (source == null) continue;
+      final encrypted = converted[source] ??=
+          await MediaStorageService.persistImage(source);
+      await cardsBox.put(key, {...raw, 'customImage': encrypted});
+    }
+    await cardsBox.flush();
+    for (final oldPath in converted.keys) {
+      await MediaStorageService.deleteIfManaged(oldPath);
+    }
+    await MediaStorageService.removeUnreferencedLegacyImages(
+      cardsBox.values.whereType<Map>().map(
+        (card) => card['customImage']?.toString() ?? '',
+      ),
     );
   }
 
@@ -62,8 +92,12 @@ class StorageService {
     if (!CardAccessPolicy.mayKeep(value, accountId)) {
       throw StateError('Account changed during synchronization');
     }
-    value = Map<dynamic,dynamic>.from(value);
-    if (!CardAccessPolicy.isReceived(value) && value['backupOwnerId']==null && backupOwner==accountId && backupOwner!=null) value['backupOwnerId']=backupOwner;
+    value = Map<dynamic, dynamic>.from(value);
+    if (!CardAccessPolicy.isReceived(value) &&
+        value['backupOwnerId'] == null &&
+        backupOwner == accountId &&
+        backupOwner != null)
+      value['backupOwnerId'] = backupOwner;
     final key = await cardsBox.add(value);
     // Especially on Android, do not close the add flow until Hive has flushed
     // the encrypted box and the written record can be read back.
@@ -80,18 +114,22 @@ class StorageService {
   static Future<void> saveCard(dynamic key, Map<dynamic, dynamic> value) async {
     if (!CardAccessPolicy.mayKeep(value, accountId)) return;
     final oldItem = cardsBox.get(key);
-    value = Map<dynamic,dynamic>.from(value);
+    value = Map<dynamic, dynamic>.from(value);
     // Editing screens can hold an older card map from before backup enrollment.
     // Keep the persisted owner so an edit cannot silently drop or reassign it.
-    if (oldItem is Map && oldItem['backupOwnerId'] != null) value['backupOwnerId'] = oldItem['backupOwnerId'];
-    if (oldItem is Map && !value.containsKey('folderName') && oldItem.containsKey('folderName')) value['folderName'] = oldItem['folderName'];
+    if (oldItem is Map && oldItem['backupOwnerId'] != null)
+      value['backupOwnerId'] = oldItem['backupOwnerId'];
+    if (oldItem is Map &&
+        !value.containsKey('folderName') &&
+        oldItem.containsKey('folderName'))
+      value['folderName'] = oldItem['folderName'];
     final oldImage = oldItem is Map ? oldItem['customImage']?.toString() : null;
     final newImage = value['customImage']?.toString();
 
     await cardsBox.put(key, value);
 
     if (oldImage != null && oldImage.isNotEmpty && oldImage != newImage) {
-      await MediaStorageService.deleteIfManaged(oldImage);
+      await _deleteUnusedImage(oldImage);
     }
   }
 
@@ -103,11 +141,21 @@ class StorageService {
       await cardsBox.delete(key);
       try {
         await NotificationService.cancelGiftCard(id);
-      } catch (_) { /* Notifications may be unavailable on this device. */ }
-      await MediaStorageService.deleteIfManaged(
-        item['customImage']?.toString(),
-      );
+      } catch (_) {
+        /* Notifications may be unavailable on this device. */
+      }
+      await _deleteUnusedImage(item['customImage']?.toString());
     }
     await cardsBox.delete(key);
+  }
+
+  static Future<void> _deleteUnusedImage(String? image) async {
+    if (image == null || image.isEmpty) return;
+    if (cardsBox.values.whereType<Map>().any(
+      (card) => card['customImage'] == image,
+    ))
+      return;
+    await cardsBox.flush();
+    await MediaStorageService.deleteIfManaged(image);
   }
 }

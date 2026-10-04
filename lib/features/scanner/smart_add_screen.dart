@@ -4,15 +4,20 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../data/services/smart_card_import_service.dart';
+import '../../data/services/locale_service.dart';
+import 'scanner_screen.dart';
+import 'batch_import_screen.dart';
 
 enum SmartAddManualType { loyalty, qr, gift }
 
 class SmartAddOutcome {
   final SmartCardImportResult? importResult;
   final SmartAddManualType? selectedType;
+  final List<SmartCardImportResult>? batch;
 
-  const SmartAddOutcome.import(this.importResult, this.selectedType);
-  const SmartAddOutcome.manual(this.selectedType) : importResult = null;
+  const SmartAddOutcome.import(this.importResult, this.selectedType) : batch = null;
+  const SmartAddOutcome.manual(this.selectedType) : importResult = null, batch = null;
+  const SmartAddOutcome.batch(this.batch) : importResult = null, selectedType = null;
 }
 
 class SmartAddScreen extends StatefulWidget {
@@ -25,6 +30,16 @@ class SmartAddScreen extends StatefulWidget {
 class _SmartAddScreenState extends State<SmartAddScreen> {
   bool analyzing = false;
   SmartAddManualType? selectedType;
+  String t(String nl,String en)=>LocaleService.languageCode=='nl'?nl:en;
+  Future<void> scan() async {
+    final result=await Navigator.push<ScannerResult>(context,MaterialPageRoute(
+      builder:(_)=>const ScannerScreen(mode:ScannerMode.auto,detailedResult:true)));
+    if(!mounted || result==null)return;
+    Navigator.pop(context,SmartAddOutcome.import(SmartCardImportResult(
+      type:result.codeFormat=='qr'?'QR-code':'Pasje', name:'',code:result.code,
+      pinCode:'',balance:'',codeFormat:result.codeFormat,barcodeSymbology:result.barcodeSymbology,
+      expiryDate:'',brand:null),null));
+  }
 
   Future<void> analyze(ImageSource source) async {
     if (analyzing) return;
@@ -100,7 +115,7 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
             const SizedBox(height: 8),
             Text(
               selectedType == null
-                  ? L10n.current.chooseTheCardTypeFirstThenChoose
+                  ? t('Scan je kaart, importeer een screenshot of voer de gegevens zelf in.','Scan your card, import a screenshot or enter the details yourself.')
                   : L10n.current.chooseAStoreAndScanTheCode,
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -111,6 +126,17 @@ class _SmartAddScreenState extends State<SmartAddScreen> {
             ),
             const SizedBox(height: 24),
             if (selectedType == null) ...[
+              _SmartChoice(icon:Icons.qr_code_scanner,title:t('Scan kaart','Scan card'),
+                subtitle:t('Herken automatisch de barcode of QR-code. Controleer daarna het kaarttype.','Automatically detect the barcode or QR code. Review the card type next.'),onTap:scan),
+              const SizedBox(height:12),
+              _SmartChoice(icon:Icons.photo_library_outlined,title:t('Importeer screenshots','Import screenshots'),
+                subtitle:t('Eén of meerdere kaarten, met controle vóór opslaan.','One or more cards, reviewed before saving.'),onTap:()async{
+                  final results=await Navigator.push<List<SmartCardImportResult>>(context,MaterialPageRoute(builder:(_)=>const BatchImportScreen()));
+                  if(mounted && results!=null && results.isNotEmpty)Navigator.pop(context,SmartAddOutcome.batch(results));
+                }),
+              const SizedBox(height:20),
+              Text(t('Of kies een type voor handmatige invoer','Or choose a type to enter manually')),
+              const SizedBox(height:12),
               _SmartChoice(
                 icon: Icons.card_membership_rounded,
                 title: L10n.current.cardTypeLoyalty,

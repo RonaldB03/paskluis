@@ -10,11 +10,18 @@ abstract final class PurchaseService {
  static const productId='paskluis_plus';
  static final revision=ValueNotifier<int>(0);
  static StreamSubscription<List<PurchaseDetails>>? _subscription;
+ static StreamSubscription? _authSubscription;
+ static String? _accountId;
  static ProductDetails? product;
  static bool busy=false;
  static String? messageCode;
  static Future<void> _work=Future.value();
  static void init(){
+  _accountId=AccountService.currentUser?.id;
+  _authSubscription??=AccountService.authChanges?.listen((state){
+   final nextId=state.session?.user.id;
+   if(nextId!=_accountId){_accountId=nextId;messageCode=null;revision.value++;}
+  });
   _subscription??=InAppPurchase.instance.purchaseStream.listen((purchases){
    _work=_work.then((_)=>_process(purchases)).catchError((_){busy=false;messageCode='failed';revision.value++;});
   },onError:(_){busy=false;messageCode='failed';revision.value++;});

@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'media_storage_service.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -13,7 +13,7 @@ class ImageColorService {
 
   static Future<Color?> dominantEdgeColor(String path) async {
     try {
-      final bytes = await File(path).readAsBytes();
+      final bytes = await MediaStorageService.readBytes(path);
       final codec = await ui.instantiateImageCodec(
         bytes,
         targetWidth: 96,

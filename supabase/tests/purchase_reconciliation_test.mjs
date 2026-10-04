@@ -5,7 +5,7 @@ import {stripTypeScriptTypes} from 'node:module';
 import {webcrypto} from 'node:crypto';
 import vm from 'node:vm';
 
-const source=stripTypeScriptTypes((await readFile(new URL('../functions/reconcile-purchases/index.ts',import.meta.url),'utf8')).replace(/^import .*;\n/gm,''));
+const source=stripTypeScriptTypes((await readFile(new URL('../functions/reconcile-purchases/index.ts',import.meta.url),'utf8')).replace(/^import .*;\r?\n/gm,''));
 const workerSecret='isolated-test-worker-secret-32-characters';
 const tokenHash=Buffer.from(await webcrypto.subtle.digest('SHA-256',new TextEncoder().encode('google-purchase'))).toString('hex');
 function setup({appleError=false,mismatch=false,googlePages=false,saveError=false,claimed=true}={}) {

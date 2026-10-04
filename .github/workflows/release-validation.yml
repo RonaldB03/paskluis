@@ -1,7 +1,8 @@
 name: Validate PasKluis release
 on:
   push:
-    branches: [codex/search-and-premium-build-25, codex/cloud-backups, codex/security-hardening-20260928, codex/plus-header-no-folders, codex/managed-content-support-mode, codex/live-support-settings]
+    branches: ['codex/**', main, master]
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
@@ -16,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '24.15.0'
       - name: Install locked admin test dependencies
         run: npm ci --prefix admin --ignore-scripts
       - name: Verify notification delivery and purchase reconciliation
@@ -28,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Flutter from the official repository
         run: |
-          git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          git clone --depth 1 --branch 3.47.6 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
           echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
       - name: Resolve dependencies and translations
         run: |
@@ -36,6 +37,8 @@ jobs:
           flutter pub get
           flutter gen-l10n
       - name: Analyze
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+        run: flutter analyze --no-fatal-infos
       - name: Regression tests
         run: flutter test --reporter expanded
+      - name: Verify offsite backup safeguards
+        run: python3 -m unittest discover -s ops -v

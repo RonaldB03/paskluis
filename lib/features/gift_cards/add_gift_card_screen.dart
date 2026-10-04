@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/utils/money_input.dart';
 import '../../data/services/locale_service.dart';
 import '../../shared/widgets/duplicate_card_warning.dart';
@@ -365,6 +366,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
       'pinCode': pinCodeController.text.trim(),
       'initialBalance': balance,
       'currentBalance': balance,
+      'balanceUpdatedAt': balance.isEmpty ? '' : DateTime.now().toIso8601String(),
       'note': noteController.text.trim(),
       'brandId': brandId,
       'logoAsset': logoAsset,
@@ -973,7 +975,7 @@ class GiftCardLivePreview extends StatelessWidget {
                 children: [
                   Expanded(
                     child: hasCustomLogo
-                        ? Image.file(File(customImage), fit: BoxFit.contain)
+                        ? SecureCardImage(File(customImage), fit: BoxFit.contain)
                         : hasAssetLogo
                         ? BrandLogo(
                             source: logoAsset,
@@ -1250,7 +1252,7 @@ class _LogoEditor extends StatelessWidget {
           ),
           child: Center(
             child: hasCustomLogo
-                ? Image.file(File(customImage), fit: BoxFit.contain)
+                ? SecureCardImage(File(customImage), fit: BoxFit.contain)
                 : hasPresetLogo
                 ? BrandLogo(source: logoAsset)
                 : const Icon(
