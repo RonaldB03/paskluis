@@ -37,7 +37,7 @@ workflows:
           # Queries both App Store and TestFlight, including all versions.
           # A draft App Store version may legitimately have no linked build.
           LATEST_BUILD_NUMBER=$(app-store-connect get-latest-build-number 6764876159 --all-versions)
-          if ! [[ "$LATEST_BUILD_NUMBER" =~ ^[0-9]+$ ]] || (( LATEST_BUILD_NUMBER < 136 )); then
+          if ! [[ "$LATEST_BUILD_NUMBER" =~ ^[0-9]+$ ]] || (( LATEST_BUILD_NUMBER < 138 )); then
             echo "Apple-buildnummer kon niet betrouwbaar worden vastgesteld."
             exit 1
           fi
@@ -91,7 +91,7 @@ workflows:
           set -e
           set -euo pipefail
           LATEST_BUILD_NUMBER=$(google-play get-latest-build-number --package-name nl.paskluis.app)
-          if ! [[ "$LATEST_BUILD_NUMBER" =~ ^[0-9]+$ ]] || (( LATEST_BUILD_NUMBER < 97 )); then
+          if ! [[ "$LATEST_BUILD_NUMBER" =~ ^[0-9]+$ ]] || (( LATEST_BUILD_NUMBER < 99 )); then
             echo "Geen bestaand buildnummer gevonden in Google Play."
             exit 1
           fi
