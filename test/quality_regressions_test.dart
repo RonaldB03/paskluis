@@ -3,8 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:paskluis_v1/shared/utils/expiry_date.dart';
 import 'package:paskluis_v1/data/services/backup_codec.dart';
 import 'package:paskluis_v1/data/services/card_share_service.dart';
-import 'package:paskluis_v1/data/services/card_shortcut_service.dart';
-import 'package:paskluis_v1/data/services/credit_watch_service.dart';
 
 void main() {
   test('OCR rejects purchase dates and impossible dates', () {
@@ -88,89 +86,5 @@ void main() {
       CardShareService.safePayload(local).containsKey('lastUsedLatitude'),
       false,
     );
-  });
-  test(
-    'credit watch groups brands, excludes spent and archived cards, prioritises expiry',
-    () {
-      final values = [
-        {
-          'id': '1',
-          'type': 'Cadeaukaart',
-          'brandId': 'a',
-          'name': 'Store',
-          'currentBalance': '10,05',
-          'expiryDate': '2026-10-05',
-        },
-        {
-          'id': '2',
-          'type': 'Cadeaukaart',
-          'brandId': 'a',
-          'name': 'Store',
-          'currentBalance': '2.10',
-        },
-        {
-          'id': '3',
-          'type': 'Cadeaukaart',
-          'brandId': 'a',
-          'currentBalance': '0',
-        },
-        {
-          'id': '4',
-          'type': 'Cadeaukaart',
-          'brandId': 'a',
-          'currentBalance': '99',
-          'isArchived': true,
-        },
-        {'id': '5', 'type': 'Pasje', 'brandId': 'a', 'name': 'My card'},
-        {
-          'id': '6',
-          'type': 'Cadeaukaart',
-          'brandId': 'b',
-          'name': 'Other',
-          'currentBalance': '',
-        },
-      ];
-      final groups = CreditWatchService.group(
-        values,
-        now: DateTime(2026, 10, 4),
-      );
-      expect(groups.length, 2);
-      expect(groups.first.cents, 1215);
-      expect(groups.first.gifts.length, 2);
-      expect(groups.first.loyalty.single['id'], '5');
-      expect(
-        CreditWatchService.cents(groups.last.gifts.single['currentBalance']),
-        isNull,
-      );
-      expect(
-        CreditWatchService.daysLeft({
-          'expiryDate': '2026-10-26',
-        }, DateTime(2026, 10, 25, 23)),
-        1,
-      );
-      expect(
-        CreditWatchService.balanceDate({'updatedAt': '2026-10-04'}),
-        isNull,
-      );
-      expect(
-        CreditWatchService.balanceDate({
-          'balanceHistory':
-              '[{"createdAt":"2026-10-01"},{"createdAt":"2026-10-03"}]',
-        }),
-        DateTime(2026, 10, 3),
-      );
-    },
-  );
-  test('shortcuts never open archived or removed favorites', () {
-    final cards = CardShortcutService.favorites([
-      {'id': '1', 'isFavorite': true},
-      {'id': '2', 'isFavorite': true, 'isArchived': true},
-      {'id': '3'},
-      {'id': '4', 'isFavorite': 'true'},
-      {'id': '5', 'isFavorite': true},
-      {'id': '6', 'isFavorite': true},
-    ]);
-    expect(cards.map((c) => c['id']), ['1', '4', '5']);
-    expect(CardShortcutService.favorites([]), isEmpty);
   });
 }

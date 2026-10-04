@@ -13,17 +13,6 @@ class BackupScreen extends StatefulWidget {
 }
 class _BackupScreenState extends State<BackupScreen> {
  Map? _overview;
- BackupEstimate? _estimate;
- bool _inspecting=false;
- Future<void> _inspect() async {
-  setState(()=>_inspecting=true);
-  try {
-   final estimate=await BackupService.inspectLocal();
-   if(mounted)setState(()=>_estimate=estimate);
-  } catch(e) {
-   if(mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text(message(e.toString().split(': ').last))));
-  } finally {if(mounted)setState(()=>_inspecting=false);}
- }
  String t(String nl,String en)=>LocaleService.languageCode=='nl'?nl:en;
  @override void initState(){super.initState();BackupService.refresh();_loadOverview();}
  Future<void> _loadOverview() async {
@@ -75,9 +64,6 @@ class _BackupScreenState extends State<BackupScreen> {
      if(available)Text(t('${((BackupService.status?['usedBytes']??0)/1000000).toStringAsFixed(2)} van 10 MB gebruikt · maximaal drie versies','${((BackupService.status?['usedBytes']??0)/1000000).toStringAsFixed(2)} of 10 MB used · up to three versions')),
      if(BackupService.error!=null)Padding(padding:const EdgeInsets.symmetric(vertical:12),child:Text(message(BackupService.error!),style:TextStyle(color:Theme.of(context).colorScheme.error))),
      const SizedBox(height:12),FilledButton.icon(onPressed:busy||!available?null:()=>BackupActions.upload(context),icon:const Icon(Icons.backup_outlined),label:Text(t('Nu back-up maken','Back up now'))),
-     OutlinedButton.icon(onPressed:busy||_inspecting?null:_inspect,icon:const Icon(Icons.fact_check_outlined),label:Text(_inspecting?t('Afbeeldingen controleren…','Checking images…'):t('Controleer inhoud en grootte','Check contents and size'))),
-     if(_estimate!=null)Text(t('${_estimate!.cards} eigen kaarten · ${_estimate!.images} unieke afbeeldingen · ${(_estimate!.bytes/1000000).toStringAsFixed(2)} MB voor deze versie.','${_estimate!.cards} own cards · ${_estimate!.images} unique images · ${(_estimate!.bytes/1000000).toStringAsFixed(2)} MB for this version.')),
-     if(_estimate!=null)Text(_estimate!.fitsSingleVersion?t('Schatting op dit moment. Eerdere cloudversies tellen mee voor de limiet; de server controleert de definitieve ruimte.','Estimate at this moment. Previous cloud versions count towards the limit; the server checks the final quota.'):message('BACKUP_QUOTA')),
      const SizedBox(height:20),Text(t('Beschikbare back-ups','Available backups'),style:Theme.of(context).textTheme.titleMedium),
      for(final v in BackupService.versions)ListTile(contentPadding:EdgeInsets.zero,title:Text(_date(v['createdAt'])),subtitle:Text(t('${v['cardCount']} kaarten','${v['cardCount']} cards')),trailing:IconButton(tooltip:t('Herstellen','Restore'),onPressed:busy?null:()=>_restore(v),icon:const Icon(Icons.restore))),
      const SizedBox(height:16),TextButton(onPressed:busy||BackupService.versions.isEmpty?null:()async{if(await _confirm(t('Alle cloudback-ups verwijderen?','Delete all cloud backups?'),t('Alle drie de versies worden definitief verwijderd en automatische back-up gaat uit. Je kaarten op dit toestel blijven staan.','All versions will be permanently deleted and automatic backup will turn off. Cards on this device remain.')))await BackupService.deleteCloud();},child:Text(t('Alle cloudback-ups verwijderen','Delete all cloud backups'))),

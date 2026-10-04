@@ -1,4 +1,4 @@
-import 'data/services/card_shortcut_service.dart';
+import 'package:quick_actions/quick_actions.dart';
 import 'features/cards/card_view_screen.dart';
 import 'features/gift_cards/gift_card_view_screen.dart';
 import 'features/qr_codes/qr_codes_screen.dart';
@@ -54,7 +54,6 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     with WidgetsBindingObserver {
   final _navigatorKey = GlobalKey<NavigatorState>();
   late Future<void> _initialization;
-  CardShortcutService? _shortcuts;
   bool _syncingSharedCards = false;
   bool _checkingDeviceSession = false;
   Timer? _deviceSessionTimer;
@@ -70,8 +69,6 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
       if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        _shortcuts = CardShortcutService(_navigatorKey);
-        unawaited(_shortcuts!.start());
         final payload = NotificationService.initialPayload;
         NotificationService.initialPayload = null;
         if (payload != null) unawaited(_openNotification(payload));
@@ -84,7 +81,6 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     LocaleService.locale.removeListener(_languageChanged);
-    _shortcuts?.dispose();
     _deviceSessionTimer?.cancel();
     _authSubscription?.cancel();
     super.dispose();
@@ -184,6 +180,9 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   Future<void> _initialize() async {
     await StorageService.init();
     await LocaleService.init(hasSavedCards: StorageService.cardsBox.isNotEmpty);
+    // Remove dynamic shortcuts left by the withdrawn 1.6.0 test build.
+    // Older installations have no shortcuts; failures must not block startup.
+    try { await const QuickActions().clearShortcutItems(); } catch (_) {}
     await SettingsService.init();
     await AppMenuService.init();
     await ManagedContentService.init();

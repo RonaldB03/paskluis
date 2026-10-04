@@ -1,8 +1,5 @@
+import '../support/support_home_card.dart';
 import '../../shared/widgets/shared_card_save.dart';
-import '../../data/services/smart_card_import_service.dart';
-import '../../data/services/locale_service.dart';
-import '../gift_cards/credit_watch_screen.dart';
-import '../../shared/widgets/backup_health_card.dart';
 import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/widgets/premium_app_title.dart';
 import '../../shared/widgets/home_section_prompt.dart';
@@ -503,30 +500,14 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    if(outcome.batch != null) {
-      for(final result in outcome.batch!) {
-        if(!mounted)break;
-        await _reviewImported(result,null);
-      }
-      return;
-    }
-    if(outcome.importResult != null) await _reviewImported(outcome.importResult!,outcome.selectedType);
-  }
-
-  Future<void> _reviewImported(SmartCardImportResult result, SmartAddManualType? selectedType) async {
-    final inferred = switch(selectedType) {
-      SmartAddManualType.loyalty => 'Pasje', SmartAddManualType.gift => 'Cadeaukaart',
-      SmartAddManualType.qr => 'QR-code', null => result.type,
+    final result = outcome.importResult;
+    if (result == null) return;
+    final type = switch (outcome.selectedType) {
+      SmartAddManualType.loyalty => 'Pasje',
+      SmartAddManualType.qr => 'QR-code',
+      SmartAddManualType.gift => 'Cadeaukaart',
+      null => result.type,
     };
-    final nl = LocaleService.languageCode == 'nl';
-    final type = await showDialog<String>(context:context,builder:(c)=>SimpleDialog(
-      title:Text(nl ? 'Controleer het kaarttype' : 'Review card type'),
-      children:[for(final entry in {'Pasje':nl?'Klantenkaart':'Loyalty card','Cadeaukaart':nl?'Cadeaukaart':'Gift card','QR-code':'QR'}.entries)
-        SimpleDialogOption(onPressed:()=>Navigator.pop(c,entry.key),child:Text(entry.value + (entry.key==inferred ? (nl?' · voorgesteld':' · suggested') : ''))),
-        SimpleDialogOption(onPressed:()=>Navigator.pop(c),child:Text(nl?'Overslaan':'Skip')),
-      ],
-    ));
-    if(type==null || !mounted)return;
 
     final brand = result.brand;
     Map<String, String>? saved;
@@ -1057,7 +1038,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const BackupHealthCard(),
+                const SupportHomeCard(),
                 if (normalizedQuery.isNotEmpty)
                   _SearchResults(
                     query: _searchQuery.trim(),
@@ -1065,13 +1046,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: (item) => openCardView(categoryFor(item), item),
                   )
                 else ...[
-                  if(giftCards.isNotEmpty) Card(child:ListTile(
-                    leading:const Icon(Icons.savings_outlined),
-                    title:Text(LocaleService.languageCode=='nl'?'Tegoedbewaker':'Credit Watch'),
-                    subtitle:Text(LocaleService.languageCode=='nl'?'Bekijk tegoed en vervaldata per winkel':'See credit and expiry dates by store'),
-                    trailing:const Icon(Icons.chevron_right),
-                    onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>const CreditWatchScreen())),
-                  )),
                   if (SettingsService.showFavoritesSection) ...[
                     _FavoritesSection(
                       items: favorites,
