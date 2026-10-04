@@ -1109,3 +1109,4 @@ class _OfflineAccountCard extends StatelessWidget {
     );
   }
 }
+
