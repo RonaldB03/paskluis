@@ -34,18 +34,13 @@ workflows:
       - name: iOS-app bouwen
         script: |
           set -euo pipefail
-          LATEST_TESTFLIGHT=$(app-store-connect get-latest-testflight-build-number 6764876159 --all-versions)
-          LATEST_APP_STORE=$(app-store-connect get-latest-app-store-build-number 6764876159 --all-versions)
-          for NUMBER in "$LATEST_TESTFLIGHT" "$LATEST_APP_STORE"; do
-            if ! [[ "$NUMBER" =~ ^[0-9]+$ ]]; then
-              echo "Apple-buildnummer kon niet betrouwbaar worden vastgesteld."
-              exit 1
-            fi
-          done
-          LATEST_BUILD_NUMBER=136
-          for NUMBER in "$LATEST_TESTFLIGHT" "$LATEST_APP_STORE"; do
-            if (( NUMBER > LATEST_BUILD_NUMBER )); then LATEST_BUILD_NUMBER=$NUMBER; fi
-          done
+          # Queries both App Store and TestFlight, including all versions.
+          # A draft App Store version may legitimately have no linked build.
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-build-number 6764876159 --all-versions)
+          if ! [[ "$LATEST_BUILD_NUMBER" =~ ^[0-9]+$ ]] || (( LATEST_BUILD_NUMBER < 136 )); then
+            echo "Apple-buildnummer kon niet betrouwbaar worden vastgesteld."
+            exit 1
+          fi
           IOS_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
           echo "$IOS_BUILD_NUMBER" > "$CM_BUILD_DIR/ios_build_number.txt"
           echo "iOS-buildnummer: $IOS_BUILD_NUMBER"
