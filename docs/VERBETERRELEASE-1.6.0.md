@@ -33,11 +33,27 @@ Dit bewijst de genoemde automatische controles. Het is geen bewijs van werking v
 
 ## Nog uit te voeren vóór brede vrijgave
 
-1. Ondertekende Android- en iOS-build maken en testen op echte toestellen. Controleer offline koude start, foto-upgrade van 1.5.2, cameraweigering, OCR, 300% tekst, biometrie, snelkoppelingen bij vergrendelde app, meldingen bij koude start en saldobesteding. Deze omgeving heeft geen Android-SDK of Xcode.
+1. Ondertekende Android- en iOS-builds zijn via Codemagic gemaakt en naar de stores verstuurd. Test ze nog op echte toestellen: offline koude start, foto-upgrade van 1.5.2, cameraweigering, OCR, 300% tekst, biometrie, snelkoppelingen bij vergrendelde app, meldingen bij koude start en saldobesteding.
 2. Met twee testaccounts gedeelde saldo-edits, gelijktijdige versieconflicten, intrekken en opnieuw inloggen testen tegen de echte backend. Geen echte saldo’s besteden of productiegegevens wijzigen.
 3. Afgerond: Drive-service geïnstalleerd met bestaande aanmelding; eerste echte upload, externe checksum, download en ontsleuteling gecontroleerd. Zie [Google Drive-back-up](GOOGLE-DRIVE-BACKUP.md).
 4. Afgerond: de Drive-kopie van 4 oktober logisch hersteld en gecontroleerd in een geïsoleerde PostgreSQL-container. Een mobiele gebruikerstest tegen een volledig herstelde API-/Storage-stack blijft onderdeel van de toestel-/integratietests.
 5. Proxy/IP-begrenzing van de openbare winkelzoekfunctie en websiteheaders (CSP/HSTS) op de VPS controleren. Niet lokaal te bewijzen of verantwoord blind te overschrijven.
-6. Build- en reviewstatus na de geautoriseerde uitvoering vastleggen. Brede openbare vrijgave blijft handmatig; fysieke toesteltests blijven nodig.
+6. Afgerond: build- en reviewstatus hieronder vastgelegd. Brede openbare vrijgave blijft handmatig; fysieke toesteltests blijven nodig.
 
 Horlogeapps, internationale catalogusuitbreiding, winkelintegraties voor live saldo en huishoudreserveringen blijven vervolgproducten. Ze zijn geen onderdeel van deze kandidaat en zijn niet als werkend gepresenteerd. De Tegoedbewaker is een onderscheidingsrichting, geen bewezen exclusiviteit tegenover SuperCards.
+
+## Store-uitvoering 4 oktober
+
+- Android 1.6.0 (98): ondertekende AAB en APK geslaagd. AAB naar Google Play `alpha` verstuurd en via track-readback bevestigd. Play Console toont de gesloten-testwijziging in beoordeling; beheerd publiceren staat aan.
+- AAB SHA-256: `69c4fca1670fb7c16ba393e5cdfec57c03806dd42a6ecc33686f2d04946725f3`.
+- Android-build: https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ac28f597394575b200b0a2c
+- GitHub-validatie van appcommit `695bcea030f289ffa462e9cd60a1987177aef45c`: geslaagd, run `37221207612`.
+- Google Play-productietoegang: 12 testers gedurende 9 van de vereiste 14 dagen; nog niet aanvraagbaar.
+- iOS: eerdere 1.5.2 (136) was goedgekeurd maar niet gepubliceerd. Gebruiker gaf expliciet toestemming deze te vervangen. Inzending omgezet naar 1.6.0; build 136 blijft in het account. Eerste automatische releasebuild gestopt vóór upload tijdens toestemmingscontrole. De daaropvolgende TestFlight-run stopte veilig bij de nummercontrole doordat de conceptversie geen gekoppelde build meer had. De controle gebruikt nu de gecombineerde App Store- en TestFlight-historie over alle versies.
+- iOS 1.6.0 (137): ondertekende IPA succesvol gebouwd en foutloos geüpload, delivery UUID `c5a504a1-301a-4d64-841a-74841205ae50`. Verwerkt, gekoppeld aan Paskluis Testers en ingediend voor TestFlight-review.
+- Officiële App Store-aanvraag ingediend op 4 oktober 2026 20:12 Amsterdam: **Waiting for Review**, bevestigd in App Store Connect. Aanvraag `5bcd789c-9e06-480b-9911-45f4bd6f88e2`. Dit is nog geen goedkeuring of openbare publicatie.
+- De automatische reviewstap maakte door de Engelse releasenotitie een lege Engelse storelokalisatie aan en faalde op ontbrekende verplichte velden. Die onbedoelde lege lokalisatie is verwijderd; de bestaande Nederlandse pagina is daarna succesvol handmatig ingediend met build 137. `release_notes.json` bevat voortaan alleen de bestaande Nederlandse storetaal, zodat dit niet opnieuw gebeurt. Deze wijziging raakt de appbinary niet.
+- iOS-build: https://codemagic.io/app/69f36f732d8b59f24897933a/build/6ac2943c7394575b200b0b6e
+- Definitieve iOS-broncommit: `934788518da45c05df3d0a0d5c880cc00521a490`; GitHub-validatie geslaagd, run `37222646801`. Alleen `codemagic.yaml` verschilt van de Android-broncommit; appcode is identiek.
+- De bestaande hoogste Apple-build was 136; het werkelijk geüploade nummer is 137. Publicatie na goedkeuring blijft handmatig.
+- Niet-blokkerende native waarschuwingen voor vervolgonderhoud: iOS UIScene-lifecycle, Swift Package Manager-ondersteuning van ML Kit, Android Gradle Plugin en Kotlin-upgrades. Deze grote toolchainmigraties zijn niet tijdens de storebuild uitgevoerd.
