@@ -146,6 +146,16 @@ workflows:
     <<: *ios_release
     name: iOS Candidate Build
     publishing: {}
+  ios-testflight:
+    <<: *ios_release
+    name: iOS TestFlight Build
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Paskluis Testers
+        submit_to_app_store: false
   android-candidate:
     <<: *android_test
     name: Android Candidate Build
