@@ -1,6 +1,6 @@
-# PasKluis 1.6.0+44 — implementatie en vrijgave
+# PasKluis 1.6.0 — implementatie en vrijgave
 
-Lokale releasekandidaat, 4 oktober 2026. Niet gepubliceerd naar App Store, Play Store of VPS. Bestaande wijzigingen voor accountbeheer, aankopen en beheeruitnodigingen zijn behouden.
+Releasekandidaat, 4 oktober 2026. Gebruiker heeft Android- en iOS-builds en directe indiening voor officiële Apple-review geautoriseerd. Android blijft op het bestaande gesloten testkanaal; Apple houdt handmatige vrijgave na goedkeuring. Bestaande wijzigingen voor accountbeheer, aankopen en beheeruitnodigingen zijn behouden. De eerdere publicaties zijn 1.5.2 (iOS 136, Android 97); beide workflows lezen de storestand voor het volgende nummer. Lokale fallback: 1.6.0+137.
 
 ## Geïmplementeerd
 
@@ -38,6 +38,6 @@ Dit bewijst de genoemde automatische controles. Het is geen bewijs van werking v
 3. Afgerond: Drive-service geïnstalleerd met bestaande aanmelding; eerste echte upload, externe checksum, download en ontsleuteling gecontroleerd. Zie [Google Drive-back-up](GOOGLE-DRIVE-BACKUP.md).
 4. Afgerond: de Drive-kopie van 4 oktober logisch hersteld en gecontroleerd in een geïsoleerde PostgreSQL-container. Een mobiele gebruikerstest tegen een volledig herstelde API-/Storage-stack blijft onderdeel van de toestel-/integratietests.
 5. Proxy/IP-begrenzing van de openbare winkelzoekfunctie en websiteheaders (CSP/HSTS) op de VPS controleren. Niet lokaal te bewijzen of verantwoord blind te overschrijven.
-6. Na bovenstaande controles expliciet de releasekanalen vrijgeven. Er is vanuit deze wijziging geen publicatie gestart.
+6. Build- en reviewstatus na de geautoriseerde uitvoering vastleggen. Brede openbare vrijgave blijft handmatig; fysieke toesteltests blijven nodig.
 
 Horlogeapps, internationale catalogusuitbreiding, winkelintegraties voor live saldo en huishoudreserveringen blijven vervolgproducten. Ze zijn geen onderdeel van deze kandidaat en zijn niet als werkend gepresenteerd. De Tegoedbewaker is een onderscheidingsrichting, geen bewezen exclusiviteit tegenover SuperCards.

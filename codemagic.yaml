@@ -34,8 +34,8 @@ workflows:
       - name: iOS-app bouwen
         script: |
           set -euo pipefail
-          LATEST_TESTFLIGHT=$(app-store-connect get-latest-testflight-build-number 6764876159)
-          LATEST_APP_STORE=$(app-store-connect get-latest-app-store-build-number 6764876159)
+          LATEST_TESTFLIGHT=$(app-store-connect get-latest-testflight-build-number 6764876159 --all-versions)
+          LATEST_APP_STORE=$(app-store-connect get-latest-app-store-build-number 6764876159 --all-versions)
           for NUMBER in "$LATEST_TESTFLIGHT" "$LATEST_APP_STORE"; do
             if ! [[ "$NUMBER" =~ ^[0-9]+$ ]]; then
               echo "Apple-buildnummer kon niet betrouwbaar worden vastgesteld."
