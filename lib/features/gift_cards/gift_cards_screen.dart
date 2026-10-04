@@ -1,3 +1,4 @@
+import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:io';
 
@@ -953,7 +954,7 @@ class _GiftCardTileState extends State<GiftCardTile> {
                         ? hasCustomLogo
                             ? Transform.scale(
                                 scale: 1.5,
-                                child: Image.file(
+                                child: SecureCardImage(
                                   File(customImage),
                                   fit: BoxFit.contain,
                                   height: 96,

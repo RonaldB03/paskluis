@@ -113,8 +113,8 @@ abstract final class AccountService {
     } finally { isSigningOut = false; }
   }
 
-  static Future<UserResponse> updatePassword(String password) {
-    return _client.auth.updateUser(UserAttributes(password: password));
+  static Future<UserResponse> updatePassword(String password, {String? nonce}) {
+    return _client.auth.updateUser(UserAttributes(password: password, nonce: nonce));
   }
 
   static Future<bool> isCurrentUserAdmin() async {
@@ -225,6 +225,10 @@ abstract final class AccountService {
   static Future<PlusStatus> _loadPlusStatusOnline() async {
     final user = currentUser;
     if (user == null) return PlusStatus.inactive;
+    // An RLS-filtered empty result is not proof that Plus is inactive.
+    if (!await DeviceSessionService.validate()) {
+      throw AuthException(L10n.current.accountSessionNotReady);
+    }
 
     final rows = await _client
         .from('entitlements')
@@ -250,3 +254,4 @@ abstract final class AccountService {
     return PlusStatus.inactive;
   }
 }
+

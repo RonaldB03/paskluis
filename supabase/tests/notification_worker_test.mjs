@@ -7,7 +7,7 @@ import vm from 'node:vm';
 import {stripTypeScriptTypes} from 'node:module';
 
 const source = stripTypeScriptTypes((await readFile(new URL('../functions/dispatch-notifications/index.ts', import.meta.url),'utf8'))
-  .replace(/^import .*;\n/gm,''));
+  .replace(/^import .*;\r?\n/gm,''));
 
 function setup({pushFails=false,mailFails=false,mailErrorCode=null,invalidMailConfig=false,mailbox=null,inbox=null,jobPatch={},membershipRevoked=false,readFails=false,guest=false}={}) {
   const updates=[],mail=[],push=[],transports=[];

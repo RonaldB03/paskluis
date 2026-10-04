@@ -1,3 +1,4 @@
+import '../../shared/utils/expiry_date.dart';
 import 'barcode_image_service.dart';
 import 'card_image_signals.dart';
 import '../../shared/utils/card_barcode.dart';
@@ -54,8 +55,12 @@ abstract final class SmartCardImportService {
 
     try {
       final signals = await readCardImageSignals(
-        readBarcodes: () => BarcodeImageService.analyze(imagePath, formats: BarcodeImageService.cardFormats),
-        readText: () => recognizer.processImage(InputImage.fromFilePath(imagePath)),
+        readBarcodes: () => BarcodeImageService.analyze(
+          imagePath,
+          formats: BarcodeImageService.cardFormats,
+        ),
+        readText: () =>
+            recognizer.processImage(InputImage.fromFilePath(imagePath)),
       );
       final scanned = selectCardBarcode(signals.barcodes?.barcodes ?? []);
       final recognized = signals.text;
@@ -78,8 +83,8 @@ abstract final class SmartCardImportService {
       final type = isQr
           ? 'QR-code'
           : giftWords || (brandSupportsGift && _findBalance(text).isNotEmpty)
-              ? 'Cadeaukaart'
-              : 'Pasje';
+          ? 'Cadeaukaart'
+          : 'Pasje';
 
       return SmartCardImportResult(
         type: type,
@@ -102,12 +107,13 @@ abstract final class SmartCardImportService {
   }
 
   static String _findCardNumber(String text) {
-    final matches = RegExp(r'(?<!\d)(?:\d[ -]?){8,24}(?!\d)')
-        .allMatches(text)
-        .map((match) => match.group(0)!.replaceAll(RegExp(r'\D'), ''))
-        .where((value) => value.length >= 8 && value.length <= 24)
-        .toList()
-      ..sort((a, b) => b.length.compareTo(a.length));
+    final matches =
+        RegExp(r'(?<!\d)(?:\d[ -]?){8,24}(?!\d)')
+            .allMatches(text)
+            .map((match) => match.group(0)!.replaceAll(RegExp(r'\D'), ''))
+            .where((value) => value.length >= 8 && value.length <= 24)
+            .toList()
+          ..sort((a, b) => b.length.compareTo(a.length));
     return matches.isEmpty ? '' : matches.first;
   }
 
@@ -121,13 +127,20 @@ abstract final class SmartCardImportService {
       caseSensitive: false,
     ).firstMatch(text);
     final labelled = match?.group(1)?.trim() ?? '';
-    if (labelled.isNotEmpty && RegExp(r'\d').hasMatch(labelled)) return labelled;
+    if (labelled.isNotEmpty && RegExp(r'\d').hasMatch(labelled))
+      return labelled;
 
-    final boxes = recognized?.blocks.expand((block) => block.lines).toList() ?? <TextLine>[];
+    final boxes =
+        recognized?.blocks.expand((block) => block.lines).toList() ??
+        <TextLine>[];
     if (boxes.isEmpty) return '';
 
-    final left = boxes.map((line) => line.boundingBox.left).reduce((a, b) => a < b ? a : b);
-    final right = boxes.map((line) => line.boundingBox.right).reduce((a, b) => a > b ? a : b);
+    final left = boxes
+        .map((line) => line.boundingBox.left)
+        .reduce((a, b) => a < b ? a : b);
+    final right = boxes
+        .map((line) => line.boundingBox.right)
+        .reduce((a, b) => a > b ? a : b);
     final imageCenter = (left + right) / 2;
     final compactCardCode = cardCode.replaceAll(RegExp(r'\D'), '');
 
@@ -159,36 +172,8 @@ abstract final class SmartCardImportService {
     return (match?.group(1) ?? match?.group(2) ?? '').replaceAll(',', '.');
   }
 
-  static String _findExpiryDate(String text) {
-    final fullDate = RegExp(
-      r'(?:geldig\s*tot|verval(?:datum)?|expiry|expires)?\s*[:\-]?\s*(\d{1,2})[\-\/.](\d{1,2})[\-\/.](\d{2,4})',
-      caseSensitive: false,
-    ).firstMatch(text);
-    if (fullDate != null) {
-      final day = int.tryParse(fullDate.group(1) ?? '');
-      final month = int.tryParse(fullDate.group(2) ?? '');
-      var year = int.tryParse(fullDate.group(3) ?? '');
-      if (year != null && year < 100) year += 2000;
-      if (day != null && month != null && year != null &&
-          day >= 1 && day <= 31 && month >= 1 && month <= 12) {
-        return DateTime(year, month, day).toIso8601String();
-      }
-    }
-
-    final monthYear = RegExp(
-      r'(?:geldig\s*tot|verval(?:datum)?|expiry|expires)\s*[:\-]?\s*(\d{1,2})[\-\/.](\d{2,4})',
-      caseSensitive: false,
-    ).firstMatch(text);
-    if (monthYear != null) {
-      final month = int.tryParse(monthYear.group(1) ?? '');
-      var year = int.tryParse(monthYear.group(2) ?? '');
-      if (year != null && year < 100) year += 2000;
-      if (month != null && year != null && month >= 1 && month <= 12) {
-        return DateTime(year, month + 1, 0).toIso8601String();
-      }
-    }
-    return '';
-  }
+  static String _findExpiryDate(String text) =>
+      recogniseExpiryDate(text)?.toIso8601String() ?? '';
 
   static String _suggestName(String text, String type) {
     final line = text
@@ -203,9 +188,4 @@ abstract final class SmartCardImportService {
     if (type == 'QR-code') return L10n.current.qrCode;
     return L10n.current.cardTypeLoyalty;
   }
-
-  static String _normalize(String value) => value
-      .toLowerCase()
-      .replaceAll('&', 'en')
-      .replaceAll(RegExp(r'[^a-z0-9]'), '');
 }

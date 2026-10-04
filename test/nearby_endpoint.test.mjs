@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 // credentials, network requests or paid lookups are used by these tests.
 const source = stripTypeScriptTypes(readFileSync(
   new URL('../supabase/functions/nearest-brand-stores/index.ts', import.meta.url), 'utf8',
-).replace(/^import .*createClient.*;\n/, ''));
+).replace(/^import .*createClient.*;\r?\n/, ''));
 
 async function run({ brands, cached = [], denied = false, failed = '' }) {
   let handler;

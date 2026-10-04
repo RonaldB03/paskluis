@@ -1,5 +1,7 @@
-import '../../shared/widgets/premium_app_title.dart';
 import '../support/support_home_card.dart';
+import '../../shared/widgets/shared_card_save.dart';
+import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
+import '../../shared/widgets/premium_app_title.dart';
 import '../../shared/widgets/home_section_prompt.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import '../../shared/widgets/language_picker.dart';
@@ -367,6 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
       'updatedAt': result['updatedAt'] ?? now,
       'lastUsedAt': result['lastUsedAt'] ?? '',
       'balanceHistory': result['balanceHistory'] ?? '[]',
+      'balanceUpdatedAt': result['balanceUpdatedAt'] ?? '',
       'expiryDate': result['expiryDate'] ?? '',
       'expiryNotificationsEnabled': result['expiryNotificationsEnabled'] == 'true',
       'isArchived': result['isArchived'] == 'true',
@@ -520,6 +523,7 @@ class _HomeScreenState extends State<HomeScreen> {
             initialBarcodeSymbology: result.barcodeSymbology,
             initialPinCode: result.pinCode,
             initialCurrentBalance: result.balance,
+            initialExpiryDate: result.expiryDate,
             initialBrandId: brand?.id,
             initialLogoAsset: brand?.logoAsset,
             initialBrandColor: brand?.color.value.toString(),
@@ -601,7 +605,10 @@ class _HomeScreenState extends State<HomeScreen> {
     };
     if (saved['isShared'] == true ||
         (saved['sharedCardId']?.toString() ?? '').isNotEmpty) {
-      saved = await CardShareService.updateSharedCard(saved);
+      if (!context.mounted) return;
+      final remote = await saveSharedCardWithFeedback(context, saved);
+      if (remote == null) return;
+      saved = remote;
     }
     await StorageService.saveCard(key, saved);
   }
@@ -662,7 +669,10 @@ class _HomeScreenState extends State<HomeScreen> {
     };
     if (saved['isShared'] == true ||
         (saved['sharedCardId']?.toString() ?? '').isNotEmpty) {
-      saved = await CardShareService.updateSharedCard(saved);
+      if (!context.mounted) return;
+      final remote = await saveSharedCardWithFeedback(context, saved);
+      if (remote == null) return;
+      saved = remote;
     }
     await StorageService.saveCard(key, saved);
     await NotificationService.syncGiftCard(saved);
@@ -1779,7 +1789,7 @@ class _HomePreviewCardState extends State<HomePreviewCard> {
                             child: Transform.scale(
                               scale: hasCustomLogo && !compact ? 1.18 : 1.0,
                               child: hasCustomLogo
-                                  ? Image.file(
+                                  ? SecureCardImage(
                                       File(widget.customImage),
                                       fit: BoxFit.contain,
                                       height: logoHeight,
@@ -1938,52 +1948,6 @@ class _AddHelpStep extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ActionCard extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _ActionCard({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    L10n.watch(context);
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFD51B46),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.white, size: 30),
-            const Spacer(),
-            Text(
-              title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                height: 1.15,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

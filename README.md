@@ -7,14 +7,16 @@ QR-codes lokaal op het apparaat worden bewaard.
 
 - Kaartgegevens worden lokaal opgeslagen in een AES-versleutelde Hive-box.
 - De encryptiesleutel staat in de beveiligde opslag van iOS of Android.
-- PasKluis verstuurt kaartgegevens niet naar een account of externe server.
-- Zelfgekozen kaartafbeeldingen worden naar de permanente appmap gekopieerd.
+- Eigen kaartfoto’s staan AES-256-GCM-versleuteld in de appmap; ontsleuteling gebeurt in het geheugen. Bestaande foto’s worden bij de upgrade gemigreerd.
+- Zonder delen of optionele accountback-up blijven kaartgegevens op het toestel. Bij delen ontvangt de gekozen persoon de kaartgegevens, inclusief een eventuele cadeaukaart-PIN.
+- Een ingeschakelde accountback-up bewaart een versleutelde herstelkopie op de PasKluis-server. PasKluis beheert de herstelsleutels: dit is geen end-to-endversleuteling. Alleen geslaagde uploads zijn herstelbaar.
+- Gebruikscoördinaten blijven lokaal en worden niet gedeeld of opgenomen in nieuwe back-ups.
 
 ## Ontwikkelen
 
 Vereisten:
 
-- Flutter stable met Dart 3.11 of nieuwer
+- Flutter 3.47.6 (dezelfde versie als CI), Dart 3.12 of nieuwer
 - Xcode voor iOS-builds
 - Android Studio/SDK voor Android-builds
 

@@ -8,7 +8,7 @@ workflows:
       app_store_connect: Codemagic
 
     environment:
-      flutter: stable
+      flutter: 3.47.6
       xcode: latest
       ios_signing:
         distribution_type: app_store
@@ -20,7 +20,7 @@ workflows:
       - name: Broncode controleren
         script: |
           set -e
-          flutter analyze --no-fatal-infos --no-fatal-warnings
+          flutter analyze --no-fatal-infos
           echo "Broncodecontrole voltooid."
       - name: Tests uitvoeren
         script: |
@@ -33,12 +33,22 @@ workflows:
         script: xcode-project use-profiles
       - name: iOS-app bouwen
         script: |
-          IOS_BUILD_NUMBER=$((BUILD_NUMBER + 33))
+          set -euo pipefail
+          # Queries both App Store and TestFlight, including all versions.
+          # A draft App Store version may legitimately have no linked build.
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-build-number 6764876159 --all-versions)
+          if ! [[ "$LATEST_BUILD_NUMBER" =~ ^[0-9]+$ ]] || (( LATEST_BUILD_NUMBER < 138 )); then
+            echo "Apple-buildnummer kon niet betrouwbaar worden vastgesteld."
+            exit 1
+          fi
+          IOS_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          echo "$IOS_BUILD_NUMBER" > "$CM_BUILD_DIR/ios_build_number.txt"
           echo "iOS-buildnummer: $IOS_BUILD_NUMBER"
           flutter build ipa --release --build-number="$IOS_BUILD_NUMBER" --export-options-plist=$HOME/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - ios_build_number.txt
 
     publishing:
       app_store_connect:
@@ -46,7 +56,9 @@ workflows:
         submit_to_testflight: true
         beta_groups:
           - Paskluis Testers
-        submit_to_app_store: false
+        submit_to_app_store: true
+        cancel_previous_submissions: true
+        release_type: MANUAL
 
   android-test: &android_test
     name: Android Test Build
@@ -55,7 +67,7 @@ workflows:
     environment:
       groups:
         - google_play_credentials
-      flutter: stable
+      flutter: 3.47.6
       android_signing:
         - paskluis_upload
 
@@ -65,7 +77,7 @@ workflows:
       - name: Broncode controleren
         script: |
           set -e
-          flutter analyze --no-fatal-infos --no-fatal-warnings
+          flutter analyze --no-fatal-infos
           echo "Broncodecontrole voltooid."
       - name: Tests uitvoeren
         script: |
@@ -77,8 +89,9 @@ workflows:
       - name: Volgende Google Play-buildnummer bepalen
         script: |
           set -e
+          set -euo pipefail
           LATEST_BUILD_NUMBER=$(google-play get-latest-build-number --package-name nl.paskluis.app)
-          if [ -z "$LATEST_BUILD_NUMBER" ]; then
+          if ! [[ "$LATEST_BUILD_NUMBER" =~ ^[0-9]+$ ]] || (( LATEST_BUILD_NUMBER < 99 )); then
             echo "Geen bestaand buildnummer gevonden in Google Play."
             exit 1
           fi
@@ -98,6 +111,7 @@ workflows:
     artifacts:
       - build/app/outputs/bundle/release/*.aab
       - build/app/outputs/flutter-apk/*.apk
+      - android_build_number.txt
 
     publishing:
       google_play:
@@ -109,7 +123,7 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 30
     environment:
-      flutter: stable
+      flutter: 3.47.6
     scripts:
       - name: Dependencies and translations
         script: |
@@ -127,6 +141,16 @@ workflows:
     <<: *ios_release
     name: iOS Candidate Build
     publishing: {}
+  ios-testflight:
+    <<: *ios_release
+    name: iOS TestFlight Build
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Paskluis Testers
+        submit_to_app_store: false
   android-candidate:
     <<: *android_test
     name: Android Candidate Build

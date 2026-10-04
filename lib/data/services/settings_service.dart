@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'supabase_service.dart';
 import 'locale_service.dart';
@@ -32,6 +33,8 @@ abstract final class SettingsService {
   static Future<void> init() async {
     _preferences = await SharedPreferences.getInstance();
     extraClearNotifier.value = extraClearEnabled;
+    try { appVersion = (await PackageInfo.fromPlatform()).version; }
+    catch (_) { appVersion = ''; }
   }
 
   static Future<void> refreshRemoteConfig() async {
@@ -216,7 +219,7 @@ abstract final class SettingsService {
   static bool get cardSharingAvailable =>
       _remoteBool('feature_card_sharing', true);
 
-  static const appVersion = '1.5.0';
+  static String appVersion = '';
   static bool get maintenanceEnabled => _remoteBool('maintenance_enabled', false);
   static String get maintenanceMessage => _remoteString(
     LocaleService.languageCode == 'en' ? 'maintenance_message_en' : 'maintenance_message',

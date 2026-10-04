@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import {stripTypeScriptTypes} from 'node:module';
 
 async function setup(slug,{allowed=false,rpcError=false,ownThread=false}={}) {
-  const source=stripTypeScriptTypes((await readFile(new URL(`../functions/${slug}/index.ts`,import.meta.url),'utf8')).replace(/^import .*;\n/gm,''));
+  const source=stripTypeScriptTypes((await readFile(new URL(`../functions/${slug}/index.ts`,import.meta.url),'utf8')).replace(/^import .*;\r?\n/gm,''));
   const writes=[],checks=[],signed=[];let handler;
   const threadId='ee330000-0000-4000-8000-000000000090';
   function chain(table,isService) {

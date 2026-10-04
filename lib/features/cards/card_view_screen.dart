@@ -1,3 +1,5 @@
+import '../../shared/widgets/shared_card_save.dart';
+import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/utils/card_barcode.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
@@ -203,10 +205,13 @@ class _CardViewScreenState extends State<CardViewScreen>
     var savedItem = Map<String, dynamic>.from(newItem);
     final isReadOnlyShare = savedItem['isShared'] == true &&
         savedItem['canEditShared'] != true;
-    if (!isReadOnlyShare &&
+    if (!isReadOnlyShare && CardShareService.contentChanged(oldItem, savedItem) &&
         (savedItem['isShared'] == true ||
             (savedItem['sharedCardId']?.toString() ?? '').isNotEmpty)) {
-      savedItem = await CardShareService.updateSharedCard(savedItem);
+      if (!context.mounted) return;
+      final remote = await saveSharedCardWithFeedback(context, savedItem);
+      if (remote == null) return;
+      savedItem = remote;
     }
 
     await StorageService.saveCard(key, savedItem);
@@ -815,7 +820,7 @@ class LoyaltyBarcodeCard extends StatelessWidget {
                     ? Transform.scale(
                         scale: hasCustomLogo ? 1.8 : 1.12,
                         child: hasCustomLogo
-                            ? Image.file(
+                            ? SecureCardImage(
                                 File(customImage),
                                 fit: BoxFit.contain,
                               )

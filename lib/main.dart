@@ -1,3 +1,7 @@
+import 'package:quick_actions/quick_actions.dart';
+import 'features/cards/card_view_screen.dart';
+import 'features/gift_cards/gift_card_view_screen.dart';
+import 'features/qr_codes/qr_codes_screen.dart';
 import 'data/services/support_mode_service.dart';
 import 'data/services/terms_service.dart';
 import 'data/services/app_menu_service.dart';
@@ -32,9 +36,10 @@ import 'features/account/account_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)
+        .timeout(const Duration(seconds: 5));
+  } catch (_) { /* Messaging is optional; always open the local vault. */ }
   runApp(const PasKluisBootstrap());
 }
 
@@ -60,6 +65,15 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initialization = _initialize();
+    _initialization.then((_) {
+      if (!mounted) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final payload = NotificationService.initialPayload;
+        NotificationService.initialPayload = null;
+        if (payload != null) unawaited(_openNotification(payload));
+      });
+    }, onError: (Object _) {});
     LocaleService.locale.addListener(_languageChanged);
   }
 
@@ -166,10 +180,14 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   Future<void> _initialize() async {
     await StorageService.init();
     await LocaleService.init(hasSavedCards: StorageService.cardsBox.isNotEmpty);
+    // Remove dynamic shortcuts left by the withdrawn 1.6.0 test build.
+    // Older installations have no shortcuts; failures must not block startup.
+    try { await const QuickActions().clearShortcutItems(); } catch (_) {}
     await SettingsService.init();
     await AppMenuService.init();
     await ManagedContentService.init();
-    await NotificationService.init();
+    try { await NotificationService.init(); }
+    catch (_) { /* Local cards must remain accessible without notifications. */ }
     await SupabaseService.init();
     await TermsService.init();
     await StorageService.reconcileAccount(AccountService.currentUser?.id);
@@ -177,9 +195,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     await BackupService.init();
     await SupportModeService.init();
     try {
-      NotificationService.onOpen = (payload) async {
-        if(payload.startsWith('support_reply:')) await _openSupportThread(payload.substring(14));
-      };
+      NotificationService.onOpen = _openNotification;
       await PushNotificationService.init(onSharedCardChanged: _syncSharedCards, onSupportOpened: _openSupportThread);
     } catch (_) {
       // Firebase Messaging may be unavailable on an unsupported device.
@@ -249,6 +265,32 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     }
   }
 
+  Future<void> _openNotification(String payload) async {
+    await _initialization;
+    if (!mounted) return;
+    if (payload.startsWith('support_reply:')) {
+      await _openSupportThread(payload.substring(14));
+      return;
+    }
+    final shared = payload.startsWith('shared_card:');
+    if (!shared && !payload.startsWith('gift_card:')) return;
+    if (shared) await _syncSharedCards();
+    if (!mounted) return;
+    final id = payload.substring(payload.indexOf(':') + 1);
+    if (id.isEmpty) return;
+    final matches = StorageService.cardsBox.values.whereType<Map>().where((card) =>
+      card[shared ? 'shareMembershipId' : 'id']?.toString() == id &&
+      card['isArchived'] != true && card['isArchived'] != 'true');
+    if (matches.isEmpty) return;
+    final card = Map<String, dynamic>.from(matches.first);
+    final Widget screen = switch(card['type']) {
+      'Cadeaukaart' => GiftCardViewScreen(items:[card],initialIndex:0),
+      'QR-code' || 'QR-set' => QrCodeViewScreen(items:[card],initialIndex:0),
+      _ => CardViewScreen(items:[card],initialIndex:0),
+    };
+    _navigatorKey.currentState?.push(MaterialPageRoute(builder:(_)=>screen));
+  }
+
   void _openPasswordRecovery() {
     if (_openingPasswordRecovery) return;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -294,11 +336,9 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
           );
           if (!extraClear || child == null) return protectedChild;
           final media = MediaQuery.of(context);
-          final systemScale = media.textScaler.scale(1);
-          final scale = (systemScale * 1.18).clamp(1.18, 1.6).toDouble();
           return MediaQuery(
             data: media.copyWith(
-              textScaler: TextScaler.linear(scale),
+              textScaler: media.textScaler.clamp(minScaleFactor: 1.18),
               highContrast: true,
             ),
             child: protectedChild,

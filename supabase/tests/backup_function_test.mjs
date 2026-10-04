@@ -4,7 +4,7 @@ import {readFile} from 'node:fs/promises';
 import {stripTypeScriptTypes} from 'node:module';
 import vm from 'node:vm';
 import * as protocol from '../functions/card-backups/protocol.ts';
-const source=stripTypeScriptTypes((await readFile(new URL('../functions/card-backups/index.ts',import.meta.url),'utf8')).replace(/^import .*;\n/gm,''));
+const source=stripTypeScriptTypes((await readFile(new URL('../functions/card-backups/index.ts',import.meta.url),'utf8')).replace(/^import .*;\r?\n/gm,''));
 function setup(){
  const key=crypto.getRandomValues(new Uint8Array(32));const files=new Map();let handler,versions=[],failUpload=false,session=true;
  const client={auth:{getUser:async()=>({data:{user:{id:'a'}}})},rpc:async(_,{p_action,p_data})=>{
