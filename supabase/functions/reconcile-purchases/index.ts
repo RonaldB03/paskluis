@@ -22,7 +22,7 @@ async function apple(admin:any) {
  const token=await new SignJWT({bid:PACKAGE}).setProtectedHeader({alg:'ES256',kid:cfg.keyId,typ:'JWT'})
   .setIssuer(cfg.issuerId).setAudience('appstoreconnect-v1').setIssuedAt().setExpirationTime('5m').sign(key);
  const purchases=await admin.from('store_purchases').select('*').eq('platform','apple')
-  .eq('environment','production').lte('reconcile_after',new Date().toISOString())
+  .eq('environment','production').or('user_id.not.is.null,accountless.eq.true,store_account_token.not.is.null').lte('reconcile_after',new Date().toISOString())
   .order('reconcile_after').limit(10);
  if(purchases.error)throw new Error('PURCHASE_READ_FAILED');
  // Two bounded batches: one slow store request cannot exhaust the worker lease.
@@ -35,7 +35,7 @@ async function apple(admin:any) {
     // Decode only Apple's authenticated HTTPS response, never client-supplied JWS.
     const tx=decodeJwt(result.signedTransactionInfo);
     if(tx.bundleId!==PACKAGE||tx.productId!==PRODUCT||tx.type!=='Non-Consumable'||tx.environment!=='Production'
-     ||tx.appAccountToken!==(row.store_account_token||row.user_id)||String(tx.originalTransactionId||tx.transactionId)!==row.transaction_id)
+     ||(tx.appAccountToken||null)!==(row.store_account_token||row.user_id)||String(tx.originalTransactionId||tx.transactionId)!==row.transaction_id)
      throw new Error('PURCHASE_IDENTITY_MISMATCH');
     await applyRefund(admin,row,Boolean(tx.revocationDate));
    } catch {failed=true;failures++;}

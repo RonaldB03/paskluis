@@ -18,7 +18,7 @@ function setup({appleError=false,mismatch=false,googlePages=false,saveError=fals
  },from:table=>{
   let platform,mutation,hashes;
   const chain={select:()=>chain,eq:(key,value)=>{if(key==='platform')platform=value;return chain;},
-   not:()=>chain,is:()=>chain,lte:()=>chain,order:()=>chain,limit:()=>chain,
+   not:()=>chain,or:()=>chain,is:()=>chain,lte:()=>chain,order:()=>chain,limit:()=>chain,
    in:(_key,value)=>{hashes=value;return chain;},update:value=>{mutation=value;return chain;},
    single:async()=>({data:{page_token:null}}),then:resolve=>{
     if(mutation)updates.push({table,platform,...mutation});
