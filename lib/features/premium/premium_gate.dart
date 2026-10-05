@@ -5,17 +5,18 @@ import '../../data/services/account_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/card_access_policy.dart';
 import '../../data/services/settings_service.dart';
-import '../account/account_screen.dart';
+import 'plus_information_screen.dart';
 
 abstract final class PremiumGate {
-  static int get giftCardCount => CardAccessPolicy.ownGiftCards(StorageService.cardsBox.values);
+  static int get giftCardCount =>
+      CardAccessPolicy.ownGiftCards(StorageService.cardsBox.values);
 
   static Future<bool> canAddGiftCard(BuildContext context) async {
     // Everyone can actively use one gift card for free.
     if (giftCardCount < SettingsService.freeGiftCardLimit) return true;
 
     var status = PlusStatus.inactive;
-    if (AccountService.currentUser != null) {
+    {
       try {
         status = await AccountService.loadPlusStatus();
       } catch (_) {
@@ -33,26 +34,22 @@ abstract final class PremiumGate {
           color: Color(0xFFD5A021),
           size: 42,
         ),
-        title:  Text(
+        title: Text(
           L10n.current.storeMoreGiftCards,
           textAlign: TextAlign.center,
         ),
-        content:  Text(
+        content: Text(
           L10n.current.freeCardLimitReached,
           textAlign: TextAlign.center,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child:  Text(L10n.current.notNow),
+            child: Text(L10n.current.notNow),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(
-              AccountService.currentUser == null
-                  ? L10n.current.signInOrRegister
-                  : L10n.current.viewPlusStatus,
-            ),
+            child: Text(L10n.current.viewPlusStatus),
           ),
         ],
       ),
@@ -61,10 +58,10 @@ abstract final class PremiumGate {
     if (openAccount == true && context.mounted) {
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const AccountScreen()),
+        MaterialPageRoute(builder: (_) => const PlusInformationScreen()),
       );
 
-      if (AccountService.currentUser != null) {
+      {
         try {
           return (await AccountService.loadPlusStatus()).isActive;
         } catch (_) {

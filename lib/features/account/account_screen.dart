@@ -1,3 +1,4 @@
+import '../premium/purchase_controls.dart';
 import '../../data/services/locale_service.dart';
 import '../../shared/utils/device_description.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
@@ -15,7 +16,6 @@ import '../premium/plus_information_screen.dart';
 import 'shared_cards_management_screen.dart';
 import 'delete_account_screen.dart';
 import '../../data/services/purchase_service.dart';
-import '../../data/services/settings_service.dart';
 import 'auth_error_message.dart';
 import 'account_verification_dialog.dart';
 
@@ -91,16 +91,6 @@ class _AccountScreenState extends State<AccountScreen> {
       _statusFailed = false;
       _plusStatus = PlusStatus.inactive;
     }
-    if (_user == null) {
-      if (mounted)
-        setState(() {
-          _plusStatus = PlusStatus.inactive;
-          _statusKnown = false;
-          _statusFailed = false;
-          _loadingStatus = false;
-        });
-      return;
-    }
     if (DeviceSessionService.awaitingClaim) return;
 
     setState(() => _loadingStatus = true);
@@ -122,10 +112,6 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _restorePurchases() async {
-    if (_user == null) {
-      _showMessage(L10n.current.signInToRestoreYourPurchase);
-      return;
-    }
     try {
       await PurchaseService.restore();
       await _loadPlusStatus();
@@ -460,6 +446,8 @@ class _AccountScreenState extends State<AccountScreen> {
           const SizedBox(height: 12),
         ],
         const _PlusHero(),
+        const SizedBox(height: 16),
+        const PurchaseControls(),
         const SizedBox(height: 18),
         Card(
           elevation: 0,
@@ -641,50 +629,8 @@ class _AccountScreenState extends State<AccountScreen> {
               onPressed: _loadPlusStatus,
               child: Text(L10n.current.accountPlusRetry),
             ),
-          if (_statusKnown &&
-              !_statusFailed &&
-              !_loadingStatus &&
-              !_plusStatus.isActive) ...[
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFD5A021),
-              ),
-              onPressed:
-                  PurchaseService.busy ||
-                      PurchaseService.product == null ||
-                      !SettingsService.storePurchaseEnabled
-                  ? null
-                  : PurchaseService.buy,
-              icon: const Icon(Icons.workspace_premium),
-              label: Text(
-                PurchaseService.busy
-                    ? L10n.current.purchaseProcessing
-                    : '${L10n.current.buyPlus} · ${PurchaseService.product?.price ?? '€ 1,99'}',
-              ),
-            ),
-            if (PurchaseService.product == null ||
-                !SettingsService.storePurchaseEnabled)
-              Text(
-                L10n.current.storePurchaseUnavailable,
-                textAlign: TextAlign.center,
-              ),
-          ],
-          if (PurchaseService.messageCode != null &&
-              PurchaseService.messageCode != 'signIn' &&
-              !(PurchaseService.messageCode == 'success' &&
-                  _plusStatus.isActive))
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Text(switch (PurchaseService.messageCode) {
-                'success' => L10n.current.purchaseSucceeded,
-                'pending' => L10n.current.purchasePending,
-                'cancelled' => L10n.current.purchaseCancelled,
-                'signIn' => L10n.current.signInToRestoreYourPurchase,
-                'verification' => L10n.current.purchaseVerificationPending,
-                _ => L10n.current.purchaseFailed,
-              }, textAlign: TextAlign.center),
-            ),
+          const SizedBox(height: 12),
+          const PurchaseControls(),
           const SizedBox(height: 16),
           Card(
             elevation: 0,

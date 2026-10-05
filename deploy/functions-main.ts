@@ -16,6 +16,7 @@ const FUNCTION_POLICIES: Record<string, boolean> = {
   'support-attachments': false,
   'delete-account': false,
   'verify-purchase': false,
+  'verify-store-purchase': false,
   'reconcile-purchases': false,
   'card-backups': false,
 }

@@ -1,3 +1,4 @@
+import 'purchase_controls.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'package:flutter/material.dart';
 
@@ -72,7 +73,7 @@ class PlusInformationScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 18),
-                if (!isActive) _PricePill(),
+                const PurchaseControls(gold: true),
               ],
             ),
           ),
@@ -160,27 +161,6 @@ class PlusInformationScreen extends StatelessWidget {
           ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _PricePill extends StatelessWidget {
-  const _PricePill();
-
-  @override
-  Widget build(BuildContext context) {
-    L10n.watch(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .16),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: .28)),
-      ),
-      child:  Text(
-        L10n.current.text199OnceLifetimeAccess516,
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
       ),
     );
   }

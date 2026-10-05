@@ -9,6 +9,7 @@ import 'device_session_service.dart';
 import 'push_notification_service.dart';
 import 'storage_service.dart';
 import 'backup_service.dart';
+import 'store_access_service.dart';
 
 class PlusStatus {
   final bool isActive;
@@ -199,13 +200,15 @@ abstract final class AccountService {
 
   static Future<PlusStatus> loadPlusStatus() async {
     final userId=currentUser?.id;
-    if(userId==null)return PlusStatus.inactive;
+    final storeActive = await StoreAccessService.load();
+    final storeStatus = storeActive ? const PlusStatus(isActive: true, source: 'store') : PlusStatus.inactive;
+    if(userId==null)return storeStatus;
     final key='plus_status_$userId';
     try {
       final result=await _loadPlusStatusOnline();
       if(currentUser?.id!=userId)return PlusStatus.inactive;
       await _secure.write(key:key,value:jsonEncode({'active':result.isActive,'verifiedAt':DateTime.now().toUtc().toIso8601String(),'expiresAt':result.expiresAt?.toUtc().toIso8601String(),'source':result.source}));
-      return result;
+      return result.isActive ? result : storeStatus;
     } catch (_) {
       if(currentUser?.id!=userId)return PlusStatus.inactive;
       final raw=await _secure.read(key:key);
@@ -218,6 +221,7 @@ abstract final class AccountService {
           return PlusStatus(isActive:true,expiresAt:expires,source:row['source']?.toString());
         }
       }
+      if (storeActive) return storeStatus;
       rethrow;
     }
   }

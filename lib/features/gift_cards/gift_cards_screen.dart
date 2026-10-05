@@ -50,7 +50,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
 
   Future<void> _loadPlusStatus() async {
     var hasPlus = false;
-    if (AccountService.currentUser != null) {
+    {
       try {
         hasPlus = (await AccountService.loadPlusStatus()).isActive;
       } catch (_) {

@@ -1,3 +1,4 @@
+import {purchaseLedgerMarkup} from './purchase-ledger.js?v=1';
 import {supportMenuMarkup, settingPatch} from './support-settings.js?v=live-1';
 import {createAdminMfa} from './admin-mfa.js?v=security-2';
 import {createMenuEditor} from './app-menu.js?v=menu-1';
@@ -10,7 +11,7 @@ const SUPABASE_URL='https://ajldblvvlbvmgejrmhyj.supabase.co';
 const SUPABASE_KEY='sb_publishable_D22GtKy7nDvnLv7LeBL1SA_1_ZGbN7d';
 const supabase=createClient(SUPABASE_URL,SUPABASE_KEY);
 const adminMfa=createAdminMfa({client:supabase});
-const state={user:null,profile:null,profiles:[],entitlements:[],threads:[],messages:[],brands:[],settings:[],faqs:[],audit:[],selectedThread:null,loadErrors:[],canned:[],incidents:[],deliveries:[],content:[],selectedContent:null,supportSession:null};
+const state={user:null,profile:null,profiles:[],entitlements:[],purchases:[],threads:[],messages:[],brands:[],settings:[],faqs:[],audit:[],selectedThread:null,loadErrors:[],canned:[],incidents:[],deliveries:[],content:[],selectedContent:null,supportSession:null};
 const $=(s)=>document.querySelector(s);const $$=(s)=>[...document.querySelectorAll(s)];
 
 function toast(message){const n=$('#toast');n.textContent=message;n.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>n.classList.remove('show'),3000)}
@@ -39,9 +40,9 @@ async function refreshAll(){state.loadErrors=[];const[profiles,entitlements,thre
   loadSource('App-instellingen',()=>supabase.from('app_settings').select('*').order('category').order('sort_order').order('label'),()=>supabase.from('app_settings').select('*').order('category').order('label')),
   loadSource('Hulp en FAQ',()=>supabase.from('help_faqs').select('*').order('sort_order').order('question')),
   loadSource('Activiteitenlog',()=>supabase.from('admin_audit_log').select('*').order('created_at',{ascending:false}).limit(150))
-]);state.profiles=profiles;state.entitlements=entitlements;state.threads=threads;state.brands=brands;state.settings=settings;state.faqs=faqs;state.audit=audit;if(state.profile.role==='admin')await loadContent();await loadSupportExtras();renderAll();renderLoadStatus();if(state.loadErrors.length)toast(`${state.loadErrors.length} onderdeel${state.loadErrors.length===1?'':'en'} kon${state.loadErrors.length===1?'':'den'} niet laden.`)}
+]);state.profiles=profiles;state.entitlements=entitlements;state.threads=threads;state.brands=brands;state.settings=settings;state.faqs=faqs;state.audit=audit;if(state.profile.role==='admin'){await loadContent();state.purchases=await loadSource('Winkelaankopen',()=>supabase.from('store_purchases').select('id,user_id,platform,environment,revoked_at,verified_at,account_linked').order('created_at',{ascending:false}).limit(100));}await loadSupportExtras();renderAll();renderLoadStatus();if(state.loadErrors.length)toast(`${state.loadErrors.length} onderdeel${state.loadErrors.length===1?'':'en'} kon${state.loadErrors.length===1?'':'den'} niet laden.`)}
 function renderLoadStatus(){const box=$('#load-status');if(!box)return;if(!state.loadErrors.length){box.classList.add('hidden');box.innerHTML='';return}box.classList.remove('hidden');box.innerHTML=`<strong>Niet alle gegevens konden worden geladen</strong><span>${state.loadErrors.map(escapeHtml).join('<br>')}</span><button class="secondary small-button refresh-all-inline">Opnieuw proberen</button>`;box.querySelector('.refresh-all-inline').addEventListener('click',refreshAll)}
-function renderAll(){renderStats();renderUsers();renderTeam();renderThreads();renderBrands();renderFaqs();renderSettings();renderActivity()}
+function renderAll(){renderStats();renderUsers();renderPurchaseLedger();renderTeam();renderThreads();renderBrands();renderFaqs();renderSettings();renderActivity()}
 
 function renderStats(){const plusCount=state.profiles.filter((p)=>activeEntitlement(p.id)).length;const open=state.threads.filter((t)=>t.status!=='closed').length;const weekAgo=Date.now()-7*86400000;const newUsers=state.profiles.filter((p)=>new Date(p.created_at).getTime()>=weekAgo).length;const urgent=state.threads.filter((t)=>t.status!=='closed'&&['high','urgent'].includes(t.priority)).length;const staff=state.profiles.filter((p)=>p.role!=='user').length;$('#stat-users').textContent=state.profiles.length;$('#stat-new-users').textContent=`${newUsers} nieuw deze week`;$('#stat-plus').textContent=plusCount;$('#stat-plus-share').textContent=state.profiles.length?`${Math.round(plusCount/state.profiles.length*100)}% van gebruikers`:'0% van gebruikers';$('#stat-support').textContent=open;$('#stat-urgent').textContent=`${urgent} met hoge prioriteit`;$('#stat-brands').textContent=state.brands.filter((b)=>b.is_active).length;$('#stat-staff').textContent=`${staff} medewerkers`;$('#open-count').textContent=open;const actions=[];if(open)actions.push([`${open} klantvragen openstaand`,'Open klantenservice','support']);if(urgent)actions.push([`${urgent} vragen hebben hoge prioriteit`,'Direct bekijken','support']);const noRecognition=state.brands.filter((b)=>!(b.aliases?.length||b.recognition_keywords?.length||b.barcode_prefixes?.length)).length;if(noRecognition&&state.profile.role==='admin')actions.push([`${noRecognition} winkels zonder herkenningsregels`,'Winkels bekijken','brands']);if(!actions.length)actions.push(['Alles is bijgewerkt','Er zijn momenteel geen openstaande acties','dashboard']);$('#attention-list').innerHTML=actions.map(([title,copy,page])=>`<button class="action-item" data-go="${page}"><div><strong>${escapeHtml(title)}</strong><small>${escapeHtml(copy)}</small></div><span>›</span></button>`).join('');$('#recent-activity').innerHTML=activityMarkup(state.audit.slice(0,6))}
 
@@ -323,3 +324,5 @@ $('#content-fields').addEventListener('change',async e=>{
   }catch(_){toast('Uploaden is niet gelukt.');}
   finally{picker.disabled=false;picker.value='';}
 });
+
+function renderPurchaseLedger(){if(state.profile.role!=='admin')return;let panel=document.getElementById('purchase-ledger');if(!panel){panel=document.createElement('section');panel.id='purchase-ledger';panel.className='panel';document.getElementById('page-users').appendChild(panel);}panel.innerHTML=purchaseLedgerMarkup(state.purchases,state.profiles);}

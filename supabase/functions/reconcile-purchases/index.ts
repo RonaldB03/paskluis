@@ -10,7 +10,8 @@ async function json(url:string,options:RequestInit={}) {
 }
 async function applyRefund(admin:any,row:any,revoked:boolean) {
  if(Boolean(row.revoked_at)===revoked)return;
- const saved=await admin.rpc('record_verified_purchase',{p_user_id:row.user_id,p_platform:row.platform,
+ const saved=await admin.rpc(row.accountless?'record_store_purchase_v2':'record_verified_purchase',{p_user_id:row.user_id,p_platform:row.platform,
+  ...(row.accountless?{p_store_account_token:row.store_account_token}:{}),
   p_transaction_id:row.transaction_id,p_environment:row.environment,p_revoked:revoked});
  if(saved.error)throw new Error('PURCHASE_SAVE_FAILED');
 }
@@ -21,7 +22,7 @@ async function apple(admin:any) {
  const token=await new SignJWT({bid:PACKAGE}).setProtectedHeader({alg:'ES256',kid:cfg.keyId,typ:'JWT'})
   .setIssuer(cfg.issuerId).setAudience('appstoreconnect-v1').setIssuedAt().setExpirationTime('5m').sign(key);
  const purchases=await admin.from('store_purchases').select('*').eq('platform','apple')
-  .eq('environment','production').not('user_id','is',null).lte('reconcile_after',new Date().toISOString())
+  .eq('environment','production').lte('reconcile_after',new Date().toISOString())
   .order('reconcile_after').limit(10);
  if(purchases.error)throw new Error('PURCHASE_READ_FAILED');
  // Two bounded batches: one slow store request cannot exhaust the worker lease.
@@ -34,7 +35,7 @@ async function apple(admin:any) {
     // Decode only Apple's authenticated HTTPS response, never client-supplied JWS.
     const tx=decodeJwt(result.signedTransactionInfo);
     if(tx.bundleId!==PACKAGE||tx.productId!==PRODUCT||tx.type!=='Non-Consumable'||tx.environment!=='Production'
-     ||tx.appAccountToken!==row.user_id||String(tx.originalTransactionId||tx.transactionId)!==row.transaction_id)
+     ||tx.appAccountToken!==(row.store_account_token||row.user_id)||String(tx.originalTransactionId||tx.transactionId)!==row.transaction_id)
      throw new Error('PURCHASE_IDENTITY_MISMATCH');
     await applyRefund(admin,row,Boolean(tx.revocationDate));
    } catch {failed=true;failures++;}
@@ -72,7 +73,7 @@ async function google(admin:any,state:any) {
   // Keep REST URLs bounded even if Google returns a large page.
   for(let offset=0;offset<hashes.length;offset+=50) {
    const rows=await admin.from('store_purchases').select('*').eq('platform','google')
-    .not('user_id','is',null).is('revoked_at',null).in('transaction_id',hashes.slice(offset,offset+50));
+    .is('revoked_at',null).in('transaction_id',hashes.slice(offset,offset+50));
    if(rows.error)throw new Error('PURCHASE_READ_FAILED');
    for(const row of rows.data||[])await applyRefund(admin,row,true);
   }
