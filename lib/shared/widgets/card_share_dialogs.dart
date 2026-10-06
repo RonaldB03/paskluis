@@ -26,7 +26,7 @@ abstract final class CardShareDialogs {
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child:  Text(L10n.current.signIn),
+              child:  Text(L10n.current.signInOrRegister),
             ),
           ],
         ),

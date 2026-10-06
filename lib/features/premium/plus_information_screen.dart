@@ -72,8 +72,10 @@ class PlusInformationScreen extends StatelessWidget {
                     height: 1.4,
                   ),
                 ),
-                SizedBox(height: 18),
-                const PurchaseControls(gold: true),
+                if (!isActive) ...[
+                  const SizedBox(height: 18),
+                  const PurchaseControls(gold: true, showManagement: false),
+                ],
               ],
             ),
           ),
@@ -147,7 +149,7 @@ class PlusInformationScreen extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.workspace_premium_rounded),
                 label:  Text(
-                  L10n.current.viewMyPlusStatus,
+                  L10n.current.accountPaskluisPlus,
                   style: TextStyle(fontWeight: FontWeight.w900),
                 ),
               ),

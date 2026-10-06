@@ -9,7 +9,12 @@ import '../../l10n/l10n.dart';
 
 class PurchaseControls extends StatefulWidget {
   final bool gold;
-  const PurchaseControls({super.key, this.gold = false});
+  final bool showManagement;
+  const PurchaseControls({
+    super.key,
+    this.gold = false,
+    this.showManagement = true,
+  });
   @override
   State<PurchaseControls> createState() => _PurchaseControlsState();
 }
@@ -85,12 +90,12 @@ class _PurchaseControlsState extends State<PurchaseControls> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_active)
+        if (_active && widget.showManagement)
           Text(
             t('PasKluis Plus · Actief', 'PasKluis Plus · Active'),
             style: TextStyle(color: color, fontWeight: FontWeight.w900),
           )
-        else
+        else if (!_active)
           FilledButton.icon(
             style: FilledButton.styleFrom(
               backgroundColor: widget.gold
@@ -126,36 +131,38 @@ class _PurchaseControlsState extends State<PurchaseControls> {
               ),
             ),
         ],
-        const SizedBox(height: 8),
-        Text(
-          t(
-            'Kopen kan zonder PasKluis-account. Herstel via hetzelfde Apple- of Google-account. Voor delen en cloudback-up heb je een PasKluis-account nodig.',
-            'Buy without a PasKluis account. Restore using the same Apple or Google account. Sharing and cloud backup require a PasKluis account.',
+        if (widget.showManagement) ...[
+          const SizedBox(height: 8),
+          Text(
+            t(
+              'Plus kopen en herstellen kan zonder PasKluis-account. Herstel via hetzelfde Apple- of Google-account als bij je aankoop. Voor delen en cloudback-up heb je een gratis PasKluis-account nodig. Koppel je bestaande Plus-aankoop aan je account om te delen; opnieuw betalen is niet nodig. Een aankoop die al gekoppeld is, hoort bij dat PasKluis-account.',
+              'Buy and restore Plus without a PasKluis account. Restore using the same Apple or Google account used for your purchase. Sharing and cloud backup require a free PasKluis account. Link your existing Plus purchase to your account to share; no further payment is needed. A purchase that is already linked belongs to that PasKluis account.',
+            ),
+            style: TextStyle(color: color, height: 1.35),
           ),
-          style: TextStyle(color: color, height: 1.35),
-        ),
-        TextButton.icon(
-          onPressed: busy ? null : PurchaseService.restore,
-          icon: Icon(Icons.restore, color: color),
-          label: Text(
-            L10n.current.restorePurchases,
-            style: TextStyle(color: color),
-          ),
-        ),
-        if (_active &&
-            userId != null &&
-            StoreAccessService.linkedUserId != userId)
-          TextButton(
-            onPressed: busy ? null : PurchaseService.linkToAccount,
-            child: Text(
-              t(
-                'Winkelaankoop koppelen aan dit account',
-                'Link store purchase to this account',
-              ),
+          TextButton.icon(
+            onPressed: busy ? null : PurchaseService.restore,
+            icon: Icon(Icons.restore, color: color),
+            label: Text(
+              L10n.current.restorePurchases,
               style: TextStyle(color: color),
             ),
           ),
-        if (message != null)
+          if (_active &&
+              userId != null &&
+              StoreAccessService.linkedUserId != userId)
+            TextButton(
+              onPressed: busy ? null : PurchaseService.linkToAccount,
+              child: Text(
+                t(
+                  'Bestaande Plus-aankoop koppelen',
+                  'Link existing Plus purchase',
+                ),
+                style: TextStyle(color: color),
+              ),
+            ),
+        ],
+        if (message != null && (!_active || widget.showManagement))
           Text(
             message,
             style: TextStyle(color: color),

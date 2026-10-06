@@ -45,6 +45,7 @@ import '../qr_codes/add_qr_code_screen.dart';
 import '../qr_codes/choose_qr_code_screen.dart';
 import '../settings/settings_screen.dart';
 import '../premium/premium_gate.dart';
+import '../premium/home_plus_prompt.dart';
 import '../scanner/smart_add_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -1107,6 +1108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onItemTap: (item) => openCardView(giftCards, item),
                     onItemLongPress: (item) => showItemOptions(context, item),
                   ),
+                  const HomePlusPrompt(),
                 ],
                 ],
               ),
