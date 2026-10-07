@@ -1009,7 +1009,7 @@
   "supportImport": "Scannen en importeren",
   "supportSafeDetails": "We streven naar een persoonlijk antwoord binnen 12 uur. Je appversie en platform worden meegestuurd. Deel geen wachtwoord, volledige kaartcode of pincode.",
   "locationProcessingTitle": "Locatie en winkels in de buurt",
-  "locationProcessingDetail": "Met locatiekaarten en jouw toestemming gebruikt PasKluis je locatie tijdens gebruik. De zoeklocatie gaat via onze server naar Google Places. Een afgerond zoekgebied en winkelresultaten worden maximaal 24 uur hergebruikt. De laatst gebruikte locatie kan lokaal bij een kaart worden opgeslagen, maar gaat niet mee in nieuwe back-ups of gedeelde kaarten. Je kunt locatiekaarten altijd uitzetten.",
+  "locationProcessingDetail": "Met locatiekaarten en jouw toestemming gebruikt PasKluis je locatie tijdens gebruik. De zoeklocatie gaat via onze server naar Google Places. Een afgerond zoekgebied en winkelresultaten worden maximaal 24 uur hergebruikt. De laatst gebruikte locatie kan lokaal bij een kaart worden opgeslagen, maar gaat niet mee in nieuwe back-ups of gedeelde kaarten. Je kunt locatiekaarten altijd uitzetten. Optionele winkelmeldingen op iPhone gebruiken na toestemming ook achtergrondlocatie om aankomsten bij opgeslagen winkels te herkennen. Dit gebeurt op je toestel, zonder doorlopend locaties naar onze server te sturen. Lokaal worden maximaal twintig winkellocaties en meldingsteksten met eventueel je zelf bijgehouden saldo bewaard. Ze worden bij openen bijgewerkt en na maximaal zeven dagen niet meer gebruikt voor meldingen. Uitschakelen verwijdert de opgeslagen winkelmeldingen.",
   "localStorageWarning": "Je eigen kaarten en afbeeldingen worden versleuteld op dit toestel bewaard. Zonder een geslaagde back-up kun je ze bij verlies van het toestel of verwijderen van de app kwijtraken. Optionele cloudback-up maakt herstel mogelijk; controleer de datum van je laatste geslaagde back-up.",
   "freeCardLimitReached": "Je gratis kaartlimiet is bereikt. Met Plus bewaar je onbeperkt eigen cadeaukaarten. Ontvangen gedeelde kaarten tellen niet mee.",
   "account": "Account",
@@ -1052,6 +1052,41 @@
   "supportCleanTitle": "Afgeronde gesprekken uit je overzicht verwijderen?",
   "supportHideFailed": "Het opruimen is niet volledig gelukt. Probeer het opnieuw.",
   "supportNewReply": "Nieuw antwoord",
-  "supportRetentionInfo": "We bewaren gesprekken tot 6 maanden na afsluiten en bijlagen tot 30 dagen. Zie ons privacybeleid voor uitzonderingen."
+  "supportRetentionInfo": "We bewaren gesprekken tot 6 maanden na afsluiten en bijlagen tot 30 dagen. Zie ons privacybeleid voor uitzonderingen.",
+  "giftCardBarcodeCheck": "Controleer of dit de juiste barcode van je cadeaukaart is. Sommige kaarten bevatten meerdere codes.",
+  "giftCardValidUntil": "Geldig t/m {p1}",
+  "giftCardExpiredOn": "Verlopen op {p1}",
+  "@giftCardValidUntil": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "@giftCardExpiredOn": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "nearbyGiftAmount": "Je hebt nog een cadeaukaart bij {p1} met € {p2} saldo.",
+  "@nearbyGiftAmount": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "nearbyGiftAvailable": "Je hebt nog een cadeaukaart voor {p1}.",
+  "@nearbyGiftAvailable": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  }
 }
-

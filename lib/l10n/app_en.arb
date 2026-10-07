@@ -1009,7 +1009,7 @@
   "supportImport": "Scanning and importing",
   "supportSafeDetails": "We aim to reply personally within 12 hours. Your app version and platform are included. Do not share your password, full card code or PIN.",
   "locationProcessingTitle": "Location and nearby stores",
-  "locationProcessingDetail": "With location cards enabled and your permission, PasKluis uses your location while in use. The search location passes through our server to Google Places. A rounded search area and store results are reused for up to 24 hours. The last used location may be stored locally with a card, but is excluded from new backups and shared cards. You can disable location cards at any time.",
+  "locationProcessingDetail": "With location cards enabled and your permission, PasKluis uses your location while in use. The search location passes through our server to Google Places. A rounded search area and store results are reused for up to 24 hours. The last used location may be stored locally with a card, but is excluded from new backups and shared cards. You can disable location cards at any time. Optional iPhone store reminders also use background location with permission to detect arrival at saved stores. This happens on your device without continuously sending locations to our server. Up to twenty store locations and reminder texts, optionally including your manually recorded balance, are stored locally. They refresh when you open the app and stop generating reminders after at most seven days. Turning this off removes saved store reminders.",
   "localStorageWarning": "Your own cards and images are encrypted on this device. Without a successful backup they may be lost if you lose your phone or remove the app. Optional cloud backup allows recovery; check the date of your last successful backup.",
   "freeCardLimitReached": "You have reached the free card limit. Plus lets you store unlimited gift cards of your own. Received shared cards do not count towards the limit.",
   "account": "Account",
@@ -1052,6 +1052,41 @@
   "supportCleanTitle": "Remove closed conversations from your overview?",
   "supportHideFailed": "Could not finish clearing conversations. Please try again.",
   "supportNewReply": "New reply",
-  "supportRetentionInfo": "We keep conversations for up to 6 months after closure and attachments for 30 days. See our privacy policy for exceptions."
+  "supportRetentionInfo": "We keep conversations for up to 6 months after closure and attachments for 30 days. See our privacy policy for exceptions.",
+  "giftCardBarcodeCheck": "Check that this is the correct barcode for your gift card. Some cards contain multiple codes.",
+  "giftCardValidUntil": "Valid until {p1}",
+  "giftCardExpiredOn": "Expired on {p1}",
+  "@giftCardValidUntil": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "@giftCardExpiredOn": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "nearbyGiftAmount": "You still have a gift card at {p1} with € {p2} remaining.",
+  "@nearbyGiftAmount": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "nearbyGiftAvailable": "You still have a gift card for {p1}.",
+  "@nearbyGiftAvailable": {
+    "placeholders": {
+      "p1": {
+        "type": "String"
+      }
+    }
+  }
 }
-

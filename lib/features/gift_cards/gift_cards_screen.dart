@@ -1,5 +1,6 @@
 import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
+import '../../shared/widgets/share_stored_gift_card.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,9 @@ import '../../data/services/settings_service.dart';
 import '../../data/services/notification_service.dart';
 import '../../data/services/card_share_service.dart';
 import '../../data/services/account_service.dart';
+import '../../data/services/location_service.dart';
+import '../../data/services/nearby_store_service.dart';
+import '../../shared/utils/card_sorting.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/amount_format.dart';
 import '../../shared/utils/logo_layout.dart';
@@ -38,14 +42,48 @@ class GiftCardsScreen extends StatefulWidget {
   State<GiftCardsScreen> createState() => _GiftCardsScreenState();
 }
 
-class _GiftCardsScreenState extends State<GiftCardsScreen> {
+class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingObserver {
+  Map<String, NearbyStoreMatch> _nearbyStoreMatches = const {};
+  int _nearbyRequest = 0;
   bool _hasPlus = false;
   bool _loadingPlus = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    SettingsService.settingsRevision.addListener(_loadNearbyLocation);
+    _loadNearbyLocation();
     _loadPlusStatus();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    SettingsService.settingsRevision.removeListener(_loadNearbyLocation);
+    _nearbyRequest++;
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadNearbyLocation();
+  }
+
+  Future<void> _loadNearbyLocation() async {
+    final request = ++_nearbyRequest;
+    if (!mounted) return;
+    setState(() => _nearbyStoreMatches = const {});
+    if (!SettingsService.locationCardsEnabled) return;
+    final cards = getItems();
+    if (cards.isEmpty) return;
+    final snapshot = await LocationService.resolve();
+    if (!mounted || request != _nearbyRequest || !SettingsService.locationCardsEnabled) return;
+    final location = snapshot.location;
+    if (snapshot.state != LocationAccessState.ready || location == null) return;
+    final matches = await NearbyStoreService.resolveForCards(cards, location);
+    if (!mounted || request != _nearbyRequest || !SettingsService.locationCardsEnabled) return;
+    setState(() => _nearbyStoreMatches = matches);
   }
 
   Future<void> _loadPlusStatus() async {
@@ -79,6 +117,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
       }
     }
     await _loadPlusStatus();
+    await _loadNearbyLocation();
   }
 
   Future<void> _openPlus(BuildContext context) async {
@@ -99,26 +138,12 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
 
-    items.sort((a, b) {
-      final aFavorite = a['isFavorite'] == true;
-      final bFavorite = b['isFavorite'] == true;
-
-      if (aFavorite != bFavorite) return aFavorite ? -1 : 1;
-
-      final aDate =
-          DateTime.tryParse(a['lastUsedAt']?.toString() ?? '') ??
-          DateTime.tryParse(a['createdAt']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-
-      final bDate =
-          DateTime.tryParse(b['lastUsedAt']?.toString() ?? '') ??
-          DateTime.tryParse(b['createdAt']?.toString() ?? '') ??
-          DateTime.fromMillisecondsSinceEpoch(0);
-
-      return bDate.compareTo(aDate);
-    });
-
-    return items;
+    return sortLoyaltyCards(items,
+      favoritesFirst: true, sortOrder: 'recent', cardType: 'Cadeaukaart',
+      nearbyFirst: SettingsService.locationCardsEnabled,
+      nearbyRadiusMeters: LocationService.nearbyRadiusMeters,
+      distances: _nearbyStoreMatches.map((id, match) => MapEntry(id, match.distanceMeters)),
+    );
   }
 
   Future<Map<String, dynamic>> saveNewCard(
@@ -185,6 +210,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
     if (result['persisted'] != 'true') {
       await saveNewCard(result, forcedType: 'Cadeaukaart');
     }
+    _loadNearbyLocation();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
          SnackBar(content: Text(L10n.current.giftCardSaved)),
@@ -351,6 +377,15 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                if (!isShared)
+                  _OptionTile(
+                    icon: Icons.share_rounded,
+                    title: L10n.current.share,
+                    onTap: () {
+                      Navigator.pop(context);
+                      shareStoredGiftCard(context, item);
+                    },
+                  ),
                 _OptionTile(
                   icon: Icons.delete_rounded,
                   title: isShared
@@ -539,6 +574,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
               color: const Color(0xFFD51B46),
               child: _GiftCardsOverview(
                 items: items,
+                nearbyStoreMatches: _nearbyStoreMatches,
                 hasPlus: _hasPlus,
                 loadingPlus: _loadingPlus,
                 onAdd: () => openAddGiftCard(context),
@@ -561,6 +597,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> {
 
 class _GiftCardsOverview extends StatelessWidget {
   final List<Map<String, dynamic>> items;
+  final Map<String, NearbyStoreMatch> nearbyStoreMatches;
   final bool hasPlus;
   final bool loadingPlus;
   final VoidCallback onAdd;
@@ -570,6 +607,7 @@ class _GiftCardsOverview extends StatelessWidget {
 
   const _GiftCardsOverview({
     required this.items,
+    required this.nearbyStoreMatches,
     required this.hasPlus,
     required this.loadingPlus,
     required this.onAdd,
@@ -656,6 +694,7 @@ class _GiftCardsOverview extends StatelessWidget {
                 final item = items[index];
                 return GiftCardTile(
                   item: item,
+                  distanceMeters: nearbyStoreMatches[item['id']?.toString()]?.distanceMeters,
                   onTap: () => onOpenCard(index),
                   onLongPress: () => onLongPress(item),
                 );
@@ -843,12 +882,14 @@ class _AddGiftCardTile extends StatelessWidget {
 }
 
 class GiftCardTile extends StatefulWidget {
+  final double? distanceMeters;
   final Map<String, dynamic> item;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
   const GiftCardTile({
     super.key,
+    this.distanceMeters,
     required this.item,
     required this.onTap,
     required this.onLongPress,
@@ -1038,6 +1079,14 @@ class _GiftCardTileState extends State<GiftCardTile> {
                     size: 24,
                   ),
                 ),
+              if (SettingsService.locationCardsEnabled && SettingsService.showCardDistances &&
+                  widget.distanceMeters != null && widget.distanceMeters!.isFinite &&
+                  widget.distanceMeters! >= 0 && widget.distanceMeters! <= LocationService.nearbyRadiusMeters)
+                Positioned(top: widget.item['isFavorite'] == true ? 29 : 0, right: 0, child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: const Color(0xDD333333), borderRadius: BorderRadius.circular(12)),
+                  child: Text(LocationService.formatDistance(widget.distanceMeters!), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                )),
               if (expiryStatus != null)
                 Positioned(
                   top: 2,

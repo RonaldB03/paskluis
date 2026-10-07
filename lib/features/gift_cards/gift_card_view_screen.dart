@@ -3,6 +3,7 @@ import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/utils/money_input.dart';
 import '../../data/services/locale_service.dart';
 import '../../shared/utils/card_barcode.dart';
+import 'package:intl/intl.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -1365,6 +1366,9 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final logoAsset = widget.item['logoAsset']?.toString() ?? '';
     final customImage = widget.item['customImage']?.toString() ?? '';
+    final expiry = DateTime.tryParse(widget.item['expiryDate']?.toString() ?? '');
+    final now = DateTime.now();
+    final expired = expiry != null && DateTime(expiry.year, expiry.month, expiry.day).isBefore(DateTime(now.year, now.month, now.day));
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 30, 2, 18),
       child: AnimatedContainer(
@@ -1504,6 +1508,17 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
                   ),
                 ),
               ),
+              if (expiry != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+                  child: Text(
+                    expired
+                        ? L10n.current.giftCardExpiredOn(DateFormat.yMMMMd(L10n.current.localeName).format(expiry))
+                        : L10n.current.giftCardValidUntil(DateFormat.yMMMMd(L10n.current.localeName).format(expiry)),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: expired ? const Color(0xFFD51B46) : const Color(0xFF55555D)),
+                  ),
+                ),
               Expanded(
                 child: Center(
                   child: ScaleTransition(

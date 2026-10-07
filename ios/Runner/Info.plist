@@ -60,6 +60,9 @@
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>PasKluis gebruikt je locatie tijdens gebruik en verwerkt die via Supabase en Google Places om winkels in de buurt te vinden.</string>
 
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Als je winkelmeldingen inschakelt, herkent PasKluis ook wanneer de app gesloten is dat je bij een opgeslagen winkel aankomt, om je aan je cadeaukaart te herinneren. Je kunt dit uitschakelen in Instellingen.</string>
+
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
 

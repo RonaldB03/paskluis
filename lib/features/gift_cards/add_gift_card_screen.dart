@@ -598,6 +598,7 @@ class _AddGiftCardScreenState extends State<AddGiftCardScreen> {
 
           _SectionCard(
             title: L10n.current.card,
+            subtitle: L10n.current.giftCardBarcodeCheck,
             children: [
               _InputField(
                 controller: nameController,

@@ -66,6 +66,8 @@ test('cached stores use one database read and no paid requests', async () => {
   assert.equal(stats.reservations, 0);
   assert.equal(Object.keys(body.matches).length, 2);
   assert.equal(body.matches['Shop A'].distance_meters, 0);
+  assert.equal(body.matches['Shop A'].latitude, 52);
+  assert.equal(body.matches['Shop A'].longitude, 5);
 });
 
 test('cold lookups run concurrently with a maximum of four', async () => {
@@ -76,6 +78,8 @@ test('cold lookups run concurrently with a maximum of four', async () => {
   assert.equal(stats.reservations, 11);
   assert.equal(stats.writes, 11);
   assert.equal(Object.keys(body.matches).length, 11);
+  assert.equal(body.matches['Shop 0'].latitude, 52);
+  assert.equal(body.matches['Shop 0'].longitude, 5);
 });
 
 test('budget denial prevents Places calls', async () => {

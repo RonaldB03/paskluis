@@ -5,11 +5,12 @@ List<Map<String, dynamic>> sortLoyaltyCards(
   required bool favoritesFirst,
   required String sortOrder,
   bool nearbyFirst = false,
+  String cardType = 'Pasje',
   double nearbyRadiusMeters = 250,
   Map<String, double> distances = const {},
 }) {
   double? nearbyDistance(Map<String, dynamic> card) {
-    if (!nearbyFirst || card['type'] != 'Pasje') return null;
+    if (!nearbyFirst || card['type'] != cardType) return null;
     final distance = distances[card['id']?.toString()];
     return distance != null && distance.isFinite && distance >= 0 &&
             distance <= nearbyRadiusMeters

@@ -4,6 +4,7 @@ import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/widgets/premium_app_title.dart';
 import '../../shared/widgets/home_section_prompt.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
+import '../../shared/widgets/share_stored_gift_card.dart';
 import '../../shared/widgets/language_picker.dart';
 import 'dart:io';
 
@@ -115,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final location = snapshot.location;
     if (snapshot.state == LocationAccessState.ready && location != null) {
       final cards = StorageService.cardsBox.values
-          .where((item) => item is Map && item['type'] == 'Pasje')
+          .where((item) => item is Map && (item['type'] == 'Pasje' || item['type'] == 'Cadeaukaart') && item['isArchived'] != true && item['isArchived']?.toString() != 'true')
           .map((item) => Map<String, dynamic>.from(item as Map))
           .toList();
       final matches = await NearbyStoreService.resolveForCards(cards, location);
@@ -800,6 +801,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       }
                     },
                   ),
+                if (type == 'Cadeaukaart' && !isShared)
+                  _OptionTile(
+                    icon: Icons.share_rounded,
+                    title: L10n.current.share,
+                    onTap: () {
+                      Navigator.pop(context);
+                      shareStoredGiftCard(context, item);
+                    },
+                  ),
                 _OptionTile(
                   icon: Icons.delete_rounded,
                   title: isShared
@@ -908,7 +918,7 @@ class _HomeScreenState extends State<HomeScreen> {
             .toList();
         final giftCards = getItemsByType('Cadeaukaart');
         final allItems = [...cards, ...qrCodes, ...giftCards];
-        final locationEligibleItems = [...cards, ...qrCodes];
+        final locationEligibleItems = [...cards, ...qrCodes, ...giftCards];
         final favorites = getPreviewItems(
           allItems.where((item) => item['isFavorite'] == true).toList(),
         );

@@ -76,6 +76,8 @@ Deno.serve(async (request) => {
           store_name: cached.store_name,
           address: cached.store_address,
           distance_meters: Math.round(actualDistance),
+          latitude: cached.store_latitude,
+          longitude: cached.store_longitude,
           cached: true,
         };
         return;
@@ -135,6 +137,8 @@ Deno.serve(async (request) => {
         store_name: row.store_name,
         address: row.store_address,
         distance_meters: row.distance_meters,
+        latitude: row.store_latitude,
+        longitude: row.store_longitude,
         cached: false,
       };
     }

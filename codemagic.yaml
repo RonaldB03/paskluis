@@ -58,7 +58,7 @@ workflows:
           - Paskluis Testers
         submit_to_app_store: true
         cancel_previous_submissions: true
-        release_type: MANUAL
+        release_type: AFTER_APPROVAL
 
   android-test: &android_test
     name: Android Test Build

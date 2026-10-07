@@ -1,3 +1,4 @@
+import 'data/services/gift_store_reminder_service.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'features/cards/card_view_screen.dart';
 import 'features/gift_cards/gift_card_view_screen.dart';
@@ -67,6 +68,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     _initialization = _initialize();
     _initialization.then((_) {
       if (!mounted) return;
+      GiftStoreReminderService.instance.start();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         final payload = NotificationService.initialPayload;
@@ -81,6 +83,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     LocaleService.locale.removeListener(_languageChanged);
+    GiftStoreReminderService.instance.dispose();
     _deviceSessionTimer?.cancel();
     _authSubscription?.cancel();
     super.dispose();
@@ -100,6 +103,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
 
   void _languageChanged() {
     if (mounted) setState(() {});
+    GiftStoreReminderService.instance.refresh();
     _syncLanguage();
   }
 

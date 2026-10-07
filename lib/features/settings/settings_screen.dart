@@ -1,3 +1,4 @@
+import 'gift_store_reminder_settings.dart';
 import 'dart:async';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -342,7 +343,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final action = item['action'];
     if (const {'location','radius','distances','nearbyFirst','nearbyHome'}.contains(action) && !SettingsService.locationCardsAvailable) return null;
     if (action == 'radius' && !_locationCardsEnabled) return null;
-    if (action == 'notifications' && !SettingsService.giftExpiryNotificationsAvailable) return null;
     if (item['audience'] == 'locked' && !_plus) {
       final original = _action({...item, 'audience': 'all'});
       final title = original is _SettingsTile ? original.title : original is _SettingsSwitchTile ? original.title : 'PasKluis Plus';
@@ -350,7 +350,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         () => _open(const AccountScreen()), subtitle: t('Beschikbaar met Plus', 'Available with Plus'));
     }
     switch (action) {
-      case 'location': return _SettingsSwitchTile(menuItem: item, 
+      case 'location': return _SettingsSwitchTile(menuItem: item,
                   icon: Icons.location_on_outlined,
                   iconColor: const Color(0xFF286DC8),
                   iconBackground: const Color(0xFFE7F0FF),
@@ -368,7 +368,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     value: _radiusLabel,
                     onTap: _chooseRadius,
                   );
-      case 'nearbyFirst': return _SettingsSwitchTile(menuItem: item, 
+      case 'nearbyFirst': return _SettingsSwitchTile(menuItem: item,
                   icon: Icons.near_me_outlined,
                   iconColor: const Color(0xFF286DC8),
                   iconBackground: const Color(0xFFE7F0FF),
@@ -384,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     }
                   },
                 );
-      case 'favoritesFirst': return _SettingsSwitchTile(menuItem: item, 
+      case 'favoritesFirst': return _SettingsSwitchTile(menuItem: item,
                 icon: Icons.star_outline_rounded,
                 iconColor: const Color(0xFFA26D00),
                 iconBackground: const Color(0xFFFFF2CC),
@@ -398,7 +398,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (mounted) setState(() => _favoritesFirst = value);
                 },
               );
-      case 'favoritesHome': return _SettingsSwitchTile(menuItem: item, 
+      case 'favoritesHome': return _SettingsSwitchTile(menuItem: item,
                 icon: Icons.dashboard_customize_outlined,
                 iconColor: const Color(0xFFD51B46),
                 iconBackground: const Color(0xFFFFE5E9),
@@ -410,7 +410,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (mounted) setState(() => _showFavoritesSection = value);
                 },
               );
-      case 'nearbyHome': return _SettingsSwitchTile(menuItem: item, 
+      case 'nearbyHome': return _SettingsSwitchTile(menuItem: item,
                   icon: Icons.near_me_outlined,
                   iconColor: const Color(0xFF286DC8),
                   iconBackground: const Color(0xFFE7F0FF),
@@ -442,7 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: _startTabLabel,
                 onTap: _chooseStartTab,
               );
-      case 'clarity': return _SettingsSwitchTile(menuItem: item, 
+      case 'clarity': return _SettingsSwitchTile(menuItem: item,
                 icon: Icons.visibility_outlined,
                 iconColor: const Color(0xFF7046B8),
                 iconBackground: const Color(0xFFEFE8FF),
@@ -451,7 +451,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: _extraClearEnabled,
                 onChanged: _changeExtraClear,
               );
-      case 'brightness': return _SettingsSwitchTile(menuItem: item, 
+      case 'brightness': return _SettingsSwitchTile(menuItem: item,
                 icon: Icons.light_mode_outlined,
                 iconColor: const Color(0xFFA26D00),
                 iconBackground: const Color(0xFFFFF2CC),
@@ -463,7 +463,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (mounted) setState(() => _autoBrightnessEnabled = value);
                 },
               );
-      case 'awake': return _SettingsSwitchTile(menuItem: item, 
+      case 'awake': return _SettingsSwitchTile(menuItem: item,
                 icon: Icons.timer_outlined,
                 iconColor: const Color(0xFF7046B8),
                 iconBackground: const Color(0xFFEFE8FF),
@@ -475,7 +475,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (mounted) setState(() => _keepScreenAwakeEnabled = value);
                 },
               );
-      case 'notifications': return _SettingsSwitchTile(menuItem: item, 
+      case 'notifications': return Column(children: [if (SettingsService.giftExpiryNotificationsAvailable) _SettingsSwitchTile(menuItem: item,
                   icon: Icons.notifications_active_outlined,
                   iconColor: const Color(0xFFD51B46),
                   iconBackground: const Color(0xFFFFE5E9),
@@ -483,8 +483,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: L10n.current.notificationsBeforeTheExpiryDate,
                   value: _giftExpiryNotificationsEnabled,
                   onChanged: _changeExpiryNotifications,
-                );
-      case 'lock': return _SettingsSwitchTile(menuItem: item, 
+                ), const GiftStoreReminderSettings()]);
+      case 'lock': return _SettingsSwitchTile(menuItem: item,
                 icon: Icons.face_rounded,
                 iconColor: const Color(0xFF23814A),
                 iconBackground: const Color(0xFFDDF5E5),
@@ -493,7 +493,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: _appLockEnabled,
                 onChanged: _savingLock ? null : _changeAppLock,
               );
-      case 'hidePins': return _SettingsSwitchTile(menuItem: item, 
+      case 'hidePins': return _SettingsSwitchTile(menuItem: item,
                 icon: Icons.visibility_off_outlined,
                 iconColor: const Color(0xFFD51B46),
                 iconBackground: const Color(0xFFFFE5E9),

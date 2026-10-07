@@ -203,6 +203,17 @@ abstract final class SettingsService {
     _notify();
   }
 
+  static bool get nearbyGiftNotificationsEnabled => _preferences.getBool('nearby_gift_notifications') ?? false;
+  static bool get nearbyGiftShowAmount => _preferences.getBool('nearby_gift_show_amount') ?? true;
+  static Future<void> setNearbyGiftNotificationsEnabled(bool value) async {
+    await _preferences.setBool('nearby_gift_notifications', value);
+    _notify();
+  }
+  static Future<void> setNearbyGiftShowAmount(bool value) async {
+    await _preferences.setBool('nearby_gift_show_amount', value);
+    _notify();
+  }
+
   static bool get giftExpiryNotificationsAvailable =>
       _remoteBool('feature_gift_expiry_notifications', true);
 

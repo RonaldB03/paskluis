@@ -1,17 +1,23 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'location_service.dart';
+import 'brand_catalog_service.dart';
+import '../../shared/utils/brand_display_name.dart';
 import 'supabase_service.dart';
 
 class NearbyStoreMatch {
   final double distanceMeters;
   final String storeName;
   final String address;
+  final double? latitude;
+  final double? longitude;
 
   const NearbyStoreMatch({
     required this.distanceMeters,
     required this.storeName,
     required this.address,
+    this.latitude,
+    this.longitude,
   });
 }
 
@@ -23,11 +29,20 @@ abstract final class NearbyStoreService {
     final client = SupabaseService.client;
     if (client == null) return const {};
 
+    final cardList = cards.toList();
+    final names = cardList.any((card) => card['type'] == 'Cadeaukaart')
+        ? {for (final brand in await BrandCatalogService.load()) brand.id: brand.name}
+        : <String, String>{};
     final brandNames = <String>{};
     final cardBrands = <String, String>{};
-    for (final card in cards) {
+    for (final card in cardList) {
       final id = card['id']?.toString() ?? '';
-      final brand = (card['name']?.toString() ?? '').trim();
+      final linkedBrand = card['type'] == 'Cadeaukaart'
+          ? brandDisplayName(card['brandId']?.toString() ?? '', names)
+          : '';
+      final brand = linkedBrand.isNotEmpty
+          ? linkedBrand
+          : (card['name']?.toString() ?? '').replaceFirst(RegExp(r'\s+(cadeaukaart|gift card)$', caseSensitive: false), '').trim();
       if (id.isEmpty || brand.isEmpty) continue;
       brandNames.add(brand);
       cardBrands[id] = brand;
@@ -58,6 +73,8 @@ abstract final class NearbyStoreService {
           if (distance == null || !distance.isFinite || distance < 0) continue;
           byBrand[entry.key] = NearbyStoreMatch(
             distanceMeters: distance,
+            latitude: double.tryParse(value['latitude']?.toString() ?? ''),
+            longitude: double.tryParse(value['longitude']?.toString() ?? ''),
             storeName: value['store_name']?.toString() ?? entry.key,
             address: value['address']?.toString() ?? '',
           );
