@@ -616,7 +616,7 @@
   "whatYouGetWithPlus": "Dit krijg je met Plus",
   "unlimitedGiftCards": "Onbeperkt cadeaukaarten",
   "storeAsManyGiftCardsAsYou": "Bewaar zoveel cadeaukaarten als je wilt. Zonder Plus kun je één cadeaukaart bewaren.",
-  "shareLoyaltyCardsAndGiftCards": "Klanten- én cadeaukaarten delen",
+  "shareLoyaltyCardsAndGiftCards": "Klantenkaarten, QR-codes en cadeaukaarten delen",
   "shareSecurelyByEmailGiftCardsAre": "Jij en de ontvanger hebben een gratis PasKluis-account nodig. Koppel je bestaande Plus-aankoop om te delen; opnieuw betalen is niet nodig. Cadeaukaarten deel je inclusief pincode of krascode.",
   "manageTogether": "Samen beheren",
   "ifTheRecipientAlsoHasPlusYou": "Met Plus gekoppeld aan jullie PasKluis-accounts kunnen jullie dezelfde gedeelde kaart allebei bijwerken. Zonder Plus kan de ontvanger alleen kijken.",
@@ -1088,5 +1088,7 @@
         "type": "String"
       }
     }
-  }
+  },
+  "emptyOwnedCardDelete": "Wil je deze lege cadeaukaart verwijderen? Als je de kaart hebt gedeeld, verdwijnt die ook bij alle ontvangers zodra hun app synchroniseert. Dit kan niet ongedaan worden gemaakt.",
+  "emptyReceivedCardDelete": "Wil je deze lege cadeaukaart uit jouw PasKluis verwijderen? De kaart blijft bij de eigenaar en andere ontvangers staan."
 }

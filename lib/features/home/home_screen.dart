@@ -4,7 +4,7 @@ import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/widgets/premium_app_title.dart';
 import '../../shared/widgets/home_section_prompt.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
-import '../../shared/widgets/share_stored_gift_card.dart';
+import '../../shared/widgets/share_stored_card.dart';
 import '../../shared/widgets/language_picker.dart';
 import 'dart:io';
 
@@ -769,12 +769,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       context: context,
       backgroundColor: Colors.white,
       showDragHandle: true,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (_) {
         return SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 6, 20, 22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -809,13 +810,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       }
                     },
                   ),
-                if (type == 'Cadeaukaart' && !isShared)
+                if (!isShared)
                   _OptionTile(
                     icon: Icons.share_rounded,
                     title: L10n.current.share,
                     onTap: () {
                       Navigator.pop(context);
-                      shareStoredGiftCard(context, item);
+                      shareStoredCard(context, item);
                     },
                   ),
                 _OptionTile(

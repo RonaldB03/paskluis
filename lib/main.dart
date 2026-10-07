@@ -226,7 +226,10 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
       }
     });
     _deviceSessionTimer ??= Timer.periodic(
-      const Duration(seconds: 30), (_) => _checkDeviceSession(),
+      const Duration(seconds: 30), (_) {
+        _checkDeviceSession();
+        if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) unawaited(_syncSharedCards());
+      },
     );
     // Opening an offline vault must not wait for remote APIs.
     unawaited(_refreshOnline());

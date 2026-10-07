@@ -616,7 +616,7 @@
   "whatYouGetWithPlus": "What you get with Plus",
   "unlimitedGiftCards": "Unlimited gift cards",
   "storeAsManyGiftCardsAsYou": "Store as many gift cards as you want. Without Plus you can store one gift card.",
-  "shareLoyaltyCardsAndGiftCards": "Share loyalty cards and gift cards",
+  "shareLoyaltyCardsAndGiftCards": "Share loyalty cards, QR codes and gift cards",
   "shareSecurelyByEmailGiftCardsAre": "You and the recipient need a free PasKluis account. Link your existing Plus purchase to share; no further payment is needed. Gift cards are shared with their PIN or scratch code.",
   "manageTogether": "Manage together",
   "ifTheRecipientAlsoHasPlusYou": "With Plus linked to your PasKluis accounts, both of you can update the same shared card. Without Plus, the recipient can only view it.",
@@ -1088,5 +1088,7 @@
         "type": "String"
       }
     }
-  }
+  },
+  "emptyOwnedCardDelete": "Delete this empty gift card? If you shared it, it will also disappear for all recipients when their app syncs. This cannot be undone.",
+  "emptyReceivedCardDelete": "Remove this empty gift card from your PasKluis? It remains with the owner and other recipients."
 }

@@ -44,6 +44,9 @@ class GiftCardViewScreen extends StatefulWidget {
 
 class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     with WidgetsBindingObserver {
+  StreamSubscription? _sharedChanges;
+  bool _receivedCardRemoved = false;
+  bool _removingCurrentItem = false;
   late final PageController pageController;
   late List<Map<String, dynamic>> items;
   late int currentIndex;
@@ -67,6 +70,19 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
       viewportFraction: 0.84,
     );
 
+    if (items.any((card) => card['isShared'] == true)) {
+      _sharedChanges = StorageService.cardsBox.watch().listen((_) {
+      if (!mounted || _receivedCardRemoved || _removingCurrentItem || items.isEmpty || items[currentIndex]['isShared'] != true) return;
+      final id = items[currentIndex]['id'];
+      final matches = StorageService.cardsBox.values.whereType<Map>().where((card) => card['id'] == id);
+      if (matches.isEmpty) {
+        setState(() => _receivedCardRemoved = true);
+        WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) Navigator.of(context).maybePop(); });
+      } else {
+        setState(() => items[currentIndex] = Map<String, dynamic>.from(matches.first));
+      }
+    });
+    }
     HapticFeedback.lightImpact();
     _setupScreen();
     markCurrentGiftCardAsUsed();
@@ -81,6 +97,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
   @override
   void dispose() {
+    _sharedChanges?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     pageController.dispose();
 
@@ -200,7 +217,6 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
     if (key == null) return;
 
-    await NotificationService.cancelGiftCard(id);
     try {
       if (item['isShared'] == true) {
         await CardShareService.removeReceivedCard(
@@ -221,7 +237,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
       }
       return;
     }
-    await StorageService.deleteCard(key);
+    _removingCurrentItem = true;
+    try { await StorageService.deleteCard(key); } finally { _removingCurrentItem = false; }
 
     if (!mounted) return;
 
@@ -496,7 +513,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                   onTap: () async {
                     Navigator.pop(context);
                     await _saveBalance(0, kind: 'used');
-                    if (mounted) _offerArchive();
+                    if (mounted) _offerDelete();
                   },
                 ),
               ],
@@ -587,24 +604,23 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     );
   }
 
-  Future<void> _offerArchive() async {
-    final archive = await showDialog<bool>(
+  Future<void> _offerDelete() async {
+    if (items.isEmpty || _balanceOf(items[currentIndex]) != 0) return;
+    final id = items[currentIndex]['id'];
+    final received = items[currentIndex]['isShared'] == true;
+    final remove = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        title:  Text(L10n.current.giftCardIsEmpty),
-        content:  Text(L10n.current.wouldYouLikeToArchiveThisCard),
+      builder: (dialogContext) => AlertDialog(
+        title: Text(L10n.current.giftCardIsEmpty),
+        content: Text(received ? L10n.current.emptyReceivedCardDelete : L10n.current.emptyOwnedCardDelete),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child:  Text(L10n.current.keep)),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child:  Text(L10n.current.archive)),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(L10n.current.keep)),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(L10n.current.delete)),
         ],
       ),
     );
-    if (archive != true || items.isEmpty) return;
-    final updated = Map<String, dynamic>.from(items[currentIndex]);
-    updated['isArchived'] = true;
-    updated['archivedAt'] = DateTime.now().toIso8601String();
-    await updateCurrentItem(updated);
-    if (mounted) Navigator.pop(context);
+    if (!mounted || remove != true || items.isEmpty || items[currentIndex]['id'] != id) return;
+    await deleteCurrentItem();
   }
 
   void openBalanceEditor({bool spentMode = false}) {
@@ -700,7 +716,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
                       if (newBalance == 0) {
                         Future.delayed(const Duration(milliseconds: 250), () {
-                          if (mounted) _offerArchive();
+                          if (mounted) _offerDelete();
                         });
                       }
                     },
@@ -1114,6 +1130,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_receivedCardRemoved) return const Scaffold(body: SizedBox.shrink());
     L10n.watch(context);
     if (items.isEmpty) {
       return  Scaffold(

@@ -1,6 +1,6 @@
 import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
-import '../../shared/widgets/share_stored_gift_card.dart';
+import '../../shared/widgets/share_stored_card.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -357,12 +357,13 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
       context: context,
       backgroundColor: Colors.white,
       showDragHandle: true,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (_) {
         return SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 6, 20, 22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -383,7 +384,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
                     title: L10n.current.share,
                     onTap: () {
                       Navigator.pop(context);
-                      shareStoredGiftCard(context, item);
+                      shareStoredCard(context, item);
                     },
                   ),
                 _OptionTile(

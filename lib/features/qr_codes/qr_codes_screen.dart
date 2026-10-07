@@ -1,3 +1,6 @@
+import '../../data/services/card_share_service.dart';
+import '../../shared/widgets/shared_card_save.dart';
+import '../../shared/widgets/share_stored_card.dart';
 import '../../data/services/settings_service.dart';
 import '../../data/services/card_screen_session.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
@@ -22,6 +25,22 @@ import '../home/home_screen.dart';
 import 'add_qr_code_screen.dart';
 import 'choose_qr_code_screen.dart';
 import 'edit_qr_set_screen.dart';
+
+Future<Map<String, dynamic>?> _saveQrChanges(BuildContext context, dynamic key, Map<String, dynamic> updated) async {
+  final current = StorageService.cardsBox.get(key);
+  if (current is! Map) return null;
+  var next = Map<String, dynamic>.from(updated);
+  if (CardShareService.contentChanged(current, next)) {
+    if (current['isShared'] == true && current['canEditShared'] != true) return null;
+    if ((current['sharedCardId']?.toString() ?? '').isNotEmpty) {
+      final saved = await saveSharedCardWithFeedback(context, next);
+      if (saved == null || !context.mounted || StorageService.cardsBox.get(key) is! Map) return null;
+      next = saved;
+    }
+  }
+  await StorageService.saveCard(key, next);
+  return next;
+}
 
 class QrCodesScreen extends StatelessWidget {
   const QrCodesScreen({super.key});
@@ -175,6 +194,7 @@ class QrCodesScreen extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> item,
   ) async {
+    if (item['isShared'] == true && item['canEditShared'] != true) return;
     if (item['type']?.toString() == 'QR-set') {
       final key = findHiveKey(item);
       if (key == null) return;
@@ -190,7 +210,7 @@ class QrCodesScreen extends StatelessWidget {
         StorageService.cardsBox.get(key) as Map,
       );
 
-      await StorageService.saveCard(key, {
+      await _saveQrChanges(context, key, {
         ...oldItem,
         ...updated,
         'id': oldItem['id'],
@@ -229,7 +249,7 @@ class QrCodesScreen extends StatelessWidget {
       StorageService.cardsBox.get(key) as Map,
     );
 
-    await StorageService.saveCard(key, {
+    await _saveQrChanges(context, key, {
       ...oldItem,
       ...updated,
       'id': oldItem['id'],
@@ -290,6 +310,16 @@ class QrCodesScreen extends StatelessWidget {
 
     if (confirmed != true) return;
 
+    try {
+      if (item['isShared'] == true) {
+        await CardShareService.removeReceivedCard(item['shareMembershipId']?.toString() ?? '');
+      } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
+        await CardShareService.revokeAllForCard(item['id']?.toString() ?? '');
+      }
+    } catch (_) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L10n.current.sharedAccessCouldNotBeUpdatedTry)));
+      return;
+    }
     await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
@@ -351,12 +381,13 @@ class QrCodesScreen extends StatelessWidget {
       context: context,
       backgroundColor: Colors.white,
       showDragHandle: true,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (_) {
         return SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(20, 6, 20, 22),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -383,6 +414,7 @@ class QrCodesScreen extends StatelessWidget {
                     toggleFavorite(item);
                   },
                 ),
+                if (item['isShared'] != true || item['canEditShared'] == true)
                 _OptionTile(
                   icon: Icons.edit_rounded,
                   title: L10n.current.edit,
@@ -391,6 +423,15 @@ class QrCodesScreen extends StatelessWidget {
                     editQrCode(context, item);
                   },
                 ),
+                if (item['isShared'] != true)
+                  _OptionTile(
+                    icon: Icons.share_rounded,
+                    title: L10n.current.share,
+                    onTap: () {
+                      Navigator.pop(context);
+                      shareStoredCard(context, item);
+                    },
+                  ),
                 _OptionTile(
                   icon: Icons.delete_rounded,
                   title: L10n.current.delete,
@@ -512,6 +553,8 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
       _screenSession = null;
     }
   }
+  StreamSubscription? _sharedChanges;
+  bool _receivedCardRemoved = false;
   late int currentIndex;
   late int ticketIndex;
 
@@ -556,11 +599,28 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
     currentIndex = widget.initialIndex;
     ticketIndex = 0;
     pageController = PageController(initialPage: widget.initialIndex);
+    if (widget.items.any((card) => card['isShared'] == true)) {
+      _sharedChanges = StorageService.cardsBox.watch().listen((_) {
+      if (!mounted || _receivedCardRemoved || widget.items.isEmpty || widget.items[currentIndex]['isShared'] != true) return;
+      final id = widget.items[currentIndex]['id'];
+      final matches = StorageService.cardsBox.values.whereType<Map>().where((card) => card['id'] == id);
+      if (matches.isEmpty) {
+        setState(() => _receivedCardRemoved = true);
+        WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) Navigator.of(context).maybePop(); });
+      } else {
+        setState(() {
+          widget.items[currentIndex] = Map<String, dynamic>.from(matches.first);
+          if (ticketIndex >= currentCodes.length) ticketIndex = 0;
+        });
+      }
+    });
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => markCurrentQrAsUsed());
   }
 
   @override
   void dispose() {
+    _sharedChanges?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _screenSession?.close();
     pageController.dispose();
@@ -587,16 +647,13 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
     return null;
   }
 
-  Future<void> saveCurrentItem(Map<String, dynamic> updated) async {
+  Future<bool> saveCurrentItem(Map<String, dynamic> updated) async {
     final key = findHiveKey(item);
-    if (key == null) return;
-
-    await StorageService.saveCard(key, updated);
-    if (!mounted) return;
-
-    setState(() {
-      widget.items[currentIndex] = Map<String, dynamic>.from(updated);
-    });
+    if (key == null) return false;
+    final saved = await _saveQrChanges(context, key, updated);
+    if (!mounted || saved == null) return false;
+    setState(() { widget.items[currentIndex] = Map<String, dynamic>.from(saved); });
+    return true;
   }
 
   Future<void> markCurrentQrAsUsed() async {
@@ -612,19 +669,21 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
   }
 
   Future<void> toggleCurrentTicketUsed() async {
+    if (item['isShared'] == true && item['canEditShared'] != true) return;
     final codes = currentCodes;
     if (codes.isEmpty) return;
 
     final used = currentUsed;
-    final willBeUsed = !used[ticketIndex];
-    used[ticketIndex] = willBeUsed;
+    final selectedTicket = ticketIndex.clamp(0, codes.length - 1);
+    final willBeUsed = !used[selectedTicket];
+    used[selectedTicket] = willBeUsed;
 
     final updated = Map<String, dynamic>.from(item);
     updated['used'] = used.map((v) => v ? 'true' : 'false').join('|||');
     updated['lastUsedAt'] = DateTime.now().toIso8601String();
     updated['updatedAt'] = DateTime.now().toIso8601String();
 
-    await saveCurrentItem(updated);
+    if (!await saveCurrentItem(updated)) return;
 
     if (!mounted) return;
 
@@ -682,6 +741,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
 
   @override
   Widget build(BuildContext context) {
+    if (_receivedCardRemoved) return const Scaffold(body: SizedBox.shrink());
     L10n.watch(context);
     final name = item['name']?.toString() ?? L10n.current.qrCode;
     final isFavorite = item['isFavorite'] == true;
@@ -948,7 +1008,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
               SizedBox(
                 height: 56,
                 child: FilledButton.icon(
-                  onPressed: toggleCurrentTicketUsed,
+                  onPressed: current['isShared'] == true && current['canEditShared'] != true ? null : toggleCurrentTicketUsed,
                   icon: Icon(
                     currentUsed
                         ? Icons.undo_rounded

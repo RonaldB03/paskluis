@@ -156,7 +156,9 @@ abstract final class CardShareService {
   }
 
   static Future<void> revokeAllForCard(String cardId) async {
-    if (cardId.isEmpty || AccountService.currentUser == null) return;
+    if (cardId.isEmpty || AccountService.currentUser == null) {
+      throw AuthException(L10n.current.signInToShareACard);
+    }
     await _client.rpc(
       'revoke_all_shared_card_access',
       params: {'p_card_external_id': cardId},

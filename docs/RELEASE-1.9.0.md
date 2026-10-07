@@ -2,14 +2,20 @@
 
 Deze update bundelt alle door Ronald gevraagde cadeaukaartverbeteringen. Apple-review en automatische publicatie na goedkeuring zijn door Ronald toegestaan. De definitieve App Store-indiening is nog niet uitgevoerd.
 
+De aanvullende deel- en verwijderwijzigingen van 7 oktober zijn nog niet bij Apple ingediend. De eerdere TestFlight-build van commit 7977c5e is afgerond en bevat deze aanvulling niet.
+
 ## Wijzigingen
 
-- Delen via lang indrukken van eigen cadeaukaarten, op Home en in het cadeaukaartenoverzicht. De bestaande account-, Plus- en pincodewaarschuwingen blijven gelden.
+- Delen via lang indrukken van eigen klantenkaarten, QR-codes, QR-sets en cadeaukaarten op Home en in hun overzichten. De bestaande account-, Plus- en pincodewaarschuwingen blijven gelden.
 - Vervaldatum onder Kaart gebruikt; een verlopen datum wordt gemarkeerd. Geen datum wordt verzonnen als die ontbreekt.
 - Barcodecontrole-uitleg bij toevoegen; meerdere fysieke codes blijven door de gebruiker te controleren.
 - Cadeaukaarten van nabije winkels bovenaan en een optionele afstandsaanduiding. Locatie moet aanstaan.
 - iPhone: optionele lokale winkelmeldingen rond 100 meter, maximaal eenmaal per fysieke winkel per 24 uur. Alleen kaarten met positief saldo die niet verlopen of gearchiveerd zijn.
 - Afzonderlijke instellingen voor vervaldatumherinneringen, winkelmeldingen en het tonen van het saldo in winkelmeldingen.
+
+- Lege cadeaukaart: Behouden / Verwijderen in plaats van archiveren. De eigenaar trekt eerst gedeelde toegang in; mislukt dat, dan blijft de lokale kaart behouden. Een ontvanger verwijdert alleen zijn eigen toegang.
+- Gedeelde QR-wijzigingen lopen via de bestaande versiecontrole; ontvangen kaarten zonder bewerkrecht zijn alleen leesbaar.
+- Tijdens actief gebruik synchroniseren gedeelde kaarten ook elke 30 seconden. Een geopende ontvangen QR-code of cadeaukaart sluit na verwijdering bij de volgende succesvolle synchronisatie. Offline ontvangers zien verwijdering zodra zij weer synchroniseren.
 
 ## Grenzen van winkelmeldingen
 
@@ -19,13 +25,14 @@ Locatie op Altijd en meldingsrechten zijn nodig; winkelmeldingen staan standaard
 
 ## Validatie
 
-- Volledige Flutter-suite: 113 tests geslaagd vóór de laatste opstartguard en aanvullende schermtest.
+- Volledige Flutter-suite na de deel- en verwijderaanvulling: 120 tests geslaagd, waaronder zes nieuwe scenario’s voor QR-delen, accountpoort, ontvangen alleen-lezen kaarten, verwijdering en het sluiten van een ingetrokken QR-code.
+- Transactionele servertest shared_card_deletion.sql op de bestaande backend: QR-code, QR-set en klantenkaart delen geslaagd; cadeaukaartverwijdering ontneemt beide ontvangers toegang zonder andere gedeelde kaarten te raken. Testgegevens volledig teruggedraaid.
 - Aanvullende schermtest: vervaldatum onder de gebruiksknop op 360 px met 130% tekst, zonder overflow, geslaagd.
 - Endpoint: 4 tests geslaagd, waaronder cache, begrensde paralleliteit, budgetweigering en gedeeltelijke fouten.
 - Flutter-analyse: geen fouten of waarschuwingen; bestaande informatieve lintmeldingen aanwezig. CI herhaalt analyse en alle tests.
 - Live VPS-endpoint getest met een synthetisch openbaar testpunt: winkelcoördinaten aanwezig.
 - Nederlandse en Engelse publieke privacyteksten via HTTPS gecontroleerd.
-- Native iOS-compilatie en upload: nog te bevestigen in Codemagic.
+- Native iOS-compilatie en TestFlight-workflow van commit 7977c5e afgerond. De deel- en verwijderaanvulling vereist een nieuwe testbuild.
 - Echte aankomst bij een winkel, toestemmingsdialoog op iPhone, gesloten app en 24-uurs herhaling: nog niet op een fysiek toestel getest. Niet als geslaagd rapporteren.
 
 ## Apple-reviewnotities (voor invoer)

@@ -4,7 +4,7 @@ import '../../data/services/storage_service.dart';
 import '../../l10n/l10n.dart';
 import 'card_share_dialogs.dart';
 
-Future<void> shareStoredGiftCard(
+Future<void> shareStoredCard(
   BuildContext context,
   Map<String, dynamic> item,
 ) async {
