@@ -78,7 +78,8 @@ class GiftStoreReminderService with WidgetsBindingObserver {
   }
 
   Future<void> refresh() async {
-    if (!supported) return;
+    // Locale changes can occur before settings and encrypted storage are ready.
+    if (!_started || !supported) return;
     final generation = ++_generation;
     if (!SettingsService.nearbyGiftNotificationsEnabled ||
         !SettingsService.locationCardsEnabled) {
