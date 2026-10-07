@@ -114,7 +114,12 @@ private final class GiftStoreReminders: NSObject, CLLocationManagerDelegate {
     content.title = row["title"] as? String ?? "PasKluis"
     content.body = body
     content.sound = .default
-    content.userInfo = ["payload": "gift_store", "id": 1900000001]
+    // Match the installed flutter_local_notifications Darwin payload so the
+    // existing delegate displays foreground alerts and forwards notification taps.
+    content.userInfo = ["payload": "gift_store", "NotificationId": 1900000001,
+                        "presentAlert": true, "presentSound": true,
+                        "presentBadge": false, "presentBanner": true,
+                        "presentList": true]
     let request = UNNotificationRequest(identifier: region.identifier, content: content, trigger: nil)
     UNUserNotificationCenter.current().add(request) { [weak self] error in
       if error != nil { self?.defaults.set(last, forKey: cooldownKey) }

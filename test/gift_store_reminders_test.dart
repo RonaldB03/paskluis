@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+import 'package:paskluis_v1/data/services/location_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:paskluis_v1/data/services/settings_service.dart';
@@ -8,6 +10,13 @@ import 'package:paskluis_v1/shared/utils/card_sorting.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets('background region wake never requests a fresh device location', (tester) async {
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    addTearDown(() => tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed));
+    final result = await LocationService.resolve(requestPermission: true);
+    expect(result.state, LocationAccessState.unavailable);
+    expect(result.location, isNull);
+  });
   final now = DateTime(2026, 10, 7, 14);
   Map<String, dynamic> card(String id) => {
     'id': id,

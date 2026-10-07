@@ -1,3 +1,4 @@
+import 'features/gift_cards/gift_cards_screen.dart';
 import 'data/services/gift_store_reminder_service.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'features/cards/card_view_screen.dart';
@@ -272,6 +273,10 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
   Future<void> _openNotification(String payload) async {
     await _initialization;
     if (!mounted) return;
+    if (payload == 'gift_store') {
+      _navigatorKey.currentState?.push(MaterialPageRoute<void>(builder: (_) => const GiftCardsScreen()));
+      return;
+    }
     if (payload.startsWith('support_reply:')) {
       await _openSupportThread(payload.substring(14));
       return;

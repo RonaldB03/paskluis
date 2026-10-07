@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 import 'location_resolver.dart';
 
@@ -44,6 +45,11 @@ abstract final class LocationService {
   static Future<LocationSnapshot> resolve({
     bool requestPermission = false,
   }) async {
+    // iOS can launch the process for a local region event. Do not turn that
+    // background wake-up into a fresh location lookup or server upload.
+    if (WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
+      return const LocationSnapshot(LocationAccessState.unavailable);
+    }
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         return const LocationSnapshot(LocationAccessState.servicesDisabled);
@@ -63,7 +69,7 @@ abstract final class LocationService {
       }
 
       final position = await _resolver.resolve();
-      if (position == null) {
+      if (position == null || WidgetsBinding.instance.lifecycleState != AppLifecycleState.resumed) {
         return const LocationSnapshot(LocationAccessState.unavailable);
       }
       return LocationSnapshot(

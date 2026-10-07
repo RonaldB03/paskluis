@@ -56,7 +56,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   static bool _openedInitialTab = false;
   final _searchController = TextEditingController();
   String _searchQuery = '';
@@ -68,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _refreshVisualAssets();
     if (SettingsService.locationCardsEnabled && SettingsService.showNearbySection) {
       _loadNearbyLocation();
@@ -87,6 +88,11 @@ class _HomeScreenState extends State<HomeScreen> {
         if (index != 0) openTab(index);
       });
     }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadNearbyLocation();
   }
 
   Future<void> _loadNearbyLocation({bool requestPermission = false}) async {
@@ -244,6 +250,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _nearbyRequest++;
     _searchController.dispose();
     super.dispose();
   }
