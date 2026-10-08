@@ -1,5 +1,23 @@
 # PasKluis build trigger 2026-09-19: QR support for loyalty and gift cards
 workflows:
+  android-private-test-export:
+    name: Android private test APK export
+    instance_type: mac_mini_m2
+    max_build_duration: 20
+    environment:
+      groups:
+        - google_play_credentials
+      vars:
+        TEST_VERSION_CODE: "103"
+    scripts:
+      - name: Download private Google-signed test APKs
+        script: |
+          set -e
+          python3 -m pip install --quiet google-auth requests
+          python3 tooling/download_play_test_apks.py
+    artifacts:
+      - play-test-export/*.zip
+
   ios-release: &ios_release
     name: iOS Release Build
     max_build_duration: 60
