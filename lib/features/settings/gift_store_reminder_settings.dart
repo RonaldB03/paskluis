@@ -45,8 +45,8 @@ class _GiftStoreReminderSettingsState extends State<GiftStoreReminderSettings>
             ),
             content: Text(
               t(
-                'Ontvang rond 100 meter van een opgeslagen winkel een herinnering aan je cadeaukaart, ook met gesloten app. Dit vraagt toestemming voor meldingen en locatie op Altijd. Maximaal één melding per winkel per 24 uur. Het saldo houd je zelf bij. Open PasKluis regelmatig om de winkels in je omgeving en saldi bij te werken. Zonder openen stoppen de meldingen na zeven dagen.',
-                'Get a gift-card reminder around 100 metres from a saved store, even with the app closed. Notifications and Always location permission are needed. At most one reminder per store every 24 hours. Balances are entered by you. Open PasKluis regularly to refresh nearby stores and balances. Reminders stop after seven days without opening.',
+                'PasKluis gebruikt je locatie ook wanneer de app gesloten of niet in gebruik is om je aan cadeaukaarten bij winkels te herinneren. Ontvang rond 100 meter van een opgeslagen winkel een herinnering aan je cadeaukaart, ook met gesloten app. Dit vraagt toestemming voor meldingen en locatie op Altijd. Maximaal één melding per winkel per 24 uur. Het saldo houd je zelf bij. Open PasKluis regelmatig om de winkels in je omgeving en saldi bij te werken. Zonder openen stoppen de meldingen na zeven dagen.',
+                'PasKluis uses your location even when the app is closed or not in use to remind you of gift cards near stores. Get a gift-card reminder around 100 metres from a saved store, even with the app closed. Notifications and Always location permission are needed. At most one reminder per store every 24 hours. Balances are entered by you. Open PasKluis regularly to refresh nearby stores and balances. Reminders stop after seven days without opening.',
               ),
             ),
             actions: [
@@ -69,8 +69,8 @@ class _GiftStoreReminderSettingsState extends State<GiftStoreReminderSettings>
               SnackBar(
                 content: Text(
                   t(
-                    'Sta meldingen en locatie toe via de iPhone-instellingen.',
-                    'Allow notifications and location in iPhone Settings.',
+                    'Sta meldingen en locatie toe via de telefooninstellingen.',
+                    'Allow notifications and location in your phone settings.',
                   ),
                 ),
               ),
@@ -136,8 +136,8 @@ class _GiftStoreReminderSettingsState extends State<GiftStoreReminderSettings>
                 ),
                 subtitle: Text(
                   t(
-                    'Schakel locatie in PasKluis in en kies op je iPhone bij Locatie: Altijd. Sta ook meldingen toe.',
-                    'Enable location in PasKluis and choose Always in iPhone location settings. Allow notifications too.',
+                    'Schakel locatie in PasKluis in en kies bij de locatietoestemming: Altijd toestaan / Altijd. Schakel ook de exacte locatie in. Sta ook meldingen toe.',
+                    'Enable location in PasKluis and choose Allow all the time / Always in your phone location settings, with precise location enabled. Allow notifications too.',
                   ),
                 ),
                 onTap: () => LocationService.openAppSettings(),

@@ -1,8 +1,8 @@
 # PasKluis 1.9.0
 
-Deze update bundelt alle door Ronald gevraagde cadeaukaartverbeteringen. Apple-review en automatische publicatie na goedkeuring zijn door Ronald toegestaan. De definitieve App Store-indiening is nog niet uitgevoerd.
+Deze update bundelt alle door Ronald gevraagde cadeaukaartverbeteringen. Apple-review en automatische publicatie na goedkeuring zijn door Ronald toegestaan. Versie 1.9.0 build 144 is op 7 oktober 2026 officieel ingediend en staat op Waiting for Review. Automatische publicatie na goedkeuring en directe uitrol naar alle gebruikers zijn in Apple gecontroleerd.
 
-De aanvullende deel- en verwijderwijzigingen van 7 oktober zijn nog niet bij Apple ingediend. De eerdere TestFlight-build van commit 7977c5e is afgerond en bevat deze aanvulling niet.
+De aanvullende deel- en verwijderwijzigingen van commit 9a0f161 zitten in de ingediende build 144. PasKluis Plus (paskluis_plus, Apple ID 6814983015) staat op Approved; het bestaande product is ongewijzigd. Reviewinzending: 9d7c00ae-03ca-4596-a3c3-edbb4dbecd2f.
 
 ## Wijzigingen
 
@@ -32,7 +32,7 @@ Locatie op Altijd en meldingsrechten zijn nodig; winkelmeldingen staan standaard
 - Flutter-analyse: geen fouten of waarschuwingen; bestaande informatieve lintmeldingen aanwezig. CI herhaalt analyse en alle tests.
 - Live VPS-endpoint getest met een synthetisch openbaar testpunt: winkelcoördinaten aanwezig.
 - Nederlandse en Engelse publieke privacyteksten via HTTPS gecontroleerd.
-- Native iOS-compilatie en TestFlight-workflow van commit 7977c5e afgerond. De deel- en verwijderaanvulling vereist een nieuwe testbuild.
+- Native iOS-build 144 gecompileerd, geüpload en verwerkt door Apple; gekoppeld aan officiële review. Build toegevoegd aan Paskluis Testers. De automatische beta-reviewindiening gaf 422 omdat een eerdere build in dezelfde versie al in beta-review staat; dit blokkeerde de officiële App Store-indiening niet.
 - Echte aankomst bij een winkel, toestemmingsdialoog op iPhone, gesloten app en 24-uurs herhaling: nog niet op een fysiek toestel getest. Niet als geslaagd rapporteren.
 
 ## Apple-reviewnotities (voor invoer)

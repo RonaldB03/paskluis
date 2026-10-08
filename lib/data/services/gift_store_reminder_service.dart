@@ -16,7 +16,7 @@ import '../../l10n/l10n.dart';
 class GiftStoreReminderService with WidgetsBindingObserver {
   static final instance = GiftStoreReminderService();
   static const channel = MethodChannel('nl.paskluis.app/gift-store-reminders');
-  static bool get supported => Platform.isIOS;
+  static bool get supported => Platform.isIOS || Platform.isAndroid;
   StreamSubscription<dynamic>? _cards;
   int _generation = 0;
   Timer? _debounce;
@@ -25,15 +25,34 @@ class GiftStoreReminderService with WidgetsBindingObserver {
   void start() {
     if (_started || !supported) return;
     _started = true;
+    if (Platform.isAndroid) {
+      channel.setMethodCallHandler((call) async {
+        if (call.method == 'open')
+          unawaited(NotificationService.onOpen?.call('gift_store'));
+      });
+      unawaited(_takeInitialOpen());
+    }
     WidgetsBinding.instance.addObserver(this);
     SettingsService.settingsRevision.addListener(_changed);
     _cards = StorageService.cardsBox.watch().listen((_) => _changed());
     unawaited(refresh());
   }
 
+  Future<void> _takeInitialOpen() async {
+    try {
+      if (await channel.invokeMethod<bool>('takeInitialOpen') == true) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_started) unawaited(NotificationService.onOpen?.call('gift_store'));
+        });
+        WidgetsBinding.instance.scheduleFrame();
+      }
+    } catch (_) {}
+  }
+
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     SettingsService.settingsRevision.removeListener(_changed);
+    if (Platform.isAndroid) channel.setMethodCallHandler(null);
     _cards?.cancel();
     _debounce?.cancel();
     _generation++;

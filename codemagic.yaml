@@ -103,6 +103,10 @@ workflows:
         script: |
           NEXT_BUILD_NUMBER=$(cat "$CM_BUILD_DIR/android_build_number.txt")
           flutter build appbundle --release --build-number="$NEXT_BUILD_NUMBER"
+      - name: Android native regressietests
+        script: |
+          cd android
+          ./gradlew :app:testReleaseUnitTest
       - name: Android test-APK bouwen
         script: |
           NEXT_BUILD_NUMBER=$(cat "$CM_BUILD_DIR/android_build_number.txt")
