@@ -32,3 +32,20 @@ Android kan de melding enkele minuten later tonen; 100 meter is geen exacte gara
 Test op toestel: delen QR/klantenkaart, verwijderen gedeelde cadeaukaart, Android-aankoop en herstellen, weigeren/uitschakelen meldingen, terugkeer uit toestemmingsinstellingen, echte winkelmelding, openen vanuit melding en geen herhaalde melding binnen 24 uur. Noteer echte feedback en uitgevoerde aanpassingen. Vul de productievragen uitsluitend met die werkelijke resultaten in.
 
 Bronnen: https://support.google.com/googleplay/android-developer/answer/14151465 en https://support.google.com/googleplay/android-developer/answer/9799150
+
+## Testers — door Ronald bevestigd
+
+Geworven onder eigen bekenden, die enthousiast waren over het idee en vrijwillig wilden helpen testen. Welke functies daadwerkelijk zijn getest en concrete feedback zijn nog niet aangeleverd. Ronald kan de Android-test en demonstratievideo uitvoeren. Geen inhoudelijke testervaringen namens testers invullen zonder bevestiging.
+
+## Uitvoering
+
+Codemagic-build 6ac76079de4f6899ca0d249e (Android Test Build, bron 77a213b) is gestart. Flutter-codecontrole en tests zijn geslaagd. Het gekozen versionCode is 103 (bestaande hoogste code: 102). Native compileerresultaat en upload zijn nog niet bevestigd. Privacy- en verwijderlinks zijn op paskluis.com gezet en ter beoordeling ingediend. De eerdere goedgekeurde release 1.8.0 is niet gepubliceerd door deze handeling. De privacywebpagina's NL/EN zijn bijgewerkt voor Android-winkelmeldingen.
+
+Ronald bevestigt daarnaast dat de testers alle toen beschikbare functies hebben getest. Verschillende gebruikers kregen gerichte opdrachten, waaronder kaarten met elkaar delen. Hun testervaringen hebben tot opeenvolgende updates geleid. Specifieke feedbackcitaten of aantallen problemen zijn niet aangeleverd. De nieuwe Android-achtergrondmeldingen vallen niet onder deze al afgeronde testbevestiging.
+
+Voorstel werving: 'Ik heb testers geworven onder mijn eigen bekenden. Zij waren enthousiast over het idee achter PasKluis en wilden vrijwillig helpen testen.'
+Voorstel betrokkenheid: 'Ik heb verschillende testers gerichte testopdrachten gegeven, waaronder het onderling delen van kaarten. Volgens mijn terugkoppeling hebben zij alle toen beschikbare functies getest. De ervaringen tijdens deze tests hebben geleid tot meerdere updates.'
+
+
+
+Plus gecontroleerd in Google Play: paskluis_plus / plus-lifetime actief, Nederland beschikbaar, eenmalig EUR 1,99.
