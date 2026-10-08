@@ -39,7 +39,7 @@ Geworven onder eigen bekenden, die enthousiast waren over het idee en vrijwillig
 
 ## Uitvoering
 
-Codemagic-build 6ac76079de4f6899ca0d249e (Android Test Build, bron 77a213b) is gestart. Flutter-codecontrole en tests zijn geslaagd. Het gekozen versionCode is 103 (bestaande hoogste code: 102). Native compileerresultaat en upload zijn nog niet bevestigd. Privacy- en verwijderlinks zijn op paskluis.com gezet en ter beoordeling ingediend. De eerdere goedgekeurde release 1.8.0 is niet gepubliceerd door deze handeling. De privacywebpagina's NL/EN zijn bijgewerkt voor Android-winkelmeldingen.
+Codemagic-build 6ac76079de4f6899ca0d249e (Android Test Build, bron 77a213b) is gestart. Flutter-codecontrole en tests zijn geslaagd. Het gekozen versionCode is 103 (bestaande hoogste code: 102). Native releasecompilatie en :app:testReleaseUnitTest zijn geslaagd. AAB en APK zijn gebouwd. De automatische alpha-publicatie faalde wegens een ontbrekende locatieverklaring. Dezelfde AAB is handmatig geüpload als conceptrelease 29; Google toont build 103 (1.9.0). De enige releasefout verwijst naar de locatieverklaring, waarvoor de demonstratievideo ontbreekt. Privacy- en verwijderlinks zijn op paskluis.com gezet en ter beoordeling ingediend. De eerdere goedgekeurde release 1.8.0 is niet gepubliceerd door deze handeling. De privacywebpagina's NL/EN zijn bijgewerkt voor Android-winkelmeldingen.
 
 Ronald bevestigt daarnaast dat de testers alle toen beschikbare functies hebben getest. Verschillende gebruikers kregen gerichte opdrachten, waaronder kaarten met elkaar delen. Hun testervaringen hebben tot opeenvolgende updates geleid. Specifieke feedbackcitaten of aantallen problemen zijn niet aangeleverd. De nieuwe Android-achtergrondmeldingen vallen niet onder deze al afgeronde testbevestiging.
 
@@ -49,3 +49,10 @@ Voorstel betrokkenheid: 'Ik heb verschillende testers gerichte testopdrachten ge
 
 
 Plus gecontroleerd in Google Play: paskluis_plus / plus-lifetime actief, Nederland beschikbaar, eenmalig EUR 1,99.
+
+## Definitieve bouwstatus
+
+AAB en APK: artifacts/android-1.9.0-103 in de bovenliggende workspace. AAB SHA256: 3ba16cf19f87d5cbf3d407190702bac641ebf4165e6a7c80f4127527c71aee9d. APK SHA256: a52c935625bb785581440dff263be0aee5783d98b32a93c0c7382bac5cb73acf. Gesloten testrelease 29 is concept; nog niet beschikbaar voor testers. Locatieverklaring ingevuld in browser, niet opgeslagen/ingediend zonder echte videolink. APK is ondertekend met de uploadsleutel; installatie over een door Play anders ondertekende app kan niet. Geen bestaande kaarten verwijderen om dit op te lossen: gebruik een apart testtoestel of wacht op de Play-versie.
+
+Vervolg: echte Android-video ontvangen en controleren; locatieverklaring opslaan; conceptrelease 29 afronden en voor beoordeling indienen; na goedkeuring beheerd publiceren voor Alpha. Productietoegang pas aanvragen zodra Google 14 dagen toont en de nieuwe Android-functie is getest. Bestaande beschikbare 1.8.0 betreft build 101; build 102 staat goedgekeurd klaar voor publicatie en is deze beurt niet vrijgegeven.
+
