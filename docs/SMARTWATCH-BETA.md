@@ -81,6 +81,28 @@ implementation handoff; the presence of the workflow does not prove a passed run
   the unsigned Mac compilation does not produce an installable iPhone beta.
 - No real phone/watch pairing, scanner testing or store distribution has occurred.
 
+## Internal iPhone installation build
+
+`ios-smartwatch-beta` in `codemagic.yaml` is isolated from all existing workflows.
+It prepares the watch target before applying provisioning profiles, enables
+`WATCH_BETA`, and archives with `testFlightInternalTestingOnly: true`. Publishing
+uploads to App Store Connect without App Store submission or external beta review.
+The current internal TestFlight group `Test Ro` contains the owner only and has
+automatic build distribution enabled. Verify processing and group availability
+before telling the owner to install an update.
+
+`tooling/provision_watch_ios.py` uses Codemagic's Apple integration and the
+certificate already installed for the phone. It may create only the companion
+identifier `nl.paskluis.app.watchkitapp` and its new profile. It does not create or
+revoke certificates, alter the phone identifier/profile, or print credentials.
+Four local profile-selection safety tests pass; the signed remote build must
+still confirm provisioning and upload. A TestFlight build installed by the owner
+updates their local test app; the publicly distributed App Store app is unchanged.
+
+The GitHub starter is `.github/workflows/watch-ios-testflight.yml` and is restricted
+to `codex/smartwatch-beta`. Its initial Codemagic build is
+`6accd326d0025cd97ad5ecd5`; do not start duplicates while that build is queued/running.
+
 ## Sync and privacy contract
 
 `schema:1`, `owner` (random per phone installation), increasing `revision`,
