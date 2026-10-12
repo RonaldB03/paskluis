@@ -1,5 +1,56 @@
 # PasKluis build trigger 2026-09-19: QR support for loyalty and gift cards
 workflows:
+  ios-smartwatch-beta:
+    name: iPhone and Apple Watch internal beta
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: Codemagic
+    environment:
+      flutter: 3.47.6
+      xcode: latest
+      vars:
+        WATCH_BETA: "1"
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: nl.paskluis.app
+    scripts:
+      - name: Prepare smartwatch targets
+        script: |
+          set -euo pipefail
+          test "$CM_BRANCH" = "codex/smartwatch-beta"
+          flutter pub get
+          ruby tooling/configure_watch_ios.rb
+          flutter build ios --config-only --no-codesign --dart-define=WATCH_BETA=true
+          cd ios && pod install
+      - name: Test beta sources
+        script: flutter test --dart-define=WATCH_BETA=true
+      - name: Provision companion using the existing signing certificate
+        script: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'cryptography>=46,<47'
+          python3 tooling/provision_watch_ios.py
+          xcode-project use-profiles --custom-export-options='{"testFlightInternalTestingOnly": true}'
+      - name: Archive internal smartwatch beta
+        script: |
+          set -euo pipefail
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-build-number 6764876159 --all-versions)
+          if ! [[ "$LATEST_BUILD_NUMBER" =~ ^[0-9]+$ ]] || (( LATEST_BUILD_NUMBER < 138 )); then
+            echo "Cannot establish the latest Apple build number."
+            exit 1
+          fi
+          IOS_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          echo "$IOS_BUILD_NUMBER" > "$CM_BUILD_DIR/ios_build_number.txt"
+          flutter build ipa --release --dart-define=WATCH_BETA=true --build-number="$IOS_BUILD_NUMBER" --export-options-plist=$HOME/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - ios_build_number.txt
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+        submit_to_app_store: false
+
   android-private-test-export:
     name: Android private test APK export
     instance_type: mac_mini_m2
