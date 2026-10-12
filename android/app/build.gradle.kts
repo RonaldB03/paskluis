@@ -12,6 +12,7 @@ val codemagicKeyAlias = System.getenv("CM_KEY_ALIAS")
 val codemagicKeyPassword = System.getenv("CM_KEY_PASSWORD")
 
 android {
+    sourceSets["main"].java.srcDir("../watch-common/src/main/java")
     namespace = "nl.paskluis.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -61,6 +62,8 @@ android {
 }
 
 dependencies {
+    implementation("com.google.android.gms:play-services-wearable:19.0.0")
+    implementation("com.garmin.connectiq:ciq-companion-app-sdk:2.4.0@aar")
     implementation("com.google.android.gms:play-services-location:21.3.0")
     testImplementation("junit:junit:4.13.2")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")

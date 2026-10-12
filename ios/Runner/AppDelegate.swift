@@ -18,6 +18,9 @@ import CoreLocation
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    #if WATCH_BETA
+    WatchBridge.shared.register(engineBridge.applicationRegistrar.messenger())
+    #endif
     let channel = FlutterMethodChannel(name: "nl.paskluis.app/gift-store-reminders", binaryMessenger: engineBridge.applicationRegistrar.messenger())
     channel.setMethodCallHandler { [weak self] call, result in
       guard let monitor = self?.giftStoreReminders else { result(nil); return }

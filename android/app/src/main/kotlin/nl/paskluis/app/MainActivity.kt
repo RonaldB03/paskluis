@@ -12,6 +12,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterFragmentActivity() {
+    private var watches: WatchBridge? = null
     private var reminders: MethodChannel? = null
     private var remindersReady = false
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,6 +21,7 @@ class MainActivity : FlutterFragmentActivity() {
     }
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        watches = WatchBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         reminders = MethodChannel(flutterEngine.dartExecutor.binaryMessenger,"nl.paskluis.app/gift-store-reminders")
         reminders?.setMethodCallHandler { call, result ->
             when (call.method) {
@@ -49,5 +51,10 @@ class MainActivity : FlutterFragmentActivity() {
             intent.action = Intent.ACTION_MAIN
         }
         setIntent(intent)
+    }
+    override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
+        watches?.close()
+        watches = null
+        super.cleanUpFlutterEngine(flutterEngine)
     }
 }

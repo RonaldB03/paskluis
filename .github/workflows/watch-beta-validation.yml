@@ -1,0 +1,65 @@
+name: Validate smartwatch beta
+on:
+  workflow_dispatch:
+  push:
+    branches: ['codex/smartwatch-beta']
+    paths: ['ios/**', 'android/**', 'lib/**', 'test/**', 'tooling/*watch*', '.github/workflows/watch-beta-validation.yml']
+permissions:
+  contents: read
+jobs:
+  apple:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install matching Flutter
+        run: |
+          git clone --depth 1 --branch 3.47.6 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+      - run: flutter pub get
+      - run: flutter test --dart-define=WATCH_BETA=true
+      - name: Prepare iPhone, Garmin bridge and watchOS target
+        env:
+          WATCH_BETA: '1'
+        run: |
+          ruby tooling/configure_watch_ios.rb
+          flutter build ios --config-only --no-codesign --dart-define=WATCH_BETA=true
+          cd ios && pod install
+      - name: Compile Apple Watch and iPhone without distribution
+        run: |
+          set -o pipefail
+          xcodebuild -resolvePackageDependencies -workspace ios/Runner.xcworkspace -scheme Runner
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Debug -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build | tee apple-watch-build.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apple-watch-build-log
+          path: apple-watch-build.log
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14'
+      - name: Install matching Flutter
+        run: |
+          git clone --depth 1 --branch 3.47.6 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          echo "flutter.sdk=$RUNNER_TEMP/flutter" > android/local.properties
+      - run: flutter pub get
+      - name: Compile watch and phone
+        run: |
+          flutter build apk --debug --dart-define=WATCH_BETA=true
+          cd android && gradle :wear:assembleDebug :wear:testDebugUnitTest
+      - uses: actions/upload-artifact@v4
+        with:
+          name: smartwatch-android-debug
+          path: |
+            build/app/outputs/flutter-apk/app-debug.apk
+            build/wear/outputs/apk/debug/*.apk

@@ -1,4 +1,5 @@
 import 'features/gift_cards/gift_cards_screen.dart';
+import 'data/services/watch_service.dart';
 import 'data/services/gift_store_reminder_service.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'features/cards/card_view_screen.dart';
@@ -95,6 +96,8 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     BackupService.setForeground(state == AppLifecycleState.resumed);
     SupportModeService.setForeground(state == AppLifecycleState.resumed);
     if (state == AppLifecycleState.resumed) {
+      WatchService.instance.schedule();
+      unawaited(WatchService.instance.refresh());
       unawaited(_refreshOnline());
     }
   }
@@ -196,6 +199,7 @@ class _PasKluisBootstrapState extends State<PasKluisBootstrap>
     await SupabaseService.init();
     await TermsService.init();
     await StorageService.reconcileAccount(AccountService.currentUser?.id);
+    await WatchService.instance.init();
     PurchaseService.init();
     await BackupService.init();
     await SupportModeService.init();

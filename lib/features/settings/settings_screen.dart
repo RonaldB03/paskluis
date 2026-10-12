@@ -1,4 +1,6 @@
 import 'gift_store_reminder_settings.dart';
+import 'watch_settings_screen.dart';
+import '../../data/services/watch_service.dart';
 import 'dart:async';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -625,6 +627,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onTap: () => _open(const BackupScreen()),
         )),
         const SizedBox(height: 12),
+        if (WatchService.betaEnabled) Card(child: ListTile(
+          leading: const Icon(Icons.watch_outlined),
+          title: Text(t('Smartwatch · Testversie', 'Smartwatch · Beta')),
+          subtitle: Text(t('Kies pasjes voor je horloge', 'Choose cards for your watch')),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => _open(const WatchSettingsScreen()),
+        )),
         if (AppMenuService.current == null) const Center(child: CircularProgressIndicator())
         else for (final section in AppMenuService.current!.sections) _section(section),
         if (_isAdmin) _plain(const {}, L10n.current.administrator, Icons.admin_panel_settings_outlined, () => _open(const AdminToolsScreen())),

@@ -26,6 +26,7 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   barcode_widget: ^2.0.4
+  barcode: ^2.2.9
   wakelock_plus: ^1.1.4
   screen_brightness: ^2.1.7
   hive_ce: ^2.15.0
