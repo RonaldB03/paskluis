@@ -39,8 +39,9 @@ this change. Do not add testers to a production publishing workflow.
   under the parent workspace's `.tooling` is development-only. App UUID is
   `5fdfca89-1939-4cb8-b3bb-d96184aa208c`. Register the Connect IQ listing, check its
   store UUID against the iOS bridge, and distribute a beta before inviting testers.
-  Garmin Android SDK is pinned to 2.4.0. A Garmin developer account has not yet
-  been set up by the owner (confirmed 12 October 2026).
+  Garmin Android SDK is pinned to 2.4.0. SDK Manager uses the owner's existing
+  Garmin Connect login. Login and device downloads completed on 12 October 2026;
+  a separate Connect IQ Store listing has not been created.
 
 `.github/workflows/watch-beta-validation.yml` compiles the native clients without
 store publishing. Its debug artifacts are for paired testing only, not App Store
@@ -60,10 +61,14 @@ implementation handoff; the presence of the workflow does not prove a passed run
   `c23e178f9c6bfae45c5e311a2c176f90e34602d3e70bd96b547055becb603480`.
   The paired local package is `build/paskluis-android-watch-beta.zip`; its README
   explains installation on a test device without removing a production vault.
-- Garmin's generic SDK 8.4.1 compiler check passed; fēnix device profiles are
-  unavailable until SDK Manager login, so no device-ready Garmin build is claimed.
-- iOS/watchOS have not been compiled. The macOS CI workflow is prepared locally
-  but has not run: automatic approval review rejected the remote branch push.
+- Garmin SDK 9.2.0 device builds passed for `fenix6`, `fenix6pro`, `fenix6s`,
+  `fenix6spro` and `fenix6xpro` after SDK Manager login. The fēnix 6 build reports
+  1,705 bytes of static foreground data, 4,748 bytes of code and a 98,844-byte PRG.
+  These are compiler statistics, not a measurement of peak runtime memory.
+  Gradual type checking still emits dynamic-container warnings. Real-device
+  pairing, runtime and scanning checks remain required.
+- The isolated `codex/smartwatch-beta` branch was pushed with the owner's approval.
+  The macOS and Android CI build checks have started; no store release was triggered.
 - No real phone/watch pairing, scanner testing or store distribution has occurred.
 
 ## Sync and privacy contract

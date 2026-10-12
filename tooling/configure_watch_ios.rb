@@ -39,6 +39,14 @@ unless watch
   embed.dst_path = '$(CONTENTS_FOLDER_PATH)/Watch'
   embed.add_file_reference(watch.product_reference, true).settings = { 'ATTRIBUTES' => ['RemoveHeadersOnCopy'] }
 end
+# Flutter's Thin Binary phase reads the final app Info.plist. Embed the watch
+# before that phase, otherwise Xcode detects a copy/Info.plist dependency cycle.
+embed = runner.copy_files_build_phases.find { |phase| phase.name == 'Embed Watch Content' }
+thin = runner.shell_script_build_phases.find { |phase| phase.name == 'Thin Binary' }
+if embed && thin
+  runner.build_phases.delete(embed)
+  runner.build_phases.insert(runner.build_phases.index(thin), embed)
+end
 watch.build_configurations.each do |config|
   settings = config.build_settings
   settings['PRODUCT_BUNDLE_IDENTIFIER'] = 'nl.paskluis.app.watchkitapp'
