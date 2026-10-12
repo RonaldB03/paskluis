@@ -68,7 +68,17 @@ implementation handoff; the presence of the workflow does not prove a passed run
   Gradual type checking still emits dynamic-container warnings. Real-device
   pairing, runtime and scanning checks remain required.
 - The isolated `codex/smartwatch-beta` branch was pushed with the owner's approval.
-  The macOS and Android CI build checks have started; no store release was triggered.
+  macOS successfully built the iPhone app (including the Garmin bridge) and embedded
+  Apple Watch app without signing. Android phone/Wear builds also passed remotely.
+  Validated source commit: `e54b381a2c753d5269edc749ad828cfe577f3d8e`.
+  Run: https://github.com/RonaldB03/paskluis/actions/runs/38247795141
+  The first Apple run exposed a watch-copy/Flutter Thin Binary dependency cycle;
+  placing the watch embed phase before Thin Binary resolved it in the successful run.
+  Existing release-regression checks also passed. No store release was triggered.
+- Garmin device-specific sideload builds and instructions are packaged in
+  `build/paskluis-garmin-fenix6-beta.zip`. Select the exact model folder.
+  iPhone distribution still requires a separate signed beta build and provisioning;
+  the unsigned Mac compilation does not produce an installable iPhone beta.
 - No real phone/watch pairing, scanner testing or store distribution has occurred.
 
 ## Sync and privacy contract
