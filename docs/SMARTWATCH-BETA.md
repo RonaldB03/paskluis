@@ -113,6 +113,9 @@ to `codex/smartwatch-beta`. Its initial Codemagic build is
   submission or automatic distribution to existing tester groups.
 - The external group `PasKluis Apple Watch beta` is separate from the existing
   general testers. Assign only the verified watch build to this group.
+- Build 147 was assigned to that one-tester group and submitted to Beta App
+  Review. App Store Connect confirmed `Waiting for Review`; automatic tester
+  notification is enabled. The existing general external group was not selected.
 - `android-smartwatch-beta` produces signed phone and Wear OS bundles with
   distinct version codes. Both use the existing upload key and package name.
   It has no automatic publishing configuration.
