@@ -75,7 +75,7 @@ workflows:
         beta_groups:
           - Paskluis Testers
         submit_to_app_store: true
-        cancel_previous_submissions: true
+        cancel_previous_submissions: false
         release_type: AFTER_APPROVAL
 
   android-test: &android_test
@@ -177,3 +177,11 @@ workflows:
     <<: *android_test
     name: Android Candidate Build
     publishing: {}
+
+  android-production:
+    <<: *android_test
+    name: Android Production Build
+    publishing:
+      google_play:
+        credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+        track: production

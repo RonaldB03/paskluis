@@ -135,8 +135,8 @@ class _PurchaseControlsState extends State<PurchaseControls> {
           const SizedBox(height: 8),
           Text(
             t(
-              'Plus kopen en herstellen kan zonder PasKluis-account. Herstel via hetzelfde Apple- of Google-account als bij je aankoop. Voor delen en cloudback-up heb je een gratis PasKluis-account nodig. Koppel je bestaande Plus-aankoop aan je account om te delen; opnieuw betalen is niet nodig. Een aankoop die al gekoppeld is, hoort bij dat PasKluis-account.',
-              'Buy and restore Plus without a PasKluis account. Restore using the same Apple or Google account used for your purchase. Sharing and cloud backup require a free PasKluis account. Link your existing Plus purchase to your account to share; no further payment is needed. A purchase that is already linked belongs to that PasKluis account.',
+              'Plus kopen en herstellen kan zonder PasKluis-account. Herstel via hetzelfde Apple- of Google-account als bij je aankoop. Voor delen en cloudback-up heb je een gratis PasKluis-account nodig. Je bestaande Plus-aankoop wordt op dit toestel automatisch gekoppeld zodra je bent ingelogd en verbinding hebt; opnieuw betalen is niet nodig. Een aankoop die al gekoppeld is, hoort bij dat PasKluis-account.',
+              'Buy and restore Plus without a PasKluis account. Restore using the same Apple or Google account used for your purchase. Sharing and cloud backup require a free PasKluis account. Your existing Plus purchase is linked automatically on this device once you are signed in and online; no further payment is needed. A purchase that is already linked belongs to that PasKluis account.',
             ),
             style: TextStyle(color: color, height: 1.35),
           ),

@@ -1,4 +1,5 @@
 import '../../shared/utils/expiry_date.dart';
+import '../../shared/utils/printed_card_number.dart';
 import 'barcode_image_service.dart';
 import 'card_image_signals.dart';
 import '../../shared/utils/card_barcode.dart';
@@ -71,7 +72,13 @@ abstract final class SmartCardImportService {
       );
       final code = scanned?.rawValue?.trim().isNotEmpty == true
           ? scanned!.rawValue!.trim()
-          : _findCardNumber(text);
+          : printedCardNumber(
+              recognized == null
+                  ? const <String>[]
+                  : recognized.blocks.expand(
+                      (block) => block.lines.map((line) => line.text),
+                    ),
+            );
       final brand = BrandRecognition.match(brands, text: text, code: code);
       final isQr = scanned?.format == mobile.BarcodeFormat.qrCode;
       final giftWords = RegExp(
@@ -104,17 +111,6 @@ abstract final class SmartCardImportService {
         // OCR cleanup must not discard an otherwise usable barcode.
       }
     }
-  }
-
-  static String _findCardNumber(String text) {
-    final matches =
-        RegExp(r'(?<!\d)(?:\d[ -]?){8,24}(?!\d)')
-            .allMatches(text)
-            .map((match) => match.group(0)!.replaceAll(RegExp(r'\D'), ''))
-            .where((value) => value.length >= 8 && value.length <= 24)
-            .toList()
-          ..sort((a, b) => b.length.compareTo(a.length));
-    return matches.isEmpty ? '' : matches.first;
   }
 
   static String _findPin(

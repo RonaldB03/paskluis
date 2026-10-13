@@ -208,7 +208,12 @@ abstract final class AccountService {
       final result=await _loadPlusStatusOnline();
       if(currentUser?.id!=userId)return PlusStatus.inactive;
       await _secure.write(key:key,value:jsonEncode({'active':result.isActive,'verifiedAt':DateTime.now().toUtc().toIso8601String(),'expiresAt':result.expiresAt?.toUtc().toIso8601String(),'source':result.source}));
-      return result.isActive ? result : storeStatus;
+      // Linking re-verifies the receipt, so do not reuse a pre-verification
+      // active snapshot if the store has since refunded/revoked the purchase.
+      if (result.isActive) return result;
+      final stillActive = await StoreAccessService.load();
+      if (currentUser?.id != userId) return PlusStatus.inactive;
+      return stillActive ? const PlusStatus(isActive: true, source: 'store') : PlusStatus.inactive;
     } catch (_) {
       if(currentUser?.id!=userId)return PlusStatus.inactive;
       final raw=await _secure.read(key:key);
@@ -233,6 +238,15 @@ abstract final class AccountService {
     if (!await DeviceSessionService.validate()) {
       throw AuthException(L10n.current.accountSessionNotReady);
     }
+
+    if (currentUser?.id != user.id) return PlusStatus.inactive;
+    try {
+      await StoreAccessService.linkAutomatically(user.id);
+    } catch (_) {
+      // A temporary verification failure must not hide existing account access.
+      // Retry on the next status refresh; local store access remains available.
+    }
+    if (currentUser?.id != user.id) return PlusStatus.inactive;
 
     final rows = await _client
         .from('entitlements')

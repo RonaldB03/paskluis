@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'supabase_service.dart';
+import 'store_account_linker.dart';
 
 /// Store access belongs to the store receipt, independently of app sign-in.
 /// Proofs stay in secure storage and are never part of card backups or logs.
@@ -12,6 +13,7 @@ abstract final class StoreAccessService {
   static bool _loaded = false;
   static Future<bool>? _refresh;
   static String? linkedUserId;
+  static final _accountLinker = StoreAccountLinker();
 
   static bool cacheIsActive(Map<String, dynamic>? row, DateTime now) {
     if (row?['active'] != true) return false;
@@ -54,11 +56,12 @@ abstract final class StoreAccessService {
     }
   }
 
-  static Future<bool> verify(String proof, {bool linkAccount = false}) async {
+  static Future<bool> verify(String proof, {bool linkAccount = false, String? accountAccessToken}) async {
     final client = SupabaseService.client;
     if (client == null) throw StateError('Store verification unavailable');
     final response = await client.functions.invoke(
       'verify-store-purchase',
+      headers: accountAccessToken == null ? null : {'Authorization': 'Bearer $accountAccessToken'},
       body: {
         'platform': Platform.isIOS ? 'apple' : 'google',
         'productId': 'paskluis_plus',
@@ -83,9 +86,30 @@ abstract final class StoreAccessService {
   }
 
   static Future<bool> linkToAccount() async {
+    final session = SupabaseService.client?.auth.currentSession;
+    if (session == null) return false;
     await load();
+    if (SupabaseService.client?.auth.currentUser?.id != session.user.id) return false;
     final proof = _cached?['proof'];
     if (proof is! String) return false;
-    return verify(proof, linkAccount: true);
+    return verify(proof, linkAccount: true, accountAccessToken: session.accessToken);
+  }
+
+  /// Called after device-session validation, before reading account entitlements.
+  /// The server rechecks the receipt and refuses reassignment to another user.
+  static Future<void> linkAutomatically(String userId) async {
+    final session = SupabaseService.client?.auth.currentSession;
+    final row = _cached;
+    final proof = row?['proof'];
+    if (session == null || session.user.id != userId || proof is! String) return;
+    await _accountLinker.link(
+      userId: userId,
+      currentUserId: () => SupabaseService.client?.auth.currentUser?.id,
+      active: cacheIsActive(row, DateTime.now()),
+      linkedUserId: row?['linkedUserId'] as String?,
+      verifyAndLink: () async {
+        await verify(proof, linkAccount: true, accountAccessToken: session.accessToken);
+      },
+    );
   }
 }

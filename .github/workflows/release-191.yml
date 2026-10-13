@@ -1,0 +1,37 @@
+name: Build and submit app 1.9.1
+on:
+  push:
+    branches: [codex/app-1.9.1]
+    paths: [.github/workflows/release-191.yml]
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        workflow: [ios-release, android-production]
+    steps:
+      - name: Start authorized app release and track submission
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          WORKFLOW: ${{ matrix.workflow }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -n --arg workflow "$WORKFLOW" '{appId:"69f36f732d8b59f24897933a",workflowId:$workflow,branch:"codex/app-1.9.1"}')
+          response=$(curl --fail --silent --show-error -H "Content-Type: application/json" -H "x-auth-token: $CODEMAGIC_API_TOKEN" --data "$payload" https://api.codemagic.io/builds)
+          build_id=$(jq -er '.buildId' <<< "$response")
+          echo "Build: https://codemagic.io/app/69f36f732d8b59f24897933a/build/$build_id"
+          for attempt in $(seq 1 140); do
+            response=$(curl --fail --silent --show-error --max-time 30 -H "x-auth-token: $CODEMAGIC_API_TOKEN" "https://codemagic.io/api/v3/builds/$build_id")
+            status=$(jq -er '.data.status' <<< "$response")
+            echo "$(date -u +%H:%M:%S) $WORKFLOW $build_id $status"
+            case "$status" in
+              finished) exit 0 ;;
+              failed|canceled|timeout|skipped) exit 1 ;;
+            esac
+            sleep 30
+          done
+          exit 1
