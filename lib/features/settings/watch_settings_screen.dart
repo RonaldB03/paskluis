@@ -6,6 +6,7 @@ import '../../data/services/locale_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/watch_service.dart';
 import '../../data/services/watch_snapshot.dart';
+import 'watch_selection_error.dart';
 
 class WatchSettingsScreen extends StatefulWidget {
   const WatchSettingsScreen({super.key});
@@ -41,15 +42,12 @@ class _WatchSettingsScreenState extends State<WatchSettingsScreen> {
     checked ? ids.add(id) : ids.remove(id);
     try {
       await service.select(target, ids);
-    } on FormatException {
+    } on FormatException catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              t(
-                'Deze selectie past niet op het horloge. Kies minder of kortere codes (maximaal 12 pasjes).',
-                'This selection does not fit. Choose fewer or shorter codes (up to 12 cards).',
-              ),
+              watchSelectionError(error, LocaleService.languageCode),
             ),
           ),
         );

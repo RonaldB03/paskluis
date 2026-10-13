@@ -20,8 +20,9 @@ abstract final class WatchSnapshot {
   static Map<String, Object> card(Map source) {
     if (!eligible(source)) throw const FormatException('ineligible');
     final value = source['code'].toString();
-    if (value.length > 256) throw const FormatException('too_large');
-    final qr = source['codeFormat'] == 'qr';
+    if (value.length > 256) throw const FormatException('code_too_long');
+    // Older standalone QR cards identify their format through type.
+    final qr = source['type'] == 'QR-code' || source['codeFormat'] == 'qr';
     final symbology = source['barcodeSymbology']?.toString();
     if (!qr &&
         symbology != null &&
@@ -140,7 +141,12 @@ abstract final class WatchSnapshot {
       if (!selected.contains(id) || !eligible(source) || !seen.add(id)) {
         continue;
       }
-      result.add(card(source));
+      try {
+        result.add(card(source));
+      } on FormatException catch (error) {
+        // Identify the rejected card without including its code in diagnostics.
+        throw FormatException(error.message, source['name']?.toString());
+      }
     }
     result.sort((a, b) {
       if (a['favorite'] != b['favorite']) return a['favorite'] == true ? -1 : 1;

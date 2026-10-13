@@ -24,6 +24,41 @@ Map<String, Object> snapshot(Iterable<Map> cards, Set<String> selected) =>
     );
 
 void main() {
+  test('legacy numeric QR cards retain their QR format', () {
+    for (final format in [null, '', 'barcode']) {
+      final source = {...card(), 'type': 'QR-code', 'codeFormat': format};
+      final result = WatchSnapshot.card(source);
+      final explicitQr = WatchSnapshot.card({...source, 'codeFormat': 'qr'});
+      expect(result['height'], greaterThan(1));
+      expect(result['width'], result['height']);
+      expect(result['bits'], explicitQr['bits']);
+      expect(result['code'], source['code']);
+    }
+  });
+  test('selection errors identify the card and reason without its code', () {
+    final rejected = {
+      ...card('2'),
+      'name': 'Testpas',
+      'barcodeSymbology': 'unknown',
+    };
+    expect(
+      () => snapshot([card(), rejected], {'1', '2'}),
+      throwsA(
+        isA<FormatException>()
+            .having((e) => e.message, 'reason', 'unsupported')
+            .having((e) => e.source, 'card name', 'Testpas'),
+      ),
+    );
+    expect(
+      (snapshot(
+                List.generate(12, (i) => card('$i')),
+                Set.from(List.generate(12, (i) => '$i')),
+              )['cards']
+              as List)
+          .length,
+      12,
+    );
+  });
   test('selection is opt-in and has a strict field allowlist', () {
     expect(snapshot([card()], {})['cards'], isEmpty);
     final result = snapshot([card()], {'1'});

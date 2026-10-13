@@ -1,5 +1,5 @@
 name: Prepare internal smartwatch TestFlight build
-# Internal Garmin fix: route device-selection callbacks through AppDelegate.
+# Internal beta: preserve legacy QR cards and explain rejected barcode selections.
 on:
   push:
     branches: ['codex/smartwatch-beta']
