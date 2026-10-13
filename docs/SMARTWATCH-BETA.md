@@ -175,7 +175,7 @@ Use synthetic cards first, then the tester's own explicitly selected loyalty car
 |---|---|
 | iPhone + Apple Watch | Install companion, background delivery, Keychain persistence, watch lock, dimmed display |
 | Android + Wear OS | Matched signatures, round/small screens, listener after process death, offline restart |
-| iPhone + fēnix 6 | Garmin Connect callback, Bluetooth permission denied/allowed, device selection, receipt ACK |
+| iPhone + fēnix 6 / fēnix 7 | Garmin Connect callback, Bluetooth permission denied/allowed, device selection, receipt ACK |
 | Android + Garmin | Garmin Connect missing/available, device selection, app not open, ACK and retry |
 
 For every row: select and remove cards; edit a visible card; delete while the code
@@ -194,3 +194,24 @@ observed result and reproduction steps. Do not collect actual card numbers/PINs.
 Release only after device builds, pairing/sync, privacy checks and in-store scans
 have passed. Add store metadata and a reviewed privacy-text update before beta
 distribution. There are no live balance, payment, NFC or automatic location features.
+
+## Garmin iOS callback regression (14 October 2026)
+
+The first phone test returned from Garmin Connect without displaying any watch
+in PasKluis. The watch app was running and Garmin Connect showed a connected
+device. The Runner plist does not opt into UIScene, so handling the callback
+only in SceneDelegate misses the AppDelegate URL entry point.
+
+Internal TestFlight 1.9.2 (148), source commit `195e99e`, was built and uploaded
+successfully. The internal beta now handles the Garmin URL in AppDelegate under WATCH_BETA,
+preserving Flutter's fallback for other URLs. Both lifecycle entry points use
+WatchBridge.shared so the Garmin bridge exists even before method-channel
+registration. No public release workflow is changed.
+
+Device retest: update the internal TestFlight build, open the watch app, choose
+Garmin in the phone's smartwatch settings and run device selection again.
+Verify that the fēnix 7 appears, select it, allow Bluetooth if prompted, then
+synchronize one selected card. Confirm receipt on both screens. Also test a
+callback after terminating the phone app, and ordinary non-Garmin deep links.
+Compilation and automated snapshot/service tests do not prove physical receipt;
+that remains a device acceptance check.
