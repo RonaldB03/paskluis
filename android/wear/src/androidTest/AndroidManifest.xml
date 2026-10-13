@@ -1,0 +1,3 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <instrumentation android:name="nl.paskluis.watch.StorePreview" android:targetPackage="nl.paskluis.app" />
+</manifest>
