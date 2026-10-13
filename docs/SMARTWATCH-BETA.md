@@ -16,8 +16,9 @@ this change. Do not add testers to a production publishing workflow.
   `flutter test --dart-define=WATCH_BETA=true` (includes the beta-only sync tests).
 - Android phone: `flutter build apk --debug --dart-define=WATCH_BETA=true`.
 - Wear OS: from `android`, `gradle :wear:assembleDebug :wear:testDebugUnitTest`.
-  The Wear app has package `nl.paskluis.app`, with separate version codes beginning
-  at 1,000,143. Phone and watch MUST have the same signing certificate. Use both
+  The Wear app has package `nl.paskluis.app`. Store builds set `WATCH_VERSION_CODE`
+  above the phone code; local builds default to 1,000,143. Phone and watch MUST
+  have the same signing certificate. Use both
   debug APKs together, or the same Google Play app signing identity for both beta
   tracks. A locally signed watch cannot communicate with a differently Play-signed
   phone build. Minimum Wear OS API level: 30.
@@ -95,13 +96,40 @@ before telling the owner to install an update.
 certificate already installed for the phone. It may create only the companion
 identifier `nl.paskluis.app.watchkitapp` and its new profile. It does not create or
 revoke certificates, alter the phone identifier/profile, or print credentials.
-Four local profile-selection safety tests pass; the signed remote build must
-still confirm provisioning and upload. A TestFlight build installed by the owner
+Four local profile-selection safety tests pass; signed build 146 subsequently
+confirmed provisioning and upload. A TestFlight build installed by the owner
 updates their local test app; the publicly distributed App Store app is unchanged.
 
 The GitHub starter is `.github/workflows/watch-ios-testflight.yml` and is restricted
 to `codex/smartwatch-beta`. Its initial Codemagic build is
 `6accd326d0025cd97ad5ecd5`; do not start duplicates while that build is queued/running.
+
+## Private tester distribution (13 October 2026)
+
+- Public App Store and Google Play releases are outside this beta workflow.
+- Internal iPhone build 146 (1.9.1) is available in the owner-only internal group.
+  External tester build 147 (1.9.2) also built and uploaded successfully.
+- `ios-smartwatch-external-beta` uploads to TestFlight without App Store
+  submission or automatic distribution to existing tester groups.
+- The external group `PasKluis Apple Watch beta` is separate from the existing
+  general testers. Assign only the verified watch build to this group.
+- `android-smartwatch-beta` produces signed phone and Wear OS bundles with
+  distinct version codes. Both use the existing upload key and package name.
+  It has no automatic publishing configuration.
+- Google Play has separate `smartwatch-beta` closed tracks for mobile and
+  Wear OS, both restricted to the new `PasKluis smartwatch beta` mailing list.
+  Neither track may be promoted to production as part of this request.
+- Google Play accepted phone code 105 and Wear OS code 106, both version 1.9.2.
+  The two closed releases, their one-tester list, Wear OS opt-in and two Wear
+  screenshots were submitted for review. No production release was included.
+- Wear OS screenshots are generated from the real Activity in an emulator by
+  test-only instrumentation with synthetic cards. `FLAG_SECURE` remains enabled.
+- Emulator storage/read/erase checks passed in run 38468020341. Native watch
+  validation and release regression checks passed for commit 5638183. Signed
+  tester build workflow 38467293035 completed successfully for both platforms.
+- Tester email addresses are kept in the stores, not this public repository.
+- Store review and real-device tests remain necessary. Do not describe prepared
+  tracks or successful compilations as an available installation.
 
 ## Sync and privacy contract
 
