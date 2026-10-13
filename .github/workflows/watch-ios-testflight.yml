@@ -1,5 +1,5 @@
 name: Prepare internal smartwatch TestFlight build
-# Retry as internal beta 1.9.1: Apple closed the approved 1.9.0 train.
+# Internal Garmin fix: route device-selection callbacks through AppDelegate.
 on:
   push:
     branches: ['codex/smartwatch-beta']

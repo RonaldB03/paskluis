@@ -11,7 +11,7 @@ workflows:
       xcode: latest
       vars:
         WATCH_BETA: "1"
-        WATCH_BETA_VERSION: "1.9.1"
+        WATCH_BETA_VERSION: "1.9.2"
       ios_signing:
         distribution_type: app_store
         bundle_identifier: nl.paskluis.app

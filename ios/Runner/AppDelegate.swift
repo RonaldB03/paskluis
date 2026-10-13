@@ -16,6 +16,17 @@ import CoreLocation
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
+  #if WATCH_BETA
+  override func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    if WatchBridge.shared.handleGarminURL(url) { return true }
+    return super.application(app, open: url, options: options)
+  }
+  #endif
+
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     #if WATCH_BETA

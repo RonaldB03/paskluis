@@ -9,6 +9,12 @@ final class WatchBridge: NSObject, WCSessionDelegate {
     private let garmin = PKGarminBridge()
     private var session: WCSession? { WCSession.isSupported() ? WCSession.default : nil }
 
+    // Access through the singleton so cold-launch callbacks have a Garmin bridge
+    // even when Flutter has not registered its method channel yet.
+    func handleGarminURL(_ url: URL) -> Bool {
+        PKGarminBridge.handleURL(url)
+    }
+
     func register(_ messenger: FlutterBinaryMessenger) {
         channel = FlutterMethodChannel(name: "nl.paskluis.app/watches", binaryMessenger: messenger)
         garmin.changed = { [weak self] in self?.changed() }
