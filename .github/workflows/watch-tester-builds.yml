@@ -1,0 +1,48 @@
+name: Prepare installable smartwatch tester builds
+# Dedicated external beta builds; no production publishing.
+on:
+  push:
+    branches: ['codex/smartwatch-beta']
+    paths: ['.github/workflows/watch-tester-builds.yml']
+permissions:
+  contents: read
+concurrency:
+  group: smartwatch-testers
+  cancel-in-progress: false
+jobs:
+  internal-beta:
+    strategy:
+      fail-fast: false
+      matrix:
+        workflow: [ios-smartwatch-external-beta, android-smartwatch-beta]
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - name: Start isolated internal beta workflow
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          WATCH_WORKFLOW: ${{ matrix.workflow }}
+          WATCH_BRANCH: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$WATCH_BRANCH" = 'codex/smartwatch-beta'
+          apps=$(curl --fail --silent --show-error --max-time 60 -H "x-auth-token: $CODEMAGIC_API_TOKEN" https://api.codemagic.io/apps)
+          app_id=$(jq -er '[.applications[] | select((.appName | ascii_downcase) == "paskluis")] | if length == 1 then .[0]._id else error("Expected one PasKluis application") end' <<< "$apps")
+          payload=$(jq -n --arg id "$app_id" --arg branch "$WATCH_BRANCH" --arg workflow "$WATCH_WORKFLOW" '{appId:$id,workflowId:$workflow,branch:$branch}')
+          response=$(curl --fail --silent --show-error --max-time 60 -H "Content-Type: application/json" -H "x-auth-token: $CODEMAGIC_API_TOKEN" --data "$payload" https://api.codemagic.io/builds)
+          build_id=$(jq -er .buildId <<< "$response")
+          echo "Codemagic internal smartwatch build: $build_id"
+          echo "https://codemagic.io/app/$app_id/build/$build_id" >> "$GITHUB_STEP_SUMMARY"
+          for attempt in $(seq 1 110); do
+            state=$(curl --fail --silent --show-error --max-time 60 -H "x-auth-token: $CODEMAGIC_API_TOKEN" "https://codemagic.io/api/v3/builds/$build_id")
+            status=$(jq -er '.data.status' <<< "$state")
+            echo "Build $build_id: $status"
+            case "$status" in
+              finished) exit 0 ;;
+              failed|canceled|cancelled|timeout) echo 'Internal beta build did not finish successfully.'; exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo 'Build is still running; inspect the Codemagic link before starting another build.'
+          exit 1

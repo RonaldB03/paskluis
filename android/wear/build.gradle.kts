@@ -10,8 +10,8 @@ android {
         minSdk = 30
         targetSdk = 36
         // Different version-code range from phone; same Play signing certificate.
-        versionCode = 1000143
-        versionName = "1.9.0-watch-beta1"
+        versionCode = System.getenv("WATCH_VERSION_CODE")?.toInt() ?: 1000143
+        versionName = System.getenv("WATCH_VERSION_NAME") ?: "1.9.0-watch-beta1"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
