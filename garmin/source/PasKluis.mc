@@ -20,7 +20,7 @@ class PasKluisApp extends Application.AppBase {
         view = new CardsView(self);
         return [view, new CardsDelegate(self, view)];
     }
-    function text(nl, en) { return snapshot != null && snapshot["language"] == "en" ? en : nl; }
+    function text(nl, en) { return snapshot != null && "en".equals(snapshot["language"]) ? en : nl; }
     function cards() { return snapshot == null ? [] : snapshot["cards"]; }
     function valid(s) {
         if (!(s instanceof Lang.Dictionary) || !s.hasKey("schema") || s["schema"] != 1 ||
@@ -52,13 +52,19 @@ class PasKluisApp extends Application.AppBase {
     }
     function isInteger(value) { return value instanceof Lang.Number || value instanceof Lang.Long; }
     function receive(message as Communications.PhoneAppMessage) as Void {
-        var incoming = message.data;
+        receiveSnapshot(message.data);
+    }
+    function receiveSnapshot(incoming) as Void {
         if (!valid(incoming)) { error = true; WatchUi.requestUpdate(); return; }
         if (snapshot != null) {
-            if (snapshot["owner"] != incoming["owner"]) {
+            if (!snapshot["owner"].equals(incoming["owner"])) {
                 if (!snapshot.hasKey("allowNewOwner") || snapshot["allowNewOwner"] != true) { error = true; WatchUi.requestUpdate(); return; }
             } else if (incoming["revision"] <= snapshot["revision"]) {
-                if (incoming["revision"] == snapshot["revision"] && !snapshot.hasKey("locallyErased")) { ack(snapshot["revision"],snapshot["owner"]); }
+                if (incoming["revision"] == snapshot["revision"] && !snapshot.hasKey("locallyErased")) {
+                    error = false;
+                    ack(snapshot["revision"],snapshot["owner"]);
+                    WatchUi.requestUpdate();
+                }
                 return;
             }
         }
@@ -178,5 +184,5 @@ class CardsDelegate extends WatchUi.BehaviorDelegate {
 class EraseDelegate extends WatchUi.Menu2InputDelegate {
     var app;
     function initialize(a) { Menu2InputDelegate.initialize(); app = a; }
-    function onSelect(item) { app.erase(item.getId() == "reset"); WatchUi.popView(WatchUi.SLIDE_DOWN); }
+    function onSelect(item) { app.erase("reset".equals(item.getId())); WatchUi.popView(WatchUi.SLIDE_DOWN); }
 }

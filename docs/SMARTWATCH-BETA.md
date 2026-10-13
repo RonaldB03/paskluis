@@ -215,3 +215,24 @@ synchronize one selected card. Confirm receipt on both screens. Also test a
 callback after terminating the phone app, and ordinary non-Garmin deep links.
 Compilation and automated snapshot/service tests do not prove physical receipt;
 that remains a device acceptance check.
+
+### Follow-up: repeated Garmin synchronization
+
+The fēnix 7 received and displayed a card with phone build 148, but subsequent
+syncs left the watch's retry warning and the phone's unconfirmed status visible.
+Monkey C owner strings were compared by object identity. Compare their content
+with `equals` so separately decoded snapshots from the same phone are accepted.
+The language and reconnect menu string comparisons use the same correction.
+A retry of the stored revision clears an earlier receive error and resends its
+receipt; it does not acknowledge locally erased content or older revisions.
+
+Three fēnix 7 simulator tests cover consecutive updates, rejection of another
+owner, and duplicate receipt/older revision handling. All pass after the fix.
+Restoring only the old owner comparison in a separate test copy reproduces two
+test failures. Receipt probes verify storage precedes acknowledgment; Bluetooth
+receipt still requires a physical-device retest.
+
+Replacement watch binary: `build/garmin-fenix7-sync-fix/PKBETA.prg`.
+SHA-256: `E20EE3A98BE6F1182C10A9CB9D6B2B51A5206B6CA3BB9A145BC01A4D7911213E`.
+This update requires replacing the sideloaded watch binary; phone build 148
+already includes the callback fix. No new phone or public store release needed.
