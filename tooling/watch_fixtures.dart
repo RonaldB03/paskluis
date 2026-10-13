@@ -15,6 +15,8 @@ void main() {
     {'barcodeSymbology': 'upce', 'code': '01234565'},
     {'codeFormat': 'qr', 'code': 'https://paskluis.nl/test'},
     {'codeFormat': 'qr', 'code': '0000123456789'},
+    // Legacy QR card without codeFormat; even an EAN-valid number stays QR.
+    {'type': 'QR-code', 'code': '0123456789012'},
   ];
   final fixtures = <Map<String, Object>>[];
   for (var i = 0; i < samples.length; i++) {

@@ -25,6 +25,8 @@ for card in fixtures:
                 draw.rectangle((left, top, left+m-1, top+row_height-1),fill='black')
     results = zxingcpp.read_barcodes(image)
     assert len(results) == 1, f"Could not independently decode {card['id']}"
+    if h > 1:
+        assert results[0].format == zxingcpp.BarcodeFormat.QRCode, card['id']
     # ZXing may report UPC-A as EAN-13 with a leading zero, and expands UPC-E.
     actual = results[0].text
     expected = card['code']

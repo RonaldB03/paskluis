@@ -236,3 +236,22 @@ Replacement watch binary: `build/garmin-fenix7-sync-fix/PKBETA.prg`.
 SHA-256: `E20EE3A98BE6F1182C10A9CB9D6B2B51A5206B6CA3BB9A145BC01A4D7911213E`.
 This update requires replacing the sideloaded watch binary; phone build 148
 already includes the callback fix. No new phone or public store release needed.
+
+### Legacy QR format and selection diagnostics
+
+The device retest confirmed receipt on the phone, plus successful Air Miles
+selection. A legacy Fietsenstalling QR card was incorrectly exported as a linear
+barcode: the exporter only checked codeFormat, ignoring type=QR-code. Source
+commit `76b6543` preserves either QR marker and adds a regression using an
+EAN-valid numeric value, without changing the stored source card or code.
+
+Gall & Gall is rejected before transport; its exact validation failure has not
+yet been observed. The beta now displays the rejected card name and distinguishes
+unsupported format, invalid code, rendering dimensions, code length, total size
+and card count. Never shorten a real code or silently change its symbology.
+
+All 14 targeted Flutter tests passed. The independent scanner check passed for
+11 synthetic fixtures, including a legacy numeric QR card decoded as QR with its
+original value. Physical retest: update the internal phone beta, synchronize
+Fietsenstalling again, check its QR display, then select Gall & Gall and report
+the specific message. No watch USB update is needed for this phone export fix.
