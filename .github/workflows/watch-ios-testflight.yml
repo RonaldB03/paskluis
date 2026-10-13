@@ -1,4 +1,5 @@
 name: Prepare internal smartwatch TestFlight build
+# Retry as internal beta 1.9.1: Apple closed the approved 1.9.0 train.
 on:
   push:
     branches: ['codex/smartwatch-beta']

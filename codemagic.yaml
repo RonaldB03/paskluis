@@ -11,6 +11,7 @@ workflows:
       xcode: latest
       vars:
         WATCH_BETA: "1"
+        WATCH_BETA_VERSION: "1.9.1"
       ios_signing:
         distribution_type: app_store
         bundle_identifier: nl.paskluis.app
@@ -21,7 +22,7 @@ workflows:
           test "$CM_BRANCH" = "codex/smartwatch-beta"
           flutter pub get
           ruby tooling/configure_watch_ios.rb
-          flutter build ios --config-only --no-codesign --dart-define=WATCH_BETA=true
+          flutter build ios --config-only --no-codesign --dart-define=WATCH_BETA=true --build-name="$WATCH_BETA_VERSION"
           cd ios && pod install
       - name: Test beta sources
         script: flutter test --dart-define=WATCH_BETA=true
@@ -41,7 +42,7 @@ workflows:
           fi
           IOS_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
           echo "$IOS_BUILD_NUMBER" > "$CM_BUILD_DIR/ios_build_number.txt"
-          flutter build ipa --release --dart-define=WATCH_BETA=true --build-number="$IOS_BUILD_NUMBER" --export-options-plist=$HOME/export_options.plist
+          flutter build ipa --release --dart-define=WATCH_BETA=true --build-name="$WATCH_BETA_VERSION" --build-number="$IOS_BUILD_NUMBER" --export-options-plist=$HOME/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - ios_build_number.txt
