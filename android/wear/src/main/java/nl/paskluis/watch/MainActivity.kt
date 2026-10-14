@@ -116,7 +116,6 @@ class MainActivity : Activity() {
             layout.addView(action(text("Opnieuw koppelen","Reconnect")) { confirm(true) })
             layout.addView(action(text("Terug naar passen","Back to cards")) { settings = false; show() })
         } else {
-        layout.addView(label(if(rows.isEmpty()) text("Nog geen passen","No cards yet") else text("${rows.size} passen · offline beschikbaar","${rows.size} cards · available offline"),12f,Color.LTGRAY))
         if(rows.isEmpty()) layout.addView(TextView(this).apply {
             text = text("Kies pasjes op je telefoon bij Instellingen › Smartwatch.","Choose cards on your phone under Settings › Smartwatch.")
             gravity = Gravity.CENTER; setTextColor(Color.LTGRAY); textSize = 14f

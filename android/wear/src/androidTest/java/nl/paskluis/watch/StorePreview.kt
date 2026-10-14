@@ -40,10 +40,10 @@ class StorePreview : Instrumentation() {
             val activity = startActivitySync(Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             waitForIdleSync()
             Thread.sleep(1500)
-            runOnMainSync {
-                check(!visibleLabels(activity.window.decorView).contains("offline beschikbaar"))
-                check(!visibleLabels(activity.window.decorView).contains("Laatst ontvangen"))
-            }
+            var labels = ""
+            runOnMainSync { labels = visibleLabels(activity.window.decorView) }
+            check(!labels.contains("offline beschikbaar")) { labels }
+            check(!labels.contains("Laatst ontvangen")) { labels }
             capture(activity, "wear-passes.png")
             runOnMainSync {
                 val scroller = findScroll(activity.window.decorView)!!
