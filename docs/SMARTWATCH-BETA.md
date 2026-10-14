@@ -315,3 +315,46 @@ Wear SHA-256: D73D2D354E7AF0C196B84C4CD3777E3D6F55E59415565B13D7F144A41BD8D6FB.
 Physical acceptance remains with Jordi: update both apps, choose Watch8 once,
 remove and re-add a card, reopen settings, check offline recovery and scrolling.
 Public distribution and Apple external beta remain unchanged.
+
+### Three categories across Wear OS, Apple Watch and Garmin (14 October 2026)
+
+The phone now selects cards within Klantenkaarten, QR-codes and Cadeaukaarten.
+Selection remains shared across these views and every change uses the existing
+fixed-watch automatic synchronization. The combined limit remains twelve cards
+and the existing payload/rendering bounds still apply. Category follows the
+source card type, independently of barcode symbology; a QR gift card remains a
+gift card and a numeric legacy QR remains QR.
+
+Gift exports use the same explicit allowlist as loyalty and QR cards. PINs,
+balances and notes never enter the snapshot. Archived/shared/received cards
+remain excluded. The phone explains that the gift-code copy can be spent.
+
+Wear OS and Apple Watch provide three category controls and horizontal paging,
+with vertically scrolling card lists. Wear uses a circular launcher mask and
+explicit circular canvas clipping for its header. Apple receives the same
+bounded optional store-logo payload and clips its header and thumbnails round.
+Garmin uses UP/DOWN and START for category/card navigation, BACK to return,
+and a scrolling three-row list. Its header and launcher use the PasKluis mark.
+
+Validation: 21 targeted Flutter tests and analysis passed. Native Android and
+Apple compilation passed; full Flutter release checks passed. Independent
+ZXing decoding passed all 13 synthetic fixtures, including gift EAN/QR and
+legacy numeric QR. Wear emulator run 38577297636 passed category navigation,
+scrolling, storage/erase and brightness restoration; the rendered barcode,
+gift barcode and QR decoded to their original synthetic values. Its software
+capture exposed a square header, corrected with explicit canvas clipping in
+831724d and covered by a pixel assertion in 53a8691.
+
+Garmin builds succeeded for fenix6, fenix6pro, fenix6s, fenix6spro, fenix6xpro
+and fenix7. All four fenix7 simulator tests passed, including category isolation.
+The USB package is build/PasKluis-Garmin-categorieen-2026-10-14.zip, with model
+binaries, installation instructions and checksums. Physical installation and
+checkout scanner acceptance remain device checks; no claim of those follows
+from compilation or synthetic decoding.
+
+Final Wear emulator run 38579752831 passed, including transparent-corner and
+opaque-center assertions on the real PasKluis header. Final screenshots are in
+build/watch-round-categories-preview/store-preview. The round header was also
+visually verified. Apple signed build 1.9.2 (150), including its watch companion,
+was uploaded by Codemagic 6acf8bfe9ceaf9a3bae479ba and is processing in App Store
+Connect; this is not yet external tester availability.
