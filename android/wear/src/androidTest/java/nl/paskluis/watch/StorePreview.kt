@@ -40,13 +40,17 @@ class StorePreview : Instrumentation() {
             waitForIdleSync()
             Thread.sleep(1500)
             capture(activity, "wear-passes.png")
-            runOnMainSync { findButton(activity.window.decorView, "Albert Heijn")!!.performClick() }
+            runOnMainSync {
+                findButton(activity.window.decorView, "Albert Heijn")!!.performClick()
+                check(activity.window.attributes.screenBrightness == 1f) { "Scan brightness: ${activity.window.attributes.screenBrightness}" }
+            }
             waitForIdleSync()
-            check(activity.window.attributes.screenBrightness == 1f)
             capture(activity,"wear-barcode.png")
-            runOnMainSync { activity.onBackPressed() }
+            runOnMainSync {
+                activity.onBackPressed()
+                check(activity.window.attributes.screenBrightness == WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE) { "Restored brightness: ${activity.window.attributes.screenBrightness}" }
+            }
             waitForIdleSync()
-            check(activity.window.attributes.screenBrightness == WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE)
             runOnMainSync { findButton(activity.window.decorView, "Voorbeeld QR")!!.performClick() }
             waitForIdleSync()
             capture(activity, "wear-qr.png")
