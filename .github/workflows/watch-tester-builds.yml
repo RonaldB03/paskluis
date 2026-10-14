@@ -1,5 +1,5 @@
 name: Prepare installable smartwatch tester builds
-# Internal Android beta: clean watch list without status count; fixed pairing and automatic sync.
+# Internal Android beta: clean watch list, fixed pairing and durable automatic sync.
 on:
   push:
     branches: ['codex/smartwatch-beta']

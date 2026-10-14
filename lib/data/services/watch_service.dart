@@ -94,7 +94,14 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> retryPending() async {
     if (_disposed || _disconnecting || busy || pairedTarget == null) return;
     await refresh();
-    if (waiting && !_disposed && !busy) await sync(pairedTarget!);
+    final needsSend =
+        _prefs?.getBool('watch.dirty') == true ||
+        (pairedTarget != 'wear' && waiting);
+    // Wear Data Layer already retains accepted transfers while disconnected.
+    // Do not replace that queued revision while waiting for its acknowledgement.
+    if (needsSend && !locallyErased && !_disposed && !busy) {
+      await sync(pairedTarget!);
+    }
   }
 
   bool busy = false;
@@ -123,7 +130,6 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
       (_) => unawaited(retryPending()),
     );
     await refresh();
-
   }
 
   Future<void> refresh() async {
@@ -156,19 +162,23 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
     if (pairedTarget != target) throw StateError('Pair a watch first');
     // Validate before storing, so a too-large selection never strands deletions.
     preview(target, ids);
-    await _prefs!.setStringList('watch.$target.selected', ids.toList());
+    await Future.wait([
+      _prefs!.setBool('watch.dirty', true),
+      _prefs!.setStringList('watch.$target.selected', ids.toList()),
+    ]);
     await _prefs!.setBool('watch.$target.enabled', true);
-    await _prefs!.setBool('watch.dirty', true);
     notifyListeners();
     await sync(target);
   }
 
   Future<void> clear(String target) async {
     if (pairedTarget != target) throw StateError('Pair a watch first');
-    await _prefs!.setStringList('watch.$target.selected', []);
+    await Future.wait([
+      _prefs!.setBool('watch.dirty', true),
+      _prefs!.setStringList('watch.$target.selected', []),
+    ]);
     // Keep enabled until the empty replacement has reached the watch.
     await _prefs!.setBool('watch.$target.enabled', true);
-    await _prefs!.setBool('watch.dirty', true);
     notifyListeners();
     await sync(target);
   }

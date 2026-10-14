@@ -179,4 +179,18 @@ void main() {
     },
     skip: !WatchService.betaEnabled,
   );
+  test(
+    'accepted Wear queue is not replaced while acknowledgement is pending',
+    () async {
+      await service.pair('wear', id: 'watch1', name: 'Watch8');
+      await service.select('wear', {'1'});
+      sent.clear();
+      await service.retryPending();
+      expect(sent, isEmpty);
+      expect(service.waiting, isTrue);
+      await service.select('wear', {});
+      expect(sent.last['cards'], isEmpty);
+    },
+    skip: !WatchService.betaEnabled,
+  );
 }
