@@ -24,7 +24,7 @@ target.build_configurations.each do |config|
   config.build_settings.merge!({
     'PRODUCT_BUNDLE_IDENTIFIER'=>'nl.paskluis.storepreview', 'SWIFT_VERSION'=>'5.0',
     'GENERATE_INFOPLIST_FILE'=>'YES', 'INFOPLIST_KEY_CFBundleDisplayName'=>'PasKluis',
-    'INFOPLIST_KEY_WKApplication'=>'YES', 'INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp'=>'YES',
+    'INFOPLIST_KEY_WKApplication'=>'YES',
     'INFOPLIST_KEY_WKWatchOnly'=>'YES',
     'TARGETED_DEVICE_FAMILY'=>'4', 'MARKETING_VERSION'=>'1.9.2', 'CURRENT_PROJECT_VERSION'=>'153',
     'ASSETCATALOG_COMPILER_APPICON_NAME'=>'AppIcon', 'CODE_SIGNING_ALLOWED'=>'NO'
