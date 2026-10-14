@@ -120,12 +120,19 @@ class MainActivity : Activity() {
             setOnClickListener { click() }
         }
         if(settings) layout.addView(label(text("Instellingen","Settings"),20f))
-        else layout.addView(ImageView(this).apply {
+        else layout.addView(object : ImageView(this) {
+            private val circle = android.graphics.Path()
+            override fun onDraw(canvas: Canvas) {
+                circle.reset()
+                circle.addCircle(width/2f,height/2f,minOf(width,height)/2f,android.graphics.Path.Direction.CW)
+                val saved = canvas.save()
+                canvas.clipPath(circle)
+                super.onDraw(canvas)
+                canvas.restoreToCount(saved)
+            }
+        }.apply {
             setImageResource(R.drawable.paskluis_logo); contentDescription = "PasKluis"
             scaleType = ImageView.ScaleType.FIT_CENTER
-            outlineProvider = object : android.view.ViewOutlineProvider() {
-                override fun getOutline(view: View, outline: android.graphics.Outline) { outline.setOval(0,0,view.width,view.height) }
-            }; clipToOutline = true
             layoutParams = LinearLayout.LayoutParams(dp(42),dp(42)).apply { bottomMargin = dp(10) }
         })
         if (settings) {
