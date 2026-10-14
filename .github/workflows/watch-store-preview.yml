@@ -27,6 +27,7 @@ jobs:
           dart run tooling/watch_fixtures.dart
           mkdir -p android/wear/src/androidTest/assets
           cp build/watch-fixtures.json android/wear/src/androidTest/assets/
+          cp assets/logos/albert_heijn.png android/wear/src/androidTest/assets/
           cd android
           gradle :wear:assembleDebug :wear:assembleDebugAndroidTest
       - name: Enable emulator acceleration
@@ -49,6 +50,7 @@ jobs:
             mkdir -p store-preview
             adb exec-out run-as nl.paskluis.app cat files/store-preview/wear-passes.png > store-preview/wear-passes.png
             adb exec-out run-as nl.paskluis.app cat files/store-preview/wear-qr.png > store-preview/wear-qr.png
+            adb exec-out run-as nl.paskluis.app cat files/store-preview/wear-barcode.png > store-preview/wear-barcode.png
             adb exec-out run-as nl.paskluis.app cat files/store-preview/wear-settings.png > store-preview/wear-settings.png
       - uses: actions/upload-artifact@v4
         if: always()

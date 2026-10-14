@@ -20,12 +20,13 @@ class StorePreview : Instrumentation() {
     override fun onStart() {
         try {
             val fixtures = JSONArray(context.assets.open("watch-fixtures.json").bufferedReader().use { it.readText() })
-            val cards = JSONArray().put(fixtures.getJSONObject(0).put("name", "Voorbeeldpas"))
+            val cards = JSONArray().put(fixtures.getJSONObject(0).put("name", "Albert Heijn").put("favorite",true))
                 .put(fixtures.getJSONObject(8).put("name", "Voorbeeld QR"))
             val snapshot = JSONObject().put("schema", 1).put("owner", "emulator-preview")
                 .put("revision", 1).put("language", "nl").put("cards", cards)
             WatchVault(targetContext, "cards").write(snapshot.toString())
-            val logo = Bitmap.createBitmap(48,48,Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.BLUE) }
+            val originalLogo = context.assets.open("albert_heijn.png").use { android.graphics.BitmapFactory.decodeStream(it) }
+            val logo = Bitmap.createScaledBitmap(originalLogo,48,48,true)
             val png = java.io.ByteArrayOutputStream().apply { logo.compress(Bitmap.CompressFormat.PNG,100,this) }.toByteArray()
             val logoPayload = JSONObject().put(cards.getJSONObject(0).getString("id"),android.util.Base64.encodeToString(png,android.util.Base64.NO_WRAP))
             WatchLogos.store(targetContext,snapshot,logoPayload.toString())
@@ -39,6 +40,13 @@ class StorePreview : Instrumentation() {
             waitForIdleSync()
             Thread.sleep(1500)
             capture(activity, "wear-passes.png")
+            runOnMainSync { findButton(activity.window.decorView, "Albert Heijn")!!.performClick() }
+            waitForIdleSync()
+            check(activity.window.attributes.screenBrightness == 1f)
+            capture(activity,"wear-barcode.png")
+            runOnMainSync { activity.onBackPressed() }
+            waitForIdleSync()
+            check(activity.window.attributes.screenBrightness == WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE)
             runOnMainSync { findButton(activity.window.decorView, "Voorbeeld QR")!!.performClick() }
             waitForIdleSync()
             capture(activity, "wear-qr.png")
