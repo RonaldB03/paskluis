@@ -36,3 +36,23 @@ for card in fixtures:
         assert actual == expected or ('0'+actual == expected) or (actual == '0'+expected), (card['id'],actual,expected)
     print(card['id'], results[0].format, 'PASS')
 print(f'{len(fixtures)} barcode round trips passed.')
+
+# Model the exact Garmin integer-pixel renderer, including the circular bezel.
+wide = next(c for c in fixtures if c['width'] == 211 and c['height'] == 1)
+for size in (240, 260, 280):
+    w = wide['width']
+    m = int(size * .97) // (w + 20)
+    bh = int(size * .24)
+    x0, y0 = (size - w*m)//2, (size - bh)//2
+    image = Image.new('RGB', (size, size), 'black')
+    draw = ImageDraw.Draw(image)
+    draw.ellipse((0, 0, size-1, size-1), fill='white')
+    for x in (x0-10*m, x0+(w+10)*m-1):
+        for y in (y0, y0+bh-1):
+            assert (x-size/2)**2 + (y-size/2)**2 < (size/2)**2
+    for x in range(w):
+        if int(wide['bits'][x//4],16) & (1 << (3-x%4)):
+            draw.rectangle((x0+x*m,y0,x0+(x+1)*m-1,y0+bh-1),fill='black')
+    result = zxingcpp.read_barcode(image)
+    assert result and result.text == wide['code'] and result.format == zxingcpp.BarcodeFormat.Code128
+    print(f'{size}px circular Garmin: complete wide barcode decoded')

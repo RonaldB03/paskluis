@@ -378,3 +378,25 @@ shows 150 as Testing. Update both phone and watch before selecting the new card
 categories. Physical scanner acceptance remains outstanding. The existing
 approval-monitor automation was updated with these versions and its PAUSED
 state was preserved; it will not run unless resumed by the user.
+
+
+### Capacity and wide barcode fix, 14 October 2026
+
+Source 4b64e7012967f1e01d6a1f073657d6dc17556c4d removes the fixed 12-card
+limit from Flutter, Wear OS, watchOS and Garmin. The existing 7000-byte phone
+snapshot budget remains: there is no fixed card count, not unlimited storage.
+The UI no longer shows /12. Linear grids now allow 211 modules, enough for
+32 numeric Code128 characters. No symbology conversion, truncation or bitmap
+resampling is performed. Garmin uses 97% screen width and a 24%-height band;
+both quiet zones remain inside even the 240px circular screen.
+
+Validation: 24 Flutter beta tests pass, targeted analyze clean; five Garmin
+simulator tests pass including a 20-card wide-grid sync; all six Garmin models
+compile. Independent ZXing decoding validates the complete synthetic 32-digit
+Code128 at 240/260/280px with the renderer geometry. Physical checkout testing
+and the actual gift card's saved format remain unconfirmed.
+
+Garmin binaries: build/garmin-capacity-release. Phone and watch both require
+updates. Signed test builds were started by GitHub runs 38587632121 (Android)
+and 38587632168 (Apple); publication is not yet confirmed. Public releases
+were not changed. Garmin was not connected during installation detection.

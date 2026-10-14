@@ -8,6 +8,7 @@ void main() {
     {'barcodeSymbology': 'ean13', 'code': '0123456789012'},
     {'barcodeSymbology': 'ean8', 'code': '12345670'},
     {'barcodeSymbology': 'code128', 'code': '001234567890'},
+    {'type': 'Cadeaukaart', 'barcodeSymbology': 'code128', 'code': '12345678901234567890123456789012'},
     {'barcodeSymbology': 'code39', 'code': 'TEST123'},
     {'barcodeSymbology': 'code93', 'code': 'TEST123'},
     {'barcodeSymbology': 'itf', 'code': '00123456'},
