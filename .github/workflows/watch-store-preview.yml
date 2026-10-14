@@ -1,4 +1,5 @@
 name: Render Wear OS test-store screenshots
+# Verify all three card categories and round branding.
 on:
   push:
     branches: ['codex/smartwatch-beta']

@@ -1,5 +1,5 @@
 name: Prepare internal smartwatch TestFlight build
-# Internal beta: preserve legacy QR cards and explain rejected barcode selections.
+# TestFlight beta: three categories, gift codes without PINs and round branding.
 on:
   push:
     branches: ['codex/smartwatch-beta']
@@ -24,7 +24,7 @@ jobs:
           test "$WATCH_BRANCH" = 'codex/smartwatch-beta'
           apps=$(curl --fail --silent --show-error --max-time 60 -H "x-auth-token: $CODEMAGIC_API_TOKEN" https://api.codemagic.io/apps)
           app_id=$(jq -er '[.applications[] | select((.appName | ascii_downcase) == "paskluis")] | if length == 1 then .[0]._id else error("Expected one PasKluis application") end' <<< "$apps")
-          payload=$(jq -n --arg id "$app_id" --arg branch "$WATCH_BRANCH" '{appId:$id,workflowId:"ios-smartwatch-beta",branch:$branch}')
+          payload=$(jq -n --arg id "$app_id" --arg branch "$WATCH_BRANCH" '{appId:$id,workflowId:"ios-smartwatch-external-beta",branch:$branch}')
           response=$(curl --fail --silent --show-error --max-time 60 -H "Content-Type: application/json" -H "x-auth-token: $CODEMAGIC_API_TOKEN" --data "$payload" https://api.codemagic.io/builds)
           build_id=$(jq -er .buildId <<< "$response")
           echo "Codemagic internal smartwatch build: $build_id"
