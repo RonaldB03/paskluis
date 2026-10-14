@@ -51,8 +51,8 @@ class PasKluisApp extends Application.AppBase {
             seen[c["id"]] = true;
             if (!c.hasKey("width") || !c.hasKey("height") || !isInteger(c["width"]) || !isInteger(c["height"])) { return false; }
             var w = c["width"]; var h = c["height"];
-            if (w < 1 || w > 211 || !(h == 1 || (h == w && w <= 49))) { return false; }
-            if (c["bits"].length() != ((w*h+3)/4).toNumber() || c["code"].length() > 512 || c["name"].length() > 160) { return false; }
+            if (w < 1 || w > 211 || !(h == 1 || (h == w && w <= 73))) { return false; }
+            if (c["bits"].length() != ((w*h+3)/4).toNumber() || c["code"].length() > 1024 || c["name"].length() > 160) { return false; }
             for(var i = 0; i < c["bits"].length(); i++) {
                 if ("0123456789abcdef".find(c["bits"].substring(i,i+1)) == null) { return false; }
             }
@@ -62,7 +62,38 @@ class PasKluisApp extends Application.AppBase {
     }
     function isInteger(value) { return value instanceof Lang.Number || value instanceof Lang.Long; }
     function receive(message as Communications.PhoneAppMessage) as Void {
-        receiveSnapshot(message.data);
+        var data = message.data;
+        if(data instanceof Lang.Dictionary && data.hasKey("kind") && "logo".equals(data["kind"])) { receiveLogo(data); return; }
+        receiveSnapshot(data);
+    }
+    function receiveLogo(data) {
+        if(snapshot == null || (snapshot.hasKey("locallyErased") && snapshot["locallyErased"]) ||
+           !data.hasKey("owner") || !snapshot["owner"].equals(data["owner"]) ||
+           !data.hasKey("revision") || snapshot["revision"] != data["revision"] ||
+           !data.hasKey("id") || !data.hasKey("pixels") || !(data["pixels"] instanceof Lang.String) || data["pixels"].length() != 576) { return; }
+        var pixels = data["pixels"];
+        for(var p=0; p<pixels.length(); p++) {
+            var v = colorIndex(pixels.substring(p,p+1));
+            if(v == null) { return; }
+        }
+        for(var i=0; i<cards().size(); i++) {
+            if(cards()[i]["id"].equals(data["id"])) {
+                try { Application.Storage.setValue("logo"+i,data); } catch(e) { return; }
+                WatchUi.requestUpdate(); return;
+            }
+        }
+    }
+    function logo(card) {
+        for(var i=0; i<cards().size(); i++) {
+            if(cards()[i]["id"].equals(card["id"])) {
+                var value = Application.Storage.getValue("logo"+i);
+                if(value instanceof Lang.Dictionary && value["owner"].equals(snapshot["owner"]) && value["revision"] == snapshot["revision"] && value["id"].equals(card["id"])) { return value["pixels"]; }
+            }
+        }
+        return null;
+    }
+    function clearLogos() {
+        for(var i=0; i<cards().size(); i++) { Application.Storage.deleteValue("logo"+i); }
     }
     function receiveSnapshot(incoming) as Void {
         if (!valid(incoming)) { error = true; WatchUi.requestUpdate(); return; }
@@ -81,6 +112,7 @@ class PasKluisApp extends Application.AppBase {
         try {
             // One property is an atomic full replacement; do not clear first.
             Application.Storage.setValue("snapshot", incoming);
+            clearLogos();
             snapshot = incoming;
             error = false;
             if (view != null) { view.selected = false; view.index = 0; }
@@ -98,7 +130,7 @@ class PasKluisApp extends Application.AppBase {
         try {
             var empty = {"schema" => 1, "owner" => owner, "revision" => snapshot["revision"],
                 "language" => snapshot["language"], "cards" => [], "locallyErased" => true, "allowNewOwner" => reset};
-            Application.Storage.setValue("snapshot",empty); snapshot = empty;
+            Application.Storage.setValue("snapshot",empty); clearLogos(); snapshot = empty;
             ack(-1,owner);
             view.index = 0; view.selected = false;
         } catch(e) { error = true; }
@@ -160,12 +192,25 @@ class CardsView extends WatchUi.View {
                 var yy = h/2-35+(ri-first)*30;
                 if(ri == index) { dc.setColor(Graphics.COLOR_WHITE,Graphics.COLOR_BLACK); dc.fillRoundedRectangle(w*0.1,yy-2,w*0.8,29,7); dc.setColor(Graphics.COLOR_BLACK,Graphics.COLOR_WHITE); }
                 else { dc.setColor(Graphics.COLOR_WHITE,Graphics.COLOR_BLACK); }
-                dc.drawText(w/2,yy,Graphics.FONT_XTINY,fit(dc,rows[ri]["name"],w*0.72,Graphics.FONT_XTINY),Graphics.TEXT_JUSTIFY_CENTER);
+                var pixels = app.logo(rows[ri]);
+                if(pixels != null) {
+                    drawLogo(dc,pixels,(w*0.13).toNumber(),yy.toNumber());
+                    dc.setColor(ri == index ? Graphics.COLOR_BLACK : Graphics.COLOR_WHITE,ri == index ? Graphics.COLOR_WHITE : Graphics.COLOR_BLACK);
+                    dc.drawText(w*0.26,yy,Graphics.FONT_XTINY,fit(dc,rows[ri]["name"],w*0.60,Graphics.FONT_XTINY),Graphics.TEXT_JUSTIFY_LEFT);
+                } else { dc.drawText(w/2,yy,Graphics.FONT_XTINY,fit(dc,rows[ri]["name"],w*0.72,Graphics.FONT_XTINY),Graphics.TEXT_JUSTIFY_CENTER); }
             }
             dc.setColor(Graphics.COLOR_WHITE,Graphics.COLOR_BLACK);
             dc.drawText(w/2,h-44,Graphics.FONT_XTINY,(index+1)+" / "+rows.size()+"  START",Graphics.TEXT_JUSTIFY_CENTER);
         }
         if(app.error) { dc.drawText(w/2,h-40,Graphics.FONT_XTINY,app.text("Sync opnieuw proberen","Retry sync"),Graphics.TEXT_JUSTIFY_CENTER); }
+    }
+    function drawLogo(dc,pixels,left,top) {
+        for(var y=0;y<24;y++) { for(var x=0;x<24;x++) {
+            if((x-11.5)*(x-11.5)+(y-11.5)*(y-11.5)>144) { continue; }
+            var i=y*24+x; var v=colorIndex(pixels.substring(i,i+1));
+            var color=(((v>>4)&3)*85<<16)|(((v>>2)&3)*85<<8)|((v&3)*85);
+            dc.setColor(color,Graphics.COLOR_TRANSPARENT); dc.fillRectangle(left+x,top+y,1,1);
+        } }
     }
     function fit(dc,text,width,font) {
         if(dc.getTextWidthInPixels(text,font) <= width) { return text; }
@@ -183,7 +228,7 @@ class CardsView extends WatchUi.View {
         var available = (sw*0.97).toNumber();
         var m = (available/(w+q*2)).toNumber();
         if(h != 1) { m = ((sw*0.70)/(w+q*2)).toNumber(); }
-        if(m < 1) {
+        if(m < (h == 1 ? 1 : 2)) {
             dc.drawText(sw/2,sh/2,Graphics.FONT_XTINY,app.text("Gebruik je telefoon","Use your phone"),Graphics.TEXT_JUSTIFY_CENTER); return;
         }
         var barHeight = h == 1 ? (sh*0.24).toNumber() : m;
@@ -198,7 +243,7 @@ class CardsView extends WatchUi.View {
         }
         dc.drawText(sw/2,26,Graphics.FONT_XTINY,fit(dc,c["name"],sw*0.68,Graphics.FONT_XTINY),Graphics.TEXT_JUSTIFY_CENTER);
         // Never truncate a number into a misleading different card number.
-        if(dc.getTextWidthInPixels(c["code"],Graphics.FONT_XTINY) <= sw*0.72) {
+        if(h == 1 && dc.getTextWidthInPixels(c["code"],Graphics.FONT_XTINY) <= sw*0.72) {
             dc.drawText(sw/2,sh-48,Graphics.FONT_XTINY,c["code"],Graphics.TEXT_JUSTIFY_CENTER);
         }
     }
@@ -216,7 +261,7 @@ class CardsDelegate extends WatchUi.BehaviorDelegate {
     function move(delta) {
         if(view.choosingCategory) { view.categoryIndex = (view.categoryIndex+delta+3)%3; WatchUi.requestUpdate(); return; }
         var n = view.rows().size();
-        if(n > 0) { view.index = (view.index+delta+n)%n; view.selected = false; WatchUi.requestUpdate(); }
+        if(n > 0) { view.index = (view.index+delta+n)%n; if(view.selected) { view.scan(); } else { WatchUi.requestUpdate(); } }
     }
     function onBack() {
         if(view.selected) { view.selected = false; WatchUi.requestUpdate(); return true; }
@@ -235,3 +280,5 @@ class EraseDelegate extends WatchUi.Menu2InputDelegate {
     function initialize(a) { Menu2InputDelegate.initialize(); app = a; }
     function onSelect(item) { app.erase("reset".equals(item.getId())); WatchUi.popView(WatchUi.SLIDE_DOWN); }
 }
+
+function colorIndex(pixel) { return "0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmno".find(pixel); }

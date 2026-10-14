@@ -36,6 +36,11 @@ final class WatchBridge: NSObject, WCSessionDelegate {
                 let id = (call.arguments as? [String: Any])?["id"] as? String ?? ""
                 if self.garmin.selectDevice(id) { result(nil) }
                 else { result(FlutterError(code: "device", message: "Clear the previous watch first", details: nil)) }
+            case "garminLogo":
+                guard let payload = call.arguments as? [String:Any] else { result(FlutterError(code:"logo",message:"Invalid thumbnail",details:nil)); return }
+                self.garmin.sendLogo(payload) { success in
+                    DispatchQueue.main.async { result(success ? nil : FlutterError(code:"connection",message:"Thumbnail transfer failed",details:nil)) }
+                }
             case "replace":
                 guard let args = call.arguments as? [String:Any],
                       let raw = args["snapshot"] as? String, let data = raw.data(using: .utf8), data.count <= 7000,

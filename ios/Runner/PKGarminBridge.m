@@ -100,6 +100,11 @@ static PKGarminBridge *active;
     if(status != IQDeviceStatus_Connected) self.ready = NO;
     if(self.changed) self.changed();
 }
+- (void)sendLogo:(NSDictionary *)payload completion:(void (^)(BOOL))completion {
+    if(!self.app || !self.ready || ![payload[@"pixels"] isKindOfClass:NSString.class] || [payload[@"pixels"] length] != 576) { completion(NO); return; }
+    NSMutableDictionary *message = [payload mutableCopy]; message[@"kind"] = @"logo";
+    [[ConnectIQ sharedInstance] sendMessage:message toApp:self.app progress:^(uint32_t sent, uint32_t total) {} completion:^(IQSendMessageResult result) { completion(result == IQSendMessageResult_Success); }];
+}
 - (void)replace:(NSDictionary *)snapshot completion:(void (^)(BOOL))completion {
     [self start];
     NSUserDefaults *d = NSUserDefaults.standardUserDefaults;

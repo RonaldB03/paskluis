@@ -24,6 +24,51 @@ Map<String, Object> snapshot(Iterable<Map> cards, Set<String> selected) =>
     );
 
 void main() {
+  test(
+    'shared gift cards export only scan fields and disappear after revocation',
+    () {
+      final gift = {
+        ...card('shared-gift'),
+        'type': 'Cadeaukaart',
+        'isShared': true,
+        'shareRecipientId': 'recipient',
+        'pinCode': 'NEVER-PIN',
+        'balance': 99,
+      };
+      final exported = snapshot([gift], {'shared-gift'});
+      expect((exported['cards'] as List).single['category'], 'gift');
+      expect(jsonEncode(exported), isNot(contains('NEVER-PIN')));
+      expect(jsonEncode(exported), isNot(contains('shareRecipientId')));
+      expect(snapshot([], {'shared-gift'})['cards'], isEmpty);
+      expect(
+        snapshot(
+          [
+            {...gift, 'isArchived': true},
+          ],
+          {'shared-gift'},
+        )['cards'],
+        isEmpty,
+      );
+    },
+  );
+  test('dense loyalty QR retains category and data with platform limits', () {
+    final source = {
+      ...card(),
+      'codeFormat': 'qr',
+      'code': List.generate(
+        300,
+        (i) => String.fromCharCode(97 + i % 26),
+      ).join(),
+    };
+    final apple = WatchSnapshot.card(source, target: 'apple');
+    expect(apple['width'], greaterThan(49));
+    expect(apple['category'], 'loyalty');
+    expect(apple['code'], source['code']);
+    expect(WatchSnapshot.card(source, target: 'wear')['bits'], apple['bits']);
+    final garmin = WatchSnapshot.card(source, target: 'garmin');
+    expect(garmin['width'], lessThanOrEqualTo(73));
+  });
+
   test('more than twelve cards fit when the payload fits', () {
     final cards = List.generate(20, (i) => card('$i'));
     expect(

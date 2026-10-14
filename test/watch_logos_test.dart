@@ -28,6 +28,32 @@ void main() {
       codec.dispose();
     });
   });
+
+  testWidgets(
+    'all twenty selected logos travel and Garmin uses bounded color pixels',
+    (tester) async {
+      await tester.runAsync(() async {
+        final cards = List.generate(
+          20,
+          (i) => {'id': '$i', 'logoAsset': 'assets/logos/albert_heijn.png'},
+        );
+        final ids = cards.map((c) => c['id']!).toSet();
+        final result = await WatchLogos.build(cards, ids);
+        expect(result.length, 20);
+        expect(utf8.encode(jsonEncode(result)).length, lessThan(80000));
+        final garmin = await WatchLogos.build(cards, ids, garmin: true);
+        expect(garmin.length, 20);
+        expect(
+          garmin.values.every(
+            (v) =>
+                v.length == 576 &&
+                v.codeUnits.every((c) => c >= 48 && c <= 111),
+          ),
+          isTrue,
+        );
+      });
+    },
+  );
   test('empty selection sends no logos', () async {
     expect(
       await WatchLogos.build([

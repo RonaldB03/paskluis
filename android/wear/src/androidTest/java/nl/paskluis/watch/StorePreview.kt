@@ -21,7 +21,7 @@ class StorePreview : Instrumentation() {
         try {
             val fixtures = JSONArray(context.assets.open("watch-fixtures.json").bufferedReader().use { it.readText() })
             val cards = JSONArray().put(fixtures.getJSONObject(0).put("name", "Albert Heijn").put("favorite",true))
-                .put(fixtures.getJSONObject(8).put("name", "Voorbeeld QR").put("category","qr"))
+                .put(fixtures.getJSONObject(fixtures.length()-1).put("name", "Voorbeeld QR").put("category","qr"))
                 .put(JSONObject(fixtures.getJSONObject(0).toString()).put("id","gift").put("name","Cadeau test").put("category","gift"))
             for ((index,name) in listOf("Gall & Gall","Sligro","Makro","HEMA").withIndex()) cards.put(JSONObject(cards.getJSONObject(0).toString()).put("id","extra-$index").put("name",name).put("favorite",false))
             val snapshot = JSONObject().put("schema", 1).put("owner", "emulator-preview")
@@ -74,6 +74,16 @@ class StorePreview : Instrumentation() {
             waitForIdleSync()
             capture(activity,"wear-barcode.png")
             runOnMainSync {
+                val time=android.os.SystemClock.uptimeMillis()
+                val w=activity.resources.displayMetrics.widthPixels.toFloat()
+                val h=activity.resources.displayMetrics.heightPixels.toFloat()
+                val down=android.view.MotionEvent.obtain(time,time,android.view.MotionEvent.ACTION_DOWN,w*.8f,h*.5f,0)
+                val up=android.view.MotionEvent.obtain(time,time+300,android.view.MotionEvent.ACTION_UP,w*.2f,h*.5f,0)
+                activity.dispatchTouchEvent(down); activity.dispatchTouchEvent(up); down.recycle(); up.recycle()
+                check(findCode(activity.window.decorView)?.contentDescription == "Gall & Gall") { "Swipe must select the next loyalty card" }
+            }
+            capture(activity,"wear-swiped-code.png")
+            runOnMainSync {
                 activity.onBackPressed()
                 check(activity.window.attributes.screenBrightness == WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE) { "Restored brightness: ${activity.window.attributes.screenBrightness}" }
             }
@@ -123,6 +133,11 @@ class StorePreview : Instrumentation() {
     private fun findButton(view: View, label: String): Button? {
         if (view is Button && view.text.toString().contains(label)) return view
         if (view is ViewGroup) for (i in 0 until view.childCount) findButton(view.getChildAt(i), label)?.let { return it }
+        return null
+    }
+    private fun findCode(view: View): View? {
+        if(view is MainActivity.CodeCanvas) return view
+        if(view is ViewGroup) for(i in 0 until view.childCount) { findCode(view.getChildAt(i))?.let { return it } }
         return null
     }
     private fun capture(activity: Activity, name: String) {

@@ -56,3 +56,20 @@ for size in (240, 260, 280):
     result = zxingcpp.read_barcode(image)
     assert result and result.text == wide['code'] and result.format == zxingcpp.BarcodeFormat.Code128
     print(f'{size}px circular Garmin: complete wide barcode decoded')
+
+# Dense QR stays scannable at integer-pixel sizes, including small round Garmin.
+dense = next(c for c in fixtures if c['height'] > 49)
+for size in (240,260,280):
+    w=dense['width']; m=int(size*.70)//(w+8)
+    assert m>=2
+    image=Image.new('RGB',(size,size),'black'); draw=ImageDraw.Draw(image)
+    draw.ellipse((0,0,size-1,size-1),fill='white')
+    start=(size-w*m)//2
+    for y in range(w):
+        for x in range(w):
+            i=y*w+x
+            if int(dense['bits'][i//4],16)&(1<<(3-i%4)):
+                draw.rectangle((start+x*m,start+y*m,start+(x+1)*m-1,start+(y+1)*m-1),fill='black')
+    result=zxingcpp.read_barcode(image)
+    assert result and result.text==dense['code'] and result.format==zxingcpp.BarcodeFormat.QRCode
+    print(f'{size}px circular Garmin: dense QR decoded')

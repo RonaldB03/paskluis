@@ -16,16 +16,16 @@ abstract final class WatchSnapshot {
 
   static bool eligible(Map card) =>
       const {'Pasje', 'QR-code', 'Cadeaukaart'}.contains(card['type']) &&
-      !CardAccessPolicy.isReceived(card) &&
+      (!CardAccessPolicy.isReceived(card) || card['type'] == 'Cadeaukaart') &&
       card['isArchived'] != true &&
       card['isArchived'] != 'true' &&
       (card['id']?.toString().isNotEmpty ?? false) &&
       (card['code']?.toString().isNotEmpty ?? false);
 
-  static Map<String, Object> card(Map source) {
+  static Map<String, Object> card(Map source, {String target = 'apple'}) {
     if (!eligible(source)) throw const FormatException('ineligible');
     final value = source['code'].toString();
-    if (value.length > 256) throw const FormatException('code_too_long');
+    if (value.length > 1024) throw const FormatException('code_too_long');
     // Older standalone QR cards identify their format through type.
     final qr = source['type'] == 'QR-code' || source['codeFormat'] == 'qr';
     final symbology = source['barcodeSymbology']?.toString();
@@ -73,7 +73,7 @@ abstract final class WatchSnapshot {
     // Do not resize/interpolate a bitmap or change the barcode symbology.
     bool integral(double value) => (value - value.round()).abs() < 0.00001;
     var width = 0;
-    for (var n = 1; n <= (qr ? 49 : 211); n++) {
+    for (var n = 1; n <= (qr ? (target == 'garmin' ? 73 : 97) : 211); n++) {
       if (bars.isNotEmpty &&
           bars.every(
             (b) =>
@@ -139,6 +139,7 @@ abstract final class WatchSnapshot {
     required String owner,
     required int revision,
     required String language,
+    String target = 'apple',
   }) {
     final result = <Map<String, Object>>[];
     final seen = <String>{};
@@ -148,7 +149,7 @@ abstract final class WatchSnapshot {
         continue;
       }
       try {
-        result.add(card(source));
+        result.add(card(source, target: target));
       } on FormatException catch (error) {
         // Identify the rejected card without including its code in diagnostics.
         throw FormatException(error.message, source['name']?.toString());

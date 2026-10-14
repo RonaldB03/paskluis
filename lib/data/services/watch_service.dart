@@ -21,6 +21,7 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
   Timer? _debounce;
   Timer? _retry;
   bool _disposed = false;
+  int _logoRetries = 0;
   bool _disconnecting = false;
   String? get pairedTarget => _prefs?.getString('watch.target');
   String get pairedName => _prefs?.getString('watch.name') ?? '';
@@ -156,10 +157,12 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
     owner: _prefs?.getString('watch.owner') ?? '',
     revision: revision,
     language: LocaleService.languageCode,
+    target: target,
   );
 
   Future<void> select(String target, Set<String> ids) async {
     if (pairedTarget != target) throw StateError('Pair a watch first');
+    _logoRetries = 0;
     // Validate before storing, so a too-large selection never strands deletions.
     preview(target, ids);
     await Future.wait([
@@ -235,14 +238,13 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
           error = 'invalid_cards';
         }
         try {
-          final logos = next == 'wear' || next == 'apple'
-              ? await WatchLogos.build(
-                  StorageService.cardsBox.values.whereType<Map>(),
-                  (snapshot['cards'] as List)
-                      .map((c) => (c as Map)['id'].toString())
-                      .toSet(),
-                )
-              : const <String, String>{};
+          final logos = await WatchLogos.build(
+            StorageService.cardsBox.values.whereType<Map>(),
+            (snapshot['cards'] as List)
+                .map((c) => (c as Map)['id'].toString())
+                .toSet(),
+            garmin: next == 'garmin',
+          );
           await channel
               .invokeMethod<void>('replace', {
                 'target': next,
@@ -251,7 +253,33 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
                   'logos': jsonEncode(logos),
               })
               .timeout(const Duration(seconds: 30));
-          if (_pending.isEmpty) await _prefs!.setBool('watch.dirty', false);
+          if (next == 'garmin') {
+            for (final entry in logos.entries) {
+              // Stop old transfers immediately when selection changes during sync.
+              if (_pending.isNotEmpty || _disconnecting) break;
+              await channel
+                  .invokeMethod<void>('garminLogo', {
+                    'owner': snapshot['owner'],
+                    'revision': revision,
+                    'id': entry.key,
+                    'pixels': entry.value,
+                  })
+                  .timeout(const Duration(seconds: 15));
+            }
+          }
+          if (_pending.isEmpty) {
+            final missing = StorageService.cardsBox.values.whereType<Map>().any(
+              (c) =>
+                  (snapshot['cards'] as List).any(
+                    (sent) => sent['id'] == c['id'],
+                  ) &&
+                  WatchLogos.source(c).isNotEmpty &&
+                  !logos.containsKey(c['id'].toString()),
+            );
+            final retry = missing && _logoRetries < 2;
+            if (retry) _logoRetries++;
+            await _prefs!.setBool('watch.dirty', retry);
+          }
         } on PlatformException {
           await _prefs!.setBool('watch.dirty', true);
           error = 'connection';

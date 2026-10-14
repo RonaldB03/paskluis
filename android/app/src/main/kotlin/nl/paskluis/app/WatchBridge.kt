@@ -59,6 +59,18 @@ class WatchBridge(private val context: Context, messenger: BinaryMessenger) : Da
                                 edit.apply(); WatchVault(context,"pending-wear").clear(); result.success(null)
                             }.addOnFailureListener { result.error("connection","Could not detach watch",null) }
                     }
+                    "garminLogo" -> {
+                        val payload = JSONObject(call.arguments as Map<*,*>).put("kind","logo")
+                        require(payload.getString("pixels").length == 576)
+                        val device = devices.firstOrNull { it.deviceIdentifier == prefs.getLong("garmin.device",-1) }
+                        if(!iqReady || device == null) result.error("connection","Garmin unavailable",null)
+                        else iq!!.sendMessage(device,garminApp,WatchProtocol.toGarmin(payload)) { _,_,status ->
+                            android.os.Handler(context.mainLooper).post {
+                                if(status == ConnectIQ.IQMessageStatus.SUCCESS) result.success(null)
+                                else result.error("connection","Thumbnail transfer failed",null)
+                            }
+                        }
+                    }
                     "chooseGarmin" -> { if (iq == null) iqAttempted = false; startGarmin(); refreshDevices(); result.success(null) }
                     "forgetGarmin" -> {
                         if (iqReady) iq?.unregisterAllForEvents()

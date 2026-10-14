@@ -88,3 +88,30 @@ function twentyWideCardsCanSync(logger) {
     Application.Storage.deleteValue("snapshot");
     return true;
 }
+
+(:test)
+function logosRejectStaleOwnersAndDisappearOnReplacement(logger) {
+    var app = new SyncProbe();
+    var incoming = app.fixture("phone", 1);
+    incoming["cards"].add({"id"=>"gift","name"=>"Gift","code"=>"001","bits"=>"a","width"=>4,"height"=>1,"category"=>"gift"});
+    app.receiveSnapshot(incoming);
+    var pixels=""; for(var i=0;i<576;i++){pixels+="o";}
+    var logo={"owner"=>"phone","revision"=>1,"id"=>"gift","pixels"=>pixels};
+    app.receiveLogo(logo);
+    Test.assert(app.logo(app.cards()[0]).equals(pixels));
+    logo["owner"]="other"; logo["pixels"]="bad"; app.receiveLogo(logo);
+    Test.assert(app.logo(app.cards()[0]).equals(pixels));
+    app.receiveSnapshot(app.fixture("phone",2));
+    Test.assert(app.cards().size()==0 && Application.Storage.getValue("logo0")==null);
+    Application.Storage.deleteValue("snapshot"); return true;
+}
+(:test)
+function buttonsBrowseCodesInsideCategory(logger) {
+    var app = new SyncProbe(); app.snapshot=app.fixture("phone",1);
+    app.snapshot["cards"]=[{"id"=>"a","category"=>"loyalty"},{"id"=>"b","category"=>"loyalty"},{"id"=>"c","category"=>"gift"}];
+    var view=new CardsView(app); var delegate=new CardsDelegate(app,view);
+    view.choosingCategory=false; view.selected=true;
+    delegate.move(1); Test.assert(view.selected && view.index==1 && view.rows().size()==2);
+    delegate.move(1); Test.assert(view.selected && view.index==0);
+    view.endScan(); return true;
+}

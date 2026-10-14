@@ -32,12 +32,20 @@ class MainActivity : Activity() {
     }
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if(event.actionMasked == MotionEvent.ACTION_DOWN) { touchX = event.x; touchY = event.y }
-        if(event.actionMasked == MotionEvent.ACTION_UP && selected == null && !settings) {
+        if(event.actionMasked == MotionEvent.ACTION_UP && !settings) {
             val dx = event.x - touchX; val dy = event.y - touchY
             if(kotlin.math.abs(dx) > dp(60) && kotlin.math.abs(dx) > kotlin.math.abs(dy)*1.5f) {
                 val cancel = MotionEvent.obtain(event); cancel.action = MotionEvent.ACTION_CANCEL
                 super.dispatchTouchEvent(cancel); cancel.recycle()
-                category = categories[(categories.indexOf(category) + (if(dx < 0) 1 else 2)) % 3]
+                if(selected == null) category = categories[(categories.indexOf(category) + (if(dx < 0) 1 else 2)) % 3]
+                else {
+                    val cards = Snapshots.read(this)?.optJSONArray("cards")
+                    val rows = if(cards == null) emptyList() else (0 until cards.length()).map { cards.getJSONObject(it) }
+                        .filter { it.optString("category","loyalty") == category }
+                        .sortedWith(compareByDescending<JSONObject> { it.optBoolean("favorite") }.thenBy { it.getString("name") })
+                    val index = rows.indexOfFirst { it.getString("id") == selected }
+                    if(index >= 0) selected = rows[(index + (if(dx < 0) 1 else rows.size-1)) % rows.size].getString("id")
+                }
                 show(); return true
             }
         }
@@ -212,7 +220,7 @@ class MainActivity : Activity() {
             val m = minOf(usable/(w+2*q), if(h == 1) Int.MAX_VALUE else usable/(h+2*q))
             paint.color = Color.BLACK
             paint.textAlign = Paint.Align.CENTER; paint.textSize = 12*resources.displayMetrics.scaledDensity
-            if(m < 1) { canvas.drawText(text("Gebruik je telefoon","Use your phone"),width/2f,height/2f,paint); return }
+            if(m < (if(h == 1) 1 else 2)) { canvas.drawText(text("Gebruik je telefoon","Use your phone"),width/2f,height/2f,paint); return }
             val bh = if(h == 1) (height*0.34).toInt() else h*m
             val x0 = (width-w*m)/2; val y0 = (height-bh)/2
             val bits = card.getString("bits")
@@ -227,7 +235,7 @@ class MainActivity : Activity() {
             paint.isAntiAlias = true
             canvas.drawText(name,width/2f,(height*0.16).toFloat(),paint)
             val code = card.getString("code")
-            if(paint.measureText(code) <= usable) canvas.drawText(code,width/2f,(height*0.84).toFloat(),paint)
+            if(h == 1 && paint.measureText(code) <= usable) canvas.drawText(code,width/2f,(height*0.84).toFloat(),paint)
             paint.isAntiAlias = false
         }
     }

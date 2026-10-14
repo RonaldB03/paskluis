@@ -21,6 +21,7 @@ void main() {
     // Legacy QR card without codeFormat; even an EAN-valid number stays QR.
     {'type': 'QR-code', 'code': '0123456789012'},
   ];
+  samples.add({'codeFormat':'qr','code':List.generate(300,(i)=>String.fromCharCode(97+i%26)).join()});
   final fixtures = <Map<String, Object>>[];
   for (var i = 0; i < samples.length; i++) {
     fixtures.add(

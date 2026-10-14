@@ -70,9 +70,9 @@ object WatchProtocol {
         for (i in 0 until cards.length()) {
             val c = cards.getJSONObject(i)
             require(c.getString("id").isNotEmpty() && ids.add(c.getString("id")))
-            require(c.getString("code").length <= 512 && c.getString("name").length <= 80)
+            require(c.getString("code").length <= 1024 && c.getString("name").length <= 80)
             val w = c.getInt("width"); val h = c.getInt("height")
-            require(w in 1..211 && (h == 1 || (h == w && w <= 49)))
+            require(w in 1..211 && (h == 1 || (h == w && w <= 97)))
             val bits = c.getString("bits")
             require(bits.length == (w*h+3)/4 && bits.all { it in "0123456789abcdef" })
             c.getBoolean("favorite")

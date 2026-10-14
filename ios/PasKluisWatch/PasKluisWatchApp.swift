@@ -13,8 +13,8 @@ struct WatchCard: Codable, Identifiable {
     let height: Int
     let bits: String
     var valid: Bool {
-        ["loyalty","qr","gift"].contains(group) && !id.isEmpty && code.count <= 256 && width > 0 && width <= 211 &&
-        (height == 1 || (height == width && width <= 49)) &&
+        ["loyalty","qr","gift"].contains(group) && !id.isEmpty && code.count <= 1024 && width > 0 && width <= 211 &&
+        (height == 1 || (height == width && width <= 97)) &&
         bits.count == (width * height + 3) / 4 && bits.allSatisfy { "0123456789abcdef".contains($0) }
     }
 }
@@ -107,7 +107,7 @@ struct CodeView: View {
                     let availableW = Int(size.width * scale)
                     let availableH = Int(size.height * scale)
                     let module = min(availableW / (card.width + quiet*2), card.height == 1 ? Int.max : availableH / (card.height + quiet*2))
-                    guard module >= 1 else { return }
+                    guard module >= (card.height == 1 ? 1 : 2) else { return }
                     let m = CGFloat(module)/scale
                     let h = card.height == 1 ? floor(size.height * scale * 0.8)/scale : CGFloat(card.height)*m
                     let x0 = floor((size.width-CGFloat(card.width)*m)*scale/2)/scale
@@ -124,7 +124,7 @@ struct CodeView: View {
                     }
                 }.background(.white).accessibilityLabel("Barcode")
             }
-            Text(card.code).font(.caption2).lineLimit(2).minimumScaleFactor(0.7)
+            if card.height == 1 { Text(card.code).font(.caption2).lineLimit(2).minimumScaleFactor(0.7) }
         }.padding(.horizontal, 4).privacySensitive()
     }
 }
@@ -132,9 +132,18 @@ struct CodeView: View {
 struct LiveCodeView: View {
     @ObservedObject var store: WatchStore
     let id: String
+    let group: String
+    @State private var selected: String
+    init(store: WatchStore, id: String, group: String) {
+        self.store = store; self.id = id; self.group = group
+        _selected = State(initialValue: id)
+    }
     var body: some View {
-        if let card = store.snapshot?.cards.first(where: { $0.id == id }) {
-            CodeView(card: card)
+        let cards = (store.snapshot?.cards ?? []).filter { $0.group == group }
+        if cards.contains(where: { $0.id == selected }) {
+            TabView(selection: $selected) {
+                ForEach(cards) { card in CodeView(card: card).tag(card.id) }
+            }.tabViewStyle(.page(indexDisplayMode: .never))
         } else {
             Text(store.text("Dit pasje is verwijderd.", "This card was removed."))
         }
@@ -196,7 +205,7 @@ struct PasKluisWatchApp: App {
                                 let cards = (store.snapshot?.cards ?? []).filter { $0.group == group }
                                 if cards.isEmpty { Text(store.text("Kies passen in deze categorie op je telefoon.", "Choose cards in this category on your phone.")) }
                                 ForEach(cards) { card in
-                                    NavigationLink { LiveCodeView(store: store, id: card.id) } label: {
+                                    NavigationLink { LiveCodeView(store: store, id: card.id, group: group) } label: {
                                         CardRow(card: card, logo: store.snapshot?.logos?[card.id])
                                     }
                                 }
