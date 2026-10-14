@@ -7,11 +7,13 @@ struct WatchCard: Codable, Identifiable {
     let name: String
     let code: String
     let favorite: Bool
+    var category: String? = nil
+    var group: String { category ?? "loyalty" }
     let width: Int
     let height: Int
     let bits: String
     var valid: Bool {
-        !id.isEmpty && code.count <= 256 && width > 0 && width <= 192 &&
+        ["loyalty","qr","gift"].contains(group) && !id.isEmpty && code.count <= 256 && width > 0 && width <= 192 &&
         (height == 1 || (height == width && width <= 49)) &&
         bits.count == (width * height + 3) / 4 && bits.allSatisfy { "0123456789abcdef".contains($0) }
     }
@@ -22,6 +24,7 @@ struct WatchSnapshot: Codable {
     let revision: Int
     let language: String
     let cards: [WatchCard]
+    var logos: [String:String]? = nil
     var locallyErased: Bool? = nil
     var allowNewOwner: Bool? = nil
     var valid: Bool { schema == 1 && !owner.isEmpty && revision >= 0 && cards.count <= 12 &&
@@ -64,7 +67,7 @@ final class WatchStore: NSObject, ObservableObject, WCSessionDelegate {
         try? WCSession.default.updateApplicationContext(["ack": -1, "owner": old.owner])
     }
     private func receive(_ context: [String:Any]) {
-        guard let data = try? JSONSerialization.data(withJSONObject: context), data.count <= 7000,
+        guard let data = try? JSONSerialization.data(withJSONObject: context), data.count <= 87000,
               let incoming = try? JSONDecoder().decode(WatchSnapshot.self, from: data), incoming.valid else { return }
         DispatchQueue.main.async {
             if let old = self.snapshot {
@@ -138,29 +141,82 @@ struct LiveCodeView: View {
     }
 }
 
+struct CardRow: View {
+    let card: WatchCard
+    let logo: String?
+    var body: some View {
+        HStack {
+            Group {
+                if let logo, let data = Data(base64Encoded: logo), let image = UIImage(data: data) {
+                    Image(uiImage: image).resizable().scaledToFit().padding(4).background(.white)
+                } else {
+                    Image(systemName: card.group == "qr" ? "qrcode" : card.group == "gift" ? "gift" : "creditcard")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity).background(Color.gray.opacity(0.3))
+                }
+            }.frame(width: 30, height: 30).clipShape(Circle())
+            Text(card.name).lineLimit(2)
+        }
+    }
+}
+
 @main
 struct PasKluisWatchApp: App {
     @StateObject private var store = WatchStore()
     @State private var confirmReset = false
+    @State private var confirmErase = false
+    @State private var category = "loyalty"
+    private let groups = ["loyalty", "qr", "gift"]
+    func title(_ group: String) -> String {
+        switch group {
+        case "qr": return store.text("QR-codes", "QR codes")
+        case "gift": return store.text("Cadeaukaarten", "Gift cards")
+        default: return store.text("Klantenkaarten", "Loyalty cards")
+        }
+    }
     var body: some Scene {
         WindowGroup {
             NavigationStack {
-                List {
-                    if store.snapshot?.cards.isEmpty != false {
-                        Text(store.text("Kies pasjes in PasKluis op je iPhone bij Instellingen › Smartwatch.", "Choose cards in PasKluis on your iPhone under Settings › Smartwatch."))
-                    }
-                    ForEach(store.snapshot?.cards ?? []) { card in
-                        NavigationLink { LiveCodeView(store: store, id: card.id) } label: {
-                            Label(card.name, systemImage: card.favorite ? "star.fill" : "creditcard")
+                VStack(spacing: 2) {
+                    Image("PasKluisLogo").resizable().scaledToFit().frame(width: 28, height: 28).clipShape(Circle()).accessibilityLabel("PasKluis")
+                    HStack {
+                        ForEach(groups, id: \.self) { group in
+                            Button { category = group } label: {
+                                Image(systemName: group == "qr" ? "qrcode" : group == "gift" ? "gift" : "creditcard")
+                                    .frame(maxWidth: .infinity)
+                            }.buttonStyle(.plain).foregroundStyle(category == group ? Color.white : Color.gray)
+                                .padding(.vertical, 4).background(category == group ? Color.blue.opacity(0.4) : Color.clear)
+                                .clipShape(Capsule()).accessibilityLabel(title(group))
+                                .accessibilityAddTraits(category == group ? .isSelected : [])
                         }
                     }
-                    if store.error { Text(store.text("Synchronisatie mislukt. Probeer opnieuw of koppel opnieuw.", "Sync failed. Retry or reconnect.")) }
-                    Button(store.text("Pasjes wissen", "Erase cards"), role: .destructive) { store.erase() }
-                    Button(store.text("Opnieuw koppelen", "Reconnect")) { confirmReset = true }
-                }.navigationTitle("PasKluis")
-                 .confirmationDialog(store.text("Wis alle pasjes en koppel opnieuw?", "Erase all cards and reconnect?"), isPresented: $confirmReset) {
+                    TabView(selection: $category) {
+                        ForEach(groups, id: \.self) { group in
+                            List {
+                                Text(title(group)).font(.caption).foregroundStyle(.secondary)
+                                let cards = (store.snapshot?.cards ?? []).filter { $0.group == group }
+                                if cards.isEmpty { Text(store.text("Kies passen in deze categorie op je telefoon.", "Choose cards in this category on your phone.")) }
+                                ForEach(cards) { card in
+                                    NavigationLink { LiveCodeView(store: store, id: card.id) } label: {
+                                        CardRow(card: card, logo: store.snapshot?.logos?[card.id])
+                                    }
+                                }
+                                NavigationLink(store.text("Instellingen", "Settings")) {
+                                    List {
+                                        if store.error { Text(store.text("Synchronisatie mislukt.", "Sync failed.")) }
+                                        Button(store.text("Pasjes wissen", "Erase cards"), role: .destructive) { confirmErase = true }
+                                        Button(store.text("Opnieuw koppelen", "Reconnect")) { confirmReset = true }
+                                    }
+                                }
+                            }.tag(group)
+                        }
+                    }.tabViewStyle(.page(indexDisplayMode: .never))
+                }
+                .confirmationDialog(store.text("Wis alle passen op dit horloge?", "Erase all cards on this watch?"), isPresented: $confirmErase) {
+                    Button(store.text("Wissen", "Erase"), role: .destructive) { store.erase() }
+                }
+                .confirmationDialog(store.text("Wis alle passen en koppel opnieuw?", "Erase all cards and reconnect?"), isPresented: $confirmReset) {
                     Button(store.text("Wissen en opnieuw koppelen", "Erase and reconnect"), role: .destructive) { store.reset() }
-                 }
+                }
             }
         }
     }

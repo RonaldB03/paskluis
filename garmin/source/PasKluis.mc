@@ -22,6 +22,13 @@ class PasKluisApp extends Application.AppBase {
     }
     function text(nl, en) { return snapshot != null && "en".equals(snapshot["language"]) ? en : nl; }
     function cards() { return snapshot == null ? [] : snapshot["cards"]; }
+    function category(c) { return c.hasKey("category") ? c["category"] : "loyalty"; }
+    function categoryCards(group) {
+        var result = [];
+        var all = cards();
+        for(var i = 0; i < all.size(); i++) { if(group.equals(category(all[i]))) { result.add(all[i]); } }
+        return result;
+    }
     function valid(s) {
         if (!(s instanceof Lang.Dictionary) || !s.hasKey("schema") || s["schema"] != 1 ||
             !s.hasKey("owner") || !(s["owner"] instanceof Lang.String) || s["owner"].length() == 0 ||
@@ -32,6 +39,8 @@ class PasKluisApp extends Application.AppBase {
         for (var ci = 0; ci < s["cards"].size(); ci++) {
             var c = s["cards"][ci];
             if (!(c instanceof Lang.Dictionary)) { return false; }
+            var group = category(c);
+            if (!(group instanceof Lang.String) || !("loyalty".equals(group) || "qr".equals(group) || "gift".equals(group))) { return false; }
             var fields = ["id", "name", "code", "bits"];
             for (var fi = 0; fi < fields.size(); fi++) {
                 var field = fields[fi];
@@ -104,6 +113,11 @@ class CardsView extends WatchUi.View {
     var app;
     var index = 0;
     var selected = false;
+    var choosingCategory = true;
+    var categoryIndex = 0;
+    var groups = ["loyalty", "qr", "gift"];
+    function rows() { return app.categoryCards(groups[categoryIndex]); }
+    function categoryName(i) { return i == 0 ? app.text("Klantenkaarten","Loyalty cards") : i == 1 ? app.text("QR-codes","QR codes") : app.text("Cadeaukaarten","Gift cards"); }
     var timeout;
     function initialize(a) { View.initialize(); app = a; timeout = new Timer.Timer(); }
     function onHide() { timeout.stop(); selected = false; }
@@ -111,10 +125,20 @@ class CardsView extends WatchUi.View {
     function endScan() as Void { selected = false; WatchUi.requestUpdate(); }
     function onUpdate(dc) {
         var w = dc.getWidth(); var h = dc.getHeight();
-        var rows = app.cards();
+        var rows = rows();
         dc.setColor(Graphics.COLOR_WHITE,Graphics.COLOR_BLACK); dc.clear();
         if(selected && index < rows.size()) { drawCode(dc,rows[index]); return; }
         dc.drawText(w/2,25,Graphics.FONT_SMALL,"PasKluis",Graphics.TEXT_JUSTIFY_CENTER);
+        if (choosingCategory) {
+            for(var ci = 0; ci < 3; ci++) {
+                var yy = h/2-45+ci*32;
+                if(ci == categoryIndex) { dc.setColor(Graphics.COLOR_WHITE,Graphics.COLOR_BLACK); dc.fillRoundedRectangle(w*0.10,yy-2,w*0.80,30,8); dc.setColor(Graphics.COLOR_BLACK,Graphics.COLOR_WHITE); }
+                else { dc.setColor(Graphics.COLOR_WHITE,Graphics.COLOR_BLACK); }
+                dc.drawText(w/2,yy,Graphics.FONT_XTINY,categoryName(ci),Graphics.TEXT_JUSTIFY_CENTER);
+            }
+            return;
+        }
+        dc.drawText(w/2,58,Graphics.FONT_XTINY,categoryName(categoryIndex),Graphics.TEXT_JUSTIFY_CENTER);
         if (rows.size() == 0) {
             dc.drawText(w/2,h/2-35,Graphics.FONT_XTINY,app.text("Kies pasjes in","Choose cards in"),Graphics.TEXT_JUSTIFY_CENTER);
             dc.drawText(w/2,h/2-10,Graphics.FONT_XTINY,app.text("PasKluis op je telefoon","PasKluis on your phone"),Graphics.TEXT_JUSTIFY_CENTER);
@@ -163,15 +187,21 @@ class CardsView extends WatchUi.View {
 class CardsDelegate extends WatchUi.BehaviorDelegate {
     var app; var view;
     function initialize(a,v) { BehaviorDelegate.initialize(); app = a; view = v; }
-    function onSelect() { if(app.cards().size() > 0) { view.scan(); } return true; }
+    function onSelect() {
+        if(view.choosingCategory) { view.choosingCategory = false; view.index = 0; WatchUi.requestUpdate(); }
+        else if(view.rows().size() > 0) { view.scan(); }
+        return true;
+    }
     function onNextPage() { move(1); return true; }
     function onPreviousPage() { move(-1); return true; }
     function move(delta) {
-        var n = app.cards().size();
+        if(view.choosingCategory) { view.categoryIndex = (view.categoryIndex+delta+3)%3; WatchUi.requestUpdate(); return; }
+        var n = view.rows().size();
         if(n > 0) { view.index = (view.index+delta+n)%n; view.selected = false; WatchUi.requestUpdate(); }
     }
     function onBack() {
         if(view.selected) { view.selected = false; WatchUi.requestUpdate(); return true; }
+        if(!view.choosingCategory) { view.choosingCategory = true; WatchUi.requestUpdate(); return true; }
         return false;
     }
     function onMenu() {

@@ -36,6 +36,21 @@ void main() {
           }),
         );
       }
+      for (final entry in {
+        'QR test': 'QR-code',
+        'Gift test': 'Cadeaukaart',
+      }.entries) {
+        await tester.runAsync(
+          () => box.put(entry.key, {
+            'id': entry.key,
+            'name': entry.key,
+            'type': entry.value,
+            'code': '12345670',
+            'codeFormat': entry.value == 'QR-code' ? 'qr' : 'barcode',
+            'pinCode': 'NEVER-SEND',
+          }),
+        );
+      }
       SharedPreferences.setMockInitialValues({
         'watch.owner': 'screen-preview',
         'watch.target': 'wear',
@@ -90,7 +105,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Galaxy Watch8'), findsOneWidget);
-      expect(find.byType(SegmentedButton<String>), findsNothing);
+      expect(find.text('Wear OS'), findsNothing);
+      expect(find.text('Garmin'), findsNothing);
+      expect(find.byType(SegmentedButton<String>), findsOneWidget);
       expect(find.text('Synchroniseren'), findsNothing);
       expect(find.text('Wijzigingen opslaan'), findsNothing);
       await tester.tap(find.text('Gall & Gall'));
@@ -102,6 +119,26 @@ void main() {
       await tester.tap(find.text('Albert Heijn'));
       await tester.pumpAndSettle();
       expect((snapshots.last['cards'] as List).length, 2);
+      await tester.tap(find.text('QR'));
+      await tester.pumpAndSettle();
+      expect(find.text('Albert Heijn'), findsNothing);
+      await tester.tap(find.text('QR test'));
+      await tester.pumpAndSettle();
+      expect(
+        (snapshots.last['cards'] as List).any((c) => c['category'] == 'qr'),
+        isTrue,
+      );
+      await tester.tap(find.text('Cadeau'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Gift test'));
+      await tester.pumpAndSettle();
+      expect((snapshots.last['cards'] as List).length, 4);
+      expect(jsonEncode(snapshots.last), isNot(contains('NEVER-SEND')));
+      await tester.tap(find.text('Gift test'));
+      await tester.pumpAndSettle();
+      expect((snapshots.last['cards'] as List).length, 3);
+      await tester.tap(find.text('Pasjes'));
+      await tester.pumpAndSettle();
       if (const bool.fromEnvironment('WATCH_PREVIEW')) {
         final boundary =
             capture.currentContext!.findRenderObject()!

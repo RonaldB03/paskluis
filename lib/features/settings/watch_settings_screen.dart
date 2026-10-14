@@ -18,6 +18,7 @@ class _WatchSettingsScreenState extends State<WatchSettingsScreen> {
       service.pairedTarget ?? (Platform.isIOS ? 'apple' : 'wear');
   List<Map> wearDevices = [];
   bool connecting = false;
+  String category = 'loyalty';
   String t(String nl, String en) =>
       LocaleService.languageCode == 'nl' ? nl : en;
   @override
@@ -270,7 +271,48 @@ class _WatchSettingsScreenState extends State<WatchSettingsScreen> {
               ),
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            for (final card in cards)
+            const SizedBox(height: 12),
+            SegmentedButton<String>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(
+                  value: 'loyalty',
+                  icon: const Icon(Icons.credit_card),
+                  label: Text(t('Pasjes', 'Cards')),
+                ),
+                const ButtonSegment(
+                  value: 'qr',
+                  icon: Icon(Icons.qr_code),
+                  label: Text('QR'),
+                ),
+                ButtonSegment(
+                  value: 'gift',
+                  icon: const Icon(Icons.card_giftcard),
+                  label: Text(t('Cadeau', 'Gifts')),
+                ),
+              ],
+              selected: {category},
+              onSelectionChanged: (value) =>
+                  setState(() => category = value.first),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(switch (category) {
+                'qr' => t('QR-codes', 'QR codes'),
+                'gift' => t('Cadeaukaarten', 'Gift cards'),
+                _ => t('Klantenkaarten', 'Loyalty cards'),
+              }),
+            ),
+            if (category == 'gift')
+              Text(
+                t(
+                  'Je kopie op het horloge kan worden besteed. Pincodes en saldo worden niet meegestuurd.',
+                  'The copy on your watch can be spent. PINs and balances are not sent.',
+                ),
+              ),
+            for (final card in cards.where(
+              (card) => WatchSnapshot.category(card) == category,
+            ))
               CheckboxListTile(
                 title: Text(card['name']?.toString() ?? 'PasKluis'),
                 secondary: Icon(
@@ -279,11 +321,11 @@ class _WatchSettingsScreenState extends State<WatchSettingsScreen> {
                 value: selected.contains(card['id'].toString()),
                 onChanged: connecting ? null : (v) => _select(card, v!),
               ),
-            if (cards.isEmpty)
+            if (!cards.any((card) => WatchSnapshot.category(card) == category))
               Text(
                 t(
-                  'Voeg eerst een klantenkaart of losse QR-code toe.',
-                  'Add a loyalty card or individual QR code first.',
+                  'Geen passen in deze categorie. Voeg ze eerst toe in PasKluis.',
+                  'No cards in this category. Add them in PasKluis first.',
                 ),
               ),
             const SizedBox(height: 12),

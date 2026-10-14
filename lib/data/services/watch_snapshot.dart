@@ -9,8 +9,14 @@ abstract final class WatchSnapshot {
   static const maxCards = 12;
   static const maxBytes = 7000;
 
+  static String category(Map card) => switch (card['type']) {
+    'QR-code' => 'qr',
+    'Cadeaukaart' => 'gift',
+    _ => 'loyalty',
+  };
+
   static bool eligible(Map card) =>
-      (card['type'] == 'Pasje' || card['type'] == 'QR-code') &&
+      const {'Pasje', 'QR-code', 'Cadeaukaart'}.contains(card['type']) &&
       !CardAccessPolicy.isReceived(card) &&
       card['isArchived'] != true &&
       card['isArchived'] != 'true' &&
@@ -110,6 +116,7 @@ abstract final class WatchSnapshot {
       'name': String.fromCharCodes(name.runes.take(40)),
       'code': value,
       'favorite': source['isFavorite'] == true,
+      'category': category(source),
       'width': width,
       'height': height,
       'bits': hex.toString(),

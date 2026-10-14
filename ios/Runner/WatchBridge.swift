@@ -27,6 +27,7 @@ final class WatchBridge: NSObject, WCSessionDelegate {
                 let ack = self.defaults.integer(forKey: "watch.apple.ack")
                 result(["apple": ["confirmed": pending >= 0 && pending == ack &&
                     self.defaults.string(forKey: "watch.apple.ackOwner") == self.defaults.string(forKey: "watch.apple.owner"),
+                    "locallyErased": ack == -1 && self.defaults.string(forKey: "watch.apple.ackOwner") == self.defaults.string(forKey: "watch.apple.owner"),
                     "installed": self.session?.isWatchAppInstalled ?? false],
                     "garmin": self.garmin.status(), "garminDevices": self.garmin.devices()])
             case "chooseGarmin": self.garmin.choose(); result(nil)
@@ -56,7 +57,12 @@ final class WatchBridge: NSObject, WCSessionDelegate {
                       session.activationState == .activated, session.isPaired, session.isWatchAppInstalled else {
                     result(FlutterError(code: "connection", message: "Install and open the watch app", details: nil)); return
                 }
-                do { try session.updateApplicationContext(snapshot); result(nil) }
+                var payload = snapshot
+                if let rawLogos = args["logos"] as? String, let logoData = rawLogos.data(using: .utf8), logoData.count <= 80000,
+                   let logos = try? JSONSerialization.jsonObject(with: logoData) as? [String:String] {
+                    payload["logos"] = logos
+                }
+                do { try session.updateApplicationContext(payload); result(nil) }
                 catch { result(FlutterError(code: "connection", message: "Could not queue snapshot", details: nil)) }
             default: result(FlutterMethodNotImplemented)
             }

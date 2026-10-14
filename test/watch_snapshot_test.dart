@@ -24,6 +24,47 @@ Map<String, Object> snapshot(Iterable<Map> cards, Set<String> selected) =>
     );
 
 void main() {
+  test(
+    'categories preserve original codes and gift secrets never leave the phone',
+    () {
+      for (final format in ['barcode', 'qr']) {
+        final gift = {
+          ...card('gift'),
+          'type': 'Cadeaukaart',
+          'codeFormat': format,
+          'pinCode': 'PIN-SECRET',
+          'balance': 123.45,
+          'note': 'PRIVATE-NOTE',
+        };
+        final result = snapshot(
+          [
+            card(),
+            {...card('qr'), 'type': 'QR-code'},
+            gift,
+          ],
+          {'1', 'qr', 'gift'},
+        );
+        final rows = result['cards'] as List;
+        expect(rows.map((c) => c['category']).toSet(), {
+          'loyalty',
+          'qr',
+          'gift',
+        });
+        final exported = rows.firstWhere((c) => c['id'] == 'gift');
+        expect(exported['code'], gift['code']);
+        expect(exported['height'], format == 'qr' ? greaterThan(1) : 1);
+        for (final secret in [
+          'PIN-SECRET',
+          '123.45',
+          'PRIVATE-NOTE',
+          'pinCode',
+          'balance',
+        ]) {
+          expect(jsonEncode(result), isNot(contains(secret)));
+        }
+      }
+    },
+  );
   test('legacy numeric QR cards retain their QR format', () {
     for (final format in [null, '', 'barcode']) {
       final source = {...card(), 'type': 'QR-code', 'codeFormat': format};
@@ -71,6 +112,7 @@ void main() {
       'name',
       'code',
       'favorite',
+      'category',
       'width',
       'height',
       'bits',
@@ -79,27 +121,23 @@ void main() {
     expect(rows.single['width'], 95);
     expect(rows.single['height'], 1);
   });
-  test(
-    'gift cards, shared cards and archived cards cannot leak into snapshots',
-    () {
-      for (final extra in [
-        {'type': 'Cadeaukaart'},
-        {'isShared': true},
-        {'isShared': 'true'},
-        {'isArchived': true},
-      ]) {
-        expect(
-          snapshot(
-            [
-              {...card(), ...extra},
-            ],
-            {'1'},
-          )['cards'],
-          isEmpty,
-        );
-      }
-    },
-  );
+  test('shared and archived cards cannot leak into snapshots', () {
+    for (final extra in [
+      {'isShared': true},
+      {'isShared': 'true'},
+      {'isArchived': true},
+    ]) {
+      expect(
+        snapshot(
+          [
+            {...card(), ...extra},
+          ],
+          {'1'},
+        )['cards'],
+        isEmpty,
+      );
+    }
+  });
   test('full replacement removes deleted records and de-duplicates ids', () {
     expect((snapshot([card(), card()], {'1'})['cards'] as List).length, 1);
     expect(snapshot([], {'1'})['cards'], isEmpty);

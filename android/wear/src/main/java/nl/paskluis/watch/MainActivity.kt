@@ -21,6 +21,28 @@ import org.json.JSONObject
 class MainActivity : Activity() {
     private var selected: String? = null
     private var settings = false
+    private var category = "loyalty"
+    private val categories = listOf("loyalty", "qr", "gift")
+    private var touchX = 0f
+    private var touchY = 0f
+    private fun categoryTitle(value: String) = when(value) {
+        "qr" -> text("QR-codes", "QR codes")
+        "gift" -> text("Cadeaukaarten", "Gift cards")
+        else -> text("Klantenkaarten", "Loyalty cards")
+    }
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if(event.actionMasked == MotionEvent.ACTION_DOWN) { touchX = event.x; touchY = event.y }
+        if(event.actionMasked == MotionEvent.ACTION_UP && selected == null && !settings) {
+            val dx = event.x - touchX; val dy = event.y - touchY
+            if(kotlin.math.abs(dx) > dp(60) && kotlin.math.abs(dx) > kotlin.math.abs(dy)*1.5f) {
+                val cancel = MotionEvent.obtain(event); cancel.action = MotionEvent.ACTION_CANCEL
+                super.dispatchTouchEvent(cancel); cancel.recycle()
+                category = categories[(categories.indexOf(category) + (if(dx < 0) 1 else 2)) % 3]
+                show(); return true
+            }
+        }
+        return super.dispatchTouchEvent(event)
+    }
     private var scroll: ScrollView? = null
     private var logos = emptyMap<String, Bitmap>()
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
@@ -101,6 +123,9 @@ class MainActivity : Activity() {
         else layout.addView(ImageView(this).apply {
             setImageResource(R.drawable.paskluis_logo); contentDescription = "PasKluis"
             scaleType = ImageView.ScaleType.FIT_CENTER
+            outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(view: View, outline: android.graphics.Outline) { outline.setOval(0,0,view.width,view.height) }
+            }; clipToOutline = true
             layoutParams = LinearLayout.LayoutParams(dp(42),dp(42)).apply { bottomMargin = dp(10) }
         })
         if (settings) {
@@ -116,12 +141,26 @@ class MainActivity : Activity() {
             layout.addView(action(text("Opnieuw koppelen","Reconnect")) { confirm(true) })
             layout.addView(action(text("Terug naar passen","Back to cards")) { settings = false; show() })
         } else {
-        if(rows.isEmpty()) layout.addView(TextView(this).apply {
+        val tabs = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for((i,group) in categories.withIndex()) {
+            tabs.addView(Button(this).apply {
+                text = listOf("▤", "QR", "🎁")[i]; contentDescription = categoryTitle(group)
+                textSize = 16f; minWidth = 0; minimumWidth = 0; minHeight = dp(38); minimumHeight = 0
+                setPadding(0,0,0,0); setTextColor(Color.WHITE)
+                background = GradientDrawable().apply { setColor(if(category == group) Color.rgb(78,88,140) else Color.rgb(34,41,58)); cornerRadius = dp(18).toFloat() }
+                layoutParams = LinearLayout.LayoutParams(0,dp(38),1f).apply { setMargins(dp(2),0,dp(2),0) }
+                setOnClickListener { category = group; show() }
+            })
+        }
+        layout.addView(tabs)
+        layout.addView(label(categoryTitle(category),12f,Color.LTGRAY))
+        val categoryRows = rows.filter { it.optString("category", "loyalty") == category }
+        if(categoryRows.isEmpty()) layout.addView(TextView(this).apply {
             text = text("Kies pasjes op je telefoon bij Instellingen › Smartwatch.","Choose cards on your phone under Settings › Smartwatch.")
             gravity = Gravity.CENTER; setTextColor(Color.LTGRAY); textSize = 14f
             setPadding(0,dp(12),0,dp(16))
         })
-        for(card in rows.sortedWith(compareByDescending<JSONObject> { it.optBoolean("favorite") }.thenBy { it.getString("name") })) {
+        for(card in categoryRows.sortedWith(compareByDescending<JSONObject> { it.optBoolean("favorite") }.thenBy { it.getString("name") })) {
             val name = card.getString("name")
             val button = action((if(card.optBoolean("favorite")) "★ " else "")+name) { selected = card.getString("id"); show() }
             val logo = logos[card.getString("id")]

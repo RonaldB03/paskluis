@@ -77,6 +77,7 @@ object WatchProtocol {
             val bits = c.getString("bits")
             require(bits.length == (w*h+3)/4 && bits.all { it in "0123456789abcdef" })
             c.getBoolean("favorite")
+            require(c.optString("category", "loyalty") in setOf("loyalty", "qr", "gift"))
         }
         return data
     }

@@ -21,8 +21,9 @@ class StorePreview : Instrumentation() {
         try {
             val fixtures = JSONArray(context.assets.open("watch-fixtures.json").bufferedReader().use { it.readText() })
             val cards = JSONArray().put(fixtures.getJSONObject(0).put("name", "Albert Heijn").put("favorite",true))
-                .put(fixtures.getJSONObject(8).put("name", "Voorbeeld QR"))
-            for ((index,name) in listOf("Gall & Gall","Sligro","Makro").withIndex()) cards.put(JSONObject(cards.getJSONObject(0).toString()).put("id","extra-$index").put("name",name).put("favorite",false))
+                .put(fixtures.getJSONObject(8).put("name", "Voorbeeld QR").put("category","qr"))
+                .put(JSONObject(fixtures.getJSONObject(0).toString()).put("id","gift").put("name","Cadeau test").put("category","gift"))
+            for ((index,name) in listOf("Gall & Gall","Sligro","Makro","HEMA").withIndex()) cards.put(JSONObject(cards.getJSONObject(0).toString()).put("id","extra-$index").put("name",name).put("favorite",false))
             val snapshot = JSONObject().put("schema", 1).put("owner", "emulator-preview")
                 .put("revision", 1).put("language", "nl").put("cards", cards)
             WatchVault(targetContext, "cards").write(snapshot.toString())
@@ -36,7 +37,7 @@ class StorePreview : Instrumentation() {
             val otherOwner = JSONObject(snapshot.toString()).put("owner","other-preview")
             check(WatchLogos.read(targetContext,otherOwner).isEmpty())
             targetContext.getSharedPreferences("watch-state",0).edit().putLong("receivedAt",System.currentTimeMillis()).commit()
-            check(Snapshots.read(targetContext)?.getJSONArray("cards")?.length() == 5)
+            check(Snapshots.read(targetContext)?.getJSONArray("cards")?.length() == 7)
             val activity = startActivitySync(Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             waitForIdleSync()
             Thread.sleep(1500)
@@ -69,9 +70,20 @@ class StorePreview : Instrumentation() {
                 check(activity.window.attributes.screenBrightness == WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE) { "Restored brightness: ${activity.window.attributes.screenBrightness}" }
             }
             waitForIdleSync()
+            runOnMainSync { findButton(activity.window.decorView, "QR")!!.performClick() }
+            waitForIdleSync()
+            capture(activity, "wear-qr-list.png")
             runOnMainSync { findButton(activity.window.decorView, "Voorbeeld QR")!!.performClick() }
             waitForIdleSync()
             capture(activity, "wear-qr.png")
+            runOnMainSync { activity.onBackPressed() }
+            waitForIdleSync()
+            runOnMainSync { findButton(activity.window.decorView,"🎁")!!.performClick() }
+            waitForIdleSync()
+            capture(activity,"wear-gift-list.png")
+            runOnMainSync { findButton(activity.window.decorView,"Cadeau test")!!.performClick() }
+            waitForIdleSync()
+            capture(activity,"wear-gift.png")
             runOnMainSync { activity.onBackPressed() }
             waitForIdleSync()
             runOnMainSync { findButton(activity.window.decorView,"Instellingen")!!.performClick() }

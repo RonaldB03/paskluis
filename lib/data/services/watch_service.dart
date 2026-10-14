@@ -235,7 +235,7 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
           error = 'invalid_cards';
         }
         try {
-          final logos = next == 'wear'
+          final logos = next == 'wear' || next == 'apple'
               ? await WatchLogos.build(
                   StorageService.cardsBox.values.whereType<Map>(),
                   (snapshot['cards'] as List)
@@ -247,7 +247,8 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
               .invokeMethod<void>('replace', {
                 'target': next,
                 'snapshot': jsonEncode(snapshot),
-                if (next == 'wear') 'logos': jsonEncode(logos),
+                if (next == 'wear' || next == 'apple')
+                  'logos': jsonEncode(logos),
               })
               .timeout(const Duration(seconds: 30));
           if (_pending.isEmpty) await _prefs!.setBool('watch.dirty', false);
