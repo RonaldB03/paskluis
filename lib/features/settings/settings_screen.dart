@@ -121,7 +121,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _changeLocationCards(bool enabled) async {
     await SettingsService.setLocationCardsEnabled(enabled);
     if (!mounted) return;
-    setState(() => _locationCardsEnabled = enabled);
+    setState(() {
+      _locationCardsEnabled = enabled;
+      _nearbyLoyaltyCardsFirst = SettingsService.nearbyLoyaltyCardsFirst;
+    });
     if (!enabled) return;
     final result = await LocationService.resolve(requestPermission: true);
     if (!mounted || result.state == LocationAccessState.ready) return;
@@ -627,15 +630,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onTap: () => _open(const BackupScreen()),
         )),
         const SizedBox(height: 12),
-        if (WatchService.betaEnabled) Card(child: ListTile(
+        if (AppMenuService.current == null) const Center(child: CircularProgressIndicator())
+        else for (final section in AppMenuService.current!.sections) ...[
+          _section(section),
+          if (section['id'] == 'cards' && WatchService.betaEnabled) Card(child: ListTile(
           leading: const Icon(Icons.watch_outlined),
-          title: Text(t('Smartwatch · Testversie', 'Smartwatch · Beta')),
+          title: const Text('Smartwatch'),
           subtitle: Text(t('Kies pasjes voor je horloge', 'Choose cards for your watch')),
           trailing: const Icon(Icons.chevron_right),
           onTap: () => _open(const WatchSettingsScreen()),
-        )),
-        if (AppMenuService.current == null) const Center(child: CircularProgressIndicator())
-        else for (final section in AppMenuService.current!.sections) _section(section),
+          )),
+        ],
+        if (WatchService.betaEnabled && AppMenuService.current != null &&
+            !AppMenuService.current!.sections.any((section) => section['id'] == 'cards'))
+          _plain(const {}, 'Smartwatch', Icons.watch_outlined,
+              () => _open(const WatchSettingsScreen()),
+              subtitle: t('Kies pasjes voor je horloge', 'Choose cards for your watch')),
         if (_isAdmin) _plain(const {}, L10n.current.administrator, Icons.admin_panel_settings_outlined, () => _open(const AdminToolsScreen())),
         Center(child: Padding(padding: const EdgeInsets.only(top: 12), child: Text('PasKluis $_version', style: const TextStyle(color: Color(0xFF77717D), fontSize: 12)))),
       ]),

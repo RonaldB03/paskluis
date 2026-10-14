@@ -28,4 +28,21 @@ void main() {
     expect(SettingsService.showNearbySection, isFalse);
     expect(SettingsService.nearbyLoyaltyCardsFirst, isTrue);
   });
+
+  test('enabling location selects nearest-first but respects later opt-out', () async {
+    await SettingsService.setLocationCardsEnabled(false);
+    await SettingsService.setNearbyLoyaltyCardsFirst(false);
+    await SettingsService.setLocationCardsEnabled(true);
+    expect(SettingsService.nearbyLoyaltyCardsFirst, isTrue);
+
+    await SettingsService.setNearbyLoyaltyCardsFirst(false);
+    await SettingsService.setLocationCardsEnabled(true);
+    await SettingsService.init();
+    expect(SettingsService.locationCardsEnabled, isTrue);
+    expect(SettingsService.nearbyLoyaltyCardsFirst, isFalse);
+
+    await SettingsService.setLocationCardsEnabled(false);
+    await SettingsService.setLocationCardsEnabled(true);
+    expect(SettingsService.nearbyLoyaltyCardsFirst, isTrue);
+  });
 }

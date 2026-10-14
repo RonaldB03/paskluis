@@ -101,7 +101,11 @@ abstract final class SettingsService {
           _remoteBool('default_location_cards_enabled', true));
 
   static Future<void> setLocationCardsEnabled(bool enabled) async {
+    final turningOn = enabled && !locationCardsEnabled;
     await _preferences.setBool(_locationCardsKey, enabled);
+    if (turningOn) {
+      await _preferences.setBool(_nearbyCardsFirstKey, true);
+    }
     _notify();
   }
 

@@ -1,5 +1,5 @@
 name: Prepare internal smartwatch TestFlight build
-# Test-only update: dense QR, swipe between passes, shared gifts and complete brand thumbnails.
+# Release 1.9.2: smartwatch menu, verified Garmin store ID and nearby-first defaults. User approved App Store and Google Play submission.
 on:
   push:
     branches: ['codex/smartwatch-beta']

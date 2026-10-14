@@ -179,7 +179,7 @@ class _WatchSettingsScreenState extends State<WatchSettingsScreen> {
           );
     return Scaffold(
       appBar: AppBar(
-        title: Text(t('Smartwatch · Testversie', 'Smartwatch · Beta')),
+        title: const Text('Smartwatch'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
