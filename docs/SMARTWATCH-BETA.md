@@ -297,3 +297,21 @@ the specific message. No watch USB update is needed for this phone export fix.
 - Only the internal Android/Wear workflow is triggered for distribution. No public release or Apple external test distribution is changed.
 
 Automatic pending retries respect a confirmed local watch erase until the phone selection is edited again. Status reads await cached Wear acknowledgements before deciding whether to retry.
+
+Validation and internal delivery: Android/Apple compilation and full Flutter checks
+passed for 6b28f4c (runs 38563634035 and 38563634108). Emulator run
+38564456232 passed with final UI, five-card scrolling, barcode/QR screens,
+brightness restoration, encrypted storage and erase checks. The scroll test
+captures and asserts the same UI frame to avoid asynchronous view replacement.
+Phone widget tests cover toggle/remove/re-add without a manual sync button.
+
+Signed source: 6b28f4c320194369dca6a2466c6d8a4d6cbb5635, Codemagic
+6acf75358164b8ee6f198b27. Internal publication confirmed 14 October 2026 14:49:
+phone 109 / release 49 / track 4701274852138143157; Wear 110 / release 3 /
+track 4697492455578368389. Both version 1.9.2, existing tester groups unchanged.
+Phone SHA-256: 4038CDD2D5AEE2B8DBB083245E4FC288214617A09FEB5E5E3579F60E77BCE0B0.
+Wear SHA-256: D73D2D354E7AF0C196B84C4CD3777E3D6F55E59415565B13D7F144A41BD8D6FB.
+
+Physical acceptance remains with Jordi: update both apps, choose Watch8 once,
+remove and re-add a card, reopen settings, check offline recovery and scrolling.
+Public distribution and Apple external beta remain unchanged.
