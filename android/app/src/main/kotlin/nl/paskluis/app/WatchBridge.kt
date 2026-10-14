@@ -65,7 +65,12 @@ class WatchBridge(private val context: Context, messenger: BinaryMessenger) : Da
                             .putString("$target.owner",snapshot.getString("owner"))
                             .putInt("$target.count",snapshot.getJSONArray("cards").length()).apply()
                         if (target == "wear") {
-                            val request = PutDataMapRequest.create(WatchProtocol.PATH).apply { dataMap.putString("snapshot",raw) }
+                            val logos = call.argument<String>("logos") ?: "{}"
+                            require(logos.toByteArray(Charsets.UTF_8).size <= 80000)
+                            val request = PutDataMapRequest.create(WatchProtocol.PATH).apply {
+                                dataMap.putString("snapshot",raw)
+                                dataMap.putString("logos",logos)
+                            }
                             client.putDataItem(request.asPutDataRequest().setUrgent())
                                 .addOnSuccessListener { result.success(null) }
                                 .addOnFailureListener { result.error("connection", "Wear OS unavailable", null) }

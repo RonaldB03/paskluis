@@ -25,8 +25,11 @@ object Snapshots {
                 }
                 WatchProtocol.Decision.REPLACE -> Unit
             }
+            // Store optional logos first; owner/revision matching prevents stale
+            // images from being displayed if the card write fails afterwards.
+            WatchLogos.store(context, incoming, DataMapItem.fromDataItem(item).dataMap.getString("logos"))
             WatchVault(context,"cards").write(raw)
-            prefs.edit().putString("source",source).apply()
+            prefs.edit().putString("source",source).putLong("receivedAt",System.currentTimeMillis()).apply()
             ack(context,incoming.getLong("revision"),incoming.getString("owner"))
             onChanged?.invoke()
         } catch (_: Exception) { /* Never acknowledge malformed or unpersisted data. */ }
@@ -45,6 +48,8 @@ object Snapshots {
             old.put("allowNewOwner",reset)
             WatchVault(context,"cards").write(old.toString())
         }
+        WatchVault(context,"logos",100000).clear()
+        context.getSharedPreferences("watch-state",Context.MODE_PRIVATE).edit().remove("receivedAt").apply()
         ack(context,-1,old?.optString("owner") ?: "")
         onChanged?.invoke()
     }

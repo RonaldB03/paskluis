@@ -25,6 +25,15 @@ class StorePreview : Instrumentation() {
             val snapshot = JSONObject().put("schema", 1).put("owner", "emulator-preview")
                 .put("revision", 1).put("language", "nl").put("cards", cards)
             WatchVault(targetContext, "cards").write(snapshot.toString())
+            val logo = Bitmap.createBitmap(48,48,Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.BLUE) }
+            val png = java.io.ByteArrayOutputStream().apply { logo.compress(Bitmap.CompressFormat.PNG,100,this) }.toByteArray()
+            val logoPayload = JSONObject().put(cards.getJSONObject(0).getString("id"),android.util.Base64.encodeToString(png,android.util.Base64.NO_WRAP))
+            WatchLogos.store(targetContext,snapshot,logoPayload.toString())
+            val restored = WatchLogos.read(targetContext,snapshot)
+            check(restored.size == 1); restored.values.forEach { it.recycle() }
+            val otherOwner = JSONObject(snapshot.toString()).put("owner","other-preview")
+            check(WatchLogos.read(targetContext,otherOwner).isEmpty())
+            targetContext.getSharedPreferences("watch-state",0).edit().putLong("receivedAt",System.currentTimeMillis()).commit()
             check(Snapshots.read(targetContext)?.getJSONArray("cards")?.length() == 2)
             val activity = startActivitySync(Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             waitForIdleSync()
@@ -33,8 +42,14 @@ class StorePreview : Instrumentation() {
             runOnMainSync { findButton(activity.window.decorView, "Voorbeeld QR")!!.performClick() }
             waitForIdleSync()
             capture(activity, "wear-qr.png")
+            runOnMainSync { activity.onBackPressed() }
+            waitForIdleSync()
+            runOnMainSync { findButton(activity.window.decorView,"Instellingen")!!.performClick() }
+            waitForIdleSync()
+            capture(activity,"wear-settings.png")
             runOnMainSync { Snapshots.erase(targetContext); activity.finish() }
             check(Snapshots.read(targetContext)?.getJSONArray("cards")?.length() == 0)
+            check(WatchLogos.read(targetContext,snapshot).isEmpty())
             finish(Activity.RESULT_OK, Bundle().apply { putString("stream", "Wear preview and encrypted storage/erase checks passed\n") })
         } catch (failure: Throwable) {
             finish(Activity.RESULT_CANCELED, Bundle().apply { putString("stream", failure.stackTraceToString()) })

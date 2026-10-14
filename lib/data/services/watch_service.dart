@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'locale_service.dart';
 import 'storage_service.dart';
 import 'watch_snapshot.dart';
+import 'watch_logos.dart';
 
 class WatchService extends ChangeNotifier {
   static final instance = WatchService();
@@ -140,10 +141,19 @@ class WatchService extends ChangeNotifier {
           error = 'invalid_cards';
         }
         try {
+          final logos = next == 'wear'
+              ? await WatchLogos.build(
+                  StorageService.cardsBox.values.whereType<Map>(),
+                  (snapshot['cards'] as List)
+                      .map((c) => (c as Map)['id'].toString())
+                      .toSet(),
+                )
+              : const <String, String>{};
           await channel
               .invokeMethod<void>('replace', {
                 'target': next,
                 'snapshot': jsonEncode(snapshot),
+                if (next == 'wear') 'logos': jsonEncode(logos),
               })
               .timeout(const Duration(seconds: 30));
         } on PlatformException {

@@ -13,7 +13,7 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /** Private, no-backup AES-GCM storage. Key never leaves AndroidKeyStore. */
-class WatchVault(private val context: Context, private val name: String) {
+class WatchVault(private val context: Context, private val name: String, private val maxBytes: Int = 8000) {
     private val file get() = AtomicFile(File(context.noBackupFilesDir, "watch-$name.bin"))
     private fun key(): SecretKey {
         val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
@@ -26,13 +26,13 @@ class WatchVault(private val context: Context, private val name: String) {
     @Synchronized fun read(): String? {
         if (!file.baseFile.exists()) return null
         val data = file.readFully()
-        require(data.size in 29..9000)
+        require(data.size in 29..(maxBytes+28))
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, data.copyOfRange(0,12)))
         return String(cipher.doFinal(data.copyOfRange(12,data.size)), Charsets.UTF_8)
     }
     @Synchronized fun write(raw: String) {
-        require(raw.toByteArray(Charsets.UTF_8).size <= 8000)
+        require(raw.toByteArray(Charsets.UTF_8).size <= maxBytes)
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, key())
         val bytes = cipher.iv + cipher.doFinal(raw.toByteArray(Charsets.UTF_8))

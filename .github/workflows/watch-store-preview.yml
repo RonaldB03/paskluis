@@ -49,6 +49,7 @@ jobs:
             mkdir -p store-preview
             adb exec-out run-as nl.paskluis.app cat files/store-preview/wear-passes.png > store-preview/wear-passes.png
             adb exec-out run-as nl.paskluis.app cat files/store-preview/wear-qr.png > store-preview/wear-qr.png
+            adb exec-out run-as nl.paskluis.app cat files/store-preview/wear-settings.png > store-preview/wear-settings.png
       - uses: actions/upload-artifact@v4
         if: always()
         with:
