@@ -216,6 +216,36 @@ callback after terminating the phone app, and ordinary non-Garmin deep links.
 Compilation and automated snapshot/service tests do not prove physical receipt;
 that remains a device acceptance check.
 
+### Wear OS refinement and offline store logos (14 October 2026)
+
+Jordi installed the internal phone and Wear OS builds and displayed an Albert
+Heijn barcode on his Galaxy Watch8. A checkout scanner test remains outstanding.
+The next Wear OS beta adds a dark card list with store logos, favorites first,
+rotary scrolling, a last-received timestamp and a separate settings screen with
+confirmation before local erase/reconnect. The scan screen uses integer barcode
+modules, temporary full brightness and a 45-second awake limit.
+
+Only logos of selected eligible cards are exported from the phone. Thumbnails
+are optional 64-pixel PNGs, at most 4,500 bytes each, sent beside the unchanged
+bounded barcode snapshot. Missing logos use a letter tile. The watch stores
+them encrypted with matching owner and revision and clears them on local erase.
+The watch does not download logos itself. Both Android phone and watch updates
+are needed; synchronize once after updating to populate the logos.
+
+Validation: 15 targeted Flutter tests and static analysis pass. Android and
+Apple compilation pass in run 38545803636. Full Flutter regression checks pass.
+Wear emulator run 38547014273 passes encrypted logo storage, owner isolation,
+erase, scan brightness and restoration, and captures the real list/barcode/QR/
+settings views. ZXing independently decodes both rendered screenshot codes to
+their original synthetic values. Brightness assertions run on the UI thread.
+Signed Android bundles were built from 41743ce by Codemagic build
+6acf519cde779117a460a978 (phone 107, watch 108, version 1.9.2).
+
+Acceptance checks: verify AH and another store logo, favorites order, scrolling
+on a round watch, a barcode and a QR code, brightness restoration after backing
+out and after timeout, offline reopening, erase cancellation and confirmed
+erase. Public releases and Apple/Garmin distribution are outside this update.
+
 ### Follow-up: repeated Garmin synchronization
 
 The fēnix 7 received and displayed a card with phone build 148, but subsequent
