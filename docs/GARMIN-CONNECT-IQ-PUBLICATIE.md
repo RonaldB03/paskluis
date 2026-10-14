@@ -1,6 +1,18 @@
 # PasKluis — Connect IQ publicatievoorbereiding
 
-Status: concept, 14 oktober 2026. Geen winkelpublicatie of productie-update.
+Status: op 15 oktober 2026 ingediend; Garmin bevestigt **App in behandeling**.
+De preview is tot goedkeuring alleen voor het ontwikkelaarsaccount zichtbaar.
+Geen openbare telefoonapp bijgewerkt.
+
+Store UUID: `e5582836-4178-442e-bd16-afa95b42e9c8`.
+Winkel: https://apps.garmin.com/apps/e5582836-4178-442e-bd16-afa95b42e9c8
+
+Drie echte fēnix 7-simulatorbeelden met fictieve kaarten zijn toegevoegd.
+De NL/EN-winkeltekst vermeldt dat de telefoon-testversie momenteel vereist is.
+Automatische migratie naar ongeteste modellen staat uit.
+De portaalmelding over de handtekening verhinderde indiening niet: het pakket
+is lokaal gecontroleerd (RSA 4096, PKCS1v15/SHA256, manifest.sig2 geldig),
+waarna Garmin de registratie heeft bevestigd. Goedkeuring is nog niet bevestigd.
 
 ## Pakket en identiteit
 
@@ -11,7 +23,7 @@ Status: concept, 14 oktober 2026. Geen winkelpublicatie of productie-update.
 - Permissie: Communications. Geen locatie-, activiteiten- of gezondheidsrechten.
 - Export met de bestaande ontwikkelaarssleutel. Bewaar die sleutel veilig voor updates;
   voeg hem nooit toe aan het publicatiepakket of Git.
-- Store UUID: nog niet toegewezen/geverifieerd. Dit is een afzonderlijke identiteit;
+- Store UUID is hierboven geverifieerd. Dit is een afzonderlijke identiteit;
   gebruik niet automatisch de manifest-ID als winkelverwijzing.
 
 ## Nederlandse winkeltekst
@@ -81,7 +93,7 @@ uit deze chat. Bestaand logo: `garmin/resources/paskluis_logo.png`.
 Maak simulatorbeelden van (1) categorieën, (2) lijst met meerdere passen en
 winkellogo's, (3) barcode, (4) QR-code, (5) instellingen/pasjes wissen.
 Beeldformaten controleren in het actuele Garmin-uploadformulier.
-Deze screenshots zijn nog geen onderdeel van dit conceptpakket.
+De ingediende beelden staan in `build/connect-iq-submission/screenshot-*.jpg`.
 
 ## Installatieknop in de telefoon-testapp
 
@@ -92,24 +104,22 @@ Met `--dart-define=WATCH_BETA=true --dart-define=GARMIN_STORE_ID=<Store UUID>`
 verschijnt bij Garmin de knop 'PasKluis in Connect IQ', ook na het koppelen.
 Openen van de winkel verandert de koppeling of geselecteerde passen niet.
 
-Na winkelregistratie de Store UUID in iOS `IQApp.storeUuid` corrigeren
-(momenteel gebruikt die nog de manifest-ID); applicatie-ID voor berichten
-behouden. Controleer openen vanuit zowel iOS als Android en installatie op het
+De Store UUID is in iOS `IQApp.storeUuid` gecorrigeerd; de applicatie-ID voor
+berichten is behouden. Controleer openen vanuit zowel iOS als Android en installatie op het
 daadwerkelijk gekozen ondersteunde horloge. Niet veronderstellen dat een
 winkelverwijzing Garmin automatisch installeert of de gebruiker automatisch koppelt.
 
-## Nog nodig vóór indienen
+## Vervolg na indiening
 
-1. Laatste Garmin-versie fysiek testen via USB (uitgesteld door gebruiker).
-2. Simulatorbeelden met fictieve gegevens en winkelicoon op vereist formaat.
-3. Definitieve supportgegevens en privacy-URL controleren; de privacyverklaring
-   moet de lokale horlogekopieën en cadeaukaartcodes beschrijven.
-4. In Garmin-ontwikkelaarsdashboard de conceptlisting aanmaken en Store UUID
-   vastleggen. Eventuele ontwikkelaarsvoorwaarden door accounteigenaar afhandelen.
-5. Vaststellen welke testdistributie de actuele console toestaat. Een Garmin
-   beta is niet automatisch een TestFlight-achtige uitnodigingsgroep. Geen
-   openbare release maken om die beperking te omzeilen.
-6. Alleen na afgesproken publicatiemoment indienen voor publieke beoordeling.
+1. Garmin-goedkeuring afwachten; het portaal noemt maximaal drie dagen.
+2. De installatie vanuit de winkel fysiek testen zodra beschikbaar.
+3. De telefoon-testbuilds moeten de nieuwe Store UUID nog meenemen; deze
+   broncodewijziging maakt de reeds geïnstalleerde telefoonapps niet anders.
+4. De bestaande privacy-URL is bereikbaar. De winkelomschrijving beschrijft
+   horlogekopieën, cadeaukaartcodes en uitgestelde verwijdering expliciet.
+5. Garmin-bèta's zijn volgens het portaal alleen voor de ontwikkelaar en vragen
+   later een andere manifest-ID. Op expliciet verzoek van de gebruiker is
+   daarom de gewone app ter beoordeling ingediend met behoud van de huidige ID.
 
 Bron: https://developer.garmin.com/connect-iq/submit-an-app/
 Garmin vraagt een .iq-export voor alle ondersteunde modellen, winkeltekst en

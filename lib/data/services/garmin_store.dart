@@ -1,7 +1,10 @@
 /// The Store UUID is assigned by Garmin and is not the manifest application ID.
-/// Leave unset until the actual listing has been verified.
+/// Verified in Connect IQ on 15 October 2026; pending Garmin review.
 abstract final class GarminStore {
-  static const listingId = String.fromEnvironment('GARMIN_STORE_ID');
+  static const listingId = String.fromEnvironment(
+    'GARMIN_STORE_ID',
+    defaultValue: 'e5582836-4178-442e-bd16-afa95b42e9c8',
+  );
 
   static Uri? listingUri(String id) {
     if (!RegExp(

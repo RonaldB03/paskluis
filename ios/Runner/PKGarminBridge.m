@@ -2,6 +2,7 @@
 #import <ConnectIQ/ConnectIQ.h>
 
 static NSString *const PKAppId = @"5fdfca89-1939-4cb8-b3bb-d96184aa208c";
+static NSString *const PKStoreId = @"e5582836-4178-442e-bd16-afa95b42e9c8";
 static PKGarminBridge *active;
 @interface PKGarminBridge () <IQDeviceEventDelegate, IQAppMessageDelegate, IQUIOverrideDelegate>
 @property (nonatomic, strong) NSArray<IQDevice *> *known;
@@ -90,7 +91,7 @@ static PKGarminBridge *active;
     self.app = nil; self.ready = NO;
     NSString *id = [NSUserDefaults.standardUserDefaults stringForKey:@"watch.garmin.device"];
     for (IQDevice *device in self.known) if ([device.uuid.UUIDString isEqual:id]) {
-        self.app = [IQApp appWithUUID:[[NSUUID alloc] initWithUUIDString:PKAppId] storeUuid:[[NSUUID alloc] initWithUUIDString:PKAppId] device:device];
+        self.app = [IQApp appWithUUID:[[NSUUID alloc] initWithUUIDString:PKAppId] storeUuid:[[NSUUID alloc] initWithUUIDString:PKStoreId] device:device];
         [sdk registerForDeviceEvents:device delegate:self];
         [sdk registerForAppMessages:self.app delegate:self];
     }
