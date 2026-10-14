@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../data/services/garmin_store.dart';
 import '../../data/services/locale_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/watch_service.dart';
@@ -106,6 +108,55 @@ class _WatchSettingsScreenState extends State<WatchSettingsScreen> {
     if (yes == true) await _run(service.disconnect);
   }
 
+  Future<void> _openGarminStore() async {
+    final uri = GarminStore.uri;
+    if (!WatchService.betaEnabled || uri == null) return;
+    try {
+      if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    } catch (_) {
+      // Keep pairing and selection intact when the store cannot be opened.
+    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          t(
+            'Connect IQ kon niet worden geopend. Probeer het later opnieuw.',
+            'Could not open Connect IQ. Please try again later.',
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _garminInstallation() => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          t(
+            'Koppel je horloge eerst in Garmin Connect. Installeer daarna PasKluis op je horloge en open de horloge-app.',
+            'Pair your watch in Garmin Connect first. Then install PasKluis on your watch and open the watch app.',
+          ),
+        ),
+        if (GarminStore.uri != null)
+          OutlinedButton.icon(
+            onPressed: _openGarminStore,
+            icon: const Icon(Icons.open_in_new),
+            label: Text(t('PasKluis in Connect IQ', 'PasKluis in Connect IQ')),
+          )
+        else
+          Text(
+            t(
+              'De Garmin-testapp wordt voorlopig via USB geïnstalleerd. De Connect IQ-download volgt zodra deze beschikbaar is.',
+              'The Garmin beta is currently installed via USB. The Connect IQ download will follow when available.',
+            ),
+          ),
+      ],
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     target = service.pairedTarget ?? target;
@@ -169,6 +220,8 @@ class _WatchSettingsScreenState extends State<WatchSettingsScreen> {
                 'Install and open PasKluis on your watch.',
               ),
             ),
+            if (target == 'garmin' && WatchService.betaEnabled)
+              _garminInstallation(),
             FilledButton.icon(
               icon: const Icon(Icons.watch_outlined),
               label: Text(
@@ -229,6 +282,8 @@ class _WatchSettingsScreenState extends State<WatchSettingsScreen> {
                   'Open Garmin Connect and PasKluis on your watch to receive changes.',
                 ),
               ),
+            if (target == 'garmin' && WatchService.betaEnabled)
+              _garminInstallation(),
             Card(
               child: ListTile(
                 leading: Icon(
