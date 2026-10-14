@@ -358,3 +358,23 @@ build/watch-round-categories-preview/store-preview. The round header was also
 visually verified. Apple signed build 1.9.2 (150), including its watch companion,
 was uploaded by Codemagic 6acf8bfe9ceaf9a3bae479ba and is processing in App Store
 Connect; this is not yet external tester availability.
+
+Apple processing completed: build 150 is Testing for the existing Test Ro
+internal group (Ronald). What to Test now describes the smartwatch categories.
+External group assignment is disabled by App Store Connect while build 147 of
+the same version remains Waiting for Review; its existing review was preserved.
+
+Signed Android source: 23dad064fe19869c70d929c194a33caea8eca167, Codemagic
+6acf8f0b4079fc0c4d6b3695. The superseded queued build was canceled before running.
+Phone 111 SHA-256: B191BFAE5378DDBC17F169818477C6E0239F77F73FEA41A680EEF51ADF1484C8.
+Wear 112 SHA-256: 2CE12DE9A6745656A3DC0662C763ADABDA6BBEF92B9A634C2EDE88FFE5591105.
+Wear 112 / release 4 was published to internal track 4697492455578368389 at
+16:39 CEST, with the existing 82 supported wearable device models retained.
+
+Phone 111 / release 50 was published to internal track 4701274852138143157 at
+16:40 CEST. Both Google tracks show Available for internal testers; existing
+tester groups and public distribution were not changed. TestFlight group Test Ro
+shows 150 as Testing. Update both phone and watch before selecting the new card
+categories. Physical scanner acceptance remains outstanding. The existing
+approval-monitor automation was updated with these versions and its PAUSED
+state was preserved; it will not run unless resumed by the user.
