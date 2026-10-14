@@ -15,6 +15,8 @@ void main() {
     {'barcodeSymbology': 'upce', 'code': '01234565'},
     {'codeFormat': 'qr', 'code': 'https://paskluis.nl/test'},
     {'codeFormat': 'qr', 'code': '0000123456789'},
+    {'type':'Cadeaukaart', 'codeFormat':'barcode', 'barcodeSymbology':'ean13', 'code':'0123456789012', 'pinCode':'NEVER-SEND'},
+    {'type':'Cadeaukaart', 'codeFormat':'qr', 'code':'GIFT-0000123', 'pinCode':'NEVER-SEND'},
     // Legacy QR card without codeFormat; even an EAN-valid number stays QR.
     {'type': 'QR-code', 'code': '0123456789012'},
   ];

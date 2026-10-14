@@ -2,6 +2,7 @@ import Toybox.Application;
 import Toybox.Communications;
 import Toybox.Graphics;
 import Toybox.Lang;
+import Toybox.Math;
 import Toybox.System;
 import Toybox.Timer;
 import Toybox.WatchUi;
@@ -119,7 +120,8 @@ class CardsView extends WatchUi.View {
     function rows() { return app.categoryCards(groups[categoryIndex]); }
     function categoryName(i) { return i == 0 ? app.text("Klantenkaarten","Loyalty cards") : i == 1 ? app.text("QR-codes","QR codes") : app.text("Cadeaukaarten","Gift cards"); }
     var timeout;
-    function initialize(a) { View.initialize(); app = a; timeout = new Timer.Timer(); }
+    var logo;
+    function initialize(a) { View.initialize(); app = a; timeout = new Timer.Timer(); logo = WatchUi.loadResource(Rez.Drawables.HeaderLogo); }
     function onHide() { timeout.stop(); selected = false; }
     function scan() { selected = true; timeout.start(method(:endScan),45000,false); WatchUi.requestUpdate(); }
     function endScan() as Void { selected = false; WatchUi.requestUpdate(); }
@@ -128,7 +130,15 @@ class CardsView extends WatchUi.View {
         var rows = rows();
         dc.setColor(Graphics.COLOR_WHITE,Graphics.COLOR_BLACK); dc.clear();
         if(selected && index < rows.size()) { drawCode(dc,rows[index]); return; }
-        dc.drawText(w/2,25,Graphics.FONT_SMALL,"PasKluis",Graphics.TEXT_JUSTIFY_CENTER);
+        var lx = (w/2-16).toNumber();
+        dc.drawBitmap(lx,20,logo);
+        dc.setColor(Graphics.COLOR_BLACK,Graphics.COLOR_BLACK);
+        for(var ly = 0; ly < 32; ly++) {
+            var dy = ly-15.5;
+            var edge = (16-Math.sqrt(256-dy*dy)).toNumber();
+            if(edge > 0) { dc.fillRectangle(lx,20+ly,edge,1); dc.fillRectangle(lx+32-edge,20+ly,edge,1); }
+        }
+        dc.setColor(Graphics.COLOR_WHITE,Graphics.COLOR_BLACK);
         if (choosingCategory) {
             for(var ci = 0; ci < 3; ci++) {
                 var yy = h/2-45+ci*32;
@@ -144,9 +154,16 @@ class CardsView extends WatchUi.View {
             dc.drawText(w/2,h/2-10,Graphics.FONT_XTINY,app.text("PasKluis op je telefoon","PasKluis on your phone"),Graphics.TEXT_JUSTIFY_CENTER);
         } else {
             index = index % rows.size();
-            dc.drawText(w/2,h/2-32,Graphics.FONT_SMALL,fit(dc,rows[index]["name"],w*0.8,Graphics.FONT_SMALL),Graphics.TEXT_JUSTIFY_CENTER);
-            dc.drawText(w/2,h/2+4,Graphics.FONT_XTINY,(index+1)+" / "+rows.size(),Graphics.TEXT_JUSTIFY_CENTER);
-            dc.drawText(w/2,h-65,Graphics.FONT_XTINY,app.text("START: toon pasje","START: show card"),Graphics.TEXT_JUSTIFY_CENTER);
+            var first = index > 0 ? index-1 : 0;
+            if(first+3 > rows.size()) { first = rows.size() > 3 ? rows.size()-3 : 0; }
+            for(var ri = first; ri < rows.size() && ri < first+3; ri++) {
+                var yy = h/2-35+(ri-first)*30;
+                if(ri == index) { dc.setColor(Graphics.COLOR_WHITE,Graphics.COLOR_BLACK); dc.fillRoundedRectangle(w*0.1,yy-2,w*0.8,29,7); dc.setColor(Graphics.COLOR_BLACK,Graphics.COLOR_WHITE); }
+                else { dc.setColor(Graphics.COLOR_WHITE,Graphics.COLOR_BLACK); }
+                dc.drawText(w/2,yy,Graphics.FONT_XTINY,fit(dc,rows[ri]["name"],w*0.72,Graphics.FONT_XTINY),Graphics.TEXT_JUSTIFY_CENTER);
+            }
+            dc.setColor(Graphics.COLOR_WHITE,Graphics.COLOR_BLACK);
+            dc.drawText(w/2,h-44,Graphics.FONT_XTINY,(index+1)+" / "+rows.size()+"  START",Graphics.TEXT_JUSTIFY_CENTER);
         }
         if(app.error) { dc.drawText(w/2,h-40,Graphics.FONT_XTINY,app.text("Sync opnieuw proberen","Retry sync"),Graphics.TEXT_JUSTIFY_CENTER); }
     }

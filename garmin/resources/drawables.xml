@@ -1,1 +1,1 @@
-<drawables><bitmap id="LauncherIcon" filename="icon.svg"/></drawables>
+<drawables><bitmap id="LauncherIcon" filename="paskluis_logo.png" scaleX="40" scaleY="40"/><bitmap id="HeaderLogo" filename="paskluis_logo.png" scaleX="32" scaleY="32"/></drawables>

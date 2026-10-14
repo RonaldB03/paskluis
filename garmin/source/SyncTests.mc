@@ -54,3 +54,21 @@ function retryAcknowledgesStoredRevision(logger) {
     Application.Storage.deleteValue("snapshot");
     return true;
 }
+
+(:test)
+function categoriesStaySeparate(logger) {
+    var app = new SyncProbe();
+    app.snapshot = app.fixture("phone", 1);
+    app.snapshot["cards"] = [
+        {"id" => "old", "name" => "Old", "code" => "001", "bits" => "a", "width" => 4, "height" => 1},
+        {"id" => "qr", "name" => "QR", "code" => "001", "bits" => "a", "width" => 4, "height" => 1, "category" => "qr"},
+        {"id" => "gift", "name" => "Gift", "code" => "001", "bits" => "a", "width" => 4, "height" => 1, "category" => "gift"}
+    ];
+    Test.assert(app.valid(app.snapshot));
+    Test.assert(app.categoryCards("loyalty").size() == 1);
+    Test.assert(app.categoryCards("qr")[0]["id"].equals("qr"));
+    Test.assert(app.categoryCards("gift")[0]["id"].equals("gift"));
+    app.snapshot["cards"][2]["category"] = "unexpected";
+    Test.assert(!app.valid(app.snapshot));
+    return true;
+}
