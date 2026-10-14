@@ -45,18 +45,18 @@ class StorePreview : Instrumentation() {
             check(!labels.contains("offline beschikbaar")) { labels }
             check(!labels.contains("Laatst ontvangen")) { labels }
             capture(activity, "wear-passes.png")
+            var scrolledY = 0
+            var scrollDimensions = ""
             runOnMainSync {
                 val scroller = findScroll(activity.window.decorView)!!
                 scroller.isSmoothScrollingEnabled = false
-                scroller.fullScroll(View.FOCUS_DOWN)
+                scroller.scrollTo(0, scroller.getChildAt(0).height)
+                scrolledY = scroller.scrollY
+                scrollDimensions = "viewport=${scroller.height}, content=${scroller.getChildAt(0).height}"
+                captureOnMain(activity, "wear-scroll.png")
+                scroller.scrollTo(0, 0)
             }
-            waitForIdleSync()
-            capture(activity, "wear-scroll.png")
-            runOnMainSync {
-                val scroller = findScroll(activity.window.decorView)!!
-                check(scroller.scrollY > 0) { "Multiple cards must scroll" }
-                scroller.fullScroll(View.FOCUS_UP)
-            }
+            check(scrolledY > 0) { "Multiple cards must scroll: $scrollDimensions" }
             waitForIdleSync()
             runOnMainSync {
                 findButton(activity.window.decorView, "Albert Heijn")!!.performClick()
@@ -101,7 +101,9 @@ class StorePreview : Instrumentation() {
         return null
     }
     private fun capture(activity: Activity, name: String) {
-        runOnMainSync {
+        runOnMainSync { captureOnMain(activity, name) }
+    }
+    private fun captureOnMain(activity: Activity, name: String) {
             check(activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0)
             val view = activity.window.decorView
             check(view.width > 0 && view.height > 0)
@@ -110,6 +112,5 @@ class StorePreview : Instrumentation() {
             val folder = File(targetContext.filesDir, "store-preview").apply { mkdirs() }
             File(folder, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
             bitmap.recycle()
-        }
     }
 }
