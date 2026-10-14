@@ -40,6 +40,10 @@ class StorePreview : Instrumentation() {
             val activity = startActivitySync(Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             waitForIdleSync()
             Thread.sleep(1500)
+            runOnMainSync {
+                check(!visibleLabels(activity.window.decorView).contains("offline beschikbaar"))
+                check(!visibleLabels(activity.window.decorView).contains("Laatst ontvangen"))
+            }
             capture(activity, "wear-passes.png")
             runOnMainSync {
                 val scroller = findScroll(activity.window.decorView)!!
@@ -80,6 +84,11 @@ class StorePreview : Instrumentation() {
         } catch (failure: Throwable) {
             finish(Activity.RESULT_CANCELED, Bundle().apply { putString("stream", failure.stackTraceToString()) })
         }
+    }
+    private fun visibleLabels(view: View): String {
+        var result = if(view is android.widget.TextView) view.text.toString() else ""
+        if(view is ViewGroup) for(i in 0 until view.childCount) result += " " + visibleLabels(view.getChildAt(i))
+        return result
     }
     private fun findScroll(view: View): android.widget.ScrollView? {
         if(view is android.widget.ScrollView) return view
