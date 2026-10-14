@@ -241,7 +241,7 @@ class CardsView extends WatchUi.View {
                 if((nibble & (1 << (3-i%4))) != 0) { dc.fillRectangle(x0+x*m,y0+y*barHeight,m,barHeight); }
             }
         }
-        dc.drawText(sw/2,26,Graphics.FONT_XTINY,fit(dc,c["name"],sw*0.68,Graphics.FONT_XTINY),Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(sw/2,h == 1 ? 26 : 6,Graphics.FONT_XTINY,fit(dc,c["name"],sw*(h == 1 ? 0.68 : 0.30),Graphics.FONT_XTINY),Graphics.TEXT_JUSTIFY_CENTER);
         // Never truncate a number into a misleading different card number.
         if(h == 1 && dc.getTextWidthInPixels(c["code"],Graphics.FONT_XTINY) <= sw*0.72) {
             dc.drawText(sw/2,sh-48,Graphics.FONT_XTINY,c["code"],Graphics.TEXT_JUSTIFY_CENTER);

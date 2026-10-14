@@ -1,5 +1,5 @@
 name: Prepare installable smartwatch tester builds
-# Smartwatch beta: wider original barcodes and payload-based capacity without a fixed card count.
+# Test-only update: dense QR, swipe between passes, shared gifts and complete brand thumbnails.
 on:
   push:
     branches: ['codex/smartwatch-beta']

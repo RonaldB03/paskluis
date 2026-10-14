@@ -102,6 +102,10 @@ struct CodeView: View {
             Text(card.name).font(.caption).lineLimit(1)
             if dimmed { Image(systemName: "creditcard").font(.largeTitle) }
             else {
+                GeometryReader { geometry in
+                  if card.height > 1 && min(geometry.size.width, geometry.size.height)*scale < CGFloat((card.width+8)*2) {
+                    Text("Open op je telefoon / Use your phone").font(.caption2).foregroundStyle(.black)
+                  } else {
                 Canvas { context, size in
                     let quiet = card.height == 1 ? 10 : 4
                     let availableW = Int(size.width * scale)
@@ -123,6 +127,8 @@ struct CodeView: View {
                         }
                     }
                 }.background(.white).accessibilityLabel("Barcode")
+                  }
+                }.background(.white)
             }
             if card.height == 1 { Text(card.code).font(.caption2).lineLimit(2).minimumScaleFactor(0.7) }
         }.padding(.horizontal, 4).privacySensitive()
