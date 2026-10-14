@@ -97,7 +97,12 @@ class MainActivity : Activity() {
             layoutParams = LinearLayout.LayoutParams(-1,-2).apply { bottomMargin = dp(6) }
             setOnClickListener { click() }
         }
-        layout.addView(label(if(settings) text("Instellingen","Settings") else "PasKluis",20f))
+        if(settings) layout.addView(label(text("Instellingen","Settings"),20f))
+        else layout.addView(ImageView(this).apply {
+            setImageResource(R.drawable.paskluis_logo); contentDescription = "PasKluis"
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            layoutParams = LinearLayout.LayoutParams(dp(42),dp(42)).apply { bottomMargin = dp(10) }
+        })
         if (settings) {
             layout.addView(label(text("Beheer alleen de kopieën op dit horloge.","Manage only the copies on this watch."),12f,Color.LTGRAY))
             fun confirm(reset: Boolean) {
@@ -131,14 +136,16 @@ class MainActivity : Activity() {
                 }
                 BitmapDrawable(resources,tile)
             }
-            icon.setBounds(0,0,dp(32),dp(32)); button.setCompoundDrawables(icon,null,null,null)
+            val round = Bitmap.createBitmap(64,64,Bitmap.Config.ARGB_8888)
+            Canvas(round).apply {
+                drawCircle(32f,32f,32f,Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE })
+                // Fit the entire square within the circle; never crop the brand.
+                icon.setBounds(10,10,54,54); icon.draw(this)
+            }
+            val roundIcon = BitmapDrawable(resources,round)
+            roundIcon.setBounds(0,0,dp(32),dp(32)); button.setCompoundDrawables(roundIcon,null,null,null)
             button.compoundDrawablePadding = dp(9); button.maxLines = 2
             layout.addView(button)
-        }
-        val received = getSharedPreferences("watch-state",MODE_PRIVATE).getLong("receivedAt",0)
-        if (received > 0) {
-            val time = android.text.format.DateFormat.getDateFormat(this).format(java.util.Date(received))+" "+android.text.format.DateFormat.getTimeFormat(this).format(java.util.Date(received))
-            layout.addView(label(text("Laatst ontvangen\n$time","Last received\n$time"),11f,Color.LTGRAY))
         }
         layout.addView(action(text("Instellingen","Settings")) { settings = true; show() })
         }

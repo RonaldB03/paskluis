@@ -8,8 +8,13 @@ object Snapshots {
     private val lock = Any()
     var onChanged: (() -> Unit)? = null
     fun read(context: Context): JSONObject? = try { WatchVault(context,"cards").read()?.let { WatchProtocol.parse(it) } } catch (_: Exception) { null }
-    fun receive(context: Context, item: DataItem) = synchronized(lock) {
-        if(item.uri.path != WatchProtocol.PATH) return@synchronized
+    fun receive(context: Context, item: DataItem) {
+        val frozen = item.freeze()
+        Wearable.getNodeClient(context).localNode.addOnSuccessListener { node ->
+            if(WatchRouting.accepts(frozen.uri.path,node.id)) receiveAddressed(context,frozen)
+        }
+    }
+    private fun receiveAddressed(context: Context, item: DataItem) = synchronized(lock) {
         try {
             val raw = DataMapItem.fromDataItem(item).dataMap.getString("snapshot") ?: return@synchronized
             val incoming = WatchProtocol.parse(raw)

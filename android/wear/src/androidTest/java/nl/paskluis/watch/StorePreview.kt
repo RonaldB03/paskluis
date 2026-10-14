@@ -22,6 +22,7 @@ class StorePreview : Instrumentation() {
             val fixtures = JSONArray(context.assets.open("watch-fixtures.json").bufferedReader().use { it.readText() })
             val cards = JSONArray().put(fixtures.getJSONObject(0).put("name", "Albert Heijn").put("favorite",true))
                 .put(fixtures.getJSONObject(8).put("name", "Voorbeeld QR"))
+            for ((index,name) in listOf("Gall & Gall","Sligro","Makro").withIndex()) cards.put(JSONObject(cards.getJSONObject(0).toString()).put("id","extra-$index").put("name",name).put("favorite",false))
             val snapshot = JSONObject().put("schema", 1).put("owner", "emulator-preview")
                 .put("revision", 1).put("language", "nl").put("cards", cards)
             WatchVault(targetContext, "cards").write(snapshot.toString())
@@ -35,11 +36,23 @@ class StorePreview : Instrumentation() {
             val otherOwner = JSONObject(snapshot.toString()).put("owner","other-preview")
             check(WatchLogos.read(targetContext,otherOwner).isEmpty())
             targetContext.getSharedPreferences("watch-state",0).edit().putLong("receivedAt",System.currentTimeMillis()).commit()
-            check(Snapshots.read(targetContext)?.getJSONArray("cards")?.length() == 2)
+            check(Snapshots.read(targetContext)?.getJSONArray("cards")?.length() == 5)
             val activity = startActivitySync(Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             waitForIdleSync()
             Thread.sleep(1500)
             capture(activity, "wear-passes.png")
+            runOnMainSync {
+                val scroller = findScroll(activity.window.decorView)!!
+                scroller.fullScroll(View.FOCUS_DOWN)
+            }
+            waitForIdleSync()
+            capture(activity, "wear-scroll.png")
+            runOnMainSync {
+                val scroller = findScroll(activity.window.decorView)!!
+                check(scroller.scrollY > 0) { "Multiple cards must scroll" }
+                scroller.fullScroll(View.FOCUS_UP)
+            }
+            waitForIdleSync()
             runOnMainSync {
                 findButton(activity.window.decorView, "Albert Heijn")!!.performClick()
                 check(activity.window.attributes.screenBrightness == 1f) { "Scan brightness: ${activity.window.attributes.screenBrightness}" }
@@ -66,6 +79,11 @@ class StorePreview : Instrumentation() {
         } catch (failure: Throwable) {
             finish(Activity.RESULT_CANCELED, Bundle().apply { putString("stream", failure.stackTraceToString()) })
         }
+    }
+    private fun findScroll(view: View): android.widget.ScrollView? {
+        if(view is android.widget.ScrollView) return view
+        if(view is ViewGroup) for(i in 0 until view.childCount) findScroll(view.getChildAt(i))?.let { return it }
+        return null
     }
     private fun findButton(view: View, label: String): Button? {
         if (view is Button && view.text.toString().contains(label)) return view

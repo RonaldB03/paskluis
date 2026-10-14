@@ -47,7 +47,7 @@ jobs:
             adb install build/wear/outputs/apk/androidTest/debug/wear-debug-androidTest.apk
             adb shell am instrument -w nl.paskluis.app.test/nl.paskluis.watch.StorePreview | tee wear-preview.log
             mkdir -p store-preview
-            for screen in passes qr barcode settings; do adb exec-out run-as nl.paskluis.app cat files/store-preview/wear-$screen.png > store-preview/wear-$screen.png || true; done
+            for screen in passes scroll qr barcode settings; do adb exec-out run-as nl.paskluis.app cat files/store-preview/wear-$screen.png > store-preview/wear-$screen.png || true; done
             grep -q 'checks passed' wear-preview.log
       - uses: actions/upload-artifact@v4
         if: always()

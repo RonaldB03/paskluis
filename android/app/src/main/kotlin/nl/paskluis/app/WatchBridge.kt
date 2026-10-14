@@ -8,6 +8,7 @@ import com.google.android.gms.wearable.*
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.BinaryMessenger
 import nl.paskluis.watch.WatchProtocol
+import nl.paskluis.watch.WatchRouting
 import nl.paskluis.watch.WatchVault
 import org.json.JSONObject
 
@@ -34,6 +35,29 @@ class WatchBridge(private val context: Context, messenger: BinaryMessenger) : Da
                         if (prefs.contains("garmin.device")) startGarmin()
                         result.success(mapOf("wear" to state("wear"), "garmin" to state("garmin"),
                             "garminDevices" to devices.map { mapOf("id" to it.deviceIdentifier.toString(), "name" to it.friendlyName) }))
+                    }
+                    "wearDevices" -> {
+                        Wearable.getCapabilityClient(context).getCapability("paskluis_addressed_watch",CapabilityClient.FILTER_REACHABLE)
+                            .addOnSuccessListener { capability -> result.success(capability.nodes.map { mapOf("id" to it.id,"name" to it.displayName) }) }
+                            .addOnFailureListener { result.error("connection","Watch unavailable",null) }
+                    }
+                    "setWear" -> {
+                        val id = call.argument<String>("id")!!
+                        require(!prefs.contains("wear.device") || prefs.getString("wear.device",null) == id)
+                        Wearable.getCapabilityClient(context).getCapability("paskluis_addressed_watch",CapabilityClient.FILTER_REACHABLE).addOnSuccessListener { capability ->
+                            val node = capability.nodes.firstOrNull { it.id == id }
+                            if(node == null) result.error("connection","Watch unavailable",null)
+                            else { prefs.edit().putString("wear.device",id).putString("wear.name",node.displayName).remove("wear.ack").apply(); result.success(null) }
+                        }.addOnFailureListener { result.error("connection","Watch unavailable",null) }
+                    }
+                    "forgetWear" -> {
+                        // Remove queued payloads before allowing another recipient.
+                        client.deleteDataItems(android.net.Uri.parse("wear://*"+WatchProtocol.PATH),DataClient.FILTER_PREFIX)
+                            .addOnSuccessListener {
+                                val edit = prefs.edit()
+                                for(suffix in listOf("device","name","pending","owner","count","ack","ackOwner")) edit.remove("wear.$suffix")
+                                edit.apply(); WatchVault(context,"pending-wear").clear(); result.success(null)
+                            }.addOnFailureListener { result.error("connection","Could not detach watch",null) }
                     }
                     "chooseGarmin" -> { if (iq == null) iqAttempted = false; startGarmin(); refreshDevices(); result.success(null) }
                     "forgetGarmin" -> {
@@ -67,7 +91,7 @@ class WatchBridge(private val context: Context, messenger: BinaryMessenger) : Da
                         if (target == "wear") {
                             val logos = call.argument<String>("logos") ?: "{}"
                             require(logos.toByteArray(Charsets.UTF_8).size <= 80000)
-                            val request = PutDataMapRequest.create(WatchProtocol.PATH).apply {
+                            val request = PutDataMapRequest.create(WatchRouting.path(requireNotNull(prefs.getString("wear.device",null)))).apply {
                                 dataMap.putString("snapshot",raw)
                                 dataMap.putString("logos",logos)
                             }
@@ -94,11 +118,12 @@ class WatchBridge(private val context: Context, messenger: BinaryMessenger) : Da
     private fun state(target: String): Map<String,Any> = mapOf(
         "confirmed" to (prefs.contains("$target.pending") && prefs.getLong("$target.pending",-1) == prefs.getLong("$target.ack",-2) &&
             prefs.getString("$target.owner",null) == prefs.getString("$target.ackOwner",null)),
-        "device" to if (target == "garmin") prefs.getLong("garmin.device",-1).toString() else "")
+        "device" to if (target == "garmin") prefs.getLong("garmin.device",-1).toString() else prefs.getString("wear.device","").orEmpty(),
+        "name" to prefs.getString("$target.name",null).orEmpty())
     private fun changed() { android.os.Handler(context.mainLooper).post { channel.invokeMethod("changed",null) } }
     override fun onDataChanged(events: DataEventBuffer) { for(event in events) if(event.type == DataEvent.TYPE_CHANGED) consume(event.dataItem) }
     private fun consume(item: DataItem) {
-        if(item.uri.path != WatchProtocol.ACK) return
+        if(item.uri.path != WatchProtocol.ACK || !WatchRouting.acceptsAck(item.uri.host,prefs.getString("wear.device",null))) return
         val data = DataMapItem.fromDataItem(item).dataMap
         val ack = data.getLong("ack",-1); val owner = data.getString("owner") ?: ""
         if (ack == prefs.getLong("wear.ack",-2) && owner == prefs.getString("wear.ackOwner",null)) return
