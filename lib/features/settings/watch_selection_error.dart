@@ -20,10 +20,6 @@ String watchSelectionError(FormatException error, String language) {
       nl
           ? '$name: deze code bevat meer tekens dan de horloge-app ondersteunt. Gebruik deze pas op je telefoon.'
           : '$name: this code contains more characters than the watch app supports. Use this card on your phone.',
-    'too_many' =>
-      nl
-          ? 'Je kunt maximaal 12 pasjes selecteren. Vink eerst een ander pasje uit.'
-          : 'You can select up to 12 cards. Deselect another card first.',
     'too_large' =>
       nl
           ? 'Deze selectie bevat te veel gegevens voor één synchronisatie. Selecteer minder pasjes.'

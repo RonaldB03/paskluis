@@ -34,7 +34,7 @@ class PasKluisApp extends Application.AppBase {
         if (!(s instanceof Lang.Dictionary) || !s.hasKey("schema") || s["schema"] != 1 ||
             !s.hasKey("owner") || !(s["owner"] instanceof Lang.String) || s["owner"].length() == 0 ||
             !s.hasKey("revision") || !isInteger(s["revision"]) || s["revision"] < 0 ||
-            !s.hasKey("cards") || !(s["cards"] instanceof Lang.Array) || s["cards"].size() > 12) { return false; }
+            !s.hasKey("cards") || !(s["cards"] instanceof Lang.Array)) { return false; }
         var seen = {};
         var size = 0;
         for (var ci = 0; ci < s["cards"].size(); ci++) {
@@ -51,7 +51,7 @@ class PasKluisApp extends Application.AppBase {
             seen[c["id"]] = true;
             if (!c.hasKey("width") || !c.hasKey("height") || !isInteger(c["width"]) || !isInteger(c["height"])) { return false; }
             var w = c["width"]; var h = c["height"];
-            if (w < 1 || w > 192 || !(h == 1 || (h == w && w <= 49))) { return false; }
+            if (w < 1 || w > 211 || !(h == 1 || (h == w && w <= 49))) { return false; }
             if (c["bits"].length() != ((w*h+3)/4).toNumber() || c["code"].length() > 512 || c["name"].length() > 160) { return false; }
             for(var i = 0; i < c["bits"].length(); i++) {
                 if ("0123456789abcdef".find(c["bits"].substring(i,i+1)) == null) { return false; }
@@ -178,13 +178,15 @@ class CardsView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_BLACK,Graphics.COLOR_WHITE); dc.clear();
         var w = c["width"]; var h = c["height"];
         var q = h == 1 ? 10 : 4;
-        var available = (sw*0.82).toNumber();
+        // A centered band 24% of screen height fits inside the circular display
+        // at 97% width, including both ten-module quiet zones.
+        var available = (sw*0.97).toNumber();
         var m = (available/(w+q*2)).toNumber();
         if(h != 1) { m = ((sw*0.70)/(w+q*2)).toNumber(); }
         if(m < 1) {
             dc.drawText(sw/2,sh/2,Graphics.FONT_XTINY,app.text("Gebruik je telefoon","Use your phone"),Graphics.TEXT_JUSTIFY_CENTER); return;
         }
-        var barHeight = h == 1 ? (sh*0.3).toNumber() : m;
+        var barHeight = h == 1 ? (sh*0.24).toNumber() : m;
         var x0 = ((sw-w*m)/2).toNumber(); var y0 = ((sh-h*barHeight)/2).toNumber();
         var bits = c["bits"];
         for(var y = 0; y < h; y++) {

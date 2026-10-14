@@ -1,5 +1,5 @@
 name: Prepare installable smartwatch tester builds
-# Internal Android beta: three categories, gift codes without PINs and canvas-clipped round branding.
+# Smartwatch beta: wider original barcodes and payload-based capacity without a fixed card count.
 on:
   push:
     branches: ['codex/smartwatch-beta']

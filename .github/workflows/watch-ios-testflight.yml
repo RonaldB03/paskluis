@@ -1,5 +1,5 @@
 name: Prepare internal smartwatch TestFlight build
-# TestFlight beta: three categories, gift codes without PINs and round branding.
+# Smartwatch beta: wider original barcodes and payload-based capacity without a fixed card count.
 on:
   push:
     branches: ['codex/smartwatch-beta']

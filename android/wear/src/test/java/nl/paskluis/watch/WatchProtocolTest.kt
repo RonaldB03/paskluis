@@ -17,6 +17,13 @@ class WatchProtocolTest {
         card.put("category","unknown")
         assertThrows(IllegalArgumentException::class.java) { WatchProtocol.parse(snapshot().put("cards",org.json.JSONArray().put(card)).toString()) }
     }
+    @Test fun twentyWideCardsAreAcceptedWithinPayloadBudget() {
+        val cards = org.json.JSONArray()
+        repeat(20) { i -> cards.put(JSONObject().put("id", "$i").put("name", "Test").put("code", "12345678901234567890123456789012").put("favorite",false).put("category","gift").put("width",211).put("height",1).put("bits","0".repeat(53))) }
+        assertEquals(20, WatchProtocol.parse(snapshot().put("cards",cards).toString()).getJSONArray("cards").length())
+        repeat(100) { i -> cards.put(JSONObject(cards.getJSONObject(0).toString()).put("id", "extra-$i")) }
+        assertThrows(IllegalArgumentException::class.java) { WatchProtocol.parse(snapshot().put("cards",cards).toString()) }
+    }
     @Test fun oldRevisionCannotRestoreDeletedCards() {
         assertEquals(WatchProtocol.Decision.REJECT,WatchProtocol.decide(snapshot(3),snapshot(2),true))
     }

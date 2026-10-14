@@ -72,3 +72,19 @@ function categoriesStaySeparate(logger) {
     Test.assert(!app.valid(app.snapshot));
     return true;
 }
+
+(:test)
+function twentyWideCardsCanSync(logger) {
+    var app = new SyncProbe();
+    var incoming = app.fixture("phone", 1);
+    var bits = "";
+    for(var j = 0; j < 53; j++) { bits += "0"; }
+    for(var i = 0; i < 20; i++) {
+        incoming["cards"].add({"id" => i.toString(), "name" => "Test", "code" => "12345678901234567890123456789012", "bits" => bits, "width" => 211, "height" => 1, "category" => "gift"});
+    }
+    app.receiveSnapshot(incoming);
+    Test.assert(!app.error && app.cards().size() == 20);
+    Test.assert(app.receipts.size() == 1);
+    Application.Storage.deleteValue("snapshot");
+    return true;
+}

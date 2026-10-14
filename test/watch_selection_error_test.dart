@@ -20,8 +20,8 @@ void main() {
           expect(text, isNot(contains('12')));
         }
         expect(
-          watchSelectionError(const FormatException('too_many'), language),
-          contains('12'),
+          watchSelectionError(const FormatException('too_large'), language),
+          isNot(contains('12')),
         );
       }
     },

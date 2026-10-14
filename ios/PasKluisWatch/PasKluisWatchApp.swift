@@ -13,7 +13,7 @@ struct WatchCard: Codable, Identifiable {
     let height: Int
     let bits: String
     var valid: Bool {
-        ["loyalty","qr","gift"].contains(group) && !id.isEmpty && code.count <= 256 && width > 0 && width <= 192 &&
+        ["loyalty","qr","gift"].contains(group) && !id.isEmpty && code.count <= 256 && width > 0 && width <= 211 &&
         (height == 1 || (height == width && width <= 49)) &&
         bits.count == (width * height + 3) / 4 && bits.allSatisfy { "0123456789abcdef".contains($0) }
     }
@@ -27,7 +27,7 @@ struct WatchSnapshot: Codable {
     var logos: [String:String]? = nil
     var locallyErased: Bool? = nil
     var allowNewOwner: Bool? = nil
-    var valid: Bool { schema == 1 && !owner.isEmpty && revision >= 0 && cards.count <= 12 &&
+    var valid: Bool { schema == 1 && !owner.isEmpty && revision >= 0 &&
         Set(cards.map(\.id)).count == cards.count && cards.allSatisfy(\.valid) }
 }
 

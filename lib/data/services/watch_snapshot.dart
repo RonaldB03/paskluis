@@ -6,7 +6,6 @@ import 'card_access_policy.dart';
 
 /// Versioned, bounded, full replacements. Never serialize the source card map.
 abstract final class WatchSnapshot {
-  static const maxCards = 12;
   static const maxBytes = 7000;
 
   static String category(Map card) => switch (card['type']) {
@@ -74,7 +73,7 @@ abstract final class WatchSnapshot {
     // Do not resize/interpolate a bitmap or change the barcode symbology.
     bool integral(double value) => (value - value.round()).abs() < 0.00001;
     var width = 0;
-    for (var n = 1; n <= (qr ? 49 : 192); n++) {
+    for (var n = 1; n <= (qr ? 49 : 211); n++) {
       if (bars.isNotEmpty &&
           bars.every(
             (b) =>
@@ -159,7 +158,6 @@ abstract final class WatchSnapshot {
       if (a['favorite'] != b['favorite']) return a['favorite'] == true ? -1 : 1;
       return (a['name'] as String).compareTo(b['name'] as String);
     });
-    if (result.length > maxCards) throw const FormatException('too_many');
     final snapshot = <String, Object>{
       'schema': 1,
       'owner': owner,

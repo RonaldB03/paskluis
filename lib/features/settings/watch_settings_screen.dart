@@ -266,8 +266,8 @@ class _WatchSettingsScreenState extends State<WatchSettingsScreen> {
             const SizedBox(height: 12),
             Text(
               t(
-                'Je pasjes (${selected.length}/12)',
-                'Your cards (${selected.length}/12)',
+                'Je pasjes (${selected.length})',
+                'Your cards (${selected.length})',
               ),
               style: Theme.of(context).textTheme.titleMedium,
             ),

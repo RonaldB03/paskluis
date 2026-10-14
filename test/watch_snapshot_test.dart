@@ -24,6 +24,35 @@ Map<String, Object> snapshot(Iterable<Map> cards, Set<String> selected) =>
     );
 
 void main() {
+  test('more than twelve cards fit when the payload fits', () {
+    final cards = List.generate(20, (i) => card('$i'));
+    expect(
+      (snapshot(cards, cards.map((c) => c['id'] as String).toSet())['cards']
+              as List)
+          .length,
+      20,
+    );
+  });
+  test(
+    '32 digit Code128 keeps all data and fits the smallest Garmin display',
+    () {
+      const code = '12345678901234567890123456789012';
+      final result = WatchSnapshot.card({
+        ...card(),
+        'type': 'Cadeaukaart',
+        'code': code,
+        'barcodeSymbology': 'code128',
+      });
+      expect(result['width'], 211);
+      expect(result['code'], code);
+      expect(result['height'], 1);
+      expect(
+        (240 * .97).floor(),
+        greaterThanOrEqualTo((result['width'] as int) + 20),
+      );
+    },
+  );
+
   test(
     'categories preserve original codes and gift secrets never leave the phone',
     () {
@@ -172,8 +201,8 @@ void main() {
   test('size limit never silently drops a selected card', () {
     expect(
       () => snapshot(
-        List.generate(13, (i) => card('$i')),
-        Set.from(List.generate(13, (i) => '$i')),
+        List.generate(100, (i) => card('$i')),
+        Set.from(List.generate(100, (i) => '$i')),
       ),
       throwsFormatException,
     );
