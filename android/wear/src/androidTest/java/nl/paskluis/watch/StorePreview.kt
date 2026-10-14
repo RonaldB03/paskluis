@@ -42,7 +42,15 @@ class StorePreview : Instrumentation() {
             waitForIdleSync()
             Thread.sleep(1500)
             var labels = ""
-            runOnMainSync { labels = visibleLabels(activity.window.decorView) }
+            runOnMainSync {
+                labels = visibleLabels(activity.window.decorView)
+                val header = findBrand(activity.window.decorView)!!
+                val mark = Bitmap.createBitmap(header.width,header.height,Bitmap.Config.ARGB_8888)
+                header.draw(Canvas(mark))
+                check(android.graphics.Color.alpha(mark.getPixel(1,1)) == 0) { "PasKluis header must have transparent round corners" }
+                check(android.graphics.Color.alpha(mark.getPixel(mark.width/2,mark.height/2)) > 0)
+                mark.recycle()
+            }
             check(!labels.contains("offline beschikbaar")) { labels }
             check(!labels.contains("Laatst ontvangen")) { labels }
             capture(activity, "wear-passes.png")
@@ -101,6 +109,11 @@ class StorePreview : Instrumentation() {
         var result = if(view is android.widget.TextView) view.text.toString() else ""
         if(view is ViewGroup) for(i in 0 until view.childCount) result += " " + visibleLabels(view.getChildAt(i))
         return result
+    }
+    private fun findBrand(view: View): View? {
+        if(view is android.widget.ImageView && view.contentDescription == "PasKluis") return view
+        if(view is ViewGroup) for(i in 0 until view.childCount) findBrand(view.getChildAt(i))?.let { return it }
+        return null
     }
     private fun findScroll(view: View): android.widget.ScrollView? {
         if(view is android.widget.ScrollView) return view
