@@ -43,6 +43,7 @@ class StorePreview : Instrumentation() {
             capture(activity, "wear-passes.png")
             runOnMainSync {
                 val scroller = findScroll(activity.window.decorView)!!
+                scroller.isSmoothScrollingEnabled = false
                 scroller.fullScroll(View.FOCUS_DOWN)
             }
             waitForIdleSync()

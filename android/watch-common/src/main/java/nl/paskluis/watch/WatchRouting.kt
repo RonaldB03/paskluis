@@ -10,4 +10,3 @@ object WatchRouting {
     fun acceptsAck(source: String?, selected: String?): Boolean =
         !selected.isNullOrBlank() && source == selected
 }
-

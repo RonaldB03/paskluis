@@ -285,3 +285,13 @@ All 14 targeted Flutter tests passed. The independent scanner check passed for
 original value. Physical retest: update the internal phone beta, synchronize
 Fietsenstalling again, check its QR display, then select Gall & Gall and report
 the specific message. No watch USB update is needed for this phone export fix.
+
+
+### Wear OS refinement: fixed watch and automatic selection sync (14 October 2026)
+
+- Wear launcher/header use the existing PasKluis icon. Store marks sit inside white circles without cropping; the list omits offline counts and receipt timestamps.
+- Phone setup selects one reachable Wear app advertising `paskluis_addressed_watch`, or one Garmin. Platform and selected passes persist until explicit disconnection. Existing beta users select their watch once after updating both apps; their previous platform selection is retained for the first sync.
+- Selections sync automatically, including empty selections. Durable preferences retain the latest selection through failures/restarts; app resume and a 20-second pending retry restore failed transfers. Wear Data Layer retains accepted transfers while the watch is offline. Garmin still needs Garmin Connect and its watch app available; retries require the phone app running/resuming.
+- Wear snapshots use a device-addressed path and acknowledgements must originate from the chosen node. Legacy watches ignore that path; the new watch ignores old unaddressed snapshots. Unlink removes queued Wear data before another node can be selected. Already delivered offline copies may remain and the unlink dialog explains how to erase them.
+- Flutter regression tests cover persistent pairing, refusing a second platform, remove/re-add, offline/restart recovery, and edits during an in-flight send. Native tests cover wrong-device delivery and acknowledgement rejection. Emulator preview uses five synthetic cards and checks that the list scrolls.
+- Only the internal Android/Wear workflow is triggered for distribution. No public release or Apple external test distribution is changed.

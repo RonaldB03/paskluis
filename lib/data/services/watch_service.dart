@@ -260,4 +260,3 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
     super.dispose();
   }
 }
-

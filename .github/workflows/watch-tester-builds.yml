@@ -1,5 +1,5 @@
 name: Prepare installable smartwatch tester builds
-# Dedicated external beta builds; no production publishing.
+# Internal Android beta: fixed recipient, automatic sync and PasKluis branding.
 on:
   push:
     branches: ['codex/smartwatch-beta']
