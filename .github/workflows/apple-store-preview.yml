@@ -1,0 +1,36 @@
+name: Capture Apple Watch store screenshot
+on:
+  push:
+    branches: ['codex/smartwatch-beta']
+    paths: ['tooling/apple_store_preview.rb', '.github/workflows/apple-store-preview.yml']
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare actual watch UI with fictitious cards
+        run: ruby tooling/apple_store_preview.rb
+      - name: Build and capture watch simulator
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun simctl list devices available -j > /tmp/watch-devices.json
+          DEVICE=$(python3 -c 'import json; d=json.load(open("/tmp/watch-devices.json")); a=[v for k,vs in d["devices"].items() if "watchOS" in k for v in vs if "46mm" in v["name"]]; print(a[0]["udid"])')
+          xcrun simctl boot "$DEVICE"
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcodebuild -project build/apple-store-preview/Preview.xcodeproj -scheme PasKluisWatch -configuration Debug -destination "id=$DEVICE" -derivedDataPath build/apple-store-derived CODE_SIGNING_ALLOWED=NO build > build/apple-store-preview/build.log 2>&1
+          xcrun simctl install "$DEVICE" build/apple-store-derived/Build/Products/Debug-watchsimulator/PasKluisWatch.app
+          xcrun simctl status_bar "$DEVICE" override --time '09:41' --batteryState charged --batteryLevel 100 || true
+          xcrun simctl launch "$DEVICE" nl.paskluis.storepreview
+          sleep 8
+          xcrun simctl io "$DEVICE" screenshot build/apple-store-preview/apple-watch-cards.png
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: apple-watch-store-screenshot
+          path: |
+            build/apple-store-preview/*.png
+            build/apple-store-preview/build.log
