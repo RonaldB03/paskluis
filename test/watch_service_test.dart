@@ -16,6 +16,7 @@ void main() {
   final sent = <Map<String, dynamic>>[];
   Completer<void>? gate;
   bool offline = false;
+  bool locallyErased = false;
   setUp(() async {
     directory = await Directory.systemTemp.createTemp('paskluis-watch-test-');
     Hive.init(directory.path);
@@ -31,9 +32,14 @@ void main() {
     sent.clear();
     gate = null;
     offline = false;
+    locallyErased = false;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(WatchService.channel, (call) async {
-          if (call.method == 'status') return <String, dynamic>{};
+          if (call.method == 'status') {
+            return <String, dynamic>{
+              'garmin': {'locallyErased': locallyErased},
+            };
+          }
           if (call.method == 'replace') {
             if (offline) throw PlatformException(code: 'connection');
             sent.add(
@@ -154,6 +160,22 @@ void main() {
       expect((sent.last['cards'] as List).single['id'], '1');
       await service.select('garmin', {});
       expect(sent.last['cards'], isEmpty);
+    },
+    skip: !WatchService.betaEnabled,
+  );
+  test(
+    'automatic retry respects erasure on watch until selection changes',
+    () async {
+      await service.pair('garmin', id: 'watch1');
+      await service.select('garmin', {'1'});
+      locallyErased = true;
+      sent.clear();
+      await service.retryPending();
+      expect(sent, isEmpty);
+      expect(service.locallyErased, isTrue);
+      await service.select('garmin', {});
+      await service.select('garmin', {'1'});
+      expect((sent.last['cards'] as List).length, 1);
     },
     skip: !WatchService.betaEnabled,
   );

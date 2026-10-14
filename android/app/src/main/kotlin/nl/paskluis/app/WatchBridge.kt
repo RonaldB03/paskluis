@@ -29,12 +29,12 @@ class WatchBridge(private val context: Context, messenger: BinaryMessenger) : Da
                     "status" -> {
                         client.addListener(this)
                         // Read persisted ACKs as well as live callbacks after process restart.
-                        client.dataItems.addOnSuccessListener { items ->
-                            items.use { for (item in it) consume(item) }
-                        }
                         if (prefs.contains("garmin.device")) startGarmin()
-                        result.success(mapOf("wear" to state("wear"), "garmin" to state("garmin"),
+                        fun reply() = result.success(mapOf("wear" to state("wear"), "garmin" to state("garmin"),
                             "garminDevices" to devices.map { mapOf("id" to it.deviceIdentifier.toString(), "name" to it.friendlyName) }))
+                        client.dataItems.addOnSuccessListener { items ->
+                            items.use { for (item in it) consume(item) }; reply()
+                        }.addOnFailureListener { reply() }
                     }
                     "wearDevices" -> {
                         Wearable.getCapabilityClient(context).getCapability("paskluis_addressed_watch",CapabilityClient.FILTER_REACHABLE)
@@ -117,6 +117,8 @@ class WatchBridge(private val context: Context, messenger: BinaryMessenger) : Da
     }
     private fun state(target: String): Map<String,Any> = mapOf(
         "confirmed" to (prefs.contains("$target.pending") && prefs.getLong("$target.pending",-1) == prefs.getLong("$target.ack",-2) &&
+            prefs.getString("$target.owner",null) == prefs.getString("$target.ackOwner",null)),
+        "locallyErased" to (prefs.getLong("$target.ack",-2) == -1L &&
             prefs.getString("$target.owner",null) == prefs.getString("$target.ackOwner",null)),
         "device" to if (target == "garmin") prefs.getLong("garmin.device",-1).toString() else prefs.getString("wear.device","").orEmpty(),
         "name" to prefs.getString("$target.name",null).orEmpty())

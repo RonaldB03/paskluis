@@ -240,6 +240,8 @@ class _WatchSettingsScreenState extends State<WatchSettingsScreen> {
                       ? t('Synchroniseren…', 'Syncing…')
                       : service.waiting
                       ? t('Wacht op verbinding', 'Waiting for connection')
+                      : service.locallyErased
+                      ? t('Gewist op het horloge', 'Erased on watch')
                       : t('Bijgewerkt', 'Up to date'),
                 ),
                 subtitle: service.waiting

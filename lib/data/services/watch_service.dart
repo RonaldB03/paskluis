@@ -24,8 +24,12 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
   bool _disconnecting = false;
   String? get pairedTarget => _prefs?.getString('watch.target');
   String get pairedName => _prefs?.getString('watch.name') ?? '';
+  bool get locallyErased =>
+      (status[pairedTarget] as Map?)?['locallyErased'] == true &&
+      _prefs?.getBool('watch.dirty') != true;
   bool get waiting =>
       pairedTarget != null &&
+      !locallyErased &&
       (_prefs?.getBool('watch.dirty') == true ||
           (status[pairedTarget] as Map?)?['confirmed'] != true);
 
@@ -119,7 +123,7 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
       (_) => unawaited(retryPending()),
     );
     await refresh();
-    if (pairedTarget != null) schedule();
+
   }
 
   Future<void> refresh() async {
@@ -195,7 +199,10 @@ class WatchService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> sync(String target) async {
-    if (_prefs == null || _disposed || _disconnecting || pairedTarget != target) {
+    if (_prefs == null ||
+        _disposed ||
+        _disconnecting ||
+        pairedTarget != target) {
       return;
     }
     _pending.add(target);

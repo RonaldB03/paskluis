@@ -295,3 +295,5 @@ the specific message. No watch USB update is needed for this phone export fix.
 - Wear snapshots use a device-addressed path and acknowledgements must originate from the chosen node. Legacy watches ignore that path; the new watch ignores old unaddressed snapshots. Unlink removes queued Wear data before another node can be selected. Already delivered offline copies may remain and the unlink dialog explains how to erase them.
 - Flutter regression tests cover persistent pairing, refusing a second platform, remove/re-add, offline/restart recovery, and edits during an in-flight send. Native tests cover wrong-device delivery and acknowledgement rejection. Emulator preview uses five synthetic cards and checks that the list scrolls.
 - Only the internal Android/Wear workflow is triggered for distribution. No public release or Apple external test distribution is changed.
+
+Automatic pending retries respect a confirmed local watch erase until the phone selection is edited again. Status reads await cached Wear acknowledgements before deciding whether to retry.
