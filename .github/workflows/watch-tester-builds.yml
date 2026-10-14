@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        workflow: [ios-smartwatch-external-beta, android-smartwatch-beta]
+        workflow: [android-smartwatch-beta]
     runs-on: ubuntu-latest
     timeout-minutes: 65
     steps:
