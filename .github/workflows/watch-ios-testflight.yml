@@ -1,5 +1,5 @@
 name: Prepare internal smartwatch TestFlight build
-# Release 1.9.2: smartwatch menu, verified Garmin store ID and nearby-first defaults. User approved App Store and Google Play submission.
+# 1.9.3 menu styling correction: user requested TEST BUILDS ONLY; no public submission or automatic release.
 on:
   push:
     branches: ['codex/smartwatch-beta']
