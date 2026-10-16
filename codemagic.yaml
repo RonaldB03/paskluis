@@ -11,7 +11,7 @@ workflows:
       xcode: latest
       vars:
         WATCH_BETA: "1"
-        WATCH_BETA_VERSION: "1.9.2"
+        WATCH_BETA_VERSION: "1.9.3"
       ios_signing:
         distribution_type: app_store
         bundle_identifier: nl.paskluis.app
@@ -63,7 +63,7 @@ workflows:
       xcode: latest
       vars:
         WATCH_BETA: "1"
-        WATCH_BETA_VERSION: "1.9.2"
+        WATCH_BETA_VERSION: "1.9.3"
       ios_signing:
         distribution_type: app_store
         bundle_identifier: nl.paskluis.app
@@ -115,7 +115,7 @@ workflows:
       android_signing:
         - paskluis_upload
       vars:
-        WATCH_VERSION_NAME: "1.9.2"
+        WATCH_VERSION_NAME: "1.9.3"
     scripts:
       - name: Prepare private watch beta
         script: |
