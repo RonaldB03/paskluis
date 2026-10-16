@@ -633,24 +633,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (AppMenuService.current == null) const Center(child: CircularProgressIndicator())
         else for (final section in AppMenuService.current!.sections) ...[
           _section(section),
-          if (section['id'] == 'cards' && WatchService.betaEnabled) Card(child: ListTile(
-          leading: const Icon(Icons.watch_outlined),
-          title: const Text('Smartwatch'),
-          subtitle: Text(t('Kies pasjes voor je horloge', 'Choose cards for your watch')),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => _open(const WatchSettingsScreen()),
-          )),
+          if (section['id'] == 'cards' && WatchService.betaEnabled)
+            _watchSection(),
         ],
         if (WatchService.betaEnabled && AppMenuService.current != null &&
             !AppMenuService.current!.sections.any((section) => section['id'] == 'cards'))
-          _plain(const {}, 'Smartwatch', Icons.watch_outlined,
-              () => _open(const WatchSettingsScreen()),
-              subtitle: t('Kies pasjes voor je horloge', 'Choose cards for your watch')),
+          _watchSection(),
         if (_isAdmin) _plain(const {}, L10n.current.administrator, Icons.admin_panel_settings_outlined, () => _open(const AdminToolsScreen())),
         Center(child: Padding(padding: const EdgeInsets.only(top: 12), child: Text('PasKluis $_version', style: const TextStyle(color: Color(0xFF77717D), fontSize: 12)))),
       ]),
     );
   }
+
+  Widget _watchSection() => _SettingsSection(
+    key: const ValueKey('smartwatch'),
+    title: 'Smartwatch',
+    summary: t('Kies pasjes voor je horloge', 'Choose cards for your watch'),
+    icon: Icons.watch_outlined,
+    collapsed: true,
+    children: const [],
+    onTap: () => _open(const WatchSettingsScreen()),
+  );
 }
 
 IconData menuIcon(Object? id, IconData fallback) => switch (id) {
@@ -667,13 +670,24 @@ class _SettingsSection extends StatelessWidget {
   final IconData icon;
   final bool collapsed;
   final List<Widget> children;
-  const _SettingsSection({super.key, required this.title, required this.summary, required this.icon, required this.collapsed, required this.children});
+  final VoidCallback? onTap;
+  const _SettingsSection({super.key, required this.title, required this.summary, required this.icon, required this.collapsed, required this.children, this.onTap});
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 12),
     child: Card(margin: EdgeInsets.zero, elevation: 0, color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
+      child: onTap != null ? Padding(
+        padding: const EdgeInsets.symmetric(vertical: 1),
+        child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+        textColor: Theme.of(context).colorScheme.onSurface,
+        leading: Icon(icon, color: const Color(0xFFD51B46)),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: summary.isEmpty ? null : Text(summary),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onTap,
+      )) : ExpansionTile(
         initiallyExpanded: !collapsed,
         key: PageStorageKey(key), leading: Icon(icon, color: const Color(0xFFD51B46)),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
