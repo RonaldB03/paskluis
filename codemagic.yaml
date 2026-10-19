@@ -144,6 +144,43 @@ workflows:
       - build/wear/outputs/bundle/release/*.aab
       - watch-beta-versions.txt
     publishing: {}
+  wear-review-release:
+    name: Wear OS review correction - build only
+    instance_type: mac_mini_m2
+    max_build_duration: 35
+    environment:
+      groups:
+        - google_play_credentials
+      flutter: 3.47.6
+      android_signing:
+        - paskluis_upload
+      vars:
+        WATCH_VERSION_NAME: "1.9.3"
+    scripts:
+      - name: Verify repair branch and prepare dependencies
+        script: |
+          set -euo pipefail
+          test "$CM_BRANCH" = "codex/wear-review-fixes"
+          test -n "$CM_KEYSTORE_PATH"
+          flutter pub get
+      - name: Build and test signed Wear OS correction
+        script: |
+          set -euo pipefail
+          LATEST=$(google-play get-latest-build-number --package-name nl.paskluis.app)
+          if ! [[ "$LATEST" =~ ^[0-9]+$ ]] || (( LATEST < 118 )); then
+            echo "Cannot establish latest Google Play version code."
+            exit 1
+          fi
+          export WATCH_VERSION_CODE=$((LATEST + 1))
+          cd android
+          ./gradlew :wear:bundleRelease :wear:testReleaseUnitTest
+          cd ..
+          printf 'Wear OS: %s (%s)\nCommit: %s\nBuild only; no publication.\n' "$WATCH_VERSION_NAME" "$WATCH_VERSION_CODE" "$(git rev-parse HEAD)" > wear-review-version.txt
+    artifacts:
+      - build/wear/outputs/bundle/release/*.aab
+      - wear-review-version.txt
+    publishing: {}
+
   android-private-test-export:
     name: Android private test APK export
     instance_type: mac_mini_m2

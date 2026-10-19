@@ -1,0 +1,42 @@
+name: Build signed Wear OS review correction
+on:
+  push:
+    branches: ['codex/wear-review-fixes']
+    paths: ['.github/workflows/wear-review-build.yml']
+permissions:
+  contents: read
+concurrency:
+  group: wear-review-build
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Start build-only workflow
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          WATCH_BRANCH: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$WATCH_BRANCH" = 'codex/wear-review-fixes'
+          apps=$(curl --fail --silent --show-error --max-time 60 -H "x-auth-token: $CODEMAGIC_API_TOKEN" https://api.codemagic.io/apps)
+          app_id=$(jq -er '[.applications[] | select((.appName | ascii_downcase) == "paskluis")] | if length == 1 then .[0]._id else error("Expected one PasKluis application") end' <<< "$apps")
+          payload=$(jq -n --arg id "$app_id" --arg branch "$WATCH_BRANCH" '{appId:$id,workflowId:"wear-review-release",branch:$branch}')
+          response=$(curl --fail --silent --show-error --max-time 60 -H "Content-Type: application/json" -H "x-auth-token: $CODEMAGIC_API_TOKEN" --data "$payload" https://api.codemagic.io/builds)
+          build_id=$(jq -er .buildId <<< "$response")
+          echo "Codemagic Wear OS correction: $build_id"
+          echo "https://codemagic.io/app/$app_id/build/$build_id" >> "$GITHUB_STEP_SUMMARY"
+          for attempt in $(seq 1 75); do
+            state=$(curl --fail --silent --show-error --max-time 60 -H "x-auth-token: $CODEMAGIC_API_TOKEN" "https://codemagic.io/api/v3/builds/$build_id")
+            status=$(jq -er '.data.status' <<< "$state")
+            echo "Build $build_id: $status"
+            case "$status" in
+              finished) exit 0 ;;
+              failed|canceled|cancelled|timeout) echo 'Wear OS correction build failed.'; exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo 'Build still running; inspect Codemagic before retrying.'
+          exit 1
