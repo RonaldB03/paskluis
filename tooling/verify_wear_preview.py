@@ -31,8 +31,9 @@ for name, code in expected.items():
 
 for name in ('wear-passes.png', 'wear-scroll.png', 'wear-settings.png'):
     image = Image.open(folder / name).convert('RGB')
-    # The visible white curved position indicator occupies the outer right edge.
+    # Wear OS 3 draws the thumb white; Wear OS 6 uses light grey. Both must
+    # contrast with the black background at the outer right edge.
     edge = image.crop((int(image.width * .94), image.height // 3, image.width, image.height * 2 // 3))
-    assert sum(edge.getpixel((x, y)) == (255, 255, 255)
+    assert sum(min(edge.getpixel((x, y))) >= 180
                for y in range(edge.height) for x in range(edge.width)) > 10, f'Missing visible indicator: {name}'
     print(f'{name}: scrollbar visible')
