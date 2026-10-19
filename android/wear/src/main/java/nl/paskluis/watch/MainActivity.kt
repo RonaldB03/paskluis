@@ -15,6 +15,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
 import android.widget.*
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.google.android.gms.wearable.Wearable
 import org.json.JSONObject
 
@@ -54,8 +55,13 @@ class MainActivity : Activity() {
     private var scroll: ScrollView? = null
     private var logos = emptyMap<String, Bitmap>()
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
-    private fun text(nl: String,en: String) = if(Snapshots.read(this)?.optString("language") == "en") en else nl
+    private fun text(nl: String,en: String): String {
+        val language = Snapshots.read(this)?.optString("language")?.takeIf { it.isNotBlank() }
+            ?: resources.configuration.locales[0].language
+        return if(language == "nl") nl else en
+    }
     override fun onCreate(state: Bundle?) {
+        installSplashScreen()
         super.onCreate(state)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         show()
@@ -113,7 +119,7 @@ class MainActivity : Activity() {
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
             val p = (resources.displayMetrics.widthPixels*0.12).toInt(); setPadding(p,p,p,p)
-            setBackgroundColor(Color.rgb(14,18,28))
+            setBackgroundColor(Color.BLACK)
         }
         fun label(value: String, size: Float, color: Int = Color.WHITE) = TextView(this).apply {
             text = value; textSize = size; gravity = Gravity.CENTER; setTextColor(color)
@@ -202,7 +208,17 @@ class MainActivity : Activity() {
         }
         layout.addView(action(text("Instellingen","Settings")) { settings = true; show() })
         }
-        scroll = ScrollView(this).apply { setBackgroundColor(Color.rgb(14,18,28)); isVerticalScrollBarEnabled = false; addView(layout); isFocusableInTouchMode = true }
+        scroll = ScrollView(this).apply {
+            setBackgroundColor(Color.BLACK)
+            isVerticalScrollBarEnabled = true
+            isScrollbarFadingEnabled = false
+            scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+            scrollBarSize = dp(3)
+            verticalScrollbarThumbDrawable = android.graphics.drawable.ColorDrawable(Color.WHITE)
+            verticalScrollbarTrackDrawable = android.graphics.drawable.ColorDrawable(Color.DKGRAY)
+            addView(layout)
+            isFocusableInTouchMode = true
+        }
         setContentView(scroll); scroll?.requestFocus()
     }
     private val endScan = Runnable { selected = null; show() }
@@ -212,17 +228,23 @@ class MainActivity : Activity() {
         private val paint = Paint().apply { isAntiAlias = false }
         init { contentDescription = card.getString("name"); setOnClickListener { selected = null; show() } }
         override fun onDraw(canvas: Canvas) {
-            canvas.drawColor(Color.WHITE)
+            canvas.drawColor(Color.BLACK)
             val w = card.getInt("width"); val h = card.getInt("height")
             val q = if(h == 1) 10 else 4
             // Fit the full quiet zone within the round display. Never interpolate modules.
             val usable = (minOf(width,height)*(if(h == 1) 0.90 else 0.70)).toInt()
             val m = minOf(usable/(w+2*q), if(h == 1) Int.MAX_VALUE else usable/(h+2*q))
-            paint.color = Color.BLACK
+            paint.color = Color.WHITE
             paint.textAlign = Paint.Align.CENTER; paint.textSize = 12*resources.displayMetrics.scaledDensity
             if(m < (if(h == 1) 1 else 2)) { canvas.drawText(text("Gebruik je telefoon","Use your phone"),width/2f,height/2f,paint); return }
             val bh = if(h == 1) (height*0.34).toInt() else h*m
             val x0 = (width-w*m)/2; val y0 = (height-bh)/2
+            // Only the scan area is white. Preserve the full quiet zone around
+            // the unchanged barcode/QR modules while the watch background stays black.
+            val verticalQuiet = if(h == 1) dp(8) else q*m
+            canvas.drawRect((x0-q*m).toFloat(),(y0-verticalQuiet).toFloat(),
+                (x0+(w+q)*m).toFloat(),(y0+bh+verticalQuiet).toFloat(),paint)
+            paint.color = Color.BLACK
             val bits = card.getString("bits")
             for(y in 0 until h) for(x in 0 until w) {
                 val i = y*w+x
@@ -232,6 +254,7 @@ class MainActivity : Activity() {
                 }
             }
             val name = android.text.TextUtils.ellipsize(card.getString("name"),android.text.TextPaint(paint),usable.toFloat(),android.text.TextUtils.TruncateAt.END).toString()
+            paint.color = Color.WHITE
             paint.isAntiAlias = true
             canvas.drawText(name,width/2f,(height*0.16).toFloat(),paint)
             val code = card.getString("code")

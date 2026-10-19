@@ -1,13 +1,21 @@
 name: Render Wear OS test-store screenshots
-# Verify all three card categories and round branding.
+# Verify Play review requirements, all three categories and round branding.
 on:
   push:
-    branches: ['codex/smartwatch-beta']
+    branches: ['codex/smartwatch-beta', 'codex/wear-review-fixes']
     paths: ['.github/workflows/watch-store-preview.yml', 'android/wear/src/androidTest/**']
 permissions:
   contents: read
 jobs:
   wear-preview:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - api: 30
+            arch: x86
+          - api: 35
+            arch: x86_64
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -30,7 +38,7 @@ jobs:
           cp build/watch-fixtures.json android/wear/src/androidTest/assets/
           cp assets/logos/albert_heijn.png android/wear/src/androidTest/assets/
           cd android
-          gradle :wear:assembleDebug :wear:assembleDebugAndroidTest
+          gradle :wear:assembleDebug :wear:assembleDebugAndroidTest :wear:testDebugUnitTest
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -38,9 +46,9 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30
+          api-level: ${{ matrix.api }}
           target: android-wear
-          arch: x86
+          arch: ${{ matrix.arch }}
           profile: wearos_small_round
           disable-animations: true
           script: |
@@ -54,7 +62,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: wear-store-preview
+          name: wear-store-preview-${{ matrix.api }}
           path: |
             store-preview/*.png
             wear-preview.log

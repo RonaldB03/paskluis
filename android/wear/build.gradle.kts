@@ -33,6 +33,7 @@ android {
     }
 }
 dependencies {
+    implementation("androidx.core:core-splashscreen:1.2.0")
     implementation("com.google.android.gms:play-services-wearable:19.0.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

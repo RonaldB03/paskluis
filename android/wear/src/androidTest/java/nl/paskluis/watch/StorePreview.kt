@@ -5,6 +5,11 @@ import android.app.Instrumentation
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.LayerDrawable
+import android.util.TypedValue
+import android.view.ContextThemeWrapper
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -19,6 +24,13 @@ class StorePreview : Instrumentation() {
     override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); start() }
     override fun onStart() {
         try {
+            val launchTheme = ContextThemeWrapper(targetContext, R.style.Theme_PasKluis_Starting)
+            val background = TypedValue()
+            check(launchTheme.theme.resolveAttribute(androidx.core.splashscreen.R.attr.windowSplashScreenBackground, background, true))
+            check(background.data == Color.BLACK) { "Splash screen background must be black" }
+            val splash = launchTheme.getDrawable(R.drawable.splash_screen) as LayerDrawable
+            val iconSize = (48 * targetContext.resources.displayMetrics.density + 0.5f).toInt()
+            check(splash.getLayerWidth(0) == iconSize && splash.getLayerHeight(0) == iconSize) { "Splash launcher icon must be 48dp" }
             val fixtures = JSONArray(context.assets.open("watch-fixtures.json").bufferedReader().use { it.readText() })
             val cards = JSONArray().put(fixtures.getJSONObject(0).put("name", "Albert Heijn").put("favorite",true))
                 .put(fixtures.getJSONObject(fixtures.length()-1).put("name", "Voorbeeld QR").put("category","qr"))
@@ -58,6 +70,8 @@ class StorePreview : Instrumentation() {
             var scrollDimensions = ""
             runOnMainSync {
                 val scroller = findScroll(activity.window.decorView)!!
+                check(scroller.isVerticalScrollBarEnabled && !scroller.isScrollbarFadingEnabled) { "Scroll position must remain visible" }
+                check((scroller.background as ColorDrawable).color == Color.BLACK)
                 scroller.isSmoothScrollingEnabled = false
                 scroller.scrollTo(0, scroller.getChildAt(0).height)
                 scrolledY = scroller.scrollY
@@ -73,6 +87,7 @@ class StorePreview : Instrumentation() {
             }
             waitForIdleSync()
             capture(activity,"wear-barcode.png")
+            assertScanSurface(activity)
             runOnMainSync {
                 val time=android.os.SystemClock.uptimeMillis()
                 val w=activity.resources.displayMetrics.widthPixels.toFloat()
@@ -94,6 +109,7 @@ class StorePreview : Instrumentation() {
             runOnMainSync { findButton(activity.window.decorView, "Voorbeeld QR")!!.performClick() }
             waitForIdleSync()
             capture(activity, "wear-qr.png")
+            assertScanSurface(activity)
             runOnMainSync { activity.onBackPressed() }
             waitForIdleSync()
             runOnMainSync { findButton(activity.window.decorView,"🎁")!!.performClick() }
@@ -107,6 +123,11 @@ class StorePreview : Instrumentation() {
             runOnMainSync { findButton(activity.window.decorView,"Instellingen")!!.performClick() }
             waitForIdleSync()
             capture(activity,"wear-settings.png")
+            runOnMainSync {
+                val scroller = findScroll(activity.window.decorView)!!
+                check(scroller.isVerticalScrollBarEnabled)
+                check((scroller.background as ColorDrawable).color == Color.BLACK)
+            }
             runOnMainSync { Snapshots.erase(targetContext); activity.finish() }
             check(Snapshots.read(targetContext)?.getJSONArray("cards")?.length() == 0)
             check(WatchLogos.read(targetContext,snapshot).isEmpty())
@@ -142,6 +163,22 @@ class StorePreview : Instrumentation() {
     }
     private fun capture(activity: Activity, name: String) {
         runOnMainSync { captureOnMain(activity, name) }
+    }
+    private fun assertScanSurface(activity: Activity) {
+        runOnMainSync {
+            val view = findCode(activity.window.decorView)!!
+            val bitmap = Bitmap.createBitmap(view.width,view.height,Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            check(bitmap.getPixel(view.width/2, 0) == Color.BLACK) { "Scan screen background must be black" }
+            check(bitmap.getPixel(view.width/2, view.height-1) == Color.BLACK)
+            // A white quiet zone must remain around the code, not an inverted code.
+            var whitePixels = 0
+            for(y in view.height/3 until view.height*2/3) for(x in view.width/3 until view.width*2/3) {
+                if(bitmap.getPixel(x,y) == Color.WHITE) whitePixels++
+            }
+            check(whitePixels > 0) { "Codes need a white scan surface" }
+            bitmap.recycle()
+        }
     }
     private fun captureOnMain(activity: Activity, name: String) {
             check(activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0)
