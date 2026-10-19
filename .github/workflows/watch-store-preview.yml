@@ -14,8 +14,10 @@ jobs:
         include:
           - api: 30
             arch: x86
-          - api: 35
+            target: android-wear
+          - api: 36
             arch: x86_64
+            target: android-wear-signed
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -47,7 +49,7 @@ jobs:
       - uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api }}
-          target: android-wear
+          target: ${{ matrix.target }}
           arch: ${{ matrix.arch }}
           profile: wearos_small_round
           disable-animations: true

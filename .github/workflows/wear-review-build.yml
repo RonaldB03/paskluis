@@ -1,4 +1,5 @@
 name: Build signed Wear OS review correction
+# Use the official Flutter Gradle wrapper for the isolated Wear module.
 on:
   push:
     branches: ['codex/wear-review-fixes']

@@ -163,6 +163,13 @@ workflows:
           test "$CM_BRANCH" = "codex/wear-review-fixes"
           test -n "$CM_KEYSTORE_PATH"
           flutter pub get
+          # The phone build normally prepares the ignored Gradle launcher.
+          # This isolated Wear build uses Flutter's official wrapper directly.
+          FLUTTER_SDK=$(python3 -c 'import pathlib,shutil; print(pathlib.Path(shutil.which("flutter")).resolve().parents[1])')
+          cp "$FLUTTER_SDK/bin/cache/artifacts/gradle_wrapper/gradlew" android/gradlew
+          cp "$FLUTTER_SDK/bin/cache/artifacts/gradle_wrapper/gradle/wrapper/gradle-wrapper.jar" android/gradle/wrapper/gradle-wrapper.jar
+          chmod +x android/gradlew
+          printf 'flutter.sdk=%s\nsdk.dir=%s\n' "$FLUTTER_SDK" "$ANDROID_HOME" > android/local.properties
       - name: Build and test signed Wear OS correction
         script: |
           set -euo pipefail
