@@ -69,8 +69,42 @@ jobs:
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 15.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' ios/Runner.xcodeproj/project.pbxproj
           flutter pub get
           mkdir -p native-results
+          # Google's OCR binaries have no arm64 simulator slice. This harness
+          # exercises display layouts only; keep Dart APIs but omit these two
+          # native plugin registrations in copied, test-only dependencies.
+          python3 - <<'PY'
+          import json, shutil
+          from pathlib import Path
+          from urllib.parse import urlparse, unquote
+          config=Path('.dart_tool/package_config.json')
+          packages=json.loads(config.read_text())['packages']
+          overrides=['dependency_overrides:']
+          for name in ['google_mlkit_commons', 'google_mlkit_text_recognition']:
+              item=next(p for p in packages if p['name']==name)
+              uri=item['rootUri']
+              source=Path(unquote(urlparse(uri).path)) if uri.startswith('file:') else (config.parent / uri).resolve()
+              dest=Path('qa_dependencies') / name
+              shutil.copytree(source, dest)
+              manifest=dest / 'pubspec.yaml'
+              lines=manifest.read_text().splitlines(True)
+              result=[]
+              omit=False
+              for line in lines:
+                  if line.startswith('      ios:'):
+                      omit=True
+                      continue
+                  if omit and line.strip() and not line.startswith('        '):
+                      omit=False
+                  if not omit:
+                      result.append(line)
+              manifest.write_text(''.join(result))
+              overrides += ['  '+name+':', '    path: '+str(dest)]
+          Path('pubspec_overrides.yaml').write_text('\n'.join(overrides)+'\n')
+          Path('native-results/scope.txt').write_text('Layout-only native harness. Native ML Kit text recognition omitted because its binaries exclude arm64 simulators. No camera/OCR/backend/watch test.\n')
+          PY
+          flutter pub get
           set -o pipefail
-          flutter build ios --simulator --debug --no-codesign --target integration_test/native_test.dart 2>&1 | tee native-results/build.log
+          flutter build ios --simulator --debug --no-codesign --target integration_test/native_test.dart --verbose 2>&1 | tee native-results/build.log
       - name: Boot native Duo simulator and test actual screen metrics
         run: |
           set -euo pipefail
