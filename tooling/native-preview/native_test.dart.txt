@@ -15,6 +15,9 @@ void main() {
   Future<void> ready(WidgetTester tester) async {
     await tester.pump();
     await Future<void>.delayed(const Duration(milliseconds: 900));
+    // Match the test render surface to the actual native window after changes.
+    // Keep this in the harness; never substitute a hypothetical device size.
+    await binding.setSurfaceSize(tester.view.physicalSize / tester.view.devicePixelRatio);
     await tester.pump(const Duration(milliseconds: 300));
   }
   Future<void> shot(WidgetTester tester, String name) async {
@@ -23,9 +26,14 @@ void main() {
     final view = tester.view;
     final context = tester.element(find.byType(Scaffold).first);
     final size = MediaQuery.sizeOf(context);
+    final actualWindow = view.physicalSize / view.devicePixelRatio;
+    final renderedSize = tester.getSize(find.byType(Scaffold).first);
+    expect(renderedSize.width, closeTo(actualWindow.width, 0.1), reason: 'Rendered width matches native window');
+    expect(renderedSize.height, closeTo(actualWindow.height, 0.1), reason: 'Rendered height matches native window');
     metrics.add({'name': name, 'physicalWidth': view.physicalSize.width,
       'physicalHeight': view.physicalSize.height, 'pixelRatio': view.devicePixelRatio,
       'logicalWidth': size.width, 'logicalHeight': size.height,
+      'renderedWidth': renderedSize.width, 'renderedHeight': renderedSize.height,
       'padding': MediaQuery.paddingOf(context).toString(),
       'features': MediaQuery.of(context).displayFeatures.toString()});
     for (final qr in tester.widgetList<QrImageView>(find.byType(QrImageView))) {
@@ -78,4 +86,3 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }
-

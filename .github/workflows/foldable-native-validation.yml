@@ -116,7 +116,7 @@ jobs:
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl io "$UDID" enumerate > native-results/displays.txt
-          flutter drive --verbose --driver=test_driver/native_driver.dart --target=integration_test/native_test.dart -d "$UDID" --no-pub 2>&1 | tee native-results/test.log
+          flutter drive --verbose --use-application-binary=build/ios/iphonesimulator/Runner.app --driver=test_driver/native_driver.dart --target=integration_test/native_test.dart -d "$UDID" --no-pub 2>&1 | tee native-results/test.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -125,5 +125,4 @@ jobs:
             ${{ runner.temp }}/native-layout/native-results/
             ${{ runner.temp }}/native-layout/build/integration_response_data.json
           retention-days: 7
-
 
