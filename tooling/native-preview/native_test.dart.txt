@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +12,11 @@ import 'package:paskluis_v1/shared/widgets/main_tab_swipe_region.dart';
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   final metrics = <Map<String, Object?>>[];
+  final captureKey = GlobalKey();
+  Widget captureApp(Widget screen) => RepaintBoundary(
+    key: captureKey,
+    child: app.testApp(screen),
+  );
   setUpAll(() async { await app.initializeFixtures(); });
   Future<void> ready(WidgetTester tester) async {
     await tester.pump();
@@ -47,13 +53,23 @@ void main() {
     await binding.takeScreenshot(name);
     binding.reportData ??= {};
     binding.reportData!['nativeMetrics'] = metrics;
+    // Independent Flutter-layer capture distinguishes a UIKit capture/rotation
+    // problem from an incorrectly laid out app. Do not replace the native PNG.
+    final boundary = captureKey.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+    final renderedImage = await boundary.toImage(pixelRatio: view.devicePixelRatio);
+    final renderedBytes = await renderedImage.toByteData(format: ui.ImageByteFormat.png);
+    (binding.reportData!['screenshots'] as List<dynamic>).add({
+      'screenshotName': '$name-flutter',
+      'bytes': renderedBytes!.buffer.asUint8List().toList(),
+    });
+    renderedImage.dispose();
   }
   for (final entry in <String, String>{
     'loyalty': 'Klantenkaarten', 'gifts': 'Cadeaukaarten', 'qr': 'QR-codes',
     'loyalty-pass': 'Klantenkaart openen', 'gift-pass': 'Cadeaukaart openen', 'qr-set': 'QR-set openen',
   }.entries) {
     testWidgets('native ${entry.key} fits actual device', (tester) async {
-      await tester.pumpWidget(app.testApp(app.testScreen(entry.value)));
+      await tester.pumpWidget(captureApp(app.testScreen(entry.value)));
       await shot(tester, entry.key);
       if (!entry.key.contains('pass') && entry.key != 'qr-set') {
         final context = tester.element(find.byType(Scaffold).first);
@@ -69,13 +85,15 @@ void main() {
     });
   }
   testWidgets('selected pass survives a native orientation request', (tester) async {
-    await tester.pumpWidget(app.testApp(app.testScreen('Klantenkaart openen')));
+    await tester.pumpWidget(captureApp(app.testScreen('Klantenkaart openen')));
     await ready(tester);
     final controller = tester.widget<PageView>(find.byType(PageView)).controller!;
     controller.jumpToPage(3);
     await ready(tester);
     await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft]);
     await shot(tester, 'loyalty-selected-landscape-request');
+    expect(tester.widget<Scaffold>(find.byType(Scaffold).first).appBar, isNull,
+      reason: 'A short native window uses the compact barcode layout');
     expect(controller.page, closeTo(3, 0.01));
     expect(find.text('Jumbo'), findsOneWidget);
     await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -86,3 +104,4 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }
+
