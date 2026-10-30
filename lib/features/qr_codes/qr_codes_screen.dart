@@ -9,7 +9,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../data/services/location_service.dart';
@@ -516,7 +515,7 @@ class QrCodesScreen extends StatelessWidget {
                         itemCount: items.length,
                         gridDelegate: const AdaptiveCardGridDelegate(
                           spacing: 16,
-                          childAspectRatio: 1.0,
+                          childAspectRatio: 0.85,
                         ),
                         itemBuilder: (context, index) {
                           final item = items[index];
@@ -1267,13 +1266,7 @@ class _QrTile extends StatelessWidget {
                             size: 64,
                             color: Color(0xFFD51B46),
                           )
-                        : QrImageView(
-                            data: firstCode,
-                            version: QrVersions.auto,
-                            size: 86,
-                            backgroundColor: Colors.white,
-                            errorCorrectionLevel: QrErrorCorrectLevel.M,
-                          ),
+                        : AdaptiveQrCode(data: firstCode, maxSize: 86),
                   ),
                 ),
                 const SizedBox(height: 8),
