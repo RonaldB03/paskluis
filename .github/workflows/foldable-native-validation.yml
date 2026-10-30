@@ -2,7 +2,7 @@ name: Native Duo layout validation only
 on:
   push:
     branches: [codex/foldable-native-validation]
-    paths: [tooling/native-preview/**, .github/workflows/foldable-native-validation.yml]
+    paths: [lib/**, tooling/native-preview/**, .github/workflows/foldable-native-validation.yml]
 permissions:
   contents: read
 jobs:
@@ -116,7 +116,7 @@ jobs:
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl io "$UDID" enumerate > native-results/displays.txt
-          flutter drive --driver=test_driver/native_driver.dart --target=integration_test/native_test.dart -d "$UDID" --no-pub 2>&1 | tee native-results/test.log
+          flutter drive --verbose --driver=test_driver/native_driver.dart --target=integration_test/native_test.dart -d "$UDID" --no-pub 2>&1 | tee native-results/test.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
