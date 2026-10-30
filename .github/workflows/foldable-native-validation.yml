@@ -104,7 +104,7 @@ jobs:
           PY
           flutter pub get
           set -o pipefail
-          flutter build ios --simulator --debug --no-codesign --target integration_test/native_test.dart --verbose 2>&1 | tee native-results/build.log
+          flutter build ios --simulator --debug --target integration_test/native_test.dart --verbose 2>&1 | tee native-results/build.log
       - name: Boot native Duo simulator and test actual screen metrics
         run: |
           set -euo pipefail
@@ -117,6 +117,20 @@ jobs:
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl io "$UDID" enumerate > native-results/displays.txt
           flutter drive --verbose --use-application-binary=build/ios/iphonesimulator/Runner.app --driver=test_driver/native_driver.dart --target=integration_test/native_test.dart -d "$UDID" --no-pub 2>&1 | tee native-results/test.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('build/integration_response_data.json').read_text())
+          assert isinstance(report, dict), 'No native evidence was returned'
+          metrics = report.get('nativeMetrics', [])
+          assert len(metrics) == 8, 'Expected eight native screenshots and measurements'
+          for item in metrics:
+              assert abs(item['renderedWidth'] - item['physicalWidth'] / item['pixelRatio']) < 0.1
+              assert abs(item['renderedHeight'] - item['physicalHeight'] / item['pixelRatio']) < 0.1
+              assert (Path('native-results/screens') / (item['name'] + '.png')).is_file()
+          assert 'Some tests failed' not in Path('native-results/test.log').read_text()
+          print('Verified all eight native captures, measured render surfaces and test results')
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -125,4 +139,5 @@ jobs:
             ${{ runner.temp }}/native-layout/native-results/
             ${{ runner.temp }}/native-layout/build/integration_response_data.json
           retention-days: 7
+
 
