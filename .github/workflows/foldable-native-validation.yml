@@ -7,6 +7,7 @@ permissions:
   contents: read
 jobs:
   samsung-test-apk:
+    if: ${{ !contains(github.event.head_commit.message, '[duo-only]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -54,8 +55,10 @@ jobs:
           echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
       - name: Create offline native harness
         run: |
+          flutter config --no-enable-swift-package-manager
           flutter create --platforms=ios --org nl.paskluis.qa --project-name paskluis_v1 --no-pub "$RUNNER_TEMP/native-layout"
           cp -R lib assets "$RUNNER_TEMP/native-layout/"
+          cp ios/Podfile "$RUNNER_TEMP/native-layout/ios/Podfile"
           cp tooling/native-preview/pubspec.yaml tooling/native-preview/pubspec.lock l10n.yaml "$RUNNER_TEMP/native-layout/"
           cp tooling/native-preview/main.dart.txt "$RUNNER_TEMP/native-layout/lib/main.dart"
           cp tooling/native-preview/qa_fixtures.dart.txt "$RUNNER_TEMP/native-layout/lib/qa_fixtures.dart"
@@ -65,7 +68,9 @@ jobs:
           cd "$RUNNER_TEMP/native-layout"
           sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 15.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' ios/Runner.xcodeproj/project.pbxproj
           flutter pub get
-          flutter build ios --simulator --debug --no-codesign --target integration_test/native_test.dart
+          mkdir -p native-results
+          set -o pipefail
+          flutter build ios --simulator --debug --no-codesign --target integration_test/native_test.dart 2>&1 | tee native-results/build.log
       - name: Boot native Duo simulator and test actual screen metrics
         run: |
           set -euo pipefail
@@ -86,4 +91,5 @@ jobs:
             ${{ runner.temp }}/native-layout/native-results/
             ${{ runner.temp }}/native-layout/build/integration_response_data.json
           retention-days: 7
+
 
