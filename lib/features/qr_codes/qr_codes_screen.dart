@@ -503,28 +503,32 @@ class QrCodesScreen extends StatelessWidget {
                 ),
               ],
             ),
-            body: MainTabSwipeRegion(
-              currentIndex: 2,
-              onSwitch: (index) => openTab(context, index),
-              child: items.isEmpty
-                  ? _EmptyQrState(onAdd: () => openAddQrCode(context))
-                  : GridView.builder(
-                      padding: const EdgeInsets.all(24),
-                      itemCount: items.length,
-                      gridDelegate: const AdaptiveCardGridDelegate(
-                        spacing: 16,
-                        childAspectRatio: 1.0,
-                      ),
-                      itemBuilder: (context, index) {
-                        final item = items[index];
+            body: SafeArea(
+              top: false,
+              bottom: false,
+              child: MainTabSwipeRegion(
+                currentIndex: 2,
+                onSwitch: (index) => openTab(context, index),
+                child: items.isEmpty
+                    ? _EmptyQrState(onAdd: () => openAddQrCode(context))
+                    : GridView.builder(
+                        padding: const EdgeInsets.all(24),
+                        itemCount: items.length,
+                        gridDelegate: const AdaptiveCardGridDelegate(
+                          spacing: 16,
+                          childAspectRatio: 1.0,
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
 
-                        return _QrTile(
-                          item: item,
-                          onTap: () => openQrView(context, items, index),
-                          onLongPress: () => showQrOptions(context, item),
-                        );
-                      },
-                    ),
+                          return _QrTile(
+                            item: item,
+                            onTap: () => openQrView(context, items, index),
+                            onLongPress: () => showQrOptions(context, item),
+                          );
+                        },
+                      ),
+              ),
             ),
             bottomNavigationBar: MainBottomNav(
               currentIndex: 2,
@@ -1354,3 +1358,4 @@ class _OptionTile extends StatelessWidget {
     );
   }
 }
+

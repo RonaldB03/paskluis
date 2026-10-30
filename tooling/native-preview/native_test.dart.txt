@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:paskluis_v1/main.dart' as app;
+import 'package:paskluis_v1/shared/widgets/main_tab_swipe_region.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -47,6 +48,11 @@ void main() {
       await tester.pumpWidget(app.testApp(app.testScreen(entry.value)));
       await shot(tester, entry.key);
       if (!entry.key.contains('pass') && entry.key != 'qr-set') {
+        final context = tester.element(find.byType(Scaffold).first);
+        final media = MediaQuery.of(context);
+        final content = tester.getRect(find.byType(MainTabSwipeRegion));
+        expect(content.left, greaterThanOrEqualTo(media.padding.left));
+        expect(content.right, lessThanOrEqualTo(media.size.width - media.padding.right));
         final grid = tester.renderObject<RenderSliverGrid>(find.byType(SliverGrid).first);
         final layout = grid.gridDelegate.getLayout(grid.constraints) as SliverGridRegularTileLayout;
         expect(layout.crossAxisCount, greaterThanOrEqualTo(grid.constraints.crossAxisExtent >= 600 ? 3 : 1));
@@ -72,3 +78,4 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }
+

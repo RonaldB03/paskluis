@@ -489,52 +489,56 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
                 ),
               ],
             ),
-            body: MainTabSwipeRegion(
-              currentIndex: 1,
-              onSwitch: (index) => openTab(context, index),
-              child: RefreshIndicator(
-                onRefresh: _refreshCards,
-                color: const Color(0xFFD51B46),
-                child: items.isEmpty
-                    ? LayoutBuilder(
-                        builder: (context, constraints) =>
-                            SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  minHeight: constraints.maxHeight,
-                                ),
-                                child: _EmptyCardsState(
-                                  onAdd: () => openAddCard(context),
+            body: SafeArea(
+              top: false,
+              bottom: false,
+              child: MainTabSwipeRegion(
+                currentIndex: 1,
+                onSwitch: (index) => openTab(context, index),
+                child: RefreshIndicator(
+                  onRefresh: _refreshCards,
+                  color: const Color(0xFFD51B46),
+                  child: items.isEmpty
+                      ? LayoutBuilder(
+                          builder: (context, constraints) =>
+                              SingleChildScrollView(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    minHeight: constraints.maxHeight,
+                                  ),
+                                  child: _EmptyCardsState(
+                                    onAdd: () => openAddCard(context),
+                                  ),
                                 ),
                               ),
-                            ),
-                      )
-                    : GridView.builder(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        itemCount: items.length,
-                        gridDelegate: AdaptiveCardGridDelegate(
-                          extraClear: SettingsService.extraClearEnabled,
-                          childAspectRatio: SettingsService.extraClearEnabled
-                              ? 2.65
-                              : 1.58,
-                        ),
-                        itemBuilder: (context, index) {
-                          final item = items[index];
+                        )
+                      : GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          itemCount: items.length,
+                          gridDelegate: AdaptiveCardGridDelegate(
+                            extraClear: SettingsService.extraClearEnabled,
+                            childAspectRatio: SettingsService.extraClearEnabled
+                                ? 2.65
+                                : 1.58,
+                          ),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
 
-                          return StoredCardTile(
-                            key: ValueKey(item['id']),
-                            item: item,
-                            distanceMeters: _nearbyDistance(item),
-                            onTap: () => openCard(context, items, index),
-                            onLongPress: () => showCardOptions(context, item),
-                          );
-                        },
-                      ),
+                            return StoredCardTile(
+                              key: ValueKey(item['id']),
+                              item: item,
+                              distanceMeters: _nearbyDistance(item),
+                              onTap: () => openCard(context, items, index),
+                              onLongPress: () => showCardOptions(context, item),
+                            );
+                          },
+                        ),
+                ),
               ),
             ),
             bottomNavigationBar: MainBottomNav(
@@ -812,3 +816,4 @@ class _OptionTile extends StatelessWidget {
     );
   }
 }
+

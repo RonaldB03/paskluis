@@ -601,21 +601,25 @@ class _GiftCardsScreenState extends State<GiftCardsScreen>
                 ),
               ],
             ),
-            body: MainTabSwipeRegion(
-              currentIndex: 3,
-              onSwitch: (index) => openTab(context, index),
-              child: RefreshIndicator(
-                onRefresh: _refreshGiftCards,
-                color: const Color(0xFFD51B46),
-                child: _GiftCardsOverview(
-                  items: items,
-                  nearbyStoreMatches: _nearbyStoreMatches,
-                  hasPlus: _hasPlus,
-                  loadingPlus: _loadingPlus,
-                  onAdd: () => openAddGiftCard(context),
-                  onOpenPlus: () => _openPlus(context),
-                  onOpenCard: (index) => openGiftCard(context, items, index),
-                  onLongPress: (item) => showGiftCardOptions(context, item),
+            body: SafeArea(
+              top: false,
+              bottom: false,
+              child: MainTabSwipeRegion(
+                currentIndex: 3,
+                onSwitch: (index) => openTab(context, index),
+                child: RefreshIndicator(
+                  onRefresh: _refreshGiftCards,
+                  color: const Color(0xFFD51B46),
+                  child: _GiftCardsOverview(
+                    items: items,
+                    nearbyStoreMatches: _nearbyStoreMatches,
+                    hasPlus: _hasPlus,
+                    loadingPlus: _loadingPlus,
+                    onAdd: () => openAddGiftCard(context),
+                    onOpenPlus: () => _openPlus(context),
+                    onOpenCard: (index) => openGiftCard(context, items, index),
+                    onLongPress: (item) => showGiftCardOptions(context, item),
+                  ),
                 ),
               ),
             ),
@@ -1211,3 +1215,4 @@ class _OptionTile extends StatelessWidget {
     );
   }
 }
+
