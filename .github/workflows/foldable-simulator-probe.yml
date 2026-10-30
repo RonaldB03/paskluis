@@ -1,0 +1,38 @@
+name: Inspect foldable simulator availability
+on:
+  push:
+    branches: [codex/foldable-native-validation]
+    paths: [.github/workflows/foldable-simulator-probe.yml]
+permissions:
+  contents: read
+jobs:
+  duo-runtime:
+    runs-on: macos-latest
+    timeout-minutes: 8
+    steps:
+      - name: Inspect Xcode and Duo runtimes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p probe
+          sw_vers | tee probe/macos.txt
+          ls -d /Applications/Xcode*.app | tee probe/xcode-apps.txt
+          xcodebuild -version | tee probe/xcode-version.txt
+          xcrun simctl list devicetypes -j > probe/device-types.json
+          xcrun simctl list runtimes -j > probe/runtimes.json
+          xcrun simctl list devices available -j > probe/devices.json
+          python3 - <<'PY'
+          import json
+          types=json.load(open('probe/device-types.json'))['devicetypes']
+          duo=[x for x in types if 'Duo' in x['name']]
+          print('DUO_DEVICE_TYPES='+json.dumps(duo))
+          print('AVAILABLE_RUNTIMES='+json.dumps(json.load(open('probe/runtimes.json'))['runtimes']))
+          if not duo:
+              raise SystemExit('Duo simulator is not installed on this runner. No native Duo test was executed.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: duo-simulator-availability
+          path: probe/
+          retention-days: 7
