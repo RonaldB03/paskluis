@@ -1,0 +1,74 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:integration_test/integration_test.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:paskluis_v1/main.dart' as app;
+
+void main() {
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  final metrics = <Map<String, Object?>>[];
+  setUpAll(() async { await app.initializeFixtures(); });
+  Future<void> ready(WidgetTester tester) async {
+    await tester.pump();
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+  Future<void> shot(WidgetTester tester, String name) async {
+    await ready(tester);
+    expect(tester.takeException(), isNull);
+    final view = tester.view;
+    final context = tester.element(find.byType(Scaffold).first);
+    final size = MediaQuery.sizeOf(context);
+    metrics.add({'name': name, 'physicalWidth': view.physicalSize.width,
+      'physicalHeight': view.physicalSize.height, 'pixelRatio': view.devicePixelRatio,
+      'logicalWidth': size.width, 'logicalHeight': size.height,
+      'padding': MediaQuery.paddingOf(context).toString(),
+      'features': MediaQuery.of(context).displayFeatures.toString()});
+    for (final qr in tester.widgetList<QrImageView>(find.byType(QrImageView))) {
+      final rect = tester.getRect(find.byWidget(qr));
+      expect(rect.width, closeTo(rect.height, 0.1), reason: 'Native QR remains square');
+    }
+    if (Platform.isAndroid) {
+      await binding.convertFlutterSurfaceToImage();
+      await tester.pump();
+    }
+    await binding.takeScreenshot(name);
+    binding.reportData ??= {};
+    binding.reportData!['nativeMetrics'] = metrics;
+  }
+  for (final entry in <String, String>{
+    'loyalty': 'Klantenkaarten', 'gifts': 'Cadeaukaarten', 'qr': 'QR-codes',
+    'loyalty-pass': 'Klantenkaart openen', 'gift-pass': 'Cadeaukaart openen', 'qr-set': 'QR-set openen',
+  }.entries) {
+    testWidgets('native ${entry.key} fits actual device', (tester) async {
+      await tester.pumpWidget(app.testApp(app.testScreen(entry.value)));
+      await shot(tester, entry.key);
+      if (!entry.key.contains('pass') && entry.key != 'qr-set') {
+        final grid = tester.renderObject<RenderSliverGrid>(find.byType(SliverGrid).first);
+        final layout = grid.gridDelegate.getLayout(grid.constraints) as SliverGridRegularTileLayout;
+        expect(layout.crossAxisCount, greaterThanOrEqualTo(grid.constraints.crossAxisExtent >= 600 ? 3 : 1));
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
+  testWidgets('selected pass survives a native orientation request', (tester) async {
+    await tester.pumpWidget(app.testApp(app.testScreen('Klantenkaart openen')));
+    await ready(tester);
+    final controller = tester.widget<PageView>(find.byType(PageView)).controller!;
+    controller.jumpToPage(3);
+    await ready(tester);
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft]);
+    await shot(tester, 'loyalty-selected-landscape-request');
+    expect(controller.page, closeTo(3, 0.01));
+    expect(find.text('Jumbo'), findsOneWidget);
+    await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    await shot(tester, 'loyalty-selected-portrait-request');
+    expect(controller.page, closeTo(3, 0.01));
+    expect(find.text('Jumbo'), findsOneWidget);
+    await SystemChrome.setPreferredOrientations([]);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+}

@@ -1,0 +1,65 @@
+import 'package:flutter/material.dart';
+List<Map<String, dynamic>> loyaltyFixtures() => [
+  for (final entry in {
+    'Albert Heijn': 'albert-heijn',
+    'Gall & Gall': 'gall-gall',
+    'HEMA': 'hema',
+    'Jumbo': 'jumbo',
+    'Kruidvat': 'kruidvat',
+    'Action': 'action',
+    'Lidl': 'lidl',
+    'PLUS': 'plus',
+  }.entries)
+    {
+      'id': 'demo-${entry.value}',
+      'name': entry.key,
+      'type': 'Pasje',
+      'code': '1234567890128',
+      'barcodeType': 'ean13',
+      'logoAsset': 'assets/logos/managed/${entry.value}.png',
+      'brandColor': '${Colors.white.toARGB32()}',
+    },
+];
+
+List<Map<String, dynamic>> giftFixtures() => [
+  for (final entry in {
+    'Gall & Gall': 'gall-gall',
+    'VVV Cadeaukaart': 'vvv-cadeaukaart',
+    'HEMA': 'hema',
+    'bol.com': 'bol-com',
+  }.entries)
+    {
+      'id': 'gift-demo-${entry.value}',
+      'name': entry.key,
+      'type': 'Cadeaukaart',
+      'code': '123456789012345678901234567890',
+      'currentBalance': '25.00',
+      'expiryDate': '2030-12-31',
+      'logoAsset': 'assets/logos/managed/${entry.value}.png',
+      'brandColor': '${Colors.white.toARGB32()}',
+    },
+];
+
+List<Map<String, dynamic>> qrFixtures() => [
+  {
+    'name': 'Museumbezoek',
+    'type': 'QR-code',
+    'code': 'https://example.org/demo/museum',
+  },
+  {
+    'name': 'Fietsenstalling',
+    'type': 'QR-code',
+    'code': 'https://example.org/demo/fiets',
+  },
+  {
+    'name': 'Weekendtickets',
+    'type': 'QR-set',
+    'codes': 'DEMO-TICKET-1|||DEMO-TICKET-2|||DEMO-TICKET-3',
+  },
+  {
+    'name': 'Evenement',
+    'type': 'QR-code',
+    'code': 'https://example.org/demo/evenement',
+  },
+];
+

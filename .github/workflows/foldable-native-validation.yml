@@ -1,0 +1,89 @@
+name: Native Duo layout validation only
+on:
+  push:
+    branches: [codex/foldable-native-validation]
+    paths: [tooling/native-preview/**, .github/workflows/foldable-native-validation.yml]
+permissions:
+  contents: read
+jobs:
+  samsung-test-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install matching Flutter SDK
+        run: |
+          git clone --depth 1 --branch 3.47.6 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+      - name: Build isolated offline APK
+        run: |
+          flutter create --platforms=android --org nl.paskluis.qa --project-name paskluis_v1 --no-pub "$RUNNER_TEMP/native-layout"
+          cp -R lib assets "$RUNNER_TEMP/native-layout/"
+          cp tooling/native-preview/pubspec.yaml tooling/native-preview/pubspec.lock l10n.yaml "$RUNNER_TEMP/native-layout/"
+          cp tooling/native-preview/main.dart.txt "$RUNNER_TEMP/native-layout/lib/main.dart"
+          cp tooling/native-preview/qa_fixtures.dart.txt "$RUNNER_TEMP/native-layout/lib/qa_fixtures.dart"
+          cd "$RUNNER_TEMP/native-layout"
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android/app/build.gradle.kts')
+          s=p.read_text().replace('compileOptions {', 'compileOptions {\n        isCoreLibraryDesugaringEnabled = true')
+          s+='\ndependencies { coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4") }\n'
+          p.write_text(s)
+          p=Path('android/app/src/main/AndroidManifest.xml')
+          p.write_text(p.read_text().replace('android:label="paskluis_v1"','android:label="PasKluis Layouttest"'))
+          PY
+          flutter pub get
+          flutter build apk --debug --target-platform android-arm64 --no-pub
+      - uses: actions/upload-artifact@v4
+        with:
+          name: samsung-offline-layout-test-apk
+          path: ${{ runner.temp }}/native-layout/build/app/outputs/flutter-apk/*.apk
+          retention-days: 7
+  duo-layout:
+    runs-on: xcode-27
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install matching Flutter SDK
+        run: |
+          git clone --depth 1 --branch 3.47.6 https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+      - name: Create offline native harness
+        run: |
+          flutter create --platforms=ios --org nl.paskluis.qa --project-name paskluis_v1 --no-pub "$RUNNER_TEMP/native-layout"
+          cp -R lib assets "$RUNNER_TEMP/native-layout/"
+          cp tooling/native-preview/pubspec.yaml tooling/native-preview/pubspec.lock l10n.yaml "$RUNNER_TEMP/native-layout/"
+          cp tooling/native-preview/main.dart.txt "$RUNNER_TEMP/native-layout/lib/main.dart"
+          cp tooling/native-preview/qa_fixtures.dart.txt "$RUNNER_TEMP/native-layout/lib/qa_fixtures.dart"
+          mkdir -p "$RUNNER_TEMP/native-layout/integration_test" "$RUNNER_TEMP/native-layout/test_driver"
+          cp tooling/native-preview/native_test.dart.txt "$RUNNER_TEMP/native-layout/integration_test/native_test.dart"
+          cp tooling/native-preview/native_driver.dart.txt "$RUNNER_TEMP/native-layout/test_driver/native_driver.dart"
+          cd "$RUNNER_TEMP/native-layout"
+          sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 15.0/IPHONEOS_DEPLOYMENT_TARGET = 15.5/g' ios/Runner.xcodeproj/project.pbxproj
+          flutter pub get
+          flutter build ios --simulator --debug --no-codesign --target integration_test/native_test.dart
+      - name: Boot native Duo simulator and test actual screen metrics
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/native-layout"
+          mkdir -p native-results
+          xcodebuild -version > native-results/xcode.txt
+          UDID=$(xcrun simctl create PasKluis-Duo-QA com.apple.CoreSimulator.SimDeviceType.iPhone-Duo com.apple.CoreSimulator.SimRuntime.iOS-27-1)
+          echo "$UDID" > native-results/simulator.txt
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl io "$UDID" enumerate > native-results/displays.txt
+          flutter drive --driver=test_driver/native_driver.dart --target=integration_test/native_test.dart -d "$UDID" --no-pub 2>&1 | tee native-results/test.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-duo-layout-evidence
+          path: |
+            ${{ runner.temp }}/native-layout/native-results/
+            ${{ runner.temp }}/native-layout/build/integration_response_data.json
+          retention-days: 7
+

@@ -1,3 +1,4 @@
+import '../../shared/widgets/adaptive_vault_layout.dart';
 import '../../shared/widgets/share_stored_card.dart';
 import '../../shared/widgets/shared_card_save.dart';
 import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
@@ -44,8 +45,10 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
   int _nearbyRequest = 0;
   bool _refreshing = false;
 
-  bool get _nearbyEnabled => SettingsService.locationCardsEnabled &&
-      (SettingsService.showCardDistances || SettingsService.nearbyLoyaltyCardsFirst);
+  bool get _nearbyEnabled =>
+      SettingsService.locationCardsEnabled &&
+      (SettingsService.showCardDistances ||
+          SettingsService.nearbyLoyaltyCardsFirst);
 
   @override
   void initState() {
@@ -122,8 +125,11 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
 
   double? _nearbyDistance(Map<String, dynamic> item) {
     if (!_nearbyEnabled || !SettingsService.showCardDistances) return null;
-    final distance = _nearbyStoreMatches[item['id']?.toString()]?.distanceMeters;
-    return distance != null && distance.isFinite && distance >= 0 &&
+    final distance =
+        _nearbyStoreMatches[item['id']?.toString()]?.distanceMeters;
+    return distance != null &&
+            distance.isFinite &&
+            distance >= 0 &&
             distance <= LocationService.nearbyRadiusMeters
         ? distance
         : null;
@@ -134,7 +140,9 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
       _storedCards(),
       favoritesFirst: SettingsService.favoritesFirst,
       sortOrder: SettingsService.cardSortOrder,
-      nearbyFirst: SettingsService.locationCardsEnabled && SettingsService.nearbyLoyaltyCardsFirst,
+      nearbyFirst:
+          SettingsService.locationCardsEnabled &&
+          SettingsService.nearbyLoyaltyCardsFirst,
       nearbyRadiusMeters: LocationService.nearbyRadiusMeters,
       distances: _nearbyStoreMatches.map(
         (id, match) => MapEntry(id, match.distanceMeters),
@@ -324,7 +332,9 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
       context: context,
       builder: (_) => AlertDialog(
         title: Text(
-          isShared ? L10n.current.removeFromYourPaskluis : L10n.current.deleteCard,
+          isShared
+              ? L10n.current.removeFromYourPaskluis
+              : L10n.current.deleteCard,
         ),
         content: Text(
           isShared
@@ -334,14 +344,14 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child:  Text(L10n.current.cancel),
+            child: Text(L10n.current.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFD51B46),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child:  Text(L10n.current.delete),
+            child: Text(L10n.current.delete),
           ),
         ],
       ),
@@ -355,17 +365,13 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
           item['shareMembershipId']?.toString() ?? '',
         );
       } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
-        await CardShareService.revokeAllForCard(
-          item['id']?.toString() ?? '',
-        );
+        await CardShareService.revokeAllForCard(item['id']?.toString() ?? '');
       }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
-            content: Text(
-              L10n.current.sharedAccessCouldNotBeUpdatedTry,
-            ),
+          SnackBar(
+            content: Text(L10n.current.sharedAccessCouldNotBeUpdatedTry),
           ),
         );
       }
@@ -375,8 +381,9 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
 
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(L10n.current.hasBeenDeleted((name).toString()))));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(L10n.current.hasBeenDeleted((name).toString()))),
+    );
   }
 
   void showCardOptions(BuildContext context, Map<String, dynamic> item) {
@@ -457,77 +464,85 @@ class _CardsScreenState extends State<CardsScreen> with WidgetsBindingObserver {
         if (!didPop) openHome(context);
       },
       child: ValueListenableBuilder<Box>(
-      valueListenable: StorageService.cardsBox.listenable(),
-      builder: (context, box, _) {
-        final items = getItems();
+        valueListenable: StorageService.cardsBox.listenable(),
+        builder: (context, box, _) {
+          final items = getItems();
 
-        return Scaffold(
-          backgroundColor: const Color(0xFFF4F4F6),
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            leadingWidth: 56,
-            leading: const SizedBox.shrink(),
-            backgroundColor: Colors.white,
-            elevation: 0,
-            centerTitle: true,
-            title:  PremiumAppTitle(L10n.current.loyaltyCards),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
-                onPressed: () => openAddCard(context),
-              ),
-            ],
-          ),
-          body: MainTabSwipeRegion(
-            currentIndex: 1,
-            onSwitch: (index) => openTab(context, index),
-            child: RefreshIndicator(
-              onRefresh: _refreshCards,
-              color: const Color(0xFFD51B46),
-              child: items.isEmpty
-                ? LayoutBuilder(
-                    builder: (context, constraints) => SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                        child: _EmptyCardsState(onAdd: () => openAddCard(context)),
-                      ),
-                    ),
-                  )
-                : GridView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+          return Scaffold(
+            backgroundColor: const Color(0xFFF4F4F6),
+            appBar: AppBar(
+              automaticallyImplyLeading: false,
+              leadingWidth: 56,
+              leading: const SizedBox.shrink(),
+              backgroundColor: Colors.white,
+              elevation: 0,
+              centerTitle: true,
+              title: PremiumAppTitle(L10n.current.loyaltyCards),
+              actions: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.add,
+                    color: Color(0xFFD51B46),
+                    size: 32,
                   ),
-                  itemCount: items.length,
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio:
-                        SettingsService.extraClearEnabled ? 2.65 : 1.58,
-                  ),
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-
-                    return StoredCardTile(
-                      key: ValueKey(item['id']),
-                      item: item,
-                      distanceMeters: _nearbyDistance(item),
-                      onTap: () => openCard(context, items, index),
-                      onLongPress: () => showCardOptions(context, item),
-                    );
-                  },
-                  ),
+                  onPressed: () => openAddCard(context),
+                ),
+              ],
             ),
-          ),
-          bottomNavigationBar: MainBottomNav(
-            currentIndex: 1,
-            onTap: (index) => openTab(context, index),
-          ),
-        );
-      },
+            body: MainTabSwipeRegion(
+              currentIndex: 1,
+              onSwitch: (index) => openTab(context, index),
+              child: RefreshIndicator(
+                onRefresh: _refreshCards,
+                color: const Color(0xFFD51B46),
+                child: items.isEmpty
+                    ? LayoutBuilder(
+                        builder: (context, constraints) =>
+                            SingleChildScrollView(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: _EmptyCardsState(
+                                  onAdd: () => openAddCard(context),
+                                ),
+                              ),
+                            ),
+                      )
+                    : GridView.builder(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        itemCount: items.length,
+                        gridDelegate: AdaptiveCardGridDelegate(
+                          extraClear: SettingsService.extraClearEnabled,
+                          childAspectRatio: SettingsService.extraClearEnabled
+                              ? 2.65
+                              : 1.58,
+                        ),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+
+                          return StoredCardTile(
+                            key: ValueKey(item['id']),
+                            item: item,
+                            distanceMeters: _nearbyDistance(item),
+                            onTap: () => openCard(context, items, index),
+                            onLongPress: () => showCardOptions(context, item),
+                          );
+                        },
+                      ),
+              ),
+            ),
+            bottomNavigationBar: MainBottomNav(
+              currentIndex: 1,
+              onTap: (index) => openTab(context, index),
+            ),
+          );
+        },
       ),
     );
   }
@@ -546,11 +561,10 @@ class _EmptyCardsState extends StatelessWidget {
       icon: Icons.card_membership_rounded,
       eyebrow: L10n.current.everythingAtHand,
       title: L10n.current.addYourFirstLoyaltyCard,
-      subtitle:
-          L10n.current.chooseAStoreScanTheBarcodeOr,
+      subtitle: L10n.current.chooseAStoreScanTheBarcodeOr,
       buttonLabel: L10n.current.addLoyaltyCard,
       onPressed: onAdd,
-      footer:  Row(
+      footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.lock_outline_rounded, size: 17, color: Color(0xFF77717D)),
@@ -623,7 +637,16 @@ class _StoredCardTileState extends State<StoredCardTile> {
 
     return Semantics(
       button: true,
-      label: L10n.current.loyaltyCard((title).toString(), (isFavorite ? L10n.current.favourite : '').toString(), (widget.distanceMeters == null ? '' : L10n.current.away(LocationService.formatDistance(widget.distanceMeters!))).toString()),
+      label: L10n.current.loyaltyCard(
+        (title).toString(),
+        (isFavorite ? L10n.current.favourite : '').toString(),
+        (widget.distanceMeters == null
+                ? ''
+                : L10n.current.away(
+                    LocationService.formatDistance(widget.distanceMeters!),
+                  ))
+            .toString(),
+      ),
       hint: L10n.current.doubleTapToOpenTheCard,
       child: GestureDetector(
         onTapDown: (_) => setPressed(true),
@@ -632,117 +655,122 @@ class _StoredCardTileState extends State<StoredCardTile> {
         onTap: widget.onTap,
         onLongPress: widget.onLongPress,
         child: AnimatedScale(
-        scale: isPressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 110),
-        curve: Curves.easeOut,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: usesBrandBackground ? cardColor : Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isPressed ? 0.035 : 0.06),
-                blurRadius: isPressed ? 8 : 12,
-                offset: Offset(0, isPressed ? 3 : 5),
-              ),
-            ],
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ClipRect(
-                child: Center(
-                  child: useImage
-                      ? Transform.scale(
-                          scale: hasCustomLogo ? 1.55 : 1.0,
-                          child: hasCustomLogo
-                              ? SecureCardImage(
-                                  File(customImage),
-                                  fit: BoxFit.contain,
-                                  height: 92,
-                                  width: double.infinity,
-                                )
-                              : SizedBox(
-                                  height: 92,
-                                  width: double.infinity,
-                                  child: BrandLogo(
-                                    source: logoAsset,
-                                    scale: logoLayoutValue(
-                                      widget.item,
-                                      'loyalty',
-                                      'scale',
-                                      1,
-                                    ),
-                                    offsetX: logoLayoutValue(
-                                      widget.item,
-                                      'loyalty',
-                                      'x',
-                                      0,
-                                    ),
-                                    offsetY: logoLayoutValue(
-                                      widget.item,
-                                      'loyalty',
-                                      'y',
-                                      0,
+          scale: isPressed ? 0.96 : 1.0,
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: usesBrandBackground ? cardColor : Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isPressed ? 0.035 : 0.06),
+                  blurRadius: isPressed ? 8 : 12,
+                  offset: Offset(0, isPressed ? 3 : 5),
+                ),
+              ],
+            ),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipRect(
+                  child: Center(
+                    child: useImage
+                        ? Transform.scale(
+                            scale: hasCustomLogo ? 1.55 : 1.0,
+                            child: hasCustomLogo
+                                ? SecureCardImage(
+                                    File(customImage),
+                                    fit: BoxFit.contain,
+                                    height: 92,
+                                    width: double.infinity,
+                                  )
+                                : SizedBox(
+                                    height: 92,
+                                    width: double.infinity,
+                                    child: BrandLogo(
+                                      source: logoAsset,
+                                      scale: logoLayoutValue(
+                                        widget.item,
+                                        'loyalty',
+                                        'scale',
+                                        1,
+                                      ),
+                                      offsetX: logoLayoutValue(
+                                        widget.item,
+                                        'loyalty',
+                                        'x',
+                                        0,
+                                      ),
+                                      offsetY: logoLayoutValue(
+                                        widget.item,
+                                        'loyalty',
+                                        'y',
+                                        0,
+                                      ),
                                     ),
                                   ),
-                                ),
-                        )
-                      : Text(
-                          title,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            color: usesBrandBackground
-                                ? Colors.white
-                                : const Color(0xFF333333),
+                          )
+                        : Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: usesBrandBackground
+                                  ? Colors.white
+                                  : const Color(0xFF333333),
+                            ),
                           ),
-                        ),
-                ),
-              ),
-              if (isFavorite)
-                Positioned(
-                  top: 2,
-                  right: widget.distanceMeters == null ? 2 : null,
-                  left: widget.distanceMeters == null ? null : 2,
-                  child: Icon(
-                    Icons.star,
-                    color: hasDarkBrandBackground
-                        ? Colors.white
-                        : const Color(0xFFD51B46),
-                    size: 24,
                   ),
                 ),
-              if (widget.distanceMeters != null)
-                Positioned(
-                  top: 2,
-                  right: 2,
-                  child: IgnorePointer(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.72),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        LocationService.formatDistance(widget.distanceMeters!),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
+                if (isFavorite)
+                  Positioned(
+                    top: 2,
+                    right: widget.distanceMeters == null ? 2 : null,
+                    left: widget.distanceMeters == null ? null : 2,
+                    child: Icon(
+                      Icons.star,
+                      color: hasDarkBrandBackground
+                          ? Colors.white
+                          : const Color(0xFFD51B46),
+                      size: 24,
+                    ),
+                  ),
+                if (widget.distanceMeters != null)
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: IgnorePointer(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.72),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          LocationService.formatDistance(
+                            widget.distanceMeters!,
+                          ),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import '../../shared/widgets/adaptive_vault_layout.dart';
 import '../../shared/widgets/shared_card_save.dart';
 import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/utils/money_input.dart';
@@ -13,7 +14,6 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../data/services/card_screen_session.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/security_service.dart';
 import '../../data/services/location_service.dart';
@@ -48,6 +48,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
   bool _receivedCardRemoved = false;
   bool _removingCurrentItem = false;
   late final PageController pageController;
+  final _pageViewKey = GlobalKey();
   late List<Map<String, dynamic>> items;
   late int currentIndex;
 
@@ -72,16 +73,28 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
 
     if (items.any((card) => card['isShared'] == true)) {
       _sharedChanges = StorageService.cardsBox.watch().listen((_) {
-      if (!mounted || _receivedCardRemoved || _removingCurrentItem || items.isEmpty || items[currentIndex]['isShared'] != true) return;
-      final id = items[currentIndex]['id'];
-      final matches = StorageService.cardsBox.values.whereType<Map>().where((card) => card['id'] == id);
-      if (matches.isEmpty) {
-        setState(() => _receivedCardRemoved = true);
-        WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) Navigator.of(context).maybePop(); });
-      } else {
-        setState(() => items[currentIndex] = Map<String, dynamic>.from(matches.first));
-      }
-    });
+        if (!mounted ||
+            _receivedCardRemoved ||
+            _removingCurrentItem ||
+            items.isEmpty ||
+            items[currentIndex]['isShared'] != true)
+          return;
+        final id = items[currentIndex]['id'];
+        final matches = StorageService.cardsBox.values.whereType<Map>().where(
+          (card) => card['id'] == id,
+        );
+        if (matches.isEmpty) {
+          setState(() => _receivedCardRemoved = true);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) Navigator.of(context).maybePop();
+          });
+        } else {
+          setState(
+            () =>
+                items[currentIndex] = Map<String, dynamic>.from(matches.first),
+          );
+        }
+      });
     }
     HapticFeedback.lightImpact();
     _setupScreen();
@@ -175,9 +188,11 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     };
 
     var savedItem = Map<String, dynamic>.from(newItem);
-    final isReadOnlyShare = savedItem['isShared'] == true &&
-        savedItem['canEditShared'] != true;
-    if (!isReadOnlyShare && oldItem is Map && CardShareService.contentChanged(oldItem, savedItem) &&
+    final isReadOnlyShare =
+        savedItem['isShared'] == true && savedItem['canEditShared'] != true;
+    if (!isReadOnlyShare &&
+        oldItem is Map &&
+        CardShareService.contentChanged(oldItem, savedItem) &&
         (savedItem['isShared'] == true ||
             (savedItem['sharedCardId']?.toString() ?? '').isNotEmpty)) {
       if (!context.mounted) return;
@@ -187,7 +202,11 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     }
 
     await StorageService.saveCard(key, savedItem);
-    try { await NotificationService.syncGiftCard(savedItem); } catch (_) { /* Saving remains successful without reminders. */ }
+    try {
+      await NotificationService.syncGiftCard(savedItem);
+    } catch (_) {
+      /* Saving remains successful without reminders. */
+    }
 
     if (!mounted) return;
 
@@ -228,17 +247,19 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
-            content: Text(
-              L10n.current.sharedAccessCouldNotBeUpdatedTry,
-            ),
+          SnackBar(
+            content: Text(L10n.current.sharedAccessCouldNotBeUpdatedTry),
           ),
         );
       }
       return;
     }
     _removingCurrentItem = true;
-    try { await StorageService.deleteCard(key); } finally { _removingCurrentItem = false; }
+    try {
+      await StorageService.deleteCard(key);
+    } finally {
+      _removingCurrentItem = false;
+    }
 
     if (!mounted) return;
 
@@ -273,22 +294,30 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
       builder: (context) {
         return AlertDialog(
           title: Text(
-            isShared ? L10n.current.removeFromYourPaskluis : L10n.current.permanentlyDelete,
+            isShared
+                ? L10n.current.removeFromYourPaskluis
+                : L10n.current.permanentlyDelete,
           ),
           content: Text(
             isShared
                 ? L10n.current.youAreOnlyRemovingFromYourOwn((name).toString())
-                : L10n.current.areYouSureYouWantToPermanently((name).toString()),
+                : L10n.current.areYouSureYouWantToPermanently(
+                    (name).toString(),
+                  ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child:  Text(L10n.current.cancel),
+              child: Text(L10n.current.cancel),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(context, true),
-              child: Text(isShared ? L10n.current.delete : L10n.current.permanentlyDelete391),
+              child: Text(
+                isShared
+                    ? L10n.current.delete
+                    : L10n.current.permanentlyDelete391,
+              ),
             ),
           ],
         );
@@ -317,7 +346,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     if (items.isEmpty) return;
     if (!SettingsService.cardSharingAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text(L10n.current.cardSharingIsTemporarilyUnavailable)),
+        SnackBar(
+          content: Text(L10n.current.cardSharingIsTemporarilyUnavailable),
+        ),
       );
       return;
     }
@@ -329,7 +360,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     if (items.isEmpty) return;
     if (!SettingsService.cardSharingAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text(L10n.current.cardSharingIsTemporarilyUnavailable)),
+        SnackBar(
+          content: Text(L10n.current.cardSharingIsTemporarilyUnavailable),
+        ),
       );
       return;
     }
@@ -398,7 +431,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                   child: FilledButton.icon(
                     onPressed: () => Navigator.pop(context, true),
                     icon: const Icon(Icons.visibility_rounded),
-                    label:  Text(L10n.current.showPin),
+                    label: Text(L10n.current.showPin),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFD51B46),
                       foregroundColor: Colors.white,
@@ -415,7 +448,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 const SizedBox(height: 10),
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child:  Text(
+                  child: Text(
                     L10n.current.cancel,
                     style: TextStyle(
                       color: Colors.black54,
@@ -467,7 +500,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                 Text(
+                Text(
                   L10n.current.usedThisCard,
                   style: TextStyle(
                     fontSize: 24,
@@ -479,7 +512,10 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                 Text(
                   balance.isEmpty
                       ? name
-                      : L10n.current.currentBalance396((name).toString(), (formatAmountValue(balance)).toString()),
+                      : L10n.current.currentBalance396(
+                          (name).toString(),
+                          (formatAmountValue(balance)).toString(),
+                        ),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
@@ -524,15 +560,20 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     );
   }
 
-  double _balanceOf(Map<String, dynamic> item) => double.tryParse(
+  double _balanceOf(Map<String, dynamic> item) =>
+      double.tryParse(
         (item['currentBalance']?.toString() ?? '').replaceAll(',', '.'),
-      ) ?? 0;
+      ) ??
+      0;
 
   List<Map<String, dynamic>> _historyOf(Map<String, dynamic> item) {
     try {
       final decoded = jsonDecode(item['balanceHistory']?.toString() ?? '[]');
       if (decoded is List) {
-        return decoded.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        return decoded
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
       }
     } catch (_) {}
     return [];
@@ -573,11 +614,11 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
           color: Color(0xFFD5A021),
           size: 42,
         ),
-        title:  Text(
+        title: Text(
           L10n.current.manageTogetherWithPlus,
           textAlign: TextAlign.center,
         ),
-        content:  Text(
+        content: Text(
           L10n.current.youCanViewThisSharedGiftCard,
           textAlign: TextAlign.center,
         ),
@@ -585,12 +626,12 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child:  Text(L10n.current.notNow),
+            child: Text(L10n.current.notNow),
           ),
           FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
             icon: const Icon(Icons.workspace_premium_rounded),
-            label:  Text(L10n.current.getPlus199Once),
+            label: Text(L10n.current.getPlus199Once),
           ),
         ],
       ),
@@ -598,9 +639,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
     if (!mounted || openPlus != true) return;
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const PlusInformationScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const PlusInformationScreen()),
     );
   }
 
@@ -612,14 +651,28 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(L10n.current.giftCardIsEmpty),
-        content: Text(received ? L10n.current.emptyReceivedCardDelete : L10n.current.emptyOwnedCardDelete),
+        content: Text(
+          received
+              ? L10n.current.emptyReceivedCardDelete
+              : L10n.current.emptyOwnedCardDelete,
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(L10n.current.keep)),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(L10n.current.delete)),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(L10n.current.keep),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(L10n.current.delete),
+          ),
         ],
       ),
     );
-    if (!mounted || remove != true || items.isEmpty || items[currentIndex]['id'] != id) return;
+    if (!mounted ||
+        remove != true ||
+        items.isEmpty ||
+        items[currentIndex]['id'] != id)
+      return;
     await deleteCurrentItem();
   }
 
@@ -654,7 +707,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  spentMode ? L10n.current.amountSpent : L10n.current.enterNewBalance,
+                  spentMode
+                      ? L10n.current.amountSpent
+                      : L10n.current.enterNewBalance,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w900,
@@ -669,8 +724,10 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                     decimal: true,
                   ),
                   decoration: InputDecoration(
-                    labelText: spentMode ? L10n.current.amountSpent410 : L10n.current.newBalance,
-                    prefixText: '€ ',
+                    labelText: spentMode
+                        ? L10n.current.amountSpent410
+                        : L10n.current.newBalance,
+                    prefixText: 'Ã¢â€šÂ¬ ',
                     filled: true,
                     fillColor: const Color(0xFFF4F4F6),
                     border: OutlineInputBorder(
@@ -693,22 +750,42 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                   child: FilledButton.icon(
                     onPressed: () async {
                       final enteredCents = parseMoneyCents(controller.text);
-                      final oldCents = parseMoneyCents(items[currentIndex]['currentBalance']?.toString() ?? '');
-                      if (enteredCents == null || (spentMode && (enteredCents == 0 || oldCents == null))) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-                          LocaleService.languageCode == 'nl'
-                            ? 'Vul een geldig bedrag in met maximaal twee decimalen. Stel eerst het saldo in voordat je een uitgave afboekt.'
-                            : 'Enter a valid amount with up to two decimal places. Set the balance before recording spending.')));
+                      final oldCents = parseMoneyCents(
+                        items[currentIndex]['currentBalance']?.toString() ?? '',
+                      );
+                      if (enteredCents == null ||
+                          (spentMode &&
+                              (enteredCents == 0 || oldCents == null))) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              LocaleService.languageCode == 'nl'
+                                  ? 'Vul een geldig bedrag in met maximaal twee decimalen. Stel eerst het saldo in voordat je een uitgave afboekt.'
+                                  : 'Enter a valid amount with up to two decimal places. Set the balance before recording spending.',
+                            ),
+                          ),
+                        );
                         return;
                       }
                       if (spentMode && enteredCents > oldCents!) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                           SnackBar(content: Text(L10n.current.theAmountIsHigherThanTheCurrent)),
+                          SnackBar(
+                            content: Text(
+                              L10n.current.theAmountIsHigherThanTheCurrent,
+                            ),
+                          ),
                         );
                         return;
                       }
-                      final newBalance = (spentMode ? oldCents! - enteredCents : enteredCents) / 100;
-                      await _saveBalance(newBalance, kind: spentMode ? 'spent' : 'adjusted');
+                      final newBalance =
+                          (spentMode
+                              ? oldCents! - enteredCents
+                              : enteredCents) /
+                          100;
+                      await _saveBalance(
+                        newBalance,
+                        kind: spentMode ? 'spent' : 'adjusted',
+                      );
 
                       if (!mounted) return;
 
@@ -721,7 +798,11 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       }
                     },
                     icon: const Icon(Icons.save_rounded),
-                    label: Text(spentMode ? L10n.current.applyAmount : L10n.current.saveBalance),
+                    label: Text(
+                      spentMode
+                          ? L10n.current.applyAmount
+                          : L10n.current.saveBalance,
+                    ),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFD51B46),
                       foregroundColor: Colors.white,
@@ -757,50 +838,73 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-               Text(L10n.current.balanceHistory, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+              Text(
+                L10n.current.balanceHistory,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+              ),
               const SizedBox(height: 16),
               if (history.isEmpty)
-                 Padding(
+                Padding(
                   padding: EdgeInsets.all(24),
                   child: Text(L10n.current.noBalanceChangesYet),
                 )
               else
                 ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * .55),
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * .55,
+                  ),
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: history.length,
                     separatorBuilder: (_, __) => const Divider(),
                     itemBuilder: (_, index) {
                       final entry = history[index];
-                      final date = DateTime.tryParse(entry['createdAt']?.toString() ?? '');
+                      final date = DateTime.tryParse(
+                        entry['createdAt']?.toString() ?? '',
+                      );
                       final type = entry['type']?.toString();
                       final title = type == 'spent'
-                          ? L10n.current.spent((formatAmountValue(entry['amount'])).toString())
+                          ? L10n.current.spent(
+                              (formatAmountValue(entry['amount'])).toString(),
+                            )
                           : type == 'used'
-                              ? L10n.current.fullyUsed
-                              : type == 'undo'
-                                  ? L10n.current.changeUndone
-                                  : L10n.current.balanceUpdated;
+                          ? L10n.current.fullyUsed
+                          : type == 'undo'
+                          ? L10n.current.changeUndone
+                          : L10n.current.balanceUpdated;
                       return ListTile(
                         contentPadding: EdgeInsets.zero,
                         leading: const CircleAvatar(
                           backgroundColor: Color(0xFFF8E3EA),
-                          child: Icon(Icons.receipt_long_rounded, color: Color(0xFFD51B46)),
+                          child: Icon(
+                            Icons.receipt_long_rounded,
+                            color: Color(0xFFD51B46),
+                          ),
                         ),
-                        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                        title: Text(
+                          title,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
                         subtitle: Text(
-                          '${date == null ? '' : '${date.day}-${date.month}-${date.year} • '}€ ${formatAmountValue(entry['oldBalance'])} → € ${formatAmountValue(entry['newBalance'])}',
+                          '${date == null ? '' : '${date.day}-${date.month}-${date.year} Ã¢â‚¬Â¢ '}Ã¢â€šÂ¬ ${formatAmountValue(entry['oldBalance'])} Ã¢â€ â€™ Ã¢â€šÂ¬ ${formatAmountValue(entry['newBalance'])}',
                         ),
                         trailing: index == 0 && type != 'undo'
                             ? TextButton(
                                 onPressed: () async {
-                                  final updated = Map<String, dynamic>.from(items[currentIndex]);
+                                  final updated = Map<String, dynamic>.from(
+                                    items[currentIndex],
+                                  );
                                   final all = _historyOf(updated);
-                                  final restored = double.tryParse(entry['oldBalance']?.toString() ?? '') ?? 0;
+                                  final restored =
+                                      double.tryParse(
+                                        entry['oldBalance']?.toString() ?? '',
+                                      ) ??
+                                      0;
                                   all.add({
-                                    'id': DateTime.now().microsecondsSinceEpoch.toString(),
-                                    'createdAt': DateTime.now().toIso8601String(),
+                                    'id': DateTime.now().microsecondsSinceEpoch
+                                        .toString(),
+                                    'createdAt': DateTime.now()
+                                        .toIso8601String(),
                                     'type': 'undo',
                                     'oldBalance': _money(_balanceOf(updated)),
                                     'newBalance': _money(restored),
@@ -808,11 +912,12 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                                   });
                                   updated['currentBalance'] = _money(restored);
                                   updated['balanceHistory'] = jsonEncode(all);
-                                  updated['balanceUpdatedAt'] = DateTime.now().toIso8601String();
+                                  updated['balanceUpdatedAt'] = DateTime.now()
+                                      .toIso8601String();
                                   await updateCurrentItem(updated);
                                   if (context.mounted) Navigator.pop(context);
                                 },
-                                child:  Text(L10n.current.undo),
+                                child: Text(L10n.current.undo),
                               )
                             : null,
                       );
@@ -877,7 +982,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
               }
 
               ScaffoldMessenger.of(context).showSnackBar(
-                 SnackBar(
+                SnackBar(
                   content: Text(L10n.current.authenticationFailedOrCancelled),
                 ),
               );
@@ -900,7 +1005,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                     children: [
                       Row(
                         children: [
-                           Expanded(
+                          Expanded(
                             child: Center(
                               child: Text(
                                 L10n.current.giftCardDetails424,
@@ -933,7 +1038,11 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                       ],
                       const SizedBox(height: 16),
 
-                      _DetailRow(label: L10n.current.barcode, value: code, showCopy: true),
+                      _DetailRow(
+                        label: L10n.current.barcode,
+                        value: code,
+                        showCopy: true,
+                      ),
 
                       if (cardNumber.isNotEmpty) ...[
                         const SizedBox(height: 16),
@@ -948,7 +1057,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                         const SizedBox(height: 16),
                         _DetailRow(
                           label: L10n.current.startingBalance,
-                          value: '€ ${formatAmountValue(initialBalance)}',
+                          value: 'Ã¢â€šÂ¬ ${formatAmountValue(initialBalance)}',
                         ),
                       ],
 
@@ -956,7 +1065,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                         const SizedBox(height: 16),
                         _DetailRow(
                           label: L10n.current.currentBalance,
-                          value: '€ ${formatAmountValue(currentBalance)}',
+                          value: 'Ã¢â€šÂ¬ ${formatAmountValue(currentBalance)}',
                         ),
                       ],
 
@@ -964,7 +1073,8 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                         const SizedBox(height: 16),
                         _DetailRow(
                           label: L10n.current.expiryDate,
-                          value: '${expiryDate.day.toString().padLeft(2, '0')}-${expiryDate.month.toString().padLeft(2, '0')}-${expiryDate.year}',
+                          value:
+                              '${expiryDate.day.toString().padLeft(2, '0')}-${expiryDate.month.toString().padLeft(2, '0')}-${expiryDate.year}',
                         ),
                       ],
 
@@ -976,7 +1086,7 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                               child: SelectableText.rich(
                                 TextSpan(
                                   children: [
-                                     TextSpan(
+                                    TextSpan(
                                       text: L10n.current.pinScratchCode427,
                                       style: TextStyle(
                                         fontSize: 15,
@@ -984,7 +1094,9 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                                       ),
                                     ),
                                     TextSpan(
-                                      text: sheetShowPin ? pinCode : '••••••',
+                                      text: sheetShowPin
+                                          ? pinCode
+                                          : 'Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢',
                                       style: const TextStyle(
                                         fontSize: 22,
                                         color: Color(0xFF111122),
@@ -997,7 +1109,11 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
                             ),
                             FilledButton(
                               onPressed: sheetShowPin ? null : showPinCode,
-                              child: Text(sheetShowPin ? L10n.current.visible : L10n.current.actionShow),
+                              child: Text(
+                                sheetShowPin
+                                    ? L10n.current.visible
+                                    : L10n.current.actionShow,
+                              ),
                             ),
                           ],
                         ),
@@ -1129,18 +1245,19 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => FoldSafePassView(builder: _buildPass);
+
+  Widget _buildPass(BuildContext context) {
     if (_receivedCardRemoved) return const Scaffold(body: SizedBox.shrink());
     L10n.watch(context);
     if (items.isEmpty) {
-      return  Scaffold(
+      return Scaffold(
         backgroundColor: Color(0xFFF8F8FA),
         body: Center(child: Text(L10n.current.noGiftCards)),
       );
     }
 
-    final isLandscape =
-        MediaQuery.orientationOf(context) == Orientation.landscape;
+    final isLandscape = useCompactPassLayout(context);
     if (isLandscape) {
       return Scaffold(
         backgroundColor: Colors.white,
@@ -1148,9 +1265,11 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
           child: Stack(
             children: [
               PageView.builder(
+                key: _pageViewKey,
                 controller: pageController,
                 itemCount: items.length,
                 onPageChanged: (index) {
+                  if (index == currentIndex) return;
                   HapticFeedback.selectionClick();
                   setState(() {
                     currentIndex = index;
@@ -1185,70 +1304,80 @@ class _GiftCardViewScreenState extends State<GiftCardViewScreen>
         elevation: 0,
         leading: const BackButton(color: Color(0xFF111122)),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: PageView.builder(
-              controller: pageController,
-              itemCount: items.length,
-              onPageChanged: (index) {
-                HapticFeedback.selectionClick();
-                setState(() {
-                  currentIndex = index;
-                  showPin = false;
-                });
-                markCurrentGiftCardAsUsed();
-              },
-              itemBuilder: (context, index) {
-                final item = items[index];
+      body: SafeArea(
+        top: false,
+        child: PassCarouselWidth(
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  key: _pageViewKey,
+                  controller: pageController,
+                  itemCount: items.length,
+                  onPageChanged: (index) {
+                    if (index == currentIndex) return;
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      currentIndex = index;
+                      showPin = false;
+                    });
+                    markCurrentGiftCardAsUsed();
+                  },
+                  itemBuilder: (context, index) {
+                    final item = items[index];
 
-                return AnimatedBuilder(
-                  animation: pageController,
-                  builder: (context, child) {
-                    double page = currentIndex.toDouble();
+                    return AnimatedBuilder(
+                      animation: pageController,
+                      builder: (context, child) {
+                        double page = currentIndex.toDouble();
 
-                    if (pageController.hasClients &&
-                        pageController.position.haveDimensions) {
-                      page = pageController.page ?? currentIndex.toDouble();
-                    }
+                        if (pageController.positions.length == 1 &&
+                            pageController.position.haveDimensions) {
+                          page = pageController.page ?? currentIndex.toDouble();
+                        }
 
-                    final distance = (page - index).abs();
-                    final scale = (1 - distance * 0.08).clamp(0.90, 1.0);
-                    final opacity = (1 - distance * 0.32).clamp(0.55, 1.0);
-                    final yOffset = distance * 28;
+                        final distance = (page - index).abs();
+                        final scale = (1 - distance * 0.08).clamp(0.90, 1.0);
+                        final opacity = (1 - distance * 0.32).clamp(0.55, 1.0);
+                        final yOffset = distance * 28;
 
-                    return Opacity(
-                      opacity: opacity,
-                      child: Transform.translate(
-                        offset: Offset(0, yOffset),
-                        child: Transform.scale(scale: scale, child: child),
+                        return Opacity(
+                          opacity: opacity,
+                          child: Transform.translate(
+                            offset: Offset(0, yOffset),
+                            child: Transform.scale(scale: scale, child: child),
+                          ),
+                        );
+                      },
+                      child: PassCardFrame(
+                        minHeight: 600,
+                        child: GiftBarcodeCard(
+                          item: item,
+                          barcode: getBarcodeType(item),
+                          onDetails: openDetails,
+                          onUsed: openUsedOptions,
+                        ),
                       ),
                     );
                   },
-                  child: GiftBarcodeCard(
-                    item: item,
-                    barcode: getBarcodeType(item),
-                    onDetails: openDetails,
-                    onUsed: openUsedOptions,
-                  ),
-                );
-              },
-            ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              if (items.length > 1)
+                _Dots(count: items.length, activeIndex: currentIndex),
+              const SizedBox(height: 20),
+              Text(
+                L10n.current.holdYourScreenUpToTheScanner,
+                style: TextStyle(
+                  color: Colors.black45,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 26),
+            ],
           ),
-          const SizedBox(height: 8),
-          if (items.length > 1)
-            _Dots(count: items.length, activeIndex: currentIndex),
-          const SizedBox(height: 20),
-           Text(
-            L10n.current.holdYourScreenUpToTheScanner,
-            style: TextStyle(
-              color: Colors.black45,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 26),
-        ],
+        ),
       ),
     );
   }
@@ -1279,9 +1408,9 @@ class _GiftLandscapeBarcode extends StatelessWidget {
           const SizedBox(height: 10),
           Expanded(
             child: code.isEmpty
-                ?  Center(child: Text(L10n.current.noBarcodeAvailable))
+                ? Center(child: Text(L10n.current.noBarcodeAvailable))
                 : isQr
-                ? Center(child: QrImageView(data: code, padding: const EdgeInsets.all(8)))
+                ? Center(child: AdaptiveQrCode(data: code, maxSize: 440))
                 : BarcodeWidget(
                     barcode: barcode,
                     data: code,
@@ -1383,9 +1512,17 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final logoAsset = widget.item['logoAsset']?.toString() ?? '';
     final customImage = widget.item['customImage']?.toString() ?? '';
-    final expiry = DateTime.tryParse(widget.item['expiryDate']?.toString() ?? '');
+    final expiry = DateTime.tryParse(
+      widget.item['expiryDate']?.toString() ?? '',
+    );
     final now = DateTime.now();
-    final expired = expiry != null && DateTime(expiry.year, expiry.month, expiry.day).isBefore(DateTime(now.year, now.month, now.day));
+    final expired =
+        expiry != null &&
+        DateTime(
+          expiry.year,
+          expiry.month,
+          expiry.day,
+        ).isBefore(DateTime(now.year, now.month, now.day));
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 30, 2, 18),
       child: AnimatedContainer(
@@ -1492,7 +1629,9 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
                   padding: const EdgeInsets.symmetric(vertical: 7),
                   color: const Color(0xFFF8E3EA),
                   child: Text(
-                    L10n.current.balance277((formatAmountValue(balance)).toString()),
+                    L10n.current.balance277(
+                      (formatAmountValue(balance)).toString(),
+                    ),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Color(0xFFD51B46),
@@ -1510,7 +1649,7 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
                   child: FilledButton.icon(
                     onPressed: widget.onUsed,
                     icon: const Icon(Icons.shopping_bag_rounded),
-                    label:  Text(L10n.current.usedThisCard),
+                    label: Text(L10n.current.usedThisCard),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFD51B46),
                       foregroundColor: Colors.white,
@@ -1530,10 +1669,24 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
                   padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
                   child: Text(
                     expired
-                        ? L10n.current.giftCardExpiredOn(DateFormat.yMMMMd(L10n.current.localeName).format(expiry))
-                        : L10n.current.giftCardValidUntil(DateFormat.yMMMMd(L10n.current.localeName).format(expiry)),
+                        ? L10n.current.giftCardExpiredOn(
+                            DateFormat.yMMMMd(
+                              L10n.current.localeName,
+                            ).format(expiry),
+                          )
+                        : L10n.current.giftCardValidUntil(
+                            DateFormat.yMMMMd(
+                              L10n.current.localeName,
+                            ).format(expiry),
+                          ),
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: expired ? const Color(0xFFD51B46) : const Color(0xFF55555D)),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: expired
+                          ? const Color(0xFFD51B46)
+                          : const Color(0xFF55555D),
+                    ),
                   ),
                 ),
               Expanded(
@@ -1551,42 +1704,38 @@ class _GiftBarcodeCardState extends State<GiftBarcodeCard>
                         ),
                       ),
                       child: isQr
-                      ? Center(
-                          child: QrImageView(
-                            data: code,
-                            size: 150,
-                            padding: EdgeInsets.zero,
-                          ),
-                        )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            BarcodeWidget(
-                              barcode: widget.barcode,
-                              data: code,
-                              width: double.infinity,
-                              height: 112,
-                              drawText: false,
-                            ),
-                            const SizedBox(height: 6),
-                            SizedBox(
-                              height: 27,
-                              width: double.infinity,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Text(
-                                  code,
-                                  maxLines: 1,
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    letterSpacing: 2,
-                                    fontWeight: FontWeight.w500,
+                          ? Center(
+                              child: AdaptiveQrCode(data: code, maxSize: 300),
+                            )
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                BarcodeWidget(
+                                  barcode: widget.barcode,
+                                  data: code,
+                                  width: double.infinity,
+                                  height: 112,
+                                  drawText: false,
+                                ),
+                                const SizedBox(height: 6),
+                                SizedBox(
+                                  height: 27,
+                                  width: double.infinity,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      code,
+                                      maxLines: 1,
+                                      style: const TextStyle(
+                                        fontSize: 20,
+                                        letterSpacing: 2,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
                     ),
                   ),
                 ),
@@ -1640,10 +1789,11 @@ class _DetailRow extends StatelessWidget {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: value));
               HapticFeedback.lightImpact();
-              ScaffoldMessenger.of(context)
-                  .showSnackBar( SnackBar(content: Text(L10n.current.copied)));
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(L10n.current.copied)));
             },
-            child:  Text(L10n.current.copy),
+            child: Text(L10n.current.copy),
           ),
       ],
     );

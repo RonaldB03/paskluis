@@ -1,0 +1,88 @@
+// Copied only into the separate nl.paskluis.qa native test application.
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:paskluis_v1/core/theme/app_theme.dart';
+import 'package:paskluis_v1/data/services/settings_service.dart';
+import 'package:paskluis_v1/data/services/locale_service.dart';
+import 'package:paskluis_v1/data/services/storage_service.dart';
+import 'package:paskluis_v1/features/cards/cards_screen.dart';
+import 'package:paskluis_v1/features/cards/card_view_screen.dart';
+import 'package:paskluis_v1/features/gift_cards/gift_cards_screen.dart';
+import 'package:paskluis_v1/features/gift_cards/gift_card_view_screen.dart';
+import 'package:paskluis_v1/features/qr_codes/qr_codes_screen.dart';
+import 'package:paskluis_v1/l10n/generated/app_localizations.dart';
+import 'qa_fixtures.dart';
+
+class OfflineOnly extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) =>
+      throw const SocketException('Offline layout harness: network disabled');
+}
+
+Future<void> initializeFixtures() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = OfflineOnly();
+  await StorageService.init();
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('auto_brightness', false);
+  await prefs.setBool('keep_screen_awake', false);
+  await prefs.setBool('location_cards_enabled', false);
+  await const FlutterSecureStorage().write(
+    key: 'verified_store_access_v1',
+    value: jsonEncode({'active': true, 'verifiedAt': DateTime.now().toUtc().toIso8601String()}),
+  );
+  await SettingsService.init();
+  await LocaleService.init();
+  await LocaleService.setLanguage('nl');
+  await StorageService.cardsBox.clear();
+  await StorageService.cardsBox.addAll([
+    ...loyaltyFixtures(), ...giftFixtures(), ...qrFixtures(),
+  ].map((card) => {...card, 'id': 'stored-${card['name']}'}));
+}
+
+Future<void> main() async {
+  await initializeFixtures();
+  runApp(testApp(const LayoutTestHome()));
+}
+
+MaterialApp testApp(Widget screen) => MaterialApp(
+  title: 'PasKluis Layouttest',
+  debugShowCheckedModeBanner: false,
+  theme: AppTheme.lightTheme,
+  locale: const Locale('nl'),
+  localizationsDelegates: AppLocalizations.localizationsDelegates,
+  supportedLocales: AppLocalizations.supportedLocales,
+  home: screen,
+);
+
+Widget testScreen(String name) => switch (name) {
+  'Klantenkaarten' => const CardsScreen(),
+  'Cadeaukaarten' => const GiftCardsScreen(),
+  'QR-codes' => const QrCodesScreen(),
+  'Klantenkaart openen' => CardViewScreen(items: loyaltyFixtures(), initialIndex: 1),
+  'Cadeaukaart openen' => GiftCardViewScreen(items: giftFixtures(), initialIndex: 0),
+  _ => QrCodeViewScreen(items: qrFixtures(), initialIndex: 2),
+};
+
+class LayoutTestHome extends StatelessWidget {
+  const LayoutTestHome({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('PasKluis · lokale layouttest')),
+    body: SafeArea(child: ListView(padding: const EdgeInsets.all(20), children: [
+      const Text('Uitsluitend fictieve passen. Geen account of netwerk. Deze losse testapp vervangt PasKluis niet.'),
+      const SizedBox(height: 20),
+      Text('Venster: ${MediaQuery.sizeOf(context)} · schaal ${MediaQuery.devicePixelRatioOf(context)}'),
+      Text('Vouw: ${MediaQuery.of(context).displayFeatures}'),
+      for (final name in ['Klantenkaarten', 'Cadeaukaarten', 'QR-codes', 'Klantenkaart openen', 'Cadeaukaart openen', 'QR-set openen'])
+        Padding(padding: const EdgeInsets.only(top: 12), child: FilledButton(
+          onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => testScreen(name))),
+          child: Text(name),
+        )),
+    ])),
+  );
+}

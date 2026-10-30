@@ -1,3 +1,4 @@
+import '../../shared/widgets/adaptive_vault_layout.dart';
 import '../../data/services/card_share_service.dart';
 import '../../shared/widgets/shared_card_save.dart';
 import '../../shared/widgets/share_stored_card.dart';
@@ -26,15 +27,23 @@ import 'add_qr_code_screen.dart';
 import 'choose_qr_code_screen.dart';
 import 'edit_qr_set_screen.dart';
 
-Future<Map<String, dynamic>?> _saveQrChanges(BuildContext context, dynamic key, Map<String, dynamic> updated) async {
+Future<Map<String, dynamic>?> _saveQrChanges(
+  BuildContext context,
+  dynamic key,
+  Map<String, dynamic> updated,
+) async {
   final current = StorageService.cardsBox.get(key);
   if (current is! Map) return null;
   var next = Map<String, dynamic>.from(updated);
   if (CardShareService.contentChanged(current, next)) {
-    if (current['isShared'] == true && current['canEditShared'] != true) return null;
+    if (current['isShared'] == true && current['canEditShared'] != true)
+      return null;
     if ((current['sharedCardId']?.toString() ?? '').isNotEmpty) {
       final saved = await saveSharedCardWithFeedback(context, next);
-      if (saved == null || !context.mounted || StorageService.cardsBox.get(key) is! Map) return null;
+      if (saved == null ||
+          !context.mounted ||
+          StorageService.cardsBox.get(key) is! Map)
+        return null;
       next = saved;
     }
   }
@@ -142,7 +151,9 @@ class QrCodesScreen extends StatelessWidget {
       await StorageService.addCard({
         'id': result['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
         'type': 'QR-set',
-        'name': result['name'] ?? L10n.current.qrCodes((codeList.length).toString()),
+        'name':
+            result['name'] ??
+            L10n.current.qrCodes((codeList.length).toString()),
         'code': '',
         'codes': codes,
         'used':
@@ -288,21 +299,21 @@ class QrCodesScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title:  Text(L10n.current.deleteQrCode),
+        title: Text(L10n.current.deleteQrCode),
         content: Text(
           L10n.current.areYouSureYouWantToDelete561((name).toString()),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child:  Text(L10n.current.cancel),
+            child: Text(L10n.current.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFFD51B46),
             ),
             onPressed: () => Navigator.pop(context, true),
-            child:  Text(L10n.current.delete),
+            child: Text(L10n.current.delete),
           ),
         ],
       ),
@@ -312,20 +323,28 @@ class QrCodesScreen extends StatelessWidget {
 
     try {
       if (item['isShared'] == true) {
-        await CardShareService.removeReceivedCard(item['shareMembershipId']?.toString() ?? '');
+        await CardShareService.removeReceivedCard(
+          item['shareMembershipId']?.toString() ?? '',
+        );
       } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
         await CardShareService.revokeAllForCard(item['id']?.toString() ?? '');
       }
     } catch (_) {
-      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(L10n.current.sharedAccessCouldNotBeUpdatedTry)));
+      if (context.mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(L10n.current.sharedAccessCouldNotBeUpdatedTry),
+          ),
+        );
       return;
     }
     await StorageService.deleteCard(key);
 
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(L10n.current.hasBeenDeleted((name).toString()))));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(L10n.current.hasBeenDeleted((name).toString()))),
+    );
   }
 
   void openTab(BuildContext context, int index) {
@@ -415,14 +434,14 @@ class QrCodesScreen extends StatelessWidget {
                   },
                 ),
                 if (item['isShared'] != true || item['canEditShared'] == true)
-                _OptionTile(
-                  icon: Icons.edit_rounded,
-                  title: L10n.current.edit,
-                  onTap: () {
-                    Navigator.pop(context);
-                    editQrCode(context, item);
-                  },
-                ),
+                  _OptionTile(
+                    icon: Icons.edit_rounded,
+                    title: L10n.current.edit,
+                    onTap: () {
+                      Navigator.pop(context);
+                      editQrCode(context, item);
+                    },
+                  ),
                 if (item['isShared'] != true)
                   _OptionTile(
                     icon: Icons.share_rounded,
@@ -458,59 +477,61 @@ class QrCodesScreen extends StatelessWidget {
         if (!didPop) openHome(context);
       },
       child: ValueListenableBuilder<Box>(
-      valueListenable: StorageService.cardsBox.listenable(),
-      builder: (context, box, _) {
-        final items = getItems();
+        valueListenable: StorageService.cardsBox.listenable(),
+        builder: (context, box, _) {
+          final items = getItems();
 
-        return Scaffold(
-          backgroundColor: const Color(0xFFF4F4F6),
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            leadingWidth: 56,
-            leading: const SizedBox.shrink(),
-            title:  PremiumAppTitle(L10n.current.qrCodes478),
-            centerTitle: true,
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF333333),
-            elevation: 0,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
-                onPressed: () => openAddQrCode(context),
-              ),
-            ],
-          ),
-          body: MainTabSwipeRegion(
-            currentIndex: 2,
-            onSwitch: (index) => openTab(context, index),
-            child: items.isEmpty
-                ? _EmptyQrState(onAdd: () => openAddQrCode(context))
-                : GridView.builder(
-                  padding: const EdgeInsets.all(24),
-                  itemCount: items.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    childAspectRatio: 1.0,
+          return Scaffold(
+            backgroundColor: const Color(0xFFF4F4F6),
+            appBar: AppBar(
+              automaticallyImplyLeading: false,
+              leadingWidth: 56,
+              leading: const SizedBox.shrink(),
+              title: PremiumAppTitle(L10n.current.qrCodes478),
+              centerTitle: true,
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF333333),
+              elevation: 0,
+              actions: [
+                IconButton(
+                  icon: const Icon(
+                    Icons.add,
+                    color: Color(0xFFD51B46),
+                    size: 32,
                   ),
-                  itemBuilder: (context, index) {
-                    final item = items[index];
+                  onPressed: () => openAddQrCode(context),
+                ),
+              ],
+            ),
+            body: MainTabSwipeRegion(
+              currentIndex: 2,
+              onSwitch: (index) => openTab(context, index),
+              child: items.isEmpty
+                  ? _EmptyQrState(onAdd: () => openAddQrCode(context))
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(24),
+                      itemCount: items.length,
+                      gridDelegate: const AdaptiveCardGridDelegate(
+                        spacing: 16,
+                        childAspectRatio: 1.0,
+                      ),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
 
-                    return _QrTile(
-                      item: item,
-                      onTap: () => openQrView(context, items, index),
-                      onLongPress: () => showQrOptions(context, item),
-                    );
-                  },
-                  ),
-          ),
-          bottomNavigationBar: MainBottomNav(
-            currentIndex: 2,
-            onTap: (index) => openTab(context, index),
-          ),
-        );
-      },
+                        return _QrTile(
+                          item: item,
+                          onTap: () => openQrView(context, items, index),
+                          onLongPress: () => showQrOptions(context, item),
+                        );
+                      },
+                    ),
+            ),
+            bottomNavigationBar: MainBottomNav(
+              currentIndex: 2,
+              onTap: (index) => openTab(context, index),
+            ),
+          );
+        },
       ),
     );
   }
@@ -535,13 +556,15 @@ class QrCodeViewScreen extends StatefulWidget {
 class _QrCodeViewScreenState extends State<QrCodeViewScreen>
     with WidgetsBindingObserver {
   late final PageController pageController;
+  final _pageViewKey = GlobalKey();
   CardScreenSession? _screenSession;
 
   void _startScreenSession() {
-    _screenSession ??= (widget.screenController ?? CardScreenSession.controller).open(
-      brighten: SettingsService.autoBrightnessEnabled,
-      keepAwake: SettingsService.keepScreenAwakeEnabled,
-    );
+    _screenSession ??= (widget.screenController ?? CardScreenSession.controller)
+        .open(
+          brighten: SettingsService.autoBrightnessEnabled,
+          keepAwake: SettingsService.keepScreenAwakeEnabled,
+        );
   }
 
   @override
@@ -553,6 +576,7 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
       _screenSession = null;
     }
   }
+
   StreamSubscription? _sharedChanges;
   bool _receivedCardRemoved = false;
   late int currentIndex;
@@ -601,19 +625,29 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
     pageController = PageController(initialPage: widget.initialIndex);
     if (widget.items.any((card) => card['isShared'] == true)) {
       _sharedChanges = StorageService.cardsBox.watch().listen((_) {
-      if (!mounted || _receivedCardRemoved || widget.items.isEmpty || widget.items[currentIndex]['isShared'] != true) return;
-      final id = widget.items[currentIndex]['id'];
-      final matches = StorageService.cardsBox.values.whereType<Map>().where((card) => card['id'] == id);
-      if (matches.isEmpty) {
-        setState(() => _receivedCardRemoved = true);
-        WidgetsBinding.instance.addPostFrameCallback((_) { if (mounted) Navigator.of(context).maybePop(); });
-      } else {
-        setState(() {
-          widget.items[currentIndex] = Map<String, dynamic>.from(matches.first);
-          if (ticketIndex >= currentCodes.length) ticketIndex = 0;
-        });
-      }
-    });
+        if (!mounted ||
+            _receivedCardRemoved ||
+            widget.items.isEmpty ||
+            widget.items[currentIndex]['isShared'] != true)
+          return;
+        final id = widget.items[currentIndex]['id'];
+        final matches = StorageService.cardsBox.values.whereType<Map>().where(
+          (card) => card['id'] == id,
+        );
+        if (matches.isEmpty) {
+          setState(() => _receivedCardRemoved = true);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) Navigator.of(context).maybePop();
+          });
+        } else {
+          setState(() {
+            widget.items[currentIndex] = Map<String, dynamic>.from(
+              matches.first,
+            );
+            if (ticketIndex >= currentCodes.length) ticketIndex = 0;
+          });
+        }
+      });
     }
     WidgetsBinding.instance.addPostFrameCallback((_) => markCurrentQrAsUsed());
   }
@@ -652,7 +686,9 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
     if (key == null) return false;
     final saved = await _saveQrChanges(context, key, updated);
     if (!mounted || saved == null) return false;
-    setState(() { widget.items[currentIndex] = Map<String, dynamic>.from(saved); });
+    setState(() {
+      widget.items[currentIndex] = Map<String, dynamic>.from(saved);
+    });
     return true;
   }
 
@@ -692,11 +728,15 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
         content: Text(
           willBeUsed
               ? isSet
-                  ? L10n.current.ticketMarkedAsUsed((ticketIndex + 1).toString())
-                  : L10n.current.qrCodeMarkedAsUsed
+                    ? L10n.current.ticketMarkedAsUsed(
+                        (ticketIndex + 1).toString(),
+                      )
+                    : L10n.current.qrCodeMarkedAsUsed
               : isSet
-                  ? L10n.current.ticketIsAvailableAgain((ticketIndex + 1).toString())
-                  : L10n.current.qrCodeIsAvailableAgain,
+              ? L10n.current.ticketIsAvailableAgain(
+                  (ticketIndex + 1).toString(),
+                )
+              : L10n.current.qrCodeIsAvailableAgain,
         ),
       ),
     );
@@ -740,13 +780,14 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => FoldSafePassView(builder: _buildPass);
+
+  Widget _buildPass(BuildContext context) {
     if (_receivedCardRemoved) return const Scaffold(body: SizedBox.shrink());
     L10n.watch(context);
     final name = item['name']?.toString() ?? L10n.current.qrCode;
     final isFavorite = item['isFavorite'] == true;
-    final isLandscape =
-        MediaQuery.orientationOf(context) == Orientation.landscape;
+    final isLandscape = useCompactPassLayout(context);
 
     if (isLandscape) {
       return Scaffold(
@@ -755,9 +796,11 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
           child: Stack(
             children: [
               PageView.builder(
+                key: _pageViewKey,
                 controller: pageController,
                 itemCount: widget.items.length,
                 onPageChanged: (index) {
+                  if (index == currentIndex) return;
                   setState(() {
                     currentIndex = index;
                     ticketIndex = 0;
@@ -772,15 +815,20 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
                             .split('|||')
                             .where((code) => code.trim().isNotEmpty)
                             .toList()
-                      : [current['code']?.toString() ?? '']
-                            .where((code) => code.trim().isNotEmpty)
-                            .toList();
-                  final safeIndex = ticketIndex >= codes.length ? 0 : ticketIndex;
+                      : [
+                          current['code']?.toString() ?? '',
+                        ].where((code) => code.trim().isNotEmpty).toList();
+                  final safeIndex = ticketIndex >= codes.length
+                      ? 0
+                      : ticketIndex;
                   return _LandscapeQrPage(
                     name: current['name']?.toString() ?? 'QR-code',
                     code: codes.isEmpty ? '' : codes[safeIndex],
                     position: isSet && codes.isNotEmpty
-                        ? L10n.current.ticketOf((safeIndex + 1).toString(), (codes.length).toString())
+                        ? L10n.current.ticketOf(
+                            (safeIndex + 1).toString(),
+                            (codes.length).toString(),
+                          )
                         : '',
                   );
                 },
@@ -818,240 +866,251 @@ class _QrCodeViewScreenState extends State<QrCodeViewScreen>
           ),
         ],
       ),
-      body: PageView.builder(
-        controller: pageController,
-        itemCount: widget.items.length,
-        onPageChanged: (index) {
-          setState(() {
-            currentIndex = index;
-            ticketIndex = 0;
-          });
-          markCurrentQrAsUsed();
-        },
-        itemBuilder: (context, index) {
-          final current = widget.items[index];
-          final isCurrentSet = current['type']?.toString() == 'QR-set';
+      body: SafeArea(
+        top: false,
+        child: PassCarouselWidth(
+          child: PageView.builder(
+            key: _pageViewKey,
+            controller: pageController,
+            itemCount: widget.items.length,
+            onPageChanged: (index) {
+              if (index == currentIndex) return;
+              setState(() {
+                currentIndex = index;
+                ticketIndex = 0;
+              });
+              markCurrentQrAsUsed();
+            },
+            itemBuilder: (context, index) {
+              final current = widget.items[index];
+              final isCurrentSet = current['type']?.toString() == 'QR-set';
 
-          final codes = isCurrentSet
-              ? (current['codes']?.toString() ?? '')
-                    .split('|||')
-                    .where((code) => code.trim().isNotEmpty)
-                    .toList()
-              : [current['code']?.toString() ?? '']
-                    .where((code) => code.trim().isNotEmpty)
-                    .toList();
+              final codes = isCurrentSet
+                  ? (current['codes']?.toString() ?? '')
+                        .split('|||')
+                        .where((code) => code.trim().isNotEmpty)
+                        .toList()
+                  : [
+                      current['code']?.toString() ?? '',
+                    ].where((code) => code.trim().isNotEmpty).toList();
 
-          final rawUsed = current['used']?.toString() ?? '';
-          final used = rawUsed.isEmpty
-              ? List.filled(codes.length, false)
-              : rawUsed.split('|||').map((v) => v == 'true').toList();
+              final rawUsed = current['used']?.toString() ?? '';
+              final used = rawUsed.isEmpty
+                  ? List.filled(codes.length, false)
+                  : rawUsed.split('|||').map((v) => v == 'true').toList();
 
-          while (used.length < codes.length) {
-            used.add(false);
-          }
+              while (used.length < codes.length) {
+                used.add(false);
+              }
 
-          final safeTicketIndex = ticketIndex >= codes.length ? 0 : ticketIndex;
+              final safeTicketIndex = ticketIndex >= codes.length
+                  ? 0
+                  : ticketIndex;
 
-          final currentName = current['name']?.toString() ?? 'QR-code';
-          final currentCode = codes.isEmpty
-              ? ''
-              : codes[safeTicketIndex].trim();
-          final currentNote = current['note']?.toString() ?? '';
-          final currentUsed = used.isEmpty
-              ? false
-              : used[safeTicketIndex] == true;
+              final currentName = current['name']?.toString() ?? 'QR-code';
+              final currentCode = codes.isEmpty
+                  ? ''
+                  : codes[safeTicketIndex].trim();
+              final currentNote = current['note']?.toString() ?? '';
+              final currentUsed = used.isEmpty
+                  ? false
+                  : used[safeTicketIndex] == true;
 
-          final usedCount = used.where((value) => value == true).length;
+              final usedCount = used.where((value) => value == true).length;
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(18, 12, 18, 30),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.055),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      currentName,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        color: Color(0xFF333333),
-                      ),
-                    ),
-                    if (isCurrentSet) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        L10n.current.ticketOfUsed((safeTicketIndex + 1).toString(), (codes.length).toString(), (usedCount).toString()),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black.withOpacity(0.55),
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 30),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.055),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
-                      ),
-                    ],
-                    const SizedBox(height: 22),
-                    Container(
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF7F7F8),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          if (currentCode.isEmpty)
-                             SizedBox(
-                              height: 245,
-                              child: Center(
-                                child: Text(L10n.current.noQrCodeFound),
-                              ),
-                            )
-                          else
-                            QrImageView(
-                              data: currentCode,
-                              version: QrVersions.auto,
-                              size: 245,
-                              backgroundColor: Colors.white,
-                              errorCorrectionLevel: QrErrorCorrectLevel.M,
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          currentName,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF333333),
+                          ),
+                        ),
+                        if (isCurrentSet) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            L10n.current.ticketOfUsed(
+                              (safeTicketIndex + 1).toString(),
+                              (codes.length).toString(),
+                              (usedCount).toString(),
                             ),
-                          if (currentUsed)
-                            Container(
-                              width: 245,
-                              height: 245,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.86),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child:  Center(
-                                child: Text(
-                                  L10n.current.used571,
-                                  style: TextStyle(
-                                    color: Color(0xFFD51B46),
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.5,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black.withOpacity(0.55),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 22),
+                        Container(
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF7F7F8),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              if (currentCode.isEmpty)
+                                SizedBox(
+                                  height: 245,
+                                  child: Center(
+                                    child: Text(L10n.current.noQrCodeFound),
                                   ),
+                                )
+                              else
+                                AdaptiveQrCode(data: currentCode, maxSize: 300),
+                              if (currentUsed)
+                                Positioned.fill(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.86),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        L10n.current.used571,
+                                        style: TextStyle(
+                                          color: Color(0xFFD51B46),
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (isCurrentSet) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 54,
+                            child: OutlinedButton.icon(
+                              onPressed: showFirstUnused,
+                              icon: const Icon(Icons.skip_next_rounded),
+                              label: Text(L10n.current.firstUnused),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFD51B46),
+                                side: const BorderSide(
+                                  color: Color(0xFFD51B46),
+                                  width: 1.2,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontWeight: FontWeight.w900,
                                 ),
                               ),
                             ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (isCurrentSet) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 54,
-                        child: OutlinedButton.icon(
-                          onPressed: showFirstUnused,
-                          icon: const Icon(Icons.skip_next_rounded),
-                          label:  Text(L10n.current.firstUnused),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFFD51B46),
-                            side: const BorderSide(
-                              color: Color(0xFFD51B46),
-                              width: 1.2,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: SizedBox(
+                            height: 54,
+                            child: FilledButton.icon(
+                              onPressed: nextTicket,
+                              icon: const Icon(Icons.arrow_forward_rounded),
+                              label: Text(L10n.current.next),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: const Color(0xFFD51B46),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
                             ),
                           ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  SizedBox(
+                    height: 56,
+                    child: FilledButton.icon(
+                      onPressed:
+                          current['isShared'] == true &&
+                              current['canEditShared'] != true
+                          ? null
+                          : toggleCurrentTicketUsed,
+                      icon: Icon(
+                        currentUsed
+                            ? Icons.undo_rounded
+                            : Icons.check_circle_rounded,
+                      ),
+                      label: Text(
+                        currentUsed
+                            ? L10n.current.markAsUnused
+                            : isCurrentSet
+                            ? L10n.current.ticketUsed
+                            : L10n.current.qrCodeUsed,
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFD51B46),
+                        disabledBackgroundColor: Colors.black12,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        textStyle: const TextStyle(fontWeight: FontWeight.w900),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: SizedBox(
-                        height: 54,
-                        child: FilledButton.icon(
-                          onPressed: nextTicket,
-                          icon: const Icon(Icons.arrow_forward_rounded),
-                          label:  Text(L10n.current.next),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFD51B46),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                            textStyle: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
+                  ),
+                  if (currentNote.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Text(
+                        currentNote,
+                        style: const TextStyle(
+                          fontSize: 15.5,
+                          height: 1.35,
+                          color: Color(0xFF333333),
                         ),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 10),
-              ],
-              SizedBox(
-                height: 56,
-                child: FilledButton.icon(
-                  onPressed: current['isShared'] == true && current['canEditShared'] != true ? null : toggleCurrentTicketUsed,
-                  icon: Icon(
-                    currentUsed
-                        ? Icons.undo_rounded
-                        : Icons.check_circle_rounded,
-                  ),
-                  label: Text(
-                    currentUsed
-                        ? L10n.current.markAsUnused
-                        : isCurrentSet
-                        ? L10n.current.ticketUsed
-                        : L10n.current.qrCodeUsed,
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFD51B46),
-                    disabledBackgroundColor: Colors.black12,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                    textStyle: const TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ),
-              ),
-              if (currentNote.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Text(
-                    currentNote,
-                    style: const TextStyle(
-                      fontSize: 15.5,
-                      height: 1.35,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          );
-        },
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -1100,14 +1159,8 @@ class _LandscapeQrPage extends StatelessWidget {
             flex: 2,
             child: Center(
               child: code.isEmpty
-                  ?  Text(L10n.current.noQrCodeAvailable)
-                  : QrImageView(
-                      data: code,
-                      version: QrVersions.auto,
-                      size: MediaQuery.sizeOf(context).height - 36,
-                      backgroundColor: Colors.white,
-                      errorCorrectionLevel: QrErrorCorrectLevel.M,
-                    ),
+                  ? Text(L10n.current.noQrCodeAvailable)
+                  : AdaptiveQrCode(data: code, maxSize: 440),
             ),
           ),
         ],
@@ -1128,8 +1181,7 @@ class _EmptyQrState extends StatelessWidget {
       icon: Icons.qr_code_2_rounded,
       eyebrow: L10n.current.readyWhenYouNeedIt,
       title: L10n.current.saveYourFirstQrCode,
-      subtitle:
-          L10n.current.ticketsAccessCodesLinksOrAWhole,
+      subtitle: L10n.current.ticketsAccessCodesLinksOrAWhole,
       buttonLabel: L10n.current.addQrCode,
       onPressed: onAdd,
       accent: const Color(0xFF5B67A3),
@@ -1236,7 +1288,10 @@ class _QrTile extends StatelessWidget {
                 if (isSet) ...[
                   const SizedBox(height: 4),
                   Text(
-                    L10n.current.ticketsUsed((codes.length).toString(), (usedCount).toString()),
+                    L10n.current.ticketsUsed(
+                      (codes.length).toString(),
+                      (usedCount).toString(),
+                    ),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12.5,

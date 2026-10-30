@@ -1,3 +1,4 @@
+import '../../shared/widgets/adaptive_vault_layout.dart';
 import '../../shared/widgets/shared_card_save.dart';
 import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import '../../shared/utils/card_barcode.dart';
@@ -9,7 +10,6 @@ import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../data/services/card_screen_session.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../data/services/storage_service.dart';
 import '../../data/services/brand_catalog_service.dart';
@@ -41,6 +41,7 @@ class CardViewScreen extends StatefulWidget {
 class _CardViewScreenState extends State<CardViewScreen>
     with WidgetsBindingObserver {
   late final PageController pageController;
+  final _pageViewKey = GlobalKey();
   late List<Map<String, dynamic>> items;
   late int currentIndex;
 
@@ -91,7 +92,6 @@ class _CardViewScreenState extends State<CardViewScreen>
       keepAwake: SettingsService.keepScreenAwakeEnabled,
     );
   }
-
 
   dynamic findKeyById(String id) {
     for (final key in StorageService.cardsBox.keys) {
@@ -203,9 +203,10 @@ class _CardViewScreenState extends State<CardViewScreen>
     };
 
     var savedItem = Map<String, dynamic>.from(newItem);
-    final isReadOnlyShare = savedItem['isShared'] == true &&
-        savedItem['canEditShared'] != true;
-    if (!isReadOnlyShare && CardShareService.contentChanged(oldItem, savedItem) &&
+    final isReadOnlyShare =
+        savedItem['isShared'] == true && savedItem['canEditShared'] != true;
+    if (!isReadOnlyShare &&
+        CardShareService.contentChanged(oldItem, savedItem) &&
         (savedItem['isShared'] == true ||
             (savedItem['sharedCardId']?.toString() ?? '').isNotEmpty)) {
       if (!context.mounted) return;
@@ -262,7 +263,9 @@ class _CardViewScreenState extends State<CardViewScreen>
       builder: (_) {
         return AlertDialog(
           title: Text(
-            isShared ? L10n.current.removeFromYourPaskluis : L10n.current.deleteCard,
+            isShared
+                ? L10n.current.removeFromYourPaskluis
+                : L10n.current.deleteCard,
           ),
           content: Text(
             isShared
@@ -272,12 +275,12 @@ class _CardViewScreenState extends State<CardViewScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child:  Text(L10n.current.cancel),
+              child: Text(L10n.current.cancel),
             ),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: Colors.red),
               onPressed: () => Navigator.pop(context, true),
-              child:  Text(L10n.current.delete),
+              child: Text(L10n.current.delete),
             ),
           ],
         );
@@ -309,10 +312,8 @@ class _CardViewScreenState extends State<CardViewScreen>
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
-            content: Text(
-              L10n.current.sharedAccessCouldNotBeUpdatedTry,
-            ),
+          SnackBar(
+            content: Text(L10n.current.sharedAccessCouldNotBeUpdatedTry),
           ),
         );
       }
@@ -354,15 +355,18 @@ class _CardViewScreenState extends State<CardViewScreen>
     Clipboard.setData(ClipboardData(text: code));
     HapticFeedback.lightImpact();
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar( SnackBar(content: Text(L10n.current.codeCopied)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(L10n.current.codeCopied)));
   }
 
   Future<void> openShareCard() async {
     if (items.isEmpty) return;
     if (!SettingsService.cardSharingAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text(L10n.current.cardSharingIsTemporarilyUnavailable)),
+        SnackBar(
+          content: Text(L10n.current.cardSharingIsTemporarilyUnavailable),
+        ),
       );
       return;
     }
@@ -374,7 +378,9 @@ class _CardViewScreenState extends State<CardViewScreen>
     if (items.isEmpty) return;
     if (!SettingsService.cardSharingAvailable) {
       ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text(L10n.current.cardSharingIsTemporarilyUnavailable)),
+        SnackBar(
+          content: Text(L10n.current.cardSharingIsTemporarilyUnavailable),
+        ),
       );
       return;
     }
@@ -391,9 +397,9 @@ class _CardViewScreenState extends State<CardViewScreen>
     final brandId = item['brandId']?.toString() ?? '';
     final brandNames = brandId.isEmpty
         ? null
-        : BrandCatalogService.load().then((brands) => {
-            for (final brand in brands) brand.id: brand.name,
-          });
+        : BrandCatalogService.load().then(
+            (brands) => {for (final brand in brands) brand.id: brand.name},
+          );
     final isFavorite = item['isFavorite'] == true;
     final isShared = item['isShared'] == true;
     final canEditShared = item['canEditShared'] == true;
@@ -416,7 +422,7 @@ class _CardViewScreenState extends State<CardViewScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                 Text(
+                Text(
                   L10n.current.cardDetails,
                   style: TextStyle(
                     fontSize: 24,
@@ -427,7 +433,11 @@ class _CardViewScreenState extends State<CardViewScreen>
                 const SizedBox(height: 22),
                 _DetailRow(label: L10n.current.name, value: name),
                 const SizedBox(height: 16),
-                _DetailRow(label: L10n.current.code, value: code, showCopy: true),
+                _DetailRow(
+                  label: L10n.current.code,
+                  value: code,
+                  showCopy: true,
+                ),
                 if (brandId.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   FutureBuilder<Map<String, String>>(
@@ -537,10 +547,12 @@ class _CardViewScreenState extends State<CardViewScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => FoldSafePassView(builder: _buildPass);
+
+  Widget _buildPass(BuildContext context) {
     L10n.watch(context);
     if (items.isEmpty) {
-      return  Scaffold(
+      return Scaffold(
         backgroundColor: Color(0xFFF4F4F6),
         body: Center(child: Text(L10n.current.noCards)),
       );
@@ -548,8 +560,7 @@ class _CardViewScreenState extends State<CardViewScreen>
 
     final currentItem = items[currentIndex];
     final isFavorite = currentItem['isFavorite'] == true;
-    final isLandscape =
-        MediaQuery.orientationOf(context) == Orientation.landscape;
+    final isLandscape = useCompactPassLayout(context);
 
     if (isLandscape) {
       return Scaffold(
@@ -558,9 +569,11 @@ class _CardViewScreenState extends State<CardViewScreen>
           child: Stack(
             children: [
               PageView.builder(
+                key: _pageViewKey,
                 controller: pageController,
                 itemCount: items.length,
                 onPageChanged: (index) {
+                  if (index == currentIndex) return;
                   HapticFeedback.selectionClick();
                   setState(() => currentIndex = index);
                   markCurrentCardAsUsed();
@@ -618,66 +631,77 @@ class _CardViewScreenState extends State<CardViewScreen>
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: PageView.builder(
-              controller: pageController,
-              itemCount: items.length,
-              onPageChanged: (index) {
-                HapticFeedback.selectionClick();
-                setState(() => currentIndex = index);
-                markCurrentCardAsUsed();
-              },
-              itemBuilder: (context, index) {
-                final item = items[index];
-                final linkedGiftCards = getLinkedGiftCards(item);
+      body: SafeArea(
+        top: false,
+        child: PassCarouselWidth(
+          child: Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  key: _pageViewKey,
+                  controller: pageController,
+                  itemCount: items.length,
+                  onPageChanged: (index) {
+                    if (index == currentIndex) return;
+                    HapticFeedback.selectionClick();
+                    setState(() => currentIndex = index);
+                    markCurrentCardAsUsed();
+                  },
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    final linkedGiftCards = getLinkedGiftCards(item);
 
-                return AnimatedBuilder(
-                  animation: pageController,
-                  builder: (context, child) {
-                    double page = currentIndex.toDouble();
+                    return AnimatedBuilder(
+                      animation: pageController,
+                      builder: (context, child) {
+                        double page = currentIndex.toDouble();
 
-                    if (pageController.hasClients &&
-                        pageController.position.haveDimensions) {
-                      page = pageController.page ?? currentIndex.toDouble();
-                    }
+                        if (pageController.positions.length == 1 &&
+                            pageController.position.haveDimensions) {
+                          page = pageController.page ?? currentIndex.toDouble();
+                        }
 
-                    final distance = (page - index).abs();
-                    final scale = (1 - distance * 0.05).clamp(0.94, 1.0);
-                    final opacity = (1 - distance * 0.25).clamp(0.65, 1.0);
+                        final distance = (page - index).abs();
+                        final scale = (1 - distance * 0.05).clamp(0.94, 1.0);
+                        final opacity = (1 - distance * 0.25).clamp(0.65, 1.0);
 
-                    return Opacity(
-                      opacity: opacity,
-                      child: Transform.scale(scale: scale, child: child),
+                        return Opacity(
+                          opacity: opacity,
+                          child: Transform.scale(scale: scale, child: child),
+                        );
+                      },
+                      child: PassCardFrame(
+                        minHeight: 560,
+                        child: LoyaltyBarcodeCard(
+                          item: item,
+                          barcode: getBarcodeType(item),
+                          linkedGiftCards: linkedGiftCards,
+                          onDetails: openDetails,
+                          onOpenGiftCards: () =>
+                              openLinkedGiftCards(linkedGiftCards),
+                        ),
+                      ),
                     );
                   },
-                  child: LoyaltyBarcodeCard(
-                    item: item,
-                    barcode: getBarcodeType(item),
-                    linkedGiftCards: linkedGiftCards,
-                    onDetails: openDetails,
-                    onOpenGiftCards: () => openLinkedGiftCards(linkedGiftCards),
-                  ),
-                );
-              },
-            ),
+                ),
+              ),
+              if (items.length > 1) ...[
+                const SizedBox(height: 8),
+                _Dots(count: items.length, activeIndex: currentIndex),
+              ],
+              const SizedBox(height: 16),
+              Text(
+                L10n.current.holdTheBarcodeUpToTheScanner,
+                style: TextStyle(
+                  color: Colors.black45,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
           ),
-          if (items.length > 1) ...[
-            const SizedBox(height: 8),
-            _Dots(count: items.length, activeIndex: currentIndex),
-          ],
-          const SizedBox(height: 16),
-           Text(
-            L10n.current.holdTheBarcodeUpToTheScanner,
-            style: TextStyle(
-              color: Colors.black45,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
+        ),
       ),
     );
   }
@@ -709,9 +733,9 @@ class _LandscapeBarcodeCard extends StatelessWidget {
           Expanded(
             child: Center(
               child: code.isEmpty
-                  ?  Text(L10n.current.noBarcodeAvailable)
+                  ? Text(L10n.current.noBarcodeAvailable)
                   : isQr
-                  ? QrImageView(data: code, padding: const EdgeInsets.all(8))
+                  ? AdaptiveQrCode(data: code, maxSize: 440)
                   : BarcodeWidget(
                       barcode: barcode,
                       data: code,
@@ -880,32 +904,31 @@ class LoyaltyBarcodeCard extends StatelessWidget {
                               ),
                             ),
                             child: isQr
-                            ? Center(
-                                child: QrImageView(
-                                  data: code,
-                                  size: hasLinkedGiftCard ? 150 : 180,
-                                  padding: EdgeInsets.zero,
-                                ),
-                              )
-                            : BarcodeWidget(
-                              barcode: barcode,
-                              data: code,
-                              width: double.infinity,
-                              height: hasLinkedGiftCard ? 150 : 180,
-                              drawText: false,
-                              errorBuilder: (_, __) {
-                                return  Center(
-                                  child: Text(
-                                    L10n.current.unableToDisplayBarcode,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.w700,
+                                ? Center(
+                                    child: AdaptiveQrCode(
+                                      data: code,
+                                      maxSize: 300,
                                     ),
+                                  )
+                                : BarcodeWidget(
+                                    barcode: barcode,
+                                    data: code,
+                                    width: double.infinity,
+                                    height: hasLinkedGiftCard ? 150 : 180,
+                                    drawText: false,
+                                    errorBuilder: (_, __) {
+                                      return Center(
+                                        child: Text(
+                                          L10n.current.unableToDisplayBarcode,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      );
+                                    },
                                   ),
-                                );
-                              },
-                            ),
                           ),
                         ),
                       ),
@@ -934,7 +957,7 @@ class LoyaltyBarcodeCard extends StatelessWidget {
                       TextButton.icon(
                         onPressed: onDetails,
                         icon: const Icon(Icons.info_outline_rounded),
-                        label:  Text(L10n.current.detailsAndOptions),
+                        label: Text(L10n.current.detailsAndOptions),
                         style: TextButton.styleFrom(
                           foregroundColor: const Color(0xFFD51B46),
                           textStyle: const TextStyle(
@@ -1004,7 +1027,9 @@ class _LinkedGiftCardInline extends StatelessWidget {
                   children: [
                     Text(
                       count > 1
-                          ? L10n.current.youHaveGiftCardsAvailable((count).toString())
+                          ? L10n.current.youHaveGiftCardsAvailable(
+                              (count).toString(),
+                            )
                           : L10n.current.youHaveOneGiftCardAvailable,
                       style: const TextStyle(
                         color: Color(0xFFD51B46),
@@ -1085,7 +1110,9 @@ class _LinkedGiftCardAction extends StatelessWidget {
                 children: [
                   Text(
                     count > 1
-                        ? L10n.current.youHaveGiftCardsAvailable((count).toString())
+                        ? L10n.current.youHaveGiftCardsAvailable(
+                            (count).toString(),
+                          )
                         : L10n.current.youHaveOneGiftCardAvailable,
                     style: const TextStyle(
                       color: Color(0xFFD51B46),
@@ -1186,10 +1213,11 @@ class _DetailRow extends StatelessWidget {
             onPressed: () {
               Clipboard.setData(ClipboardData(text: value));
               HapticFeedback.lightImpact();
-              ScaffoldMessenger.of(context)
-                  .showSnackBar( SnackBar(content: Text(L10n.current.copied)));
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(L10n.current.copied)));
             },
-            child:  Text(L10n.current.copy),
+            child: Text(L10n.current.copy),
           ),
       ],
     );

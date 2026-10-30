@@ -1,3 +1,4 @@
+import '../../shared/widgets/adaptive_vault_layout.dart';
 import 'package:paskluis_v1/shared/widgets/secure_card_image.dart';
 import 'package:paskluis_v1/l10n/l10n.dart';
 import '../../shared/widgets/share_stored_card.dart';
@@ -42,7 +43,8 @@ class GiftCardsScreen extends StatefulWidget {
   State<GiftCardsScreen> createState() => _GiftCardsScreenState();
 }
 
-class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingObserver {
+class _GiftCardsScreenState extends State<GiftCardsScreen>
+    with WidgetsBindingObserver {
   Map<String, NearbyStoreMatch> _nearbyStoreMatches = const {};
   int _nearbyRequest = 0;
   bool _hasPlus = false;
@@ -78,11 +80,17 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
     final cards = getItems();
     if (cards.isEmpty) return;
     final snapshot = await LocationService.resolve();
-    if (!mounted || request != _nearbyRequest || !SettingsService.locationCardsEnabled) return;
+    if (!mounted ||
+        request != _nearbyRequest ||
+        !SettingsService.locationCardsEnabled)
+      return;
     final location = snapshot.location;
     if (snapshot.state != LocationAccessState.ready || location == null) return;
     final matches = await NearbyStoreService.resolveForCards(cards, location);
-    if (!mounted || request != _nearbyRequest || !SettingsService.locationCardsEnabled) return;
+    if (!mounted ||
+        request != _nearbyRequest ||
+        !SettingsService.locationCardsEnabled)
+      return;
     setState(() => _nearbyStoreMatches = matches);
   }
 
@@ -109,7 +117,7 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
       } catch (_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(
+            SnackBar(
               content: Text(L10n.current.unableToUpdateCheckYourConnection),
             ),
           );
@@ -130,19 +138,26 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
 
   List<Map<String, dynamic>> getItems() {
     final items = StorageService.cardsBox.values
-        .where((item) =>
-            item is Map &&
-            item['type'] == 'Cadeaukaart' &&
-            item['isArchived'] != true &&
-            item['isArchived']?.toString() != 'true')
+        .where(
+          (item) =>
+              item is Map &&
+              item['type'] == 'Cadeaukaart' &&
+              item['isArchived'] != true &&
+              item['isArchived']?.toString() != 'true',
+        )
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
 
-    return sortLoyaltyCards(items,
-      favoritesFirst: true, sortOrder: 'recent', cardType: 'Cadeaukaart',
+    return sortLoyaltyCards(
+      items,
+      favoritesFirst: true,
+      sortOrder: 'recent',
+      cardType: 'Cadeaukaart',
       nearbyFirst: SettingsService.locationCardsEnabled,
       nearbyRadiusMeters: LocationService.nearbyRadiusMeters,
-      distances: _nearbyStoreMatches.map((id, match) => MapEntry(id, match.distanceMeters)),
+      distances: _nearbyStoreMatches.map(
+        (id, match) => MapEntry(id, match.distanceMeters),
+      ),
     );
   }
 
@@ -212,9 +227,9 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
     }
     _loadNearbyLocation();
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-         SnackBar(content: Text(L10n.current.giftCardSaved)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(L10n.current.giftCardSaved)));
     }
   }
 
@@ -294,12 +309,14 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
         content: Text(
           isShared
               ? L10n.current.youAreOnlyRemovingFromYourOwn433((name).toString())
-              : L10n.current.areYouSureYouWantToPermanently434((name).toString()),
+              : L10n.current.areYouSureYouWantToPermanently434(
+                  (name).toString(),
+                ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child:  Text(L10n.current.cancel),
+            child: Text(L10n.current.cancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
@@ -307,7 +324,9 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
             ),
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              isShared ? L10n.current.delete : L10n.current.permanentlyDelete391,
+              isShared
+                  ? L10n.current.delete
+                  : L10n.current.permanentlyDelete391,
             ),
           ),
         ],
@@ -323,17 +342,13 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
           item['shareMembershipId']?.toString() ?? '',
         );
       } else if ((item['sharedCardId']?.toString() ?? '').isNotEmpty) {
-        await CardShareService.revokeAllForCard(
-          item['id']?.toString() ?? '',
-        );
+        await CardShareService.revokeAllForCard(item['id']?.toString() ?? '');
       }
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
-            content: Text(
-              L10n.current.sharedAccessCouldNotBeUpdatedTry,
-            ),
+          SnackBar(
+            content: Text(L10n.current.sharedAccessCouldNotBeUpdatedTry),
           ),
         );
       }
@@ -343,8 +358,9 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
 
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(L10n.current.hasBeenDeleted((name).toString()))));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(L10n.current.hasBeenDeleted((name).toString()))),
+    );
   }
 
   void showGiftCardOptions(BuildContext context, Map<String, dynamic> item) {
@@ -457,10 +473,13 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
 
   Future<void> showArchivedCards(BuildContext context) async {
     final archived = StorageService.cardsBox.values
-        .where((item) =>
-            item is Map &&
-            item['type'] == 'Cadeaukaart' &&
-            (item['isArchived'] == true || item['isArchived']?.toString() == 'true'))
+        .where(
+          (item) =>
+              item is Map &&
+              item['type'] == 'Cadeaukaart' &&
+              (item['isArchived'] == true ||
+                  item['isArchived']?.toString() == 'true'),
+        )
         .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
     await showModalBottomSheet(
@@ -473,56 +492,67 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-               Text(L10n.current.archive435, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+              Text(
+                L10n.current.archive435,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+              ),
               const SizedBox(height: 14),
               if (archived.isEmpty)
-                 Padding(
+                Padding(
                   padding: EdgeInsets.all(28),
                   child: Text(L10n.current.thereAreNoGiftCardsInThe),
                 )
               else
-                ...archived.map((item) => ListTile(
-                      leading: const CircleAvatar(child: Icon(Icons.card_giftcard_rounded)),
-                      title: Text(item['name']?.toString() ?? 'Cadeaukaart'),
-                      subtitle: Text(
-                        L10n.current.balance437((formatAmountValue(item['currentBalance'] ?? '0')).toString()),
+                ...archived.map(
+                  (item) => ListTile(
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.card_giftcard_rounded),
+                    ),
+                    title: Text(item['name']?.toString() ?? 'Cadeaukaart'),
+                    subtitle: Text(
+                      L10n.current.balance437(
+                        (formatAmountValue(
+                          item['currentBalance'] ?? '0',
+                        )).toString(),
                       ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextButton(
-                            onPressed: () async {
-                              if (!await PremiumGate.canAddGiftCard(context)) {
-                                return;
-                              }
-                              if (!sheetContext.mounted) return;
-                              final key = findHiveKey(item);
-                              if (key == null) return;
-                              final restored = {
-                                ...item,
-                                'isArchived': false,
-                                'archivedAt': '',
-                              };
-                              await StorageService.saveCard(key, restored);
-                              await NotificationService.syncGiftCard(restored);
-                              if (sheetContext.mounted) {
-                                Navigator.pop(sheetContext);
-                              }
-                            },
-                            child:  Text(L10n.current.restore),
-                          ),
-                          IconButton(
-                            tooltip: L10n.current.permanentlyDelete391,
-                            color: Colors.red,
-                            onPressed: () async {
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextButton(
+                          onPressed: () async {
+                            if (!await PremiumGate.canAddGiftCard(context)) {
+                              return;
+                            }
+                            if (!sheetContext.mounted) return;
+                            final key = findHiveKey(item);
+                            if (key == null) return;
+                            final restored = {
+                              ...item,
+                              'isArchived': false,
+                              'archivedAt': '',
+                            };
+                            await StorageService.saveCard(key, restored);
+                            await NotificationService.syncGiftCard(restored);
+                            if (sheetContext.mounted) {
                               Navigator.pop(sheetContext);
-                              await deleteGiftCard(context, item);
-                            },
-                            icon: const Icon(Icons.delete_forever_rounded),
-                          ),
-                        ],
-                      ),
-                    )),
+                            }
+                          },
+                          child: Text(L10n.current.restore),
+                        ),
+                        IconButton(
+                          tooltip: L10n.current.permanentlyDelete391,
+                          color: Colors.red,
+                          onPressed: () async {
+                            Navigator.pop(sheetContext);
+                            await deleteGiftCard(context, item);
+                          },
+                          icon: const Icon(Icons.delete_forever_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -539,58 +569,62 @@ class _GiftCardsScreenState extends State<GiftCardsScreen> with WidgetsBindingOb
         if (!didPop) openHome(context);
       },
       child: ValueListenableBuilder<Box>(
-      valueListenable: StorageService.cardsBox.listenable(),
-      builder: (context, box, _) {
-        final items = getItems();
+        valueListenable: StorageService.cardsBox.listenable(),
+        builder: (context, box, _) {
+          final items = getItems();
 
-        return Scaffold(
-          backgroundColor: const Color(0xFFF4F4F6),
-          appBar: AppBar(
-            automaticallyImplyLeading: false,
-            leadingWidth: 56,
-            leading: const SizedBox.shrink(),
-            title:  PremiumAppTitle(L10n.current.giftCards),
-            centerTitle: true,
-            titleSpacing: 4,
-            backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF333333),
-            elevation: 0,
-            actions: [
-              IconButton(
-                constraints: const BoxConstraints.tightFor(
-                  width: 44,
-                  height: 48,
+          return Scaffold(
+            backgroundColor: const Color(0xFFF4F4F6),
+            appBar: AppBar(
+              automaticallyImplyLeading: false,
+              leadingWidth: 56,
+              leading: const SizedBox.shrink(),
+              title: PremiumAppTitle(L10n.current.giftCards),
+              centerTitle: true,
+              titleSpacing: 4,
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF333333),
+              elevation: 0,
+              actions: [
+                IconButton(
+                  constraints: const BoxConstraints.tightFor(
+                    width: 44,
+                    height: 48,
+                  ),
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(
+                    Icons.add,
+                    color: Color(0xFFD51B46),
+                    size: 32,
+                  ),
+                  onPressed: () => openAddGiftCard(context),
                 ),
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.add, color: Color(0xFFD51B46), size: 32),
-                onPressed: () => openAddGiftCard(context),
-              ),
-            ],
-          ),
-          body: MainTabSwipeRegion(
-            currentIndex: 3,
-            onSwitch: (index) => openTab(context, index),
-            child: RefreshIndicator(
-              onRefresh: _refreshGiftCards,
-              color: const Color(0xFFD51B46),
-              child: _GiftCardsOverview(
-                items: items,
-                nearbyStoreMatches: _nearbyStoreMatches,
-                hasPlus: _hasPlus,
-                loadingPlus: _loadingPlus,
-                onAdd: () => openAddGiftCard(context),
-                onOpenPlus: () => _openPlus(context),
-                onOpenCard: (index) => openGiftCard(context, items, index),
-                onLongPress: (item) => showGiftCardOptions(context, item),
+              ],
+            ),
+            body: MainTabSwipeRegion(
+              currentIndex: 3,
+              onSwitch: (index) => openTab(context, index),
+              child: RefreshIndicator(
+                onRefresh: _refreshGiftCards,
+                color: const Color(0xFFD51B46),
+                child: _GiftCardsOverview(
+                  items: items,
+                  nearbyStoreMatches: _nearbyStoreMatches,
+                  hasPlus: _hasPlus,
+                  loadingPlus: _loadingPlus,
+                  onAdd: () => openAddGiftCard(context),
+                  onOpenPlus: () => _openPlus(context),
+                  onOpenCard: (index) => openGiftCard(context, items, index),
+                  onLongPress: (item) => showGiftCardOptions(context, item),
+                ),
               ),
             ),
-          ),
-          bottomNavigationBar: MainBottomNav(
-            currentIndex: 3,
-            onTap: (index) => openTab(context, index),
-          ),
-        );
-      },
+            bottomNavigationBar: MainBottomNav(
+              currentIndex: 3,
+              onTap: (index) => openTab(context, index),
+            ),
+          );
+        },
       ),
     );
   }
@@ -633,11 +667,8 @@ class _GiftCardsOverview extends StatelessWidget {
                 child: InkWell(
                   onTap: onOpenPlus,
                   borderRadius: BorderRadius.circular(18),
-                  child:  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 13,
-                    ),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                     child: Row(
                       children: [
                         Icon(
@@ -657,7 +688,9 @@ class _GiftCardsOverview extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                L10n.current.discoverEverythingYouGetWithPaskluisPlus,
+                                L10n
+                                    .current
+                                    .discoverEverythingYouGetWithPaskluisPlus,
                                 style: TextStyle(
                                   color: Color(0xFF806719),
                                   fontSize: 12.5,
@@ -680,28 +713,23 @@ class _GiftCardsOverview extends StatelessWidget {
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           sliver: SliverGrid(
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: SettingsService.extraClearEnabled ? 1 : 2,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-              childAspectRatio:
-                  SettingsService.extraClearEnabled ? 2.35 : 1.42,
+            gridDelegate: AdaptiveCardGridDelegate(
+              extraClear: SettingsService.extraClearEnabled,
+              childAspectRatio: SettingsService.extraClearEnabled ? 2.35 : 1.42,
             ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                if (items.isEmpty) {
-                  return _AddGiftCardTile(onAdd: onAdd);
-                }
-                final item = items[index];
-                return GiftCardTile(
-                  item: item,
-                  distanceMeters: nearbyStoreMatches[item['id']?.toString()]?.distanceMeters,
-                  onTap: () => onOpenCard(index),
-                  onLongPress: () => onLongPress(item),
-                );
-              },
-              childCount: items.isEmpty ? 1 : items.length,
-            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              if (items.isEmpty) {
+                return _AddGiftCardTile(onAdd: onAdd);
+              }
+              final item = items[index];
+              return GiftCardTile(
+                item: item,
+                distanceMeters:
+                    nearbyStoreMatches[item['id']?.toString()]?.distanceMeters,
+                onTap: () => onOpenCard(index),
+                onLongPress: () => onLongPress(item),
+              );
+            }, childCount: items.isEmpty ? 1 : items.length),
           ),
         ),
         if (!hasPlus)
@@ -752,7 +780,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
             size: 38,
           ),
           const SizedBox(height: 10),
-           Text(
+          Text(
             L10n.current.storeYourFirstGiftCardForFree,
             textAlign: TextAlign.center,
             style: TextStyle(
@@ -762,7 +790,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-           Text(
+          Text(
             L10n.current.goFurtherWithPlusStoreUnlimitedGift,
             textAlign: TextAlign.center,
             style: TextStyle(height: 1.35, color: Color(0xFF6D5000)),
@@ -774,7 +802,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.62),
               borderRadius: BorderRadius.circular(16),
             ),
-            child:  FittedBox(
+            child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -805,7 +833,7 @@ class _PlusGiftCardLimitCard extends StatelessWidget {
               foregroundColor: Colors.white,
             ),
             icon: const Icon(Icons.workspace_premium_rounded),
-            label:  Text(L10n.current.discoverAllPlusBenefits),
+            label: Text(L10n.current.discoverAllPlusBenefits),
           ),
         ],
       ),
@@ -840,7 +868,7 @@ class _AddGiftCardTile extends StatelessWidget {
               ),
             ],
           ),
-          child:  Column(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircleAvatar(
@@ -869,10 +897,7 @@ class _AddGiftCardTile extends StatelessWidget {
                 L10n.current.tapToGetStarted,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 10.5,
-                  color: Color(0xFF77747C),
-                ),
+                style: TextStyle(fontSize: 10.5, color: Color(0xFF77747C)),
               ),
             ],
           ),
@@ -931,7 +956,9 @@ class _GiftCardTileState extends State<GiftCardTile> {
     final customImage = widget.item['customImage']?.toString() ?? '';
     final balance = widget.item['currentBalance']?.toString() ?? '';
     final isFavorite = widget.item['isFavorite'] == true;
-    final expiryDate = DateTime.tryParse(widget.item['expiryDate']?.toString() ?? '');
+    final expiryDate = DateTime.tryParse(
+      widget.item['expiryDate']?.toString() ?? '',
+    );
     final today = DateTime(
       DateTime.now().year,
       DateTime.now().month,
@@ -945,12 +972,12 @@ class _GiftCardTileState extends State<GiftCardTile> {
     final expiryStatus = isExpired
         ? L10n.current.expired
         : daysUntilExpiry == 0
-            ? L10n.current.expiresToday450
-            : daysUntilExpiry == 1
-                ? L10n.current.text1DayLeft
-                : daysUntilExpiry != null && daysUntilExpiry <= 7
-                    ? L10n.current.daysLeft((daysUntilExpiry).toString())
-                    : null;
+        ? L10n.current.expiresToday450
+        : daysUntilExpiry == 1
+        ? L10n.current.text1DayLeft
+        : daysUntilExpiry != null && daysUntilExpiry <= 7
+        ? L10n.current.daysLeft((daysUntilExpiry).toString())
+        : null;
     final hasLogo = hasAssetLogo || hasCustomLogo;
     final usesBrandBackground =
         hasLogo && (widget.item['brandColor']?.toString() ?? '').isNotEmpty;
@@ -958,8 +985,14 @@ class _GiftCardTileState extends State<GiftCardTile> {
         usesBrandBackground && cardColor.computeLuminance() < 0.55;
     return Semantics(
       button: true,
-      label:
-          L10n.current.giftCard453((title).toString(), (balance.isEmpty ? L10n.current.balanceUnknown454 : L10n.current.balance455(formatAmountValue(balance))).toString(), (isFavorite ? L10n.current.favourite : '').toString()),
+      label: L10n.current.giftCard453(
+        (title).toString(),
+        (balance.isEmpty
+                ? L10n.current.balanceUnknown454
+                : L10n.current.balance455(formatAmountValue(balance)))
+            .toString(),
+        (isFavorite ? L10n.current.favourite : '').toString(),
+      ),
       hint: L10n.current.doubleTapToOpenTheGiftCard,
       child: GestureDetector(
         onTapDown: (_) => setPressed(true),
@@ -968,151 +1001,175 @@ class _GiftCardTileState extends State<GiftCardTile> {
         onTap: widget.onTap,
         onLongPress: widget.onLongPress,
         child: AnimatedScale(
-        scale: isPressed ? 0.96 : 1.0,
-        duration: const Duration(milliseconds: 110),
-        curve: Curves.easeOut,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.fromLTRB(10, 10, 10, 11),
-          decoration: BoxDecoration(
-            color: usesBrandBackground ? cardColor : Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isPressed ? 0.035 : 0.06),
-                blurRadius: isPressed ? 8 : 12,
-                offset: Offset(0, isPressed ? 3 : 5),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Column(
-                children: [
-              Expanded(
-                child: ClipRect(
-                  child: Center(
-                    child: hasLogo
-                        ? hasCustomLogo
-                            ? Transform.scale(
-                                scale: 1.5,
-                                child: SecureCardImage(
-                                  File(customImage),
-                                  fit: BoxFit.contain,
-                                  height: 96,
-                                  width: double.infinity,
+          scale: isPressed ? 0.96 : 1.0,
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 11),
+            decoration: BoxDecoration(
+              color: usesBrandBackground ? cardColor : Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isPressed ? 0.035 : 0.06),
+                  blurRadius: isPressed ? 8 : 12,
+                  offset: Offset(0, isPressed ? 3 : 5),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                Column(
+                  children: [
+                    Expanded(
+                      child: ClipRect(
+                        child: Center(
+                          child: hasLogo
+                              ? hasCustomLogo
+                                    ? Transform.scale(
+                                        scale: 1.5,
+                                        child: SecureCardImage(
+                                          File(customImage),
+                                          fit: BoxFit.contain,
+                                          height: 96,
+                                          width: double.infinity,
+                                        ),
+                                      )
+                                    : SizedBox(
+                                        height: 96,
+                                        width: double.infinity,
+                                        child: BrandLogo(
+                                          source: logoAsset,
+                                          scale: logoLayoutValue(
+                                            widget.item,
+                                            'gift',
+                                            'scale',
+                                            1,
+                                          ),
+                                          offsetX: logoLayoutValue(
+                                            widget.item,
+                                            'gift',
+                                            'x',
+                                            0,
+                                          ),
+                                          offsetY: logoLayoutValue(
+                                            widget.item,
+                                            'gift',
+                                            'y',
+                                            0,
+                                          ),
+                                        ),
+                                      )
+                              : Text(
+                                  title,
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w900,
+                                    color: usesBrandBackground
+                                        ? Colors.white
+                                        : const Color(0xFF333333),
+                                  ),
                                 ),
-                              )
-                            : SizedBox(
-                                height: 96,
-                                width: double.infinity,
-                                child: BrandLogo(
-                                  source: logoAsset,
-                                  scale: logoLayoutValue(
-                                    widget.item,
-                                    'gift',
-                                    'scale',
-                                    1,
-                                  ),
-                                  offsetX: logoLayoutValue(
-                                    widget.item,
-                                    'gift',
-                                    'x',
-                                    0,
-                                  ),
-                                  offsetY: logoLayoutValue(
-                                    widget.item,
-                                    'gift',
-                                    'y',
-                                    0,
-                                  ),
-                                ),
-                              )
-                        : Text(
-                          title,
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
-                            color: usesBrandBackground
-                                ? Colors.white
-                                : const Color(0xFF333333),
-                          ),
-                          ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 5),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 7),
-                decoration: BoxDecoration(
-                  color: hasDarkBrandBackground
-                      ? Colors.white.withOpacity(0.22)
-                      : const Color(0xFFD51B46),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Text(
-                  balance.isEmpty
-                      ? L10n.current.balanceUnknown
-                      : '€ ${formatAmountValue(balance)}',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-                ],
-              ),
-              if (isFavorite)
-                Positioned(
-                  top: 2,
-                  right: 2,
-                  child: Icon(
-                    Icons.star,
-                    color: hasDarkBrandBackground
-                        ? Colors.white
-                        : const Color(0xFFD51B46),
-                    size: 24,
-                  ),
-                ),
-              if (SettingsService.locationCardsEnabled && SettingsService.showCardDistances &&
-                  widget.distanceMeters != null && widget.distanceMeters!.isFinite &&
-                  widget.distanceMeters! >= 0 && widget.distanceMeters! <= LocationService.nearbyRadiusMeters)
-                Positioned(top: widget.item['isFavorite'] == true ? 29 : 0, right: 0, child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: const Color(0xDD333333), borderRadius: BorderRadius.circular(12)),
-                  child: Text(LocationService.formatDistance(widget.distanceMeters!), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
-                )),
-              if (expiryStatus != null)
-                Positioned(
-                  top: 2,
-                  left: 2,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isExpired || daysUntilExpiry == 0
-                          ? Colors.red.shade700
-                          : const Color(0xFFC68400),
-                      borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
                     ),
-                    child: Text(
-                      expiryStatus,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
+                    const SizedBox(height: 5),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 7),
+                      decoration: BoxDecoration(
+                        color: hasDarkBrandBackground
+                            ? Colors.white.withOpacity(0.22)
+                            : const Color(0xFFD51B46),
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Text(
+                        balance.isEmpty
+                            ? L10n.current.balanceUnknown
+                            : '€ ${formatAmountValue(balance)}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (isFavorite)
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: Icon(
+                      Icons.star,
+                      color: hasDarkBrandBackground
+                          ? Colors.white
+                          : const Color(0xFFD51B46),
+                      size: 24,
+                    ),
+                  ),
+                if (SettingsService.locationCardsEnabled &&
+                    SettingsService.showCardDistances &&
+                    widget.distanceMeters != null &&
+                    widget.distanceMeters!.isFinite &&
+                    widget.distanceMeters! >= 0 &&
+                    widget.distanceMeters! <=
+                        LocationService.nearbyRadiusMeters)
+                  Positioned(
+                    top: widget.item['isFavorite'] == true ? 29 : 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xDD333333),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        LocationService.formatDistance(widget.distanceMeters!),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
+                if (expiryStatus != null)
+                  Positioned(
+                    top: 2,
+                    left: 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isExpired || daysUntilExpiry == 0
+                            ? Colors.red.shade700
+                            : const Color(0xFFC68400),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        expiryStatus,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
