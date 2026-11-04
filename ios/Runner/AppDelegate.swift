@@ -29,6 +29,16 @@ import CoreLocation
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    let regionChannel = FlutterMethodChannel(
+      name: "nl.paskluis.app/device-region",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    regionChannel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "countryCode": result(Locale.autoupdatingCurrent.regionCode)
+      default: result(FlutterMethodNotImplemented)
+      }
+    }
     #if WATCH_BETA
     WatchBridge.shared.register(engineBridge.applicationRegistrar.messenger())
     #endif

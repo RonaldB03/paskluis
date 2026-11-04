@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../data/templates/card_templates.dart';
 import '../../data/services/brand_catalog_service.dart';
+import '../../data/services/brand_picker_catalog.dart';
 import '../../data/services/smart_card_import_service.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../scanner/scanner_screen.dart';
@@ -21,6 +22,7 @@ class ChooseCardTemplateScreen extends StatefulWidget {
 
 class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
   String searchQuery = '';
+  String? countryCode;
   List<CardBrandTemplate> brands = cardBrandTemplates;
   ScannerResult? pendingScan;
   String? pendingSuggestedName;
@@ -28,6 +30,9 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
   @override
   void initState() {
     super.initState();
+    loadBrandPickerCountry().then((value) {
+      if (mounted && value != null) setState(() => countryCode = value);
+    });
     BrandCatalogService.load().then((value) {
       if (mounted) setState(() => brands = value);
     });
@@ -280,33 +285,12 @@ class _ChooseCardTemplateScreenState extends State<ChooseCardTemplateScreen> {
   Widget build(BuildContext context) {
     L10n.watch(context);
     final query = searchQuery.trim().toLowerCase();
-    final availableBrands = brands
-        .where(
-          (brand) => brand.supportedTypes.contains(
-            widget.type == 'Cadeaukaart' ? 'Cadeaukaart' : 'Pasje',
-          ),
-        )
-        .toList()
-      ..sort(
-        (first, second) => first.name.toLowerCase().compareTo(
-          second.name.toLowerCase(),
-        ),
-      );
-    final filteredBrands = availableBrands
-        .where(
-          (brand) =>
-              query.isEmpty ||
-              brand.name.toLowerCase().contains(query) ||
-              brand.id.toLowerCase().contains(query) ||
-              brand.searchTerms.any((term) => term.contains(query)),
-        )
-        .toList();
-    final popularBrands = availableBrands
-        .where((brand) => brand.isFeatured)
-        .toList();
-    final listedBrands = query.isEmpty
-        ? filteredBrands.where((brand) => !brand.isFeatured).toList()
-        : filteredBrands;
+    final cardType = widget.type == 'Cadeaukaart' ? 'Cadeaukaart' : 'Pasje';
+    final (popular: popularBrands, stores: listedBrands) = buildBrandPickerCatalog(
+      brands.where((brand) => brand.supportedTypes.contains(cardType)),
+      query: query,
+      countryCode: countryCode,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F6),

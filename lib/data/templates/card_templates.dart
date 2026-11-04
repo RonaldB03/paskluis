@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class CardBrandTemplate {
   final String id;
   final String name;
+  final String countryCode;
   final String logoAsset;
   final Color color;
   final Map<String, double> logoLayout;
@@ -19,6 +20,7 @@ class CardBrandTemplate {
     required this.name,
     required this.logoAsset,
     required this.color,
+    this.countryCode = 'NL',
     this.logoLayout = const {},
     this.isFeatured = false,
     this.searchTerms = const [],
@@ -40,6 +42,7 @@ CardBrandTemplate cardBrandTemplateFromJson(Map<String, dynamic> json) {
   return CardBrandTemplate(
     id: json['slug']?.toString() ?? '',
     name: json['name']?.toString() ?? '',
+    countryCode: json['country_code']?.toString() ?? 'NL',
     logoAsset: json['logo_path']?.toString() ?? '',
     color: Color(colorValue),
     isFeatured: json['is_featured'] == true,

@@ -18,6 +18,7 @@ import '../../data/services/notification_service.dart';
 import '../../data/services/smart_card_import_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/brand_catalog_service.dart';
+import '../../data/services/brand_picker_catalog.dart';
 import '../../data/templates/card_templates.dart';
 import '../../shared/widgets/brand_logo.dart';
 import '../../shared/utils/amount_format.dart';
@@ -771,29 +772,25 @@ class GiftBrandPickerSheet extends StatefulWidget {
 
 class _GiftBrandPickerSheetState extends State<GiftBrandPickerSheet> {
   String searchQuery = '';
+  String? countryCode;
+
+  @override
+  void initState() {
+    super.initState();
+    loadBrandPickerCountry().then((value) {
+      if (mounted && value != null) setState(() => countryCode = value);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     L10n.watch(context);
     final query = searchQuery.trim().toLowerCase();
-    final sortedBrands = [...widget.brands]
-      ..sort(
-        (first, second) => first.name.toLowerCase().compareTo(
-          second.name.toLowerCase(),
-        ),
-      );
-    final filteredBrands = sortedBrands.where((brand) {
-      if (query.isEmpty) return true;
-      return brand.name.toLowerCase().contains(query) ||
-          brand.id.toLowerCase().contains(query) ||
-          brand.searchTerms.any((term) => term.contains(query));
-    }).toList();
-    final popularBrands = sortedBrands
-        .where((brand) => brand.isFeatured)
-        .toList();
-    final listedBrands = query.isEmpty
-        ? filteredBrands.where((brand) => !brand.isFeatured).toList()
-        : filteredBrands;
+    final (popular: popularBrands, stores: listedBrands) = buildBrandPickerCatalog(
+      widget.brands,
+      query: query,
+      countryCode: countryCode,
+    );
 
     return SafeArea(
       child: SizedBox(

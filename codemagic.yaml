@@ -63,7 +63,7 @@ workflows:
       xcode: latest
       vars:
         WATCH_BETA: "1"
-        WATCH_BETA_VERSION: "1.9.3"
+        WATCH_BETA_VERSION: "1.9.4"
       ios_signing:
         distribution_type: app_store
         bundle_identifier: nl.paskluis.app
@@ -71,7 +71,7 @@ workflows:
       - name: Prepare smartwatch targets
         script: |
           set -euo pipefail
-          test "$CM_BRANCH" = "codex/smartwatch-beta"
+          test "$CM_BRANCH" = "codex/belgium-store-test"
           flutter pub get
           ruby tooling/configure_watch_ios.rb
           flutter build ios --config-only --no-codesign --dart-define=WATCH_BETA=true --build-name="$WATCH_BETA_VERSION"
@@ -102,6 +102,8 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+        beta_groups:
+          - Paskluis Testers
         submit_to_app_store: false
 
   android-smartwatch-beta:
@@ -288,7 +290,7 @@ workflows:
       - name: Tests uitvoeren
         script: |
           if [ -d test ]; then
-            flutter test
+            flutter test --dart-define=WATCH_BETA=true
           else
             echo "Nog geen testmap aanwezig; stap overgeslagen."
           fi
@@ -308,7 +310,7 @@ workflows:
       - name: Android App Bundle bouwen
         script: |
           NEXT_BUILD_NUMBER=$(cat "$CM_BUILD_DIR/android_build_number.txt")
-          flutter build appbundle --release --build-number="$NEXT_BUILD_NUMBER"
+          flutter build appbundle --release --dart-define=WATCH_BETA=true --build-number="$NEXT_BUILD_NUMBER"
       - name: Android native regressietests
         script: |
           cd android
@@ -316,7 +318,7 @@ workflows:
       - name: Android test-APK bouwen
         script: |
           NEXT_BUILD_NUMBER=$(cat "$CM_BUILD_DIR/android_build_number.txt")
-          flutter build apk --release --build-number="$NEXT_BUILD_NUMBER"
+          flutter build apk --release --dart-define=WATCH_BETA=true --build-number="$NEXT_BUILD_NUMBER"
 
     artifacts:
       - build/app/outputs/bundle/release/*.aab
@@ -326,7 +328,7 @@ workflows:
     publishing:
       google_play:
         credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
-        track: alpha
+        track: internal
 
   release-validation:
     name: Live test validation
