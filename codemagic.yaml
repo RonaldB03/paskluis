@@ -367,3 +367,19 @@ workflows:
     <<: *android_test
     name: Android Candidate Build
     publishing: {}
+
+  store-inspect-194:
+    name: Inspect existing 1.9.4 store builds
+    instance_type: mac_mini_m2
+    max_build_duration: 15
+    integrations:
+      app_store_connect: Codemagic
+    environment:
+      groups:
+        - google_play_credentials
+    scripts:
+      - name: Read current App Store and Google Play release state
+        script: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'cryptography>=46,<47' google-auth requests
+          python3 tooling/release_194.py
