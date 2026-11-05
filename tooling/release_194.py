@@ -16,8 +16,9 @@ VERSION = "1.9.4"
 
 
 def apple(path):
+    url = path if path.startswith("https://api.appstoreconnect.apple.com/") else APPLE + path
     request = urllib.request.Request(
-        APPLE + path, headers={"Authorization": "Bearer " + token()})
+        url, headers={"Authorization": "Bearer " + token()})
     try:
         with urllib.request.urlopen(request, timeout=45) as response:
             return json.load(response)
@@ -38,6 +39,17 @@ def inspect_apple():
     versions = apple(f"apps/{APP}/appStoreVersions?limit=20")["data"]
     print(json.dumps({"apple_versions": [
         {"id": v["id"], **v["attributes"]} for v in versions]}))
+    availability = apple(f"apps/{APP}/appAvailabilityV2")["data"]
+    path = availability["relationships"]["territoryAvailabilities"]["links"]["related"]
+    territories = []
+    while path:
+        page = apple(path)
+        territories.extend(page["data"])
+        path = page.get("links", {}).get("next")
+    print(json.dumps({"apple_available_territories": [
+        {"id": t["id"], "attributes": t["attributes"],
+         "territory": t.get("relationships", {}).get("territory", {}).get("data")}
+        for t in territories if t["attributes"].get("available")]}))
     return builds, versions
 
 
