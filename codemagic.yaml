@@ -368,8 +368,8 @@ workflows:
     name: Android Candidate Build
     publishing: {}
 
-  store-inspect-194:
-    name: Inspect existing 1.9.4 store builds
+  store-promote-194:
+    name: Promote tested 1.9.4 builds to production
     instance_type: mac_mini_m2
     max_build_duration: 15
     integrations:
@@ -382,6 +382,7 @@ workflows:
         script: |
           set -euo pipefail
           python3 -m pip install --quiet 'cryptography>=46,<47' google-auth requests
-          python3 tooling/release_194.py | tee release-state.jsonl
+          python3 tooling/release_194.py --promote | tee release-state.jsonl
     artifacts:
       - release-state.jsonl
+      - apple-promotion.log

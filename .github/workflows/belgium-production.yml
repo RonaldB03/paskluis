@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        workflow: [store-inspect-194]
+        workflow: [store-promote-194]
     steps:
       - name: Start and monitor the test build
         env:
@@ -47,7 +47,9 @@ jobs:
               finished)
                 jq -c '.data | {keys: keys, artifacts: (.artifacts // .artefacts // [])}' <<< "$response"
                 exit 0 ;;
-              failed|canceled|cancelled|timeout) exit 1 ;;
+              failed|canceled|cancelled|timeout)
+                jq -c '.data | {keys: keys, artifacts: (.artifacts // .artefacts // [])}' <<< "$response"
+                exit 1 ;;
             esac
             sleep 30
           done
