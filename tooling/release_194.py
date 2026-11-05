@@ -1,5 +1,6 @@
 """Inspect and promote the existing PasKluis 1.9.4 store builds."""
 import argparse
+import base64
 import json
 import os
 import subprocess
@@ -15,10 +16,13 @@ PACKAGE = "nl.paskluis.app"
 VERSION = "1.9.4"
 
 
-def apple(path):
+def apple(path, payload=None):
     url = path if path.startswith("https://api.appstoreconnect.apple.com/") else APPLE + path
     request = urllib.request.Request(
-        url, headers={"Authorization": "Bearer " + token()})
+        url, data=json.dumps(payload).encode() if payload else None,
+        method="PATCH" if payload else "GET",
+        headers={"Authorization": "Bearer " + token(),
+                 "Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(request, timeout=45) as response:
             return json.load(response)
@@ -46,6 +50,19 @@ def inspect_apple():
         page = apple(path)
         territories.extend(page["data"])
         path = page.get("links", {}).get("next")
+    belgium = [
+        t for t in territories
+        if json.loads(base64.urlsafe_b64decode(
+            t["id"] + "=" * (-len(t["id"]) % 4)))["t"] == "BEL"]
+    assert len(belgium) == 1, "Expected one Belgian app availability"
+    if not belgium[0]["attributes"]["available"]:
+        selected = belgium[0]
+        updated = apple(f"territoryAvailabilities/{selected['id']}", {
+            "data": {"type": "territoryAvailabilities", "id": selected["id"],
+                     "attributes": {"available": True}}})["data"]
+        print(json.dumps({"apple_belgium_enabled": updated}))
+        territories = [updated if t["id"] == updated["id"] else t
+                       for t in territories]
     print(json.dumps({"apple_available_territories": [
         {"id": t["id"], "attributes": t["attributes"],
          "territory": t.get("relationships", {}).get("territory", {}).get("data")}
