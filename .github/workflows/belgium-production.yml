@@ -44,7 +44,9 @@ jobs:
             status=$(jq -er .data.status <<< "$response")
             echo "$status"
             case "$status" in
-              finished) exit 0 ;;
+              finished)
+                jq -c '.data | {keys: keys, artifacts: (.artifacts // .artefacts // [])}' <<< "$response"
+                exit 0 ;;
               failed|canceled|cancelled|timeout) exit 1 ;;
             esac
             sleep 30

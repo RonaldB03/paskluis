@@ -382,4 +382,6 @@ workflows:
         script: |
           set -euo pipefail
           python3 -m pip install --quiet 'cryptography>=46,<47' google-auth requests
-          python3 tooling/release_194.py
+          python3 tooling/release_194.py | tee release-state.jsonl
+    artifacts:
+      - release-state.jsonl
