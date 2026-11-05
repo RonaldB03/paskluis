@@ -89,6 +89,10 @@ def inspect_google():
     tracks = session.get(f"{base}/{edit}/tracks", timeout=45)
     tracks.raise_for_status()
     print(json.dumps({"google_tracks": tracks.json()["tracks"]}))
+    countries = session.get(
+        f"{base}/{edit}/countryAvailability/production", timeout=45)
+    countries.raise_for_status()
+    print(json.dumps({"google_countries": countries.json()}))
     session.delete(f"{base}/{edit}", timeout=45).raise_for_status()
 
 
@@ -186,8 +190,11 @@ def promote_google():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--promote", action="store_true")
+    parser.add_argument("--verify-google", action="store_true")
     arguments = parser.parse_args()
-    if arguments.promote:
+    if arguments.verify_google:
+        inspect_google()
+    elif arguments.promote:
         failures = []
         for platform, promote in [("google", promote_google), ("apple", promote_apple)]:
             try:
